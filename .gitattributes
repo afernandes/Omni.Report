@@ -1,0 +1,17 @@
+# Normaliza fim de linha para LF em todas as plataformas. Evita:
+#  - flakiness em testes de round-trip (XML normaliza CRLF->LF, quebrando a igualdade
+#    de raw-strings que viram CRLF no checkout do Windows);
+#  - o aviso "LF will be replaced by CRLF" ao commitar no Windows.
+* text=auto eol=lf
+
+# Binários — sem normalização de fim de linha
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.pdf   binary
+*.snk   binary
+*.nupkg binary
+*.snupkg binary
+*.db    binary

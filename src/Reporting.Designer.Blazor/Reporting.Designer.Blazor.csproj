@@ -4,6 +4,10 @@
     <TargetFramework>net10.0</TargetFramework>
     <RootNamespace>Reporting.Designer.Blazor</RootNamespace>
     <AssemblyName>Reporting.Designer.Blazor</AssemblyName>
+    <!-- O PackageId vira AndersonN.Omni.Report.Designer.Blazor. Fixamos o base path dos
+         static web assets para manter _content/Reporting.Designer.Blazor (usado no
+         App.razor/README). Sem isto, o default seria _content/{PackageId}. -->
+    <StaticWebAssetBasePath>_content/Reporting.Designer.Blazor</StaticWebAssetBasePath>
     <Description>OmniReport — Razor Class Library exposing the visual ReportDesigner (drag-drop canvas, property grid, expression editor) for Blazor Web App + MAUI Blazor Hybrid hosts.</Description>
     <IsPackable>true</IsPackable>
     <Nullable>enable</Nullable>

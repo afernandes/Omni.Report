@@ -1,0 +1,108 @@
+name: Release (publish NuGet)
+
+# Dispara ao empurrar uma tag de versão, ex.:  git tag v1.0.0 && git push origin v1.0.0
+# A versão dos pacotes é derivada da tag (v1.0.0 -> 1.0.0). Também pode ser rodado
+# manualmente (workflow_dispatch) informando a versão.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Versão a publicar (ex.: 1.0.0). Vazio = derivar da tag.'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+  packages: write
+  id-token: write   # OIDC para o Trusted Publishing do nuget.org
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  Configuration: Release
+
+jobs:
+  publish:
+    name: Pack & publish (NuGet.org + GitHub Packages)
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # histórico completo para o SourceLink
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Resolver versão (tag v* ou input manual)
+        shell: bash
+        env:
+          INPUT_VERSION: ${{ github.event.inputs.version }}
+        run: |
+          if [ -n "$INPUT_VERSION" ]; then
+            VERSION="$INPUT_VERSION"
+          else
+            VERSION="${GITHUB_REF_NAME#v}"
+          fi
+          if [ -z "$VERSION" ]; then
+            echo "::error::Não foi possível resolver a versão (sem tag v* nem input)."
+            exit 1
+          fi
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "Publicando versão: $VERSION"
+
+      - name: Restore
+        run: dotnet restore OmniReport.slnx
+
+      - name: Build
+        run: dotnet build OmniReport.slnx -c Release --no-restore -p:Version=${{ env.VERSION }} -p:ContinuousIntegrationBuild=true
+
+      - name: Pack (todos os projetos IsPackable + símbolos .snupkg)
+        run: dotnet pack OmniReport.slnx -c Release --no-build -o ./artifacts -p:Version=${{ env.VERSION }}
+
+      - name: Upload artifacts (.nupkg + .snupkg)
+        uses: actions/upload-artifact@v4
+        with:
+          name: nupkgs-${{ env.VERSION }}
+          path: |
+            ./artifacts/*.nupkg
+            ./artifacts/*.snupkg
+
+      # NuGet.org via Trusted Publishing (OIDC) — sem API key de longa duração.
+      # A action troca o token OIDC do GitHub por uma chave temporária (válida 1h);
+      # por isso roda logo antes do push. Requer a policy criada em nuget.org
+      # (Package Owner=AndersonN, Repo Owner=afernandes, Repo=Omni.Report, Workflow=release.yml).
+      - name: NuGet login (OIDC -> chave temporária)
+        uses: NuGet/login@v1
+        id: nuget-login
+        with:
+          user: AndersonN   # username (profile) do nuget.org dono da policy — NÃO o e-mail
+
+      # Empurra .nupkg e (automaticamente) os .snupkg de símbolos.
+      - name: Push -> NuGet.org
+        shell: bash
+        run: |
+          dotnet nuget push "./artifacts/*.nupkg" \
+            --api-key "${{ steps.nuget-login.outputs.NUGET_API_KEY }}" \
+            --source https://api.nuget.org/v3/index.json \
+            --skip-duplicate
+
+      # GitHub Packages — usa o GITHUB_TOKEN (sem secret extra). --no-symbols porque
+      # o GitHub Packages não aceita pacotes de símbolos .snupkg.
+      - name: Push -> GitHub Packages
+        shell: bash
+        env:
+          GH_PACKAGES_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          dotnet nuget push "./artifacts/*.nupkg" \
+            --api-key "$GH_PACKAGES_TOKEN" \
+            --source https://nuget.pkg.github.com/afernandes/index.json \
+            --skip-duplicate \
+            --no-symbols

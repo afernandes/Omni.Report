@@ -20,6 +20,7 @@ em cenários brasileiros (PDV, NFC-e, DANFE, ABNT NBR 5891).
 ## Sumário
 
 - [Arquitetura](#arquitetura)
+- [Instalação](#instalação)
 - [Quickstarts](#quickstarts)
   - [Primeiro relatório code-first em 5 minutos](#primeiro-relatório-code-first-em-5-minutos)
   - [Primeiro relatório no designer em 5 minutos](#primeiro-relatório-no-designer-em-5-minutos)
@@ -110,6 +111,43 @@ graph TB
 - Designer e Viewer são Razor Class Libraries: o mesmo binário roda em Blazor Server,
   Blazor Web App e MAUI Blazor Hybrid (Windows + Android).
 
+## Instalação
+
+Pacotes publicados no **NuGet.org** sob o prefixo **`AndersonN.Omni.Report.*`** (e espelhados no
+**GitHub Packages**). A versão atual é prerelease — use `--prerelease`:
+
+```bash
+# Conjunto mínimo: autoria code-first + paginação + render PDF (Skia)
+dotnet add package AndersonN.Omni.Report.CodeFirst --prerelease
+dotnet add package AndersonN.Omni.Report.Layout --prerelease
+dotnet add package AndersonN.Omni.Report.Rendering.Skia --prerelease
+dotnet add package AndersonN.Omni.Report.Output.Pdf --prerelease
+
+# Designer e Viewer visuais (Blazor)
+dotnet add package AndersonN.Omni.Report.Designer.Blazor --prerelease
+dotnet add package AndersonN.Omni.Report.Viewer.Blazor --prerelease
+
+# Injeção de dependência para ASP.NET Core / Blazor / MAUI
+dotnet add package AndersonN.Omni.Report.Hosting.AspNetCore --prerelease
+```
+
+> O **ID** do pacote leva o prefixo `AndersonN.Omni.Report.`, mas o **namespace** continua
+> `Reporting.*` (ex.: `using Reporting.CodeFirst;`) e os assets das RCLs seguem em
+> `_content/Reporting.Designer.Blazor` / `_content/Reporting.Viewer.Blazor`.
+
+**Pacotes por necessidade** — todos com o prefixo `AndersonN.Omni.Report.` (só o sufixo varia):
+
+| Categoria | Sufixos (após `AndersonN.Omni.Report.`) |
+|---|---|
+| Exporters | `Output.{Excel,Html,Svg,Csv,Json,Markdown}` |
+| Conectores | `DataSources.{Sqlite,PostgreSql,SqlServer,MySql,AdoNet,Json,Xml,WebService,FileSystem}` |
+| Impressão | `Printing.{WindowsSpooler,EscPos,Android}` |
+| Extras | `Barcode` · `Maps` · `Designer.Blazor.DataConnect` |
+| Opt-in (executa C#) | `Expressions.Roslyn` — ⚠ use apenas com fontes de relatório confiáveis |
+
+> **GitHub Packages:** para instalar pelo feed do GitHub em vez do NuGet.org, adicione a fonte
+> `https://nuget.pkg.github.com/afernandes/index.json` (requer autenticação com um token do GitHub).
+
 ## Quickstarts
 
 > **Requisitos:** SDK do .NET 10. O núcleo, o Skia, os exporters e o ESC/POS são
@@ -154,9 +192,9 @@ Resultado: PDF vetorial com texto selecionável, fórmulas pt-BR (R$ 53,40), agr
 
 ### Primeiro relatório no designer em 5 minutos
 
-1. Adicione ao seu app Blazor o pacote `Reporting.Designer.Blazor`:
+1. Adicione ao seu app Blazor o pacote `AndersonN.Omni.Report.Designer.Blazor`:
    ```xml
-   <PackageReference Include="Reporting.Designer.Blazor" />
+   <PackageReference Include="AndersonN.Omni.Report.Designer.Blazor" />
    ```
 2. No `App.razor` (ou `_Host.cshtml`) carregue as folhas de estilo do designer no `<head>`
    — as cinco são necessárias, na ordem abaixo (tokens → base → layout → componentes → overlays):

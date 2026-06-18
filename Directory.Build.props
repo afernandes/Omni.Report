@@ -18,6 +18,23 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryType>git</RepositoryType>
     <Version>0.1.0-alpha</Version>
+
+    <!-- Metadados de pacote NuGet compartilhados por todo projeto empacotável -->
+    <!-- PackageId usa o prefixo da conta/família no nuget.org (AndersonN.Omni.Report.*).
+         Só o ID do pacote muda; AssemblyName, RootNamespace e os caminhos _content/
+         seguem Reporting.* (as RCLs fixam StaticWebAssetBasePath para isso). -->
+    <PackageId>AndersonN.Omni.Report.$(MSBuildProjectName.Replace('Reporting.', ''))</PackageId>
+    <PackageProjectUrl>https://github.com/afernandes/Omni.Report</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/afernandes/Omni.Report</RepositoryUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageTags>reporting;report;pdf;banded-report;blazor;skiasharp;barcode;nfce;ssrs;dotnet</PackageTags>
+    <PackageReleaseNotes>Consulte o CHANGELOG.md no repositório.</PackageReleaseNotes>
+
+    <!-- Símbolos (.snupkg) + SourceLink (debug apontando para o GitHub) -->
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
   </PropertyGroup>
 
   <!-- Treat warnings as errors in production projects (Core + engines) -->
@@ -35,6 +52,11 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="$(MSBuildProjectName).Tests" />
+  </ItemGroup>
+
+  <!-- Embute o README do repositório em cada pacote (aba "Readme" na página do NuGet) -->
+  <ItemGroup Condition="'$(IsPackable)' != 'false'">
+    <None Include="$(MSBuildThisFileDirectory)README.md" Pack="true" PackagePath="\" Visible="false" />
   </ItemGroup>
 
 </Project>

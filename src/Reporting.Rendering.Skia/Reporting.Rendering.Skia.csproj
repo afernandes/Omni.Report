@@ -14,6 +14,11 @@
 
   <ItemGroup>
     <PackageReference Include="SkiaSharp" />
+    <!-- O metapacote base do SkiaSharp traz os nativos de Windows/macOS, mas NÃO o de
+         Linux. Sem isto, consumidores e o CI no Linux quebram com
+         DllNotFoundException: 'libSkiaSharp'. A variante .NoDependencies depende do
+         fontconfig do sistema (libfontconfig1) — instalado no job de CI. -->
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" />
   </ItemGroup>
 
 </Project>
