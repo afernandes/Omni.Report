@@ -19,11 +19,10 @@
     <RepositoryType>git</RepositoryType>
     <Version>0.1.0-alpha</Version>
 
-    <!-- Metadados de pacote NuGet compartilhados por todo projeto empacotável -->
-    <!-- PackageId usa o prefixo da conta/família no nuget.org (AndersonN.Omni.Report.*).
-         Só o ID do pacote muda; AssemblyName, RootNamespace e os caminhos _content/
-         seguem Reporting.* (as RCLs fixam StaticWebAssetBasePath para isso). -->
-    <PackageId>AndersonN.Omni.Report.$(MSBuildProjectName.Replace('Reporting.', ''))</PackageId>
+    <!-- Metadados de pacote NuGet compartilhados por todo projeto empacotável.
+         OBS: o PackageId NÃO fica aqui — ele é definido só para os projetos de biblioteca
+         (grupo condicional abaixo), senão o prefixo vazaria para o sample/testes e mudaria
+         o nome do bundle de CSS scoped do app ({PackageId}.styles.css), gerando 404. -->
     <PackageProjectUrl>https://github.com/afernandes/Omni.Report</PackageProjectUrl>
     <RepositoryUrl>https://github.com/afernandes/Omni.Report</RepositoryUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
@@ -37,10 +36,15 @@
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
   </PropertyGroup>
 
-  <!-- Treat warnings as errors in production projects (Core + engines) -->
+  <!-- Projetos de biblioteca (Core + engines): warnings-as-errors E o PackageId com o
+       prefixo de marca no nuget.org. Restrito aqui (não global) para o prefixo NUNCA
+       vazar para apps de sample / testes — um PackageId errado no sample BlazorServer
+       renomeia o bundle de CSS scoped ({PackageId}.styles.css) e dá 404 nos estilos. -->
   <PropertyGroup Condition="$(MSBuildProjectName.StartsWith('Reporting.')) and !$(MSBuildProjectName.EndsWith('.Tests')) and !$(MSBuildProjectName.Contains('.Samples'))">
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <WarningsAsErrors />
+    <!-- AssemblyName/RootNamespace/_content seguem Reporting.*; só o ID do pacote muda. -->
+    <PackageId>AndersonN.Omni.Report.$(MSBuildProjectName.Replace('Reporting.', ''))</PackageId>
   </PropertyGroup>
 
   <!-- Test projects: more permissive -->

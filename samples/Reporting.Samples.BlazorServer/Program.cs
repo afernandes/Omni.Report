@@ -50,9 +50,13 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.UseStaticFiles();
 app.UseAntiforgery();
 
+// .NET 9+: MapStaticAssets serve os static assets — incluindo o bundle de CSS scoped do
+// Blazor ({Assembly}.styles.css). Com apenas UseStaticFiles esse bundle auto-gerado NÃO é
+// servido no .NET 10 (404), e as regras ::deep das .razor.css (ex.: o fundo roxo da banda
+// Sub-Detail no Designer) somem. Referencie os assets no App.razor via @Assets[...].
+app.MapStaticAssets();
 app.MapRazorComponents<App>()
    .AddInteractiveServerRenderMode();
 
