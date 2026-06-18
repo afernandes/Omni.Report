@@ -111,6 +111,11 @@ jobs:
           dotnet build src/Reporting.Designer.Blazor/Reporting.Designer.Blazor.csproj -c Release --no-restore
           dotnet build src/Reporting.Hosting.AspNetCore/Reporting.Hosting.AspNetCore.csproj -c Release --no-restore
 
+      # SkiaSharp precisa do fontconfig nativo no Linux (medição/render de texto);
+      # sem isso, Reporting.Rendering.Tests falha no runner ubuntu.
+      - name: Install SkiaSharp native deps (libfontconfig)
+        run: sudo apt-get update && sudo apt-get install -y libfontconfig1
+
       - name: Test cross-plat suites
         run: |
           dotnet test tests/Reporting.Core.Tests/Reporting.Core.Tests.csproj -c Release

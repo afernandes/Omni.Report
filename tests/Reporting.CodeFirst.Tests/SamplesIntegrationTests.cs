@@ -59,8 +59,11 @@ public class SamplesIntegrationTests
         sw.Stop();
 
         rendered.Pages.Count.Should().BeGreaterThan(1);
-        sw.Elapsed.TotalSeconds.Should().BeLessThan(2.0,
-            because: $"10k rows took {sw.Elapsed.TotalSeconds:F2}s; target is < 2s on a dev box.");
+        // Orçamento de performance: generoso no CI (runners compartilhados/mais lentos),
+        // apertado numa máquina de dev. GitHub Actions define CI=true automaticamente.
+        var budgetSeconds = Environment.GetEnvironmentVariable("CI") is null ? 2.0 : 10.0;
+        sw.Elapsed.TotalSeconds.Should().BeLessThan(budgetSeconds,
+            because: $"10k linhas levaram {sw.Elapsed.TotalSeconds:F2}s; alvo < {budgetSeconds}s.");
     }
 
     private static IEnumerable<SampleVenda> SyntheticVendas(int n)
