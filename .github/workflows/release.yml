@@ -85,24 +85,38 @@ jobs:
         with:
           user: AndersonN   # username (profile) do nuget.org dono da policy — NÃO o e-mail
 
-      # Empurra .nupkg e (automaticamente) os .snupkg de símbolos.
+      # Itera arquivo a arquivo (o glob do dotnet nuget push não expande no runner
+      # Windows quando passado entre aspas). Cada .nupkg empurra o .snupkg irmão junto.
       - name: Push -> NuGet.org
         shell: bash
         run: |
-          dotnet nuget push "./artifacts/*.nupkg" \
-            --api-key "${{ steps.nuget-login.outputs.NUGET_API_KEY }}" \
-            --source https://api.nuget.org/v3/index.json \
-            --skip-duplicate
+          shopt -s nullglob
+          pkgs=(./artifacts/*.nupkg)
+          if [ ${#pkgs[@]} -eq 0 ]; then echo "::error::Nenhum .nupkg em ./artifacts"; exit 1; fi
+          echo "Publicando ${#pkgs[@]} pacote(s) no NuGet.org…"
+          for pkg in "${pkgs[@]}"; do
+            echo "→ $(basename "$pkg")"
+            dotnet nuget push "$pkg" \
+              --api-key "${{ steps.nuget-login.outputs.NUGET_API_KEY }}" \
+              --source https://api.nuget.org/v3/index.json \
+              --skip-duplicate
+          done
 
       # GitHub Packages — usa o GITHUB_TOKEN (sem secret extra). --no-symbols porque
-      # o GitHub Packages não aceita pacotes de símbolos .snupkg.
+      # o GitHub Packages não aceita pacotes de símbolos .snupkg. Roda mesmo se o push
+      # ao NuGet.org falhar (!cancelled), para os dois feeds serem independentes.
       - name: Push -> GitHub Packages
+        if: ${{ !cancelled() }}
         shell: bash
         env:
           GH_PACKAGES_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          dotnet nuget push "./artifacts/*.nupkg" \
-            --api-key "$GH_PACKAGES_TOKEN" \
-            --source https://nuget.pkg.github.com/afernandes/index.json \
-            --skip-duplicate \
-            --no-symbols
+          shopt -s nullglob
+          for pkg in ./artifacts/*.nupkg; do
+            echo "→ $(basename "$pkg")"
+            dotnet nuget push "$pkg" \
+              --api-key "$GH_PACKAGES_TOKEN" \
+              --source https://nuget.pkg.github.com/afernandes/index.json \
+              --skip-duplicate \
+              --no-symbols
+          done
