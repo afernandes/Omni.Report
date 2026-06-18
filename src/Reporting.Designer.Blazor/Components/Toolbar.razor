@@ -147,7 +147,8 @@
                 @onclick="@(() => OnToggleSnap.InvokeAsync(!SnapEnabled))">
             <Icon Name="magnet" Size="16" CssClass="icon icon-16" />
         </button>
-        <button class="tb-btn" type="button" title="Régua">
+        <button class="tb-btn @(RulersVisible ? "is-toggled" : null)" type="button" title="Régua"
+                @onclick="@(() => OnToggleRulers.InvokeAsync(!RulersVisible))">
             <Icon Name="ruler" Size="16" CssClass="icon icon-16" />
         </button>
     </div>
@@ -179,6 +180,7 @@
     [Parameter] public bool HasClipboard{ get; set; }
     [Parameter] public bool GridVisible { get; set; } = true;
     [Parameter] public bool SnapEnabled { get; set; } = true;
+    [Parameter] public bool RulersVisible { get; set; } = true;
     [Parameter] public double Zoom      { get; set; } = 1.0;
 
     [Parameter] public EventCallback OnUndo    { get; set; }
@@ -208,6 +210,7 @@
     [Parameter] public EventCallback<DesignerElementKind> OnInsert { get; set; }
     [Parameter] public EventCallback<bool> OnToggleGrid { get; set; }
     [Parameter] public EventCallback<bool> OnToggleSnap { get; set; }
+    [Parameter] public EventCallback<bool> OnToggleRulers { get; set; }
     [Parameter] public EventCallback<double> OnZoomChange { get; set; }
 
     private Task OnUndoClicked()    => OnUndo.InvokeAsync();

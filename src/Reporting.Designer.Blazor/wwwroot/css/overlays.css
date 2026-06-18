@@ -494,6 +494,16 @@
   min-height: 0;
   min-width: 0;
 }
+/* Régua oculta (toggle "Régua" do toolbar): colapsa as faixas de régua e o canto;
+   o .canvas-scroll passa a ocupar a célula única do grid. */
+.standard-canvas.rulers-hidden {
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr;
+}
+.standard-canvas.rulers-hidden > .corner,
+.standard-canvas.rulers-hidden > .ruler-h-canvas,
+.standard-canvas.rulers-hidden > .canvas-ruler-v { display: none; }
+.standard-canvas.rulers-hidden > .canvas-scroll { grid-column: 1; grid-row: 1; }
 .preview-region { display: none; flex-direction: column; flex: 1; min-height: 0; }
 [data-state="7"] .canvas-region .standard-canvas { display: none; }
 [data-state="7"] .canvas-region .preview-region { display: flex; }

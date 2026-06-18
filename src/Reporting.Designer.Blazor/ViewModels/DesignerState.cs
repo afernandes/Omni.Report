@@ -157,6 +157,10 @@ public sealed class DesignerState : Notifying
     private bool _gridVisible = true;
     public bool GridVisible { get => _gridVisible; set => Set(ref _gridVisible, value); }
 
+    private bool _rulersVisible = true;
+    /// <summary>Toolbar "Régua" toggle — mostra/oculta as réguas do canvas.</summary>
+    public bool RulersVisible { get => _rulersVisible; set => Set(ref _rulersVisible, value); }
+
     private BandViewModel? _activeBand;
     /// <summary>The "focused" band — receives paste, click-toolbox-add, and Insert menu
     /// commands. Auto-updates to the band of the selected element. Null = no band focus

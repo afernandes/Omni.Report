@@ -6,6 +6,10 @@
     "use strict";
 
     const mm = 3.43; // px per mm (matches --mm in tokens.css with --page-w=720)
+
+    // Live snap-to-grid/guides toggle, driven pelo botão Snap do toolbar via setSnap().
+    // É capturado no estado de cada drag no pointerdown (o snap é alternado entre drags).
+    let snapEnabled = true;
     const state = {
         active: null,        // active gesture descriptor
         dotnetRef: null,     // .NET reference for callback
@@ -114,7 +118,7 @@
             origX: m.x,
             origY: m.y,
             gridPx: (options.snapMm || 1) * mm,
-            snap: !!options.snap,
+            snap: snapEnabled,
             elementId: element.dataset.elementId,
             bandKind: element.dataset.bandKind,
             others,
@@ -135,7 +139,7 @@
             startY: ev.clientY,
             origX: m.x, origY: m.y, origW: m.w, origH: m.h,
             gridPx: (options.snapMm || 1) * mm,
-            snap: !!options.snap,
+            snap: snapEnabled,
             elementId: element.dataset.elementId,
             bandKind: element.dataset.bandKind,
         };
@@ -165,10 +169,14 @@
         if (a.kind === "move") {
             let nx = snap(a.origX + dx, a.gridPx, a.snap);
             let ny = snap(a.origY + dy, a.gridPx, a.snap);
-            // Smart-guide snap to other elements within threshold
-            const guides = computeSmartGuides(a.element, nx, ny);
-            if (guides.snapX !== null) nx = guides.snapX;
-            if (guides.snapY !== null) ny = guides.snapY;
+            // Smart-guide snap to other elements within threshold (só com snap ligado).
+            if (a.snap) {
+                const guides = computeSmartGuides(a.element, nx, ny);
+                if (guides.snapX !== null) nx = guides.snapX;
+                if (guides.snapY !== null) ny = guides.snapY;
+            } else {
+                clearGuides();
+            }
             // Confine the element to its band — Telerik / SSRS behavior. To move an
             // element to another band the user must Cut + click target band + Paste.
             const w = parseFloat(a.element.style.width)  || 0;
@@ -1458,6 +1466,7 @@
         attachPageMarquee(pageEl)               { setupPageMarquee(pageEl); },
         attachRulers(hCanvas, vCanvas, scrollEl){ setupRulers(hCanvas, vCanvas, scrollEl); },
         refreshRulers()                         { rulerState?.schedule?.(); },
+        setSnap(enabled)                        { snapEnabled = !!enabled; },
         setRulerUnit(unit)                      { if (rulerState && RULER_UNITS[unit]) { rulerState.unit = unit; rulerState.schedule(); } },
         detachRulers()                          { teardownRulers(); },
         registerOutsideClick(dotnetRef) {
