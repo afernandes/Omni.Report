@@ -22,9 +22,11 @@ em cenários brasileiros (PDV, NFC-e, DANFE, ABNT NBR 5891).
 
 ### Designer visual (Blazor)
 
-![Designer visual do OmniReport — tema claro](assets/designer-light.png)
-
-![Designer visual do OmniReport — tema escuro](assets/designer-dark.png)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/designer-dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="assets/designer-light.png">
+  <img alt="Designer visual do OmniReport" src="assets/designer-light.png">
+</picture>
 
 ### Saída do engine (renderização real dos samples)
 
