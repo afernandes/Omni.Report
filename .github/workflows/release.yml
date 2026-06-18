@@ -14,7 +14,7 @@ on:
         default: ''
 
 permissions:
-  contents: read
+  contents: write   # criar o GitHub Release
   packages: write
   id-token: write   # OIDC para o Trusted Publishing do nuget.org
 
@@ -120,3 +120,17 @@ jobs:
               --skip-duplicate \
               --no-symbols
           done
+
+      # GitHub Release com notas geradas automaticamente + os pacotes anexados.
+      # Só em push de tag (workflow_dispatch não tem tag para associar).
+      - name: GitHub Release
+        if: ${{ github.event_name == 'push' }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: OmniReport ${{ env.VERSION }}
+          generate_release_notes: true
+          prerelease: ${{ contains(env.VERSION, '-') }}
+          files: |
+            ./artifacts/*.nupkg
+            ./artifacts/*.snupkg

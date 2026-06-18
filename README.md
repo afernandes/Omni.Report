@@ -3,6 +3,7 @@
 [![CI](https://img.shields.io/badge/CI-passing-brightgreen)](.github/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![.NET](https://img.shields.io/badge/.NET-10.0-blueviolet)](https://dotnet.microsoft.com/)
+[![NuGet](https://img.shields.io/nuget/v/AndersonN.Omni.Report.Core.svg)](https://www.nuget.org/packages/AndersonN.Omni.Report.Core)
 [![Tests](https://img.shields.io/badge/tests-726%20passing-success)](#)
 [![Coverage](https://img.shields.io/badge/core%20coverage-≥80%25-success)](#)
 
@@ -114,21 +115,21 @@ graph TB
 ## Instalação
 
 Pacotes publicados no **NuGet.org** sob o prefixo **`AndersonN.Omni.Report.*`** (e espelhados no
-**GitHub Packages**). A versão atual é prerelease — use `--prerelease`:
+**GitHub Packages**):
 
 ```bash
 # Conjunto mínimo: autoria code-first + paginação + render PDF (Skia)
-dotnet add package AndersonN.Omni.Report.CodeFirst --prerelease
-dotnet add package AndersonN.Omni.Report.Layout --prerelease
-dotnet add package AndersonN.Omni.Report.Rendering.Skia --prerelease
-dotnet add package AndersonN.Omni.Report.Output.Pdf --prerelease
+dotnet add package AndersonN.Omni.Report.CodeFirst
+dotnet add package AndersonN.Omni.Report.Layout
+dotnet add package AndersonN.Omni.Report.Rendering.Skia
+dotnet add package AndersonN.Omni.Report.Output.Pdf
 
 # Designer e Viewer visuais (Blazor)
-dotnet add package AndersonN.Omni.Report.Designer.Blazor --prerelease
-dotnet add package AndersonN.Omni.Report.Viewer.Blazor --prerelease
+dotnet add package AndersonN.Omni.Report.Designer.Blazor
+dotnet add package AndersonN.Omni.Report.Viewer.Blazor
 
 # Injeção de dependência para ASP.NET Core / Blazor / MAUI
-dotnet add package AndersonN.Omni.Report.Hosting.AspNetCore --prerelease
+dotnet add package AndersonN.Omni.Report.Hosting.AspNetCore
 ```
 
 > O **ID** do pacote leva o prefixo `AndersonN.Omni.Report.`, mas o **namespace** continua
