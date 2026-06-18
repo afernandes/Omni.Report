@@ -1005,9 +1005,21 @@
   border: 1px solid transparent;
   user-select: none;
 }
-.el > span { overflow: visible; }
-.el.txt-right { justify-content: flex-end; }
-.el.txt-center { justify-content: center; }
+/* Wrapper de conteúdo: preenche a caixa do elemento e RECORTA o que passa dos limites —
+   texto maior que os bounds é escondido (WYSIWYG, como Crystal Reports / SSRS / FastReport).
+   O clip fica no .el-content (e NÃO no .el) para os handles de seleção e o fx-badge, que
+   ficam de propósito FORA da caixa, continuarem visíveis. */
+.el-content {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.el.txt-right  .el-content { justify-content: flex-end; }
+.el.txt-center .el-content { justify-content: center; }
 .el.bold { font-weight: 600; }
 .el.italic { font-style: italic; }
 
