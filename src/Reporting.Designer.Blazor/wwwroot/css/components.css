@@ -875,7 +875,11 @@
      OUTSIDE the page, in this gutter). 56px = strip width (38) + small breathing
      room (18) so labels don't kiss the canvas edge. */
   padding: var(--sp-6) var(--sp-6) var(--sp-10) 56px;
-  margin: 0 auto;
+  /* margin:0 (não "0 auto"): transform:scale não cria área de scroll, então o JS
+     sizeZoomBox() injeta margin-right/bottom = página·(zoom-1) para o .canvas-scroll
+     reservar o scroll em zoom > 1. Centralizar com `auto` anularia essa reserva e,
+     com a caixa maior que a viewport, geraria margem negativa cortando a borda. */
+  margin: 0;
 }
 /* Page + bands as SVG */
 .page-shell {

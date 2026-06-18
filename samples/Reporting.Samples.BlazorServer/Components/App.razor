@@ -9,19 +9,19 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="app.css" />
-    <link rel="stylesheet" href="_content/Reporting.Designer.Blazor/css/tokens.css" />
-    <link rel="stylesheet" href="_content/Reporting.Designer.Blazor/css/base.css" />
-    <link rel="stylesheet" href="_content/Reporting.Designer.Blazor/css/layout.css" />
-    <link rel="stylesheet" href="_content/Reporting.Designer.Blazor/css/components.css" />
-    <link rel="stylesheet" href="_content/Reporting.Designer.Blazor/css/overlays.css" />
-    <link rel="stylesheet" href="Reporting.Samples.BlazorServer.styles.css" />
+    <link rel="stylesheet" href="@Assets["app.css"]" />
+    <link rel="stylesheet" href="@Assets["_content/Reporting.Designer.Blazor/css/tokens.css"]" />
+    <link rel="stylesheet" href="@Assets["_content/Reporting.Designer.Blazor/css/base.css"]" />
+    <link rel="stylesheet" href="@Assets["_content/Reporting.Designer.Blazor/css/layout.css"]" />
+    <link rel="stylesheet" href="@Assets["_content/Reporting.Designer.Blazor/css/components.css"]" />
+    <link rel="stylesheet" href="@Assets["_content/Reporting.Designer.Blazor/css/overlays.css"]" />
+    <link rel="stylesheet" href="@Assets["Reporting.Samples.BlazorServer.styles.css"]" />
 </head>
 <body>
     <Routes />
     <script src="_framework/blazor.web.js"></script>
-    <script src="_content/Reporting.Viewer.Blazor/reporting-viewer.js"></script>
-    <script src="_content/Reporting.Designer.Blazor/js/designer.js"></script>
-    <script src="_content/Reporting.Designer.Blazor/js/monaco-host.js"></script>
+    <script src="@Assets["_content/Reporting.Viewer.Blazor/reporting-viewer.js"]"></script>
+    <script src="@Assets["_content/Reporting.Designer.Blazor/js/designer.js"]"></script>
+    <script src="@Assets["_content/Reporting.Designer.Blazor/js/monaco-host.js"]"></script>
 </body>
 </html>

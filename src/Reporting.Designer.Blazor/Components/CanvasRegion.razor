@@ -6,7 +6,7 @@
     @* 2×2 grid — [corner | régua-h] sobre [régua-v | canvas]. O grid garante que a célula do
        canvas (1fr × 1fr) preencha TODO o espaço vertical/horizontal restante, sem depender do
        "stretch" de flexbox (que era frágil com o <canvas> da régua-v ao lado). *@
-    <div class="standard-canvas" style="@(IsPreviewing ? "display:none;" : null)">
+    <div class="standard-canvas @(RulersVisible ? null : "rulers-hidden")" style="@(IsPreviewing ? "display:none;" : null)">
         @* Corner cycles the ruler unit (cm → mm → pol), the classic top-left ruler control. *@
         <button type="button" class="corner" title="Alternar unidade (cm / mm / pol)"
                 @onclick="CycleRulerUnit">@UnitAbbr</button>
@@ -52,6 +52,8 @@
     [Parameter] public BandViewModel? ActiveBand { get; set; }
     [Parameter] public EventCallback<BandViewModel?> ActiveBandChanged { get; set; }
     [Parameter] public bool GridVisible { get; set; }
+    [Parameter] public bool RulersVisible { get; set; } = true;
+    [Parameter] public bool SnapToGrid { get; set; } = true;
     [Parameter] public double Zoom { get; set; } = 1.0;
     [Parameter] public IReadOnlyList<DesignerDataSource> DataSources { get; set; } = Array.Empty<DesignerDataSource>();
     [Parameter] public IReadOnlyList<DesignerParameter>  Parameters  { get; set; } = Array.Empty<DesignerParameter>();
@@ -105,6 +107,8 @@
             {
                 await JS.InvokeVoidAsync("omniDesigner.refreshRulers");
             }
+            // Empurra o estado do snap a cada render para o botão Snap do toolbar valer.
+            await JS.InvokeVoidAsync("omniDesigner.setSnap", SnapToGrid);
         }
         catch (JSException) { /* test runtime / JS unavailable */ }
         catch (InvalidOperationException) { /* pre-render: no JS yet */ }

@@ -6,6 +6,10 @@
     "use strict";
 
     const mm = 3.43; // px per mm (matches --mm in tokens.css with --page-w=720)
+
+    // Live snap-to-grid/guides toggle, driven pelo botão Snap do toolbar via setSnap().
+    // É capturado no estado de cada drag no pointerdown (o snap é alternado entre drags).
+    let snapEnabled = true;
     const state = {
         active: null,        // active gesture descriptor
         dotnetRef: null,     // .NET reference for callback
@@ -33,6 +37,32 @@
             if (m) return parseFloat(m[1]) || 1;
         }
         return 1;
+    }
+
+    // ───── Zoom: reservar a caixa ESCALADA para o container de scroll ─────────────
+    // O .canvas-stage recebe `transform: scale(z)` (origin 0 0). `transform` é PAINT:
+    // amplia o visual mas NÃO cresce a caixa de layout — então o .canvas-scroll
+    // (overflow:auto) não enxerga a página ampliada e não mostra scrollbar em zoom > 1
+    // (direita/baixo ficam inalcançáveis). Mantemos o transform (getCanvasZoom() e as
+    // réguas continuam iguais) e reservamos o excedente (z-1)× como MARGEM — que é
+    // layout puro e NÃO é afetada pelo transform do próprio elemento. Assim a área de
+    // scroll do pai = natural + natural·(z-1) = natural·z = o tamanho visual escalado.
+    // Medimos o .page-shell (offset* são px de layout, imunes ao transform) para evitar
+    // loop de feedback com o ResizeObserver do .canvas-scroll.
+    function sizeZoomBox() {
+        const stage = document.querySelector(".canvas-stage");
+        if (!stage) return;
+        const shell = stage.querySelector(".page-shell");
+        if (!shell) { stage.style.marginRight = ""; stage.style.marginBottom = ""; return; }
+        const z = getCanvasZoom();
+        if (z <= 1) { stage.style.marginRight = "0px"; stage.style.marginBottom = "0px"; return; }
+        const cs = getComputedStyle(stage);
+        const padX = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight)  || 0);
+        const padY = (parseFloat(cs.paddingTop)  || 0) + (parseFloat(cs.paddingBottom) || 0);
+        const naturalW = shell.offsetWidth  + padX;   // px de layout (não escalados)
+        const naturalH = shell.offsetHeight + padY;
+        stage.style.marginRight  = `${Math.ceil(naturalW * (z - 1))}px`;
+        stage.style.marginBottom = `${Math.ceil(naturalH * (z - 1))}px`;
     }
 
     // CSS-pixel offset of `el` relative to `ancestor`, walking the offsetParent chain.
@@ -88,7 +118,7 @@
             origX: m.x,
             origY: m.y,
             gridPx: (options.snapMm || 1) * mm,
-            snap: !!options.snap,
+            snap: snapEnabled,
             elementId: element.dataset.elementId,
             bandKind: element.dataset.bandKind,
             others,
@@ -109,7 +139,7 @@
             startY: ev.clientY,
             origX: m.x, origY: m.y, origW: m.w, origH: m.h,
             gridPx: (options.snapMm || 1) * mm,
-            snap: !!options.snap,
+            snap: snapEnabled,
             elementId: element.dataset.elementId,
             bandKind: element.dataset.bandKind,
         };
@@ -139,10 +169,14 @@
         if (a.kind === "move") {
             let nx = snap(a.origX + dx, a.gridPx, a.snap);
             let ny = snap(a.origY + dy, a.gridPx, a.snap);
-            // Smart-guide snap to other elements within threshold
-            const guides = computeSmartGuides(a.element, nx, ny);
-            if (guides.snapX !== null) nx = guides.snapX;
-            if (guides.snapY !== null) ny = guides.snapY;
+            // Smart-guide snap to other elements within threshold (só com snap ligado).
+            if (a.snap) {
+                const guides = computeSmartGuides(a.element, nx, ny);
+                if (guides.snapX !== null) nx = guides.snapX;
+                if (guides.snapY !== null) ny = guides.snapY;
+            } else {
+                clearGuides();
+            }
             // Confine the element to its band — Telerik / SSRS behavior. To move an
             // element to another band the user must Cut + click target band + Paste.
             const w = parseFloat(a.element.style.width)  || 0;
@@ -1248,6 +1282,7 @@
         }
 
         function drawAll() {
+            sizeZoomBox();   // reserva (via margem) a caixa escalada p/ o scroll no zoom
             const pr = pageRect();
             const k = pxPerMm();
             drawAxis(hCanvas, true, pr, k);
@@ -1431,6 +1466,7 @@
         attachPageMarquee(pageEl)               { setupPageMarquee(pageEl); },
         attachRulers(hCanvas, vCanvas, scrollEl){ setupRulers(hCanvas, vCanvas, scrollEl); },
         refreshRulers()                         { rulerState?.schedule?.(); },
+        setSnap(enabled)                        { snapEnabled = !!enabled; },
         setRulerUnit(unit)                      { if (rulerState && RULER_UNITS[unit]) { rulerState.unit = unit; rulerState.schedule(); } },
         detachRulers()                          { teardownRulers(); },
         registerOutsideClick(dotnetRef) {
