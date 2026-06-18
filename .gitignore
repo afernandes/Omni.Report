@@ -20,6 +20,7 @@ out/
 *.coveragexml
 *.nupkg
 *.snupkg
+artifacts/
 
 ## Build / coverage logs
 *.binlog

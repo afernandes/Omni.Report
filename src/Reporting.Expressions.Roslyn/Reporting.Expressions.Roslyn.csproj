@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
+    <Description>OmniReport — resolver opt-in baseado em Roslyn para o elemento Code. Compila o C# embutido no relatório (Microsoft.CodeAnalysis) para que expressões chamem Code.MethodName(...). ⚠ Executa C# embutido no relatório — habilite apenas para fontes confiáveis.</Description>
   </PropertyGroup>
 
   <ItemGroup>

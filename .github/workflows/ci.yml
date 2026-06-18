@@ -147,31 +147,16 @@ jobs:
       - name: Build
         run: dotnet build OmniReport.slnx -c Release --no-restore
 
-      # Public packages — non-publishable projects (samples, tests, Android-real)
-      # are excluded via <IsPackable>false</IsPackable> in their csproj.
+      # Empacota TODOS os projetos com IsPackable=true (os de src/). Samples, testes e
+      # o stub real do Android ficam de fora via <IsPackable>false</IsPackable>.
+      # Inclui símbolos (.snupkg) por causa do IncludeSymbols no Directory.Build.props.
       - name: Pack
-        run: |
-          dotnet pack src/Reporting.Core/Reporting.Core.csproj -c Release --no-build -o ./artifacts
-          dotnet pack src/Reporting.Expressions/Reporting.Expressions.csproj -c Release --no-build -o ./artifacts
-          dotnet pack src/Reporting.DataSources/Reporting.DataSources.csproj -c Release --no-build -o ./artifacts
-          dotnet pack src/Reporting.Rendering/Reporting.Rendering.csproj -c Release --no-build -o ./artifacts
-          dotnet pack src/Reporting.Layout/Reporting.Layout.csproj -c Release --no-build -o ./artifacts
-          dotnet pack src/Reporting.Rendering.Skia/Reporting.Rendering.Skia.csproj -c Release --no-build -o ./artifacts
-          dotnet pack src/Reporting.Rendering.Gdi/Reporting.Rendering.Gdi.csproj -c Release --no-build -o ./artifacts
-          dotnet pack src/Reporting.CodeFirst/Reporting.CodeFirst.csproj -c Release --no-build -o ./artifacts
-          dotnet pack src/Reporting.Serialization/Reporting.Serialization.csproj -c Release --no-build -o ./artifacts
-          dotnet pack src/Reporting.Output.Pdf/Reporting.Output.Pdf.csproj -c Release --no-build -o ./artifacts
-          dotnet pack src/Reporting.Output.Excel/Reporting.Output.Excel.csproj -c Release --no-build -o ./artifacts
-          dotnet pack src/Reporting.Printing/Reporting.Printing.csproj -c Release --no-build -o ./artifacts
-          dotnet pack src/Reporting.Printing.EscPos/Reporting.Printing.EscPos.csproj -c Release --no-build -o ./artifacts
-          dotnet pack src/Reporting.Printing.WindowsSpooler/Reporting.Printing.WindowsSpooler.csproj -c Release --no-build -o ./artifacts
-          dotnet pack src/Reporting.Printing.Android/Reporting.Printing.Android.csproj -c Release --no-build -o ./artifacts
-          dotnet pack src/Reporting.Viewer.Blazor/Reporting.Viewer.Blazor.csproj -c Release --no-build -o ./artifacts
-          dotnet pack src/Reporting.Designer.Blazor/Reporting.Designer.Blazor.csproj -c Release --no-build -o ./artifacts
-          dotnet pack src/Reporting.Hosting.AspNetCore/Reporting.Hosting.AspNetCore.csproj -c Release --no-build -o ./artifacts
+        run: dotnet pack OmniReport.slnx -c Release --no-build -o ./artifacts
 
       - name: Upload NuGet artifacts
         uses: actions/upload-artifact@v4
         with:
           name: nupkgs
-          path: ./artifacts/*.nupkg
+          path: |
+            ./artifacts/*.nupkg
+            ./artifacts/*.snupkg
