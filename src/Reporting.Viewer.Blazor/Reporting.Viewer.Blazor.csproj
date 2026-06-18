@@ -4,6 +4,8 @@
     <TargetFramework>net10.0</TargetFramework>
     <RootNamespace>Reporting.Viewer.Blazor</RootNamespace>
     <AssemblyName>Reporting.Viewer.Blazor</AssemblyName>
+    <!-- Mantém _content/Reporting.Viewer.Blazor apesar do PackageId AndersonN.Omni.Report.Viewer.Blazor. -->
+    <StaticWebAssetBasePath>_content/Reporting.Viewer.Blazor</StaticWebAssetBasePath>
     <Description>OmniReport — Razor Class Library exposing the ReportViewer component for Blazor Server, Blazor Web App, and MAUI Blazor Hybrid hosts.</Description>
     <IsPackable>true</IsPackable>
     <Nullable>enable</Nullable>

@@ -20,6 +20,10 @@
     <Version>0.1.0-alpha</Version>
 
     <!-- Metadados de pacote NuGet compartilhados por todo projeto empacotável -->
+    <!-- PackageId usa o prefixo da conta/família no nuget.org (AndersonN.Omni.Report.*).
+         Só o ID do pacote muda; AssemblyName, RootNamespace e os caminhos _content/
+         seguem Reporting.* (as RCLs fixam StaticWebAssetBasePath para isso). -->
+    <PackageId>AndersonN.Omni.Report.$(MSBuildProjectName.Replace('Reporting.', ''))</PackageId>
     <PackageProjectUrl>https://github.com/afernandes/Omni.Report</PackageProjectUrl>
     <RepositoryUrl>https://github.com/afernandes/Omni.Report</RepositoryUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
