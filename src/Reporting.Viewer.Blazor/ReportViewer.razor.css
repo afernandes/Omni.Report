@@ -1,0 +1,134 @@
+.omni-viewer {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 480px;
+    background: #f4f2ec;
+    color: #1a1a1a;
+    font-family: "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+    font-size: 13px;
+    border: 1px solid #e5e2d9;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.omni-viewer-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    background: #ffffff;
+    border-bottom: 1px solid #e5e2d9;
+    flex: 0 0 auto;
+    user-select: none;
+}
+
+.tb-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.tb-sep {
+    width: 1px;
+    height: 20px;
+    background: #e5e2d9;
+    margin: 0 4px;
+}
+
+.tb-btn {
+    min-width: 28px;
+    height: 28px;
+    padding: 0 8px;
+    background: #ffffff;
+    border: 1px solid #c7c2b3;
+    border-radius: 3px;
+    color: #1a1a1a;
+    cursor: pointer;
+    font: inherit;
+    transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+.tb-btn:hover:not(:disabled) {
+    background: #fff1e6;
+    border-color: #f5c6a4;
+}
+
+.tb-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.tb-btn.primary {
+    background: #c2410c;
+    color: #ffffff;
+    border-color: #9a3209;
+    font-weight: 600;
+}
+
+.tb-btn.primary:hover:not(:disabled) {
+    background: #9a3209;
+}
+
+.page-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin: 0 4px;
+}
+
+.page-input {
+    width: 48px;
+    height: 24px;
+    padding: 0 4px;
+    border: 1px solid #c7c2b3;
+    border-radius: 3px;
+    text-align: center;
+    font: inherit;
+}
+
+.page-of {
+    color: #5a5750;
+}
+
+.zoom-select {
+    height: 28px;
+    padding: 0 6px;
+    border: 1px solid #c7c2b3;
+    border-radius: 3px;
+    background: #ffffff;
+    font: inherit;
+}
+
+.omni-viewer-stage {
+    flex: 1 1 auto;
+    overflow: auto;
+    padding: 24px;
+    outline: none;
+}
+
+.omni-viewer-empty {
+    color: #8e8a7e;
+    text-align: center;
+    padding: 48px;
+}
+
+.page-wrap {
+    display: inline-block;
+    box-shadow: 0 1px 0 rgba(20,18,14,0.04), 0 4px 18px rgba(20,18,14,0.06);
+    background: #ffffff;
+    margin: 0 auto;
+}
+
+.page-image {
+    display: block;
+    max-width: none;
+}
+
+.omni-viewer-error {
+    padding: 8px 12px;
+    background: #fee2e2;
+    color: #b91c1c;
+    border-top: 1px solid #f5c6c6;
+    font-size: 12px;
+}

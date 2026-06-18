@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Reporting.Rendering</RootNamespace>
+    <AssemblyName>Reporting.Rendering</AssemblyName>
+    <Description>OmniReport — device-independent rendering abstractions (IRenderingContext, text/pen/brush styles, path builder).</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Reporting.Core\Reporting.Core.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,161 @@
+@namespace Reporting.Designer.Blazor.Components
+@using System.Globalization
+@using Reporting.Paper
+
+<DesignerModal Visible="Visible" Title="Configuração de Página" HeadIcon="file-cog" OnClose="OnCancel">
+    <ChildContent>
+    <div class="form-row">
+        <label>Papel</label>
+        <select @onchange="@(e => OnPaperChanged(e.Value?.ToString()))">
+            @foreach (var preset in Presets)
+            {
+                <option value="@preset.Name" selected="@(_paperName == preset.Name)">@preset.Name (@FormatSize(preset))</option>
+            }
+            <option value="Custom" selected="@(_paperName == "Custom")">Custom…</option>
+        </select>
+    </div>
+
+    @if (_paperName == "Custom")
+    {
+        <div class="form-row">
+            <label>Largura (mm)</label>
+            <input type="number" step="1" min="20" max="2000" value="@_widthMm"
+                   @onchange="@(e => _widthMm = ParseMm(e.Value?.ToString(), _widthMm))" />
+        </div>
+        <div class="form-row">
+            <label>Altura (mm)</label>
+            <input type="number" step="1" min="0" max="2000" value="@_heightMm"
+                   @onchange="@(e => _heightMm = ParseMm(e.Value?.ToString(), _heightMm))" />
+            <span style="grid-column:2;font-size:10.5px;color:var(--text-tertiary);">0 = papel contínuo (térmico)</span>
+        </div>
+    }
+
+    <div class="form-row">
+        <label>Orientação</label>
+        <div class="form-group">
+            <button class="btn @(_orientation == Orientation.Portrait ? "primary" : null)" type="button"
+                    @onclick="@(() => _orientation = Orientation.Portrait)">Retrato</button>
+            <button class="btn @(_orientation == Orientation.Landscape ? "primary" : null)" type="button"
+                    @onclick="@(() => _orientation = Orientation.Landscape)">Paisagem</button>
+        </div>
+    </div>
+
+    <div class="form-row">
+        <label>Margens (mm)</label>
+        <div class="form-group" style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;">
+            <input type="number" step="0.5" min="0" value="@_marginTop"
+                   placeholder="Topo" title="Topo"
+                   @onchange="@(e => _marginTop = ParseMm(e.Value?.ToString(), _marginTop))" />
+            <input type="number" step="0.5" min="0" value="@_marginRight"
+                   placeholder="Direita" title="Direita"
+                   @onchange="@(e => _marginRight = ParseMm(e.Value?.ToString(), _marginRight))" />
+            <input type="number" step="0.5" min="0" value="@_marginBottom"
+                   placeholder="Base" title="Base"
+                   @onchange="@(e => _marginBottom = ParseMm(e.Value?.ToString(), _marginBottom))" />
+            <input type="number" step="0.5" min="0" value="@_marginLeft"
+                   placeholder="Esquerda" title="Esquerda"
+                   @onchange="@(e => _marginLeft = ParseMm(e.Value?.ToString(), _marginLeft))" />
+        </div>
+        <span style="grid-column:2;font-size:10.5px;color:var(--text-tertiary);">Topo · Direita · Base · Esquerda</span>
+    </div>
+
+    <div class="form-row">
+        <label>Colunas</label>
+        <div class="form-group">
+            <input type="number" step="1" min="1" max="6" value="@_columns"
+                   @onchange="@(e => _columns = int.TryParse(e.Value?.ToString(), out var n) ? Math.Clamp(n, 1, 6) : 1)" />
+            <input type="number" step="0.5" min="0" value="@_columnSpacing"
+                   placeholder="Espaço (mm)"
+                   @onchange="@(e => _columnSpacing = ParseMm(e.Value?.ToString(), _columnSpacing))" />
+            <span style="font-size:11px;align-self:center;color:var(--text-tertiary);">colunas · espaçamento mm</span>
+        </div>
+    </div>
+
+    </ChildContent>
+    <Footer>
+        <button class="btn" type="button" @onclick="OnCancel">Cancelar</button>
+        <button class="btn primary" type="button" @onclick="OnApply">Aplicar</button>
+    </Footer>
+</DesignerModal>
+
+@code {
+    [Parameter] public bool Visible { get; set; }
+    [Parameter] public PageSetup InitialPageSetup { get; set; } = PageSetup.A4Portrait;
+    [Parameter] public EventCallback<PageSetup> OnApplied { get; set; }
+    [Parameter] public EventCallback OnClosed { get; set; }
+
+    private static readonly PaperSize[] Presets = new[]
+    {
+        PaperSize.A4, PaperSize.A5, PaperSize.Letter, PaperSize.Legal,
+        PaperSize.Thermal58, PaperSize.Thermal80,
+    };
+
+    private string _paperName = "A4";
+    private double _widthMm = 210;
+    private double _heightMm = 297;
+    private Orientation _orientation = Orientation.Portrait;
+    private double _marginTop, _marginRight, _marginBottom, _marginLeft;
+    private int _columns = 1;
+    private double _columnSpacing;
+
+    protected override void OnParametersSet()
+    {
+        var ps = InitialPageSetup;
+        var preset = Array.Find(Presets, p =>
+            Math.Abs(p.Width.ToMm() - ps.Paper.Width.ToMm()) < 0.5 &&
+            Math.Abs(p.Height.ToMm() - ps.Paper.Height.ToMm()) < 0.5);
+        _paperName = preset?.Name ?? "Custom";
+        _widthMm = ps.Paper.Width.ToMm();
+        _heightMm = ps.Paper.Height.ToMm();
+        _orientation = ps.Orientation;
+        _marginTop    = ps.Margins.Top.ToMm();
+        _marginRight  = ps.Margins.Right.ToMm();
+        _marginBottom = ps.Margins.Bottom.ToMm();
+        _marginLeft   = ps.Margins.Left.ToMm();
+        _columns      = ps.Columns;
+        _columnSpacing = ps.ColumnSpacing.ToMm();
+    }
+
+    private void OnPaperChanged(string? name)
+    {
+        if (string.IsNullOrEmpty(name)) return;
+        _paperName = name;
+        var preset = Array.Find(Presets, p => p.Name == name);
+        if (preset is not null)
+        {
+            _widthMm = preset.Width.ToMm();
+            _heightMm = preset.Height.ToMm();
+        }
+    }
+
+    private static string FormatSize(PaperSize p)
+    {
+        var w = p.Width.ToMm().ToString("F0", CultureInfo.InvariantCulture);
+        if (p.Height == Reporting.Geometry.Unit.Zero)
+        {
+            return $"{w} × cont. mm";
+        }
+        var h = p.Height.ToMm().ToString("F0", CultureInfo.InvariantCulture);
+        return $"{w} × {h} mm";
+    }
+
+    private static double ParseMm(string? raw, double fallback)
+        => double.TryParse(raw, NumberStyles.Any, CultureInfo.InvariantCulture, out var v) ? v : fallback;
+
+    private async Task OnApply()
+    {
+        var paper = new PaperSize(_paperName == "Custom" ? "Custom" : _paperName,
+            Reporting.Geometry.Unit.FromMm(_widthMm),
+            Reporting.Geometry.Unit.FromMm(_heightMm));
+        var margins = new Reporting.Geometry.Thickness(
+            Reporting.Geometry.Unit.FromMm(_marginLeft),
+            Reporting.Geometry.Unit.FromMm(_marginTop),
+            Reporting.Geometry.Unit.FromMm(_marginRight),
+            Reporting.Geometry.Unit.FromMm(_marginBottom));
+        var ps = new PageSetup(paper, _orientation, margins, _columns,
+            Reporting.Geometry.Unit.FromMm(_columnSpacing));
+        await OnApplied.InvokeAsync(ps);
+    }
+
+    private Task OnCancel() => OnClosed.InvokeAsync();
+}

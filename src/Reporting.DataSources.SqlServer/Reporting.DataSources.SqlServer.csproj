@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Reporting.DataSources.SqlServer</RootNamespace>
+    <AssemblyName>Reporting.DataSources.SqlServer</AssemblyName>
+    <Description>OmniReport — Microsoft SQL Server data source. Thin convenience wrapper around AdoNetDataSource + Microsoft.Data.SqlClient.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Reporting.DataSources\Reporting.DataSources.csproj" />
+    <ProjectReference Include="..\Reporting.DataSources.AdoNet\Reporting.DataSources.AdoNet.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.SqlClient" />
+  </ItemGroup>
+
+</Project>

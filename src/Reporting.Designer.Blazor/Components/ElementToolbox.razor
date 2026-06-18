@@ -1,0 +1,199 @@
+@namespace Reporting.Designer.Blazor.Components
+
+<div class="toolbox-search">
+    <Icon Name="search" Size="12" CssClass="icon icon-12" />
+    <input placeholder="Filtrar elementos…" type="text"
+           value="@_filter" @oninput="@(e => _filter = e.Value?.ToString() ?? string.Empty)" />
+    <kbd>/</kbd>
+</div>
+
+<div class="tb-group-h">
+    <Icon Name="chevron-down" Size="12" CssClass="chev icon icon-12" />
+    <span>Básicos</span>
+</div>
+<div class="toolbox-list">
+    @foreach (var item in Filter(_basic))
+    {
+        <div class="tbx-item toolbox-btn"
+             draggable="true"
+             role="button"
+             tabindex="0"
+             data-kind="@item.Kind"
+             @ondragstart="@(e => OnDragStart(e, item.Kind))"
+             @onclick="@(() => OnAddClicked(item.Kind))"
+             title="@item.Description">
+            <Icon Name="@item.Icon" Size="14" />
+            <span>@item.Label</span>
+            @if (!string.IsNullOrEmpty(item.Hotkey))
+            {
+                <span class="meta">@item.Hotkey</span>
+            }
+        </div>
+    }
+</div>
+
+<div class="tb-group-h">
+    <Icon Name="chevron-down" Size="12" CssClass="chev icon icon-12" />
+    <span>Dados</span>
+</div>
+<div class="toolbox-list">
+    @foreach (var item in Filter(_data))
+    {
+        <div class="tbx-item"
+             role="button" tabindex="0"
+             @onclick="@(() => OnAddClicked(item.Kind))"
+             title="@item.Description">
+            <Icon Name="@item.Icon" Size="14" />
+            <span>@item.Label</span>
+        </div>
+    }
+</div>
+
+<div class="tb-group-h">
+    <Icon Name="chevron-down" Size="12" CssClass="chev icon icon-12" />
+    <span>Gráficos</span>
+</div>
+<div class="toolbox-list">
+    @foreach (var item in Filter(_charts))
+    {
+        <div class="tbx-item"
+             role="button" tabindex="0"
+             @onclick="@(() => OnAddClicked(item.Kind))"
+             title="@item.Description">
+            <Icon Name="@item.Icon" Size="14" />
+            <span>@item.Label</span>
+        </div>
+    }
+</div>
+
+<div class="tb-group-h">
+    <Icon Name="chevron-down" Size="12" CssClass="chev icon icon-12" />
+    <span>Sistema</span>
+</div>
+<div class="toolbox-list">
+    @foreach (var item in Filter(_system))
+    {
+        <div class="tbx-item toolbox-btn"
+             role="button"
+             tabindex="0"
+             title="@item.Description"
+             @onclick="@(() => OnSystemFieldClicked(item))">
+            <Icon Name="@item.Icon" Size="14" />
+            <span>@item.Label</span>
+            <span class="meta" style="font-family:var(--font-mono);font-size:10px;">@item.Sample</span>
+        </div>
+    }
+</div>
+
+<div class="tb-group-h">
+    <Icon Name="chevron-down" Size="12" CssClass="chev icon icon-12" />
+    <span>Avançados</span>
+</div>
+<div class="toolbox-list">
+    @foreach (var item in Filter(_advanced))
+    {
+        <div class="tbx-item"
+             role="button" tabindex="0"
+             @onclick="@(() => OnAddClicked(item.Kind))"
+             title="@item.Description">
+            <Icon Name="@item.Icon" Size="14" />
+            <span>@item.Label</span>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public EventCallback<DesignerElementKind> OnAdd { get; set; }
+    [Parameter] public EventCallback<SystemFieldDescriptor> OnAddSystemField { get; set; }
+
+    private string _filter = string.Empty;
+
+    private Task OnAddClicked(DesignerElementKind kind) => OnAdd.InvokeAsync(kind);
+    private Task OnSystemFieldClicked(SystemFieldItem item)
+        => OnAddSystemField.InvokeAsync(new SystemFieldDescriptor(item.Label, item.Expression, item.WidthMm));
+
+    private async Task OnDragStart(DragEventArgs e, DesignerElementKind kind)
+    {
+        // We rely on the JS module to read this via dataTransfer; nothing to do server-side.
+        await Task.CompletedTask;
+    }
+
+    private IEnumerable<ToolboxItem> Filter(IEnumerable<ToolboxItem> source)
+        => string.IsNullOrWhiteSpace(_filter)
+           ? source
+           : source.Where(i => i.Label.Contains(_filter, StringComparison.OrdinalIgnoreCase));
+
+    private IEnumerable<SystemFieldItem> Filter(IEnumerable<SystemFieldItem> source)
+        => string.IsNullOrWhiteSpace(_filter)
+           ? source
+           : source.Where(i => i.Label.Contains(_filter, StringComparison.OrdinalIgnoreCase));
+
+    // Order matters: tests address items by index ([0]=Label, [1]=TextBox).
+    private readonly ToolboxItem[] _basic =
+    [
+        new(DesignerElementKind.Label,     "Label",     "hash",     "Texto literal",       "L"),
+        new(DesignerElementKind.TextBox,   "TextBox",   "type",     "Expressão / template","T"),
+        new(DesignerElementKind.Line,      "Line",      "minus",    "Linha",               null),
+        new(DesignerElementKind.Rectangle, "Rectangle", "square",   "Retângulo",           null),
+        new(DesignerElementKind.Ellipse,   "Ellipse",   "circle",   "Elipse",              null),
+        new(DesignerElementKind.Image,     "Picture",   "image",    "Imagem",              null),
+        new(DesignerElementKind.Barcode,   "Barcode",   "barcode",  "Código de barras",    null),
+        new(DesignerElementKind.QrCode,    "QR Code",   "qr-code",  "QR Code",             null),
+    ];
+    // Grupos e sub-bandas (detalhe/group/sub-detail) são criados pela OutlineTree no painel
+    // direito, não arrastando da toolbox — por isso não há entradas "em breve" aqui.
+    private readonly ToolboxItem[] _data =
+    [
+        new(DesignerElementKind.Tablix, "Table", "table", "Tabela bandada", null),
+    ];
+    private readonly ToolboxItem[] _charts =
+    [
+        new(DesignerElementKind.Chart,     "Chart",     "bar-chart-2",  "Gráfico (barras/linhas/pizza)", null),
+        new(DesignerElementKind.Gauge,     "Gauge",     "gauge",        "Medidor",       null),
+        new(DesignerElementKind.Map,       "Map",       "map",          "Mapa",          null),
+        new(DesignerElementKind.Sparkline, "Sparkline", "trending-up",  "Mini-gráfico",  null),
+    ];
+    // KPI visualisations that bind to a single value/aggregate. They have full PropertyGrid
+    // editors and render natively in preview/export — exposed here so they're addable, not
+    // only reachable by loading a .repx authored elsewhere.
+    private readonly ToolboxItem[] _advanced =
+    [
+        new(DesignerElementKind.DataBar,   "Data Bar",  "bar-chart-3", "Barra de dados proporcional",        null),
+        new(DesignerElementKind.Indicator, "Indicator", "locate",      "Indicador KPI (seta / forma / rating)", null),
+    ];
+
+    private sealed record ToolboxItem(
+        DesignerElementKind Kind,
+        string Label,
+        string Icon,
+        string Description,
+        string? Hotkey);
+
+    // System fields — click to insert a TextBox bound to the canonical expression.
+    // Avoids typing things like "{Page.Number} de {Page.Total}" by hand each time.
+    private readonly SystemFieldItem[] _system =
+    [
+        new("Nº Página",      "hash",          "Número da página atual",     "{Page.Number}",                            20),
+        new("Total Páginas",  "files",         "Total de páginas do relatório", "{Page.Total}",                          20),
+        new("Pág X de Y",     "book",          "Número e total combinados",  "Página {Page.Number} de {Page.Total}",     50),
+        new("Hoje",           "calendar",      "Data atual no formato curto", "{Today:dd/MM/yyyy}",                       30),
+        new("Agora",          "clock",         "Data e hora correntes",      "{Now:dd/MM/yyyy HH:mm}",                   40),
+        new("Nome Relatório", "file-text",     "Nome do report",             "{Report.Name}",                            60),
+        new("Usuário",        "user",          "Usuário corrente",           "{User.Name}",                              40),
+    ];
+
+    private sealed record SystemFieldItem(
+        string Label,
+        string Icon,
+        string Description,
+        string Expression,
+        double WidthMm)
+    {
+        // Tail shown to the right of the item — a hint of what gets inserted.
+        public string Sample => Expression.Length > 14 ? Expression[..14] + "…" : Expression;
+    }
+
+    /// <summary>Payload passed to the host (ReportDesigner) when a system field is
+    /// clicked. The host creates a TextBox with the expression preloaded.</summary>
+    public sealed record SystemFieldDescriptor(string Label, string Expression, double WidthMm);
+}

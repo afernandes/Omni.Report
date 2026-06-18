@@ -1,0 +1,114 @@
+@namespace Reporting.Designer.Blazor.Components
+@using Reporting.Designer.Blazor.ViewModels
+
+@* Modal that asks the user for runtime parameter values before previewing or exporting.
+   Values are cached per session so the user isn't asked again on every preview. *@
+
+<DesignerModal Visible="@(Visible && Parameters.Count > 0)"
+               Title="Parâmetros do relatório"
+               HeadIcon="sliders"
+               OnClose="OnCancel">
+    <ChildContent>
+        <div class="pp-intro">
+            Informe os valores dos parâmetros usados pelo relatório e pelas data sources.
+            Eles ficam guardados durante a sessão para previews seguintes.
+        </div>
+        <div class="pp-list">
+            @foreach (var p in Parameters)
+            {
+                var captured = p;
+                <div class="pp-row">
+                    <label class="pp-label" for="@($"pp-{captured.Name}")">
+                        @captured.Name
+                        <span class="pp-type">@captured.Type</span>
+                    </label>
+                    @switch (captured.Type)
+                    {
+                        case DesignerFieldType.Number:
+                        case DesignerFieldType.Money:
+                            <input id="@($"pp-{captured.Name}")" type="number" step="any"
+                                   value="@_values.GetValueOrDefault(captured.Name)"
+                                   @oninput="@(e => _values[captured.Name] = e.Value?.ToString() ?? string.Empty)" />
+                            break;
+                        case DesignerFieldType.Date:
+                            <input id="@($"pp-{captured.Name}")" type="date"
+                                   value="@_values.GetValueOrDefault(captured.Name)"
+                                   @oninput="@(e => _values[captured.Name] = e.Value?.ToString() ?? string.Empty)" />
+                            break;
+                        case DesignerFieldType.Bool:
+                            <select id="@($"pp-{captured.Name}")"
+                                    value="@_values.GetValueOrDefault(captured.Name)"
+                                    @onchange="@(e => _values[captured.Name] = e.Value?.ToString() ?? string.Empty)">
+                                <option value="true">true</option>
+                                <option value="false">false</option>
+                            </select>
+                            break;
+                        default:
+                            <input id="@($"pp-{captured.Name}")" type="text"
+                                   value="@_values.GetValueOrDefault(captured.Name)"
+                                   @oninput="@(e => _values[captured.Name] = e.Value?.ToString() ?? string.Empty)" />
+                            break;
+                    }
+                </div>
+            }
+        </div>
+        <label class="pp-remember">
+            <input type="checkbox" checked="@_remember"
+                   @onchange="@(e => _remember = (bool)e.Value!)" />
+            Lembrar valores nesta sessão (próximos previews/exports não pedem de novo)
+        </label>
+    </ChildContent>
+    <Footer>
+        <span style="flex:1"></span>
+        <button class="btn" type="button" @onclick="OnCancel">Cancelar</button>
+        <button class="btn primary" type="button" @onclick="OnConfirm">Executar</button>
+    </Footer>
+</DesignerModal>
+
+@code {
+    [Parameter] public bool Visible { get; set; }
+    [Parameter] public IReadOnlyList<DesignerParameter> Parameters { get; set; } = Array.Empty<DesignerParameter>();
+    /// <summary>Per-session cache of previously-entered values, keyed by parameter name.
+    /// Pre-populated into the inputs when the dialog opens.</summary>
+    [Parameter] public IReadOnlyDictionary<string, string?>? InitialValues { get; set; }
+    [Parameter] public EventCallback<(IReadOnlyDictionary<string, string?> Values, bool Remember)> OnConfirmed { get; set; }
+    [Parameter] public EventCallback OnCancelled { get; set; }
+
+    private readonly Dictionary<string, string?> _values = new(StringComparer.Ordinal);
+    private bool _remember = true;
+    private bool _initialized;
+
+    protected override void OnParametersSet()
+    {
+        if (Visible && !_initialized)
+        {
+            _initialized = true;
+            // Seed each field with the previous value (if cached) or the parameter's default.
+            foreach (var p in Parameters)
+            {
+                if (InitialValues is not null && InitialValues.TryGetValue(p.Name, out var prior))
+                {
+                    _values[p.Name] = prior;
+                }
+                else
+                {
+                    _values[p.Name] = p.DefaultValue;
+                }
+            }
+        }
+        else if (!Visible)
+        {
+            _initialized = false;
+        }
+    }
+
+    private async Task OnConfirm()
+    {
+        await OnConfirmed.InvokeAsync((new Dictionary<string, string?>(_values), _remember));
+    }
+
+    private async Task OnCancel()
+    {
+        await OnCancelled.InvokeAsync();
+    }
+}

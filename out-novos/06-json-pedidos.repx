@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Report SchemaVersion="1.0" Name="Pedidos (JSON)">
+  <PageSetup Orientation="Portrait" Margins="787,787,787,787" Columns="1" ColumnSpacing="0">
+    <Paper Name="A4" Width="8268" Height="11693" />
+  </PageSetup>
+  <DataSources>
+    <DataSource Name="Pedidos" FilterExpression="Fields.status != 'Cancelado'">
+      <SortExpressions>
+        <Sort Expression="Fields.cliente" Direction="Ascending" />
+        <Sort Expression="Fields.data" Direction="Ascending" />
+      </SortExpressions>
+    </DataSource>
+  </DataSources>
+  <ReportHeader Kind="ReportHeader" Height="1102" Visible="true" PrintOnFirstPage="true" PrintOnLastPage="true">
+    <Elements>
+      <TextBox Id="da958b5dcf534397aa08fac39e8d070b" Bounds="0,0,6693,472" Visible="true">
+        <Style HorizontalAlignment="Center" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Arial" Size="16" Style="Bold" />
+        </Style>
+        <Expression>Relatório de Pedidos · Fonte JSON</Expression>
+      </TextBox>
+      <TextBox Id="286949c8bba74a4cb9c5483363519308" Bounds="0,551,6693,236" Visible="true">
+        <Style HorizontalAlignment="Center" VerticalAlignment="Top" WordWrap="true">
+          <ForeColor>#808080</ForeColor>
+        </Style>
+        <Expression>Origem: pedidos.json · Carregado via JsonDataSource (path: data.results)</Expression>
+      </TextBox>
+      <Line Id="b174dcfee2764d748ef2ce3cefbecf5d" Bounds="0,866,6693,0" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true" />
+        <Direction>Horizontal</Direction>
+        <Pen Style="Solid" Thickness="7" Color="#000000" />
+      </Line>
+    </Elements>
+  </ReportHeader>
+  <PageHeader Kind="PageHeader" Height="315" Visible="true" PrintOnFirstPage="true" PrintOnLastPage="true">
+    <Elements>
+      <Label Id="6d06d27eb8284f75b99ffe3ad7a7a251" Bounds="0,0,3150,236" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Arial" Size="10" Style="Bold" />
+        </Style>
+        <Text>Produto</Text>
+      </Label>
+      <Label Id="3609d3d3bef545beb9adbd818eee7804" Bounds="3228,0,591,236" Visible="true">
+        <Style HorizontalAlignment="Right" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Arial" Size="10" Style="Bold" />
+        </Style>
+        <Text>Qtde</Text>
+      </Label>
+      <Label Id="7466280c1621423cad7d55f76a345652" Bounds="3898,0,1102,236" Visible="true">
+        <Style HorizontalAlignment="Right" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Arial" Size="10" Style="Bold" />
+        </Style>
+        <Text>Preço</Text>
+      </Label>
+      <Label Id="c0ea8dcd80be4560b056fffe9ca4e83c" Bounds="5079,0,1102,236" Visible="true">
+        <Style HorizontalAlignment="Right" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Arial" Size="10" Style="Bold" />
+        </Style>
+        <Text>Total</Text>
+      </Label>
+      <Label Id="7865b2372e774cfcbac04305778d8bab" Bounds="6260,0,433,236" Visible="true">
+        <Style HorizontalAlignment="Right" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Arial" Size="10" Style="Bold" />
+        </Style>
+        <Text>Status</Text>
+      </Label>
+      <Line Id="1a17c086899c4d31afbad51c4b3313a8" Bounds="0,236,6693,0" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true" />
+        <Direction>Horizontal</Direction>
+        <Pen Style="Solid" Thickness="3" Color="#000000" />
+      </Line>
+    </Elements>
+  </PageHeader>
+  <Groups>
+    <Group Name="PorCliente" GroupExpression="Fields.cliente" KeepTogether="false" NewPageBefore="false" NewPageAfter="false" RepeatHeaderOnNewPage="false" Visible="true">
+      <Header Kind="GroupHeader" Height="394" Visible="true" PrintOnFirstPage="true" PrintOnLastPage="true">
+        <Elements>
+          <TextBox Id="55bdabd8cbfa44dcaa9abca48484c8b5" Bounds="0,79,6693,236" Visible="true">
+            <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true">
+              <Font Family="Arial" Size="11" Style="Bold" />
+              <ForeColor>#C2410C</ForeColor>
+            </Style>
+            <Expression>Cliente: {Fields.cliente}</Expression>
+          </TextBox>
+        </Elements>
+      </Header>
+      <Footer Kind="GroupFooter" Height="315" Visible="true" PrintOnFirstPage="true" PrintOnLastPage="true">
+        <Elements>
+          <Line Id="a060492588b845adb67d8840e564e73f" Bounds="0,0,6693,0" Visible="true">
+            <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true" />
+            <Direction>Horizontal</Direction>
+            <Pen Style="Solid" Thickness="3" Color="#000000" />
+          </Line>
+          <TextBox Id="676b345bc1b3421980ce6a3b30b6e63d" Bounds="0,39,6693,236" Visible="true">
+            <Style HorizontalAlignment="Right" VerticalAlignment="Top" WordWrap="true">
+              <Font Family="Arial" Size="10" Style="Bold" />
+            </Style>
+            <Expression>Subtotal: {Sum(Fields.total, 'Group'):C}</Expression>
+          </TextBox>
+        </Elements>
+      </Footer>
+    </Group>
+  </Groups>
+  <Detail Height="236" Visible="true" CanGrow="false" CanShrink="false" NoRowsMessage="Nenhum pedido encontrado para os filtros aplicados.">
+    <Elements>
+      <TextBox Id="40283d297134411fbde7d4477f232ed3" Bounds="0,0,3150,236" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true" />
+        <Expression>{Fields.produto}</Expression>
+      </TextBox>
+      <TextBox Id="731728098b254f359e49fc91f0180e43" Bounds="3228,0,591,236" Visible="true">
+        <Style HorizontalAlignment="Right" VerticalAlignment="Top" WordWrap="true" />
+        <Expression>{Fields.quantidade:N0}</Expression>
+      </TextBox>
+      <TextBox Id="35228c1cb15b4d46a8f4ee9cbe18e33e" Bounds="3898,0,1102,236" Visible="true">
+        <Style HorizontalAlignment="Right" VerticalAlignment="Top" WordWrap="true" />
+        <Expression>{Fields.precoUnitario:C}</Expression>
+      </TextBox>
+      <TextBox Id="bbdce0308b8d4bf1abb4e8a0ce7be14f" Bounds="5079,0,1102,236" Visible="true">
+        <Style HorizontalAlignment="Right" VerticalAlignment="Top" WordWrap="true" />
+        <Expression>{Fields.total:C}</Expression>
+      </TextBox>
+      <TextBox Id="a975eff337844f07a24beacda5417825" Bounds="6260,0,433,236" Visible="true">
+        <Style HorizontalAlignment="Right" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Arial" Size="8" Style="Regular" />
+          <ForeColor>#808080</ForeColor>
+        </Style>
+        <Expression>{Fields.status}</Expression>
+      </TextBox>
+    </Elements>
+  </Detail>
+  <PageFooter Kind="PageFooter" Height="315" Visible="true" PrintOnFirstPage="true" PrintOnLastPage="true">
+    <Elements>
+      <TextBox Id="aa43774b7d8a4c6ab4ecebc459155a70" Bounds="0,39,6693,236" Visible="true">
+        <Style HorizontalAlignment="Right" VerticalAlignment="Top" WordWrap="true">
+          <ForeColor>#808080</ForeColor>
+        </Style>
+        <Expression>OmniReport · Página {Page.Number} de {Page.Total}</Expression>
+      </TextBox>
+    </Elements>
+  </PageFooter>
+  <ReportFooter Kind="ReportFooter" Height="591" Visible="true" PrintOnFirstPage="true" PrintOnLastPage="true">
+    <Elements>
+      <Line Id="46a9494ca4c549aca946c8cc12a86e81" Bounds="0,0,6693,0" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true" />
+        <Direction>Horizontal</Direction>
+        <Pen Style="Solid" Thickness="7" Color="#000000" />
+      </Line>
+      <TextBox Id="e55caab0748941ac802ec645315c3edd" Bounds="0,79,6693,394" Visible="true">
+        <Style HorizontalAlignment="Right" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Arial" Size="11" Style="Bold" />
+        </Style>
+        <Expression>Total geral: {Sum(Fields.total):C}</Expression>
+      </TextBox>
+    </Elements>
+  </ReportFooter>
+</Report>

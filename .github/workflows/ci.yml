@@ -1,0 +1,177 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  Configuration: Release
+
+jobs:
+  build-windows:
+    name: Build & Test (Windows)
+    runs-on: windows-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Show SDK info
+        run: dotnet --info
+
+      - name: Restore
+        run: dotnet restore OmniReport.slnx
+
+      - name: Build (0 warnings expected)
+        run: dotnet build OmniReport.slnx -c Release --no-restore
+
+      - name: Test + coverage
+        run: >
+          dotnet test OmniReport.slnx -c Release --no-build
+          --collect:"XPlat Code Coverage"
+          --results-directory ./TestResults
+          --logger "trx;LogFileName=test-results.trx"
+
+      - name: Upload TRX
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-windows
+          path: ./TestResults/**/*.trx
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-windows
+          path: ./TestResults/**/coverage.cobertura.xml
+
+  build-linux:
+    name: Build & Test (Linux, cross-plat subset)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      # On Linux we only build the cross-platform projects.
+      # Windows-only projects (GDI, WindowsSpooler) and the MAUI sample
+      # are skipped — they pin to net10.0-windows / net10.0-windows10.* TFMs.
+      - name: Restore (cross-plat projects)
+        run: |
+          dotnet restore src/Reporting.Core/Reporting.Core.csproj
+          dotnet restore src/Reporting.Expressions/Reporting.Expressions.csproj
+          dotnet restore src/Reporting.DataSources/Reporting.DataSources.csproj
+          dotnet restore src/Reporting.Rendering/Reporting.Rendering.csproj
+          dotnet restore src/Reporting.Layout/Reporting.Layout.csproj
+          dotnet restore src/Reporting.Rendering.Skia/Reporting.Rendering.Skia.csproj
+          dotnet restore src/Reporting.CodeFirst/Reporting.CodeFirst.csproj
+          dotnet restore src/Reporting.Serialization/Reporting.Serialization.csproj
+          dotnet restore src/Reporting.Output.Pdf/Reporting.Output.Pdf.csproj
+          dotnet restore src/Reporting.Output.Excel/Reporting.Output.Excel.csproj
+          dotnet restore src/Reporting.Printing/Reporting.Printing.csproj
+          dotnet restore src/Reporting.Printing.EscPos/Reporting.Printing.EscPos.csproj
+          dotnet restore src/Reporting.Viewer.Blazor/Reporting.Viewer.Blazor.csproj
+          dotnet restore src/Reporting.Designer.Blazor/Reporting.Designer.Blazor.csproj
+          dotnet restore src/Reporting.Hosting.AspNetCore/Reporting.Hosting.AspNetCore.csproj
+
+      - name: Build (cross-plat projects)
+        run: |
+          dotnet build src/Reporting.Core/Reporting.Core.csproj -c Release --no-restore
+          dotnet build src/Reporting.Expressions/Reporting.Expressions.csproj -c Release --no-restore
+          dotnet build src/Reporting.DataSources/Reporting.DataSources.csproj -c Release --no-restore
+          dotnet build src/Reporting.Rendering/Reporting.Rendering.csproj -c Release --no-restore
+          dotnet build src/Reporting.Layout/Reporting.Layout.csproj -c Release --no-restore
+          dotnet build src/Reporting.Rendering.Skia/Reporting.Rendering.Skia.csproj -c Release --no-restore
+          dotnet build src/Reporting.CodeFirst/Reporting.CodeFirst.csproj -c Release --no-restore
+          dotnet build src/Reporting.Serialization/Reporting.Serialization.csproj -c Release --no-restore
+          dotnet build src/Reporting.Output.Pdf/Reporting.Output.Pdf.csproj -c Release --no-restore
+          dotnet build src/Reporting.Output.Excel/Reporting.Output.Excel.csproj -c Release --no-restore
+          dotnet build src/Reporting.Printing/Reporting.Printing.csproj -c Release --no-restore
+          dotnet build src/Reporting.Printing.EscPos/Reporting.Printing.EscPos.csproj -c Release --no-restore
+          dotnet build src/Reporting.Viewer.Blazor/Reporting.Viewer.Blazor.csproj -c Release --no-restore
+          dotnet build src/Reporting.Designer.Blazor/Reporting.Designer.Blazor.csproj -c Release --no-restore
+          dotnet build src/Reporting.Hosting.AspNetCore/Reporting.Hosting.AspNetCore.csproj -c Release --no-restore
+
+      - name: Test cross-plat suites
+        run: |
+          dotnet test tests/Reporting.Core.Tests/Reporting.Core.Tests.csproj -c Release
+          dotnet test tests/Reporting.Expressions.Tests/Reporting.Expressions.Tests.csproj -c Release
+          dotnet test tests/Reporting.DataSources.Tests/Reporting.DataSources.Tests.csproj -c Release
+          dotnet test tests/Reporting.Layout.Tests/Reporting.Layout.Tests.csproj -c Release
+          dotnet test tests/Reporting.Rendering.Tests/Reporting.Rendering.Tests.csproj -c Release
+          dotnet test tests/Reporting.CodeFirst.Tests/Reporting.CodeFirst.Tests.csproj -c Release
+          dotnet test tests/Reporting.Serialization.Tests/Reporting.Serialization.Tests.csproj -c Release
+          dotnet test tests/Reporting.Output.Pdf.Tests/Reporting.Output.Pdf.Tests.csproj -c Release
+          dotnet test tests/Reporting.Output.Excel.Tests/Reporting.Output.Excel.Tests.csproj -c Release
+          dotnet test tests/Reporting.Printing.EscPos.Tests/Reporting.Printing.EscPos.Tests.csproj -c Release
+          dotnet test tests/Reporting.Viewer.Blazor.Tests/Reporting.Viewer.Blazor.Tests.csproj -c Release
+          dotnet test tests/Reporting.Designer.Blazor.Tests/Reporting.Designer.Blazor.Tests.csproj -c Release
+
+  pack:
+    name: Pack NuGets
+    runs-on: windows-latest
+    needs: [build-windows, build-linux]
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore
+        run: dotnet restore OmniReport.slnx
+
+      - name: Build
+        run: dotnet build OmniReport.slnx -c Release --no-restore
+
+      # Public packages — non-publishable projects (samples, tests, Android-real)
+      # are excluded via <IsPackable>false</IsPackable> in their csproj.
+      - name: Pack
+        run: |
+          dotnet pack src/Reporting.Core/Reporting.Core.csproj -c Release --no-build -o ./artifacts
+          dotnet pack src/Reporting.Expressions/Reporting.Expressions.csproj -c Release --no-build -o ./artifacts
+          dotnet pack src/Reporting.DataSources/Reporting.DataSources.csproj -c Release --no-build -o ./artifacts
+          dotnet pack src/Reporting.Rendering/Reporting.Rendering.csproj -c Release --no-build -o ./artifacts
+          dotnet pack src/Reporting.Layout/Reporting.Layout.csproj -c Release --no-build -o ./artifacts
+          dotnet pack src/Reporting.Rendering.Skia/Reporting.Rendering.Skia.csproj -c Release --no-build -o ./artifacts
+          dotnet pack src/Reporting.Rendering.Gdi/Reporting.Rendering.Gdi.csproj -c Release --no-build -o ./artifacts
+          dotnet pack src/Reporting.CodeFirst/Reporting.CodeFirst.csproj -c Release --no-build -o ./artifacts
+          dotnet pack src/Reporting.Serialization/Reporting.Serialization.csproj -c Release --no-build -o ./artifacts
+          dotnet pack src/Reporting.Output.Pdf/Reporting.Output.Pdf.csproj -c Release --no-build -o ./artifacts
+          dotnet pack src/Reporting.Output.Excel/Reporting.Output.Excel.csproj -c Release --no-build -o ./artifacts
+          dotnet pack src/Reporting.Printing/Reporting.Printing.csproj -c Release --no-build -o ./artifacts
+          dotnet pack src/Reporting.Printing.EscPos/Reporting.Printing.EscPos.csproj -c Release --no-build -o ./artifacts
+          dotnet pack src/Reporting.Printing.WindowsSpooler/Reporting.Printing.WindowsSpooler.csproj -c Release --no-build -o ./artifacts
+          dotnet pack src/Reporting.Printing.Android/Reporting.Printing.Android.csproj -c Release --no-build -o ./artifacts
+          dotnet pack src/Reporting.Viewer.Blazor/Reporting.Viewer.Blazor.csproj -c Release --no-build -o ./artifacts
+          dotnet pack src/Reporting.Designer.Blazor/Reporting.Designer.Blazor.csproj -c Release --no-build -o ./artifacts
+          dotnet pack src/Reporting.Hosting.AspNetCore/Reporting.Hosting.AspNetCore.csproj -c Release --no-build -o ./artifacts
+
+      - name: Upload NuGet artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: nupkgs
+          path: ./artifacts/*.nupkg

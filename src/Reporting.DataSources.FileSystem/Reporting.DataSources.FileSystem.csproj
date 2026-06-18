@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Reporting.DataSources.FileSystem</RootNamespace>
+    <AssemblyName>Reporting.DataSources.FileSystem</AssemblyName>
+    <Description>OmniReport — filesystem data provider. Enumerates files and directories under a root path and exposes each entry as a row with metadata (Name, FullName, Size, CreationTime, LastWriteTime, IsDirectory, Extension, Id, ParentId). Mirrors the RDL/My-FyiReporting FileDirDataReader.</Description>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Reporting.DataSources\Reporting.DataSources.csproj" />
+  </ItemGroup>
+
+</Project>

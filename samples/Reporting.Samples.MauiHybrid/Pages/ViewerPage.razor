@@ -1,0 +1,52 @@
+@page "/viewer"
+@namespace Reporting.Samples.MauiHybrid.Pages
+@using Reporting.Samples.CodeFirst.Reports
+
+<PageTitle>Viewer · OmniReport</PageTitle>
+
+<h1>Viewer</h1>
+
+<div class="viewer-tabs">
+    @foreach (var (key, label) in _samples)
+    {
+        <button class="viewer-tab @(key == _current ? "active" : "")"
+                type="button" @onclick="() => SelectAsync(key)">
+            @label
+        </button>
+    }
+</div>
+
+<div class="viewer-host">
+    <ReportViewer Report="@_rendered" />
+</div>
+
+@code {
+    private readonly (string Key, string Label)[] _samples =
+    [
+        ("vendas",  "01 · Vendas por Cliente"),
+        ("espelho", "02 · Espelho de Produtos"),
+        ("caixa",   "03 · Relatório de Caixa"),
+        ("nfce",    "04 · Cupom NFC-e"),
+    ];
+
+    private string _current = "vendas";
+    private RenderedReport? _rendered;
+
+    protected override Task OnInitializedAsync() => SelectAsync(_current);
+
+    private async Task SelectAsync(string key)
+    {
+        _current = key;
+        _rendered = null;
+        StateHasChanged();
+        var report = key switch
+        {
+            "vendas"  => Sample01_VendasPorCliente.Build(),
+            "espelho" => Sample02_EspelhoProdutos.Build(),
+            "caixa"   => Sample03_RelatorioCaixa.Build(),
+            "nfce"    => Sample04_CupomNfce.Build(),
+            _         => Sample01_VendasPorCliente.Build(),
+        };
+        _rendered = await report.PaginateAsync();
+    }
+}

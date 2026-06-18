@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Reporting.Rendering.Skia</RootNamespace>
+    <AssemblyName>Reporting.Rendering.Skia</AssemblyName>
+    <Description>OmniReport — SkiaSharp implementation of IRenderingContext. Produces PNG/SVG/PDF output from layout primitives.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Reporting.Core\Reporting.Core.csproj" />
+    <ProjectReference Include="..\Reporting.Rendering\Reporting.Rendering.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SkiaSharp" />
+  </ItemGroup>
+
+</Project>

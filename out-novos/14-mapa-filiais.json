@@ -1,0 +1,1246 @@
+{
+  "name": "Mapa de Filiais",
+  "pageCount": 1,
+  "unit": "millimeters",
+  "pages": [
+    {
+      "pageNumber": 1,
+      "size": {
+        "width": 210.007,
+        "height": 297.002
+      },
+      "primitives": [
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 18.009,
+          "width": 173.99,
+          "height": 10.008,
+          "text": "Distribuição de Filiais",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 15,
+            "fontStyle": "Bold",
+            "color": "#000000",
+            "horizontalAlignment": "Center"
+          }
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 29.007,
+          "width": 173.99,
+          "height": 5.994,
+          "text": "Map — projeção Web Mercator, contorno do Brasil (shape) + graticule",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#808080",
+            "horizontalAlignment": "Center"
+          }
+        },
+        {
+          "type": "rect",
+          "x": 18.009,
+          "y": 36.017,
+          "width": 173.99,
+          "height": 100,
+          "strokeColor": "#93C5FD",
+          "strokeThickness": 0.254,
+          "fillColor": "#EFF6FF"
+        },
+        {
+          "type": "line",
+          "x": 23.038,
+          "y": 39.014,
+          "width": 0,
+          "height": 94.005,
+          "from": {
+            "x": 23.038,
+            "y": 39.014
+          },
+          "to": {
+            "x": 23.038,
+            "y": 133.02
+          },
+          "color": "#C7D2DD",
+          "thickness": 0.152
+        },
+        {
+          "type": "text",
+          "x": 23.647,
+          "y": 129.819,
+          "width": 13.995,
+          "height": 2.997,
+          "text": "90°O",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 6,
+            "color": "#7C8896"
+          }
+        },
+        {
+          "type": "line",
+          "x": 46.076,
+          "y": 39.014,
+          "width": 0,
+          "height": 94.005,
+          "from": {
+            "x": 46.076,
+            "y": 39.014
+          },
+          "to": {
+            "x": 46.076,
+            "y": 133.02
+          },
+          "color": "#C7D2DD",
+          "thickness": 0.152
+        },
+        {
+          "type": "text",
+          "x": 46.66,
+          "y": 129.819,
+          "width": 13.995,
+          "height": 2.997,
+          "text": "80°O",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 6,
+            "color": "#7C8896"
+          }
+        },
+        {
+          "type": "line",
+          "x": 69.088,
+          "y": 39.014,
+          "width": 0,
+          "height": 94.005,
+          "from": {
+            "x": 69.088,
+            "y": 39.014
+          },
+          "to": {
+            "x": 69.088,
+            "y": 133.02
+          },
+          "color": "#C7D2DD",
+          "thickness": 0.152
+        },
+        {
+          "type": "text",
+          "x": 69.672,
+          "y": 129.819,
+          "width": 13.995,
+          "height": 2.997,
+          "text": "70°O",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 6,
+            "color": "#7C8896"
+          }
+        },
+        {
+          "type": "line",
+          "x": 92.1,
+          "y": 39.014,
+          "width": 0,
+          "height": 94.005,
+          "from": {
+            "x": 92.1,
+            "y": 39.014
+          },
+          "to": {
+            "x": 92.1,
+            "y": 133.02
+          },
+          "color": "#C7D2DD",
+          "thickness": 0.152
+        },
+        {
+          "type": "text",
+          "x": 92.71,
+          "y": 129.819,
+          "width": 13.995,
+          "height": 2.997,
+          "text": "60°O",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 6,
+            "color": "#7C8896"
+          }
+        },
+        {
+          "type": "line",
+          "x": 115.113,
+          "y": 39.014,
+          "width": 0,
+          "height": 94.005,
+          "from": {
+            "x": 115.113,
+            "y": 39.014
+          },
+          "to": {
+            "x": 115.113,
+            "y": 133.02
+          },
+          "color": "#C7D2DD",
+          "thickness": 0.152
+        },
+        {
+          "type": "text",
+          "x": 115.722,
+          "y": 129.819,
+          "width": 13.995,
+          "height": 2.997,
+          "text": "50°O",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 6,
+            "color": "#7C8896"
+          }
+        },
+        {
+          "type": "line",
+          "x": 138.151,
+          "y": 39.014,
+          "width": 0,
+          "height": 94.005,
+          "from": {
+            "x": 138.151,
+            "y": 39.014
+          },
+          "to": {
+            "x": 138.151,
+            "y": 133.02
+          },
+          "color": "#C7D2DD",
+          "thickness": 0.152
+        },
+        {
+          "type": "text",
+          "x": 138.735,
+          "y": 129.819,
+          "width": 13.995,
+          "height": 2.997,
+          "text": "40°O",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 6,
+            "color": "#7C8896"
+          }
+        },
+        {
+          "type": "line",
+          "x": 161.163,
+          "y": 39.014,
+          "width": 0,
+          "height": 94.005,
+          "from": {
+            "x": 161.163,
+            "y": 39.014
+          },
+          "to": {
+            "x": 161.163,
+            "y": 133.02
+          },
+          "color": "#C7D2DD",
+          "thickness": 0.152
+        },
+        {
+          "type": "text",
+          "x": 161.747,
+          "y": 129.819,
+          "width": 13.995,
+          "height": 2.997,
+          "text": "30°O",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 6,
+            "color": "#7C8896"
+          }
+        },
+        {
+          "type": "line",
+          "x": 184.175,
+          "y": 39.014,
+          "width": 0,
+          "height": 94.005,
+          "from": {
+            "x": 184.175,
+            "y": 39.014
+          },
+          "to": {
+            "x": 184.175,
+            "y": 133.02
+          },
+          "color": "#C7D2DD",
+          "thickness": 0.152
+        },
+        {
+          "type": "text",
+          "x": 184.785,
+          "y": 129.819,
+          "width": 13.995,
+          "height": 2.997,
+          "text": "20°O",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 6,
+            "color": "#7C8896"
+          }
+        },
+        {
+          "type": "line",
+          "x": 21.006,
+          "y": 122.987,
+          "width": 167.996,
+          "height": 0,
+          "from": {
+            "x": 21.006,
+            "y": 122.987
+          },
+          "to": {
+            "x": 189.001,
+            "y": 122.987
+          },
+          "color": "#C7D2DD",
+          "thickness": 0.152
+        },
+        {
+          "type": "text",
+          "x": 21.615,
+          "y": 122.377,
+          "width": 13.995,
+          "height": 2.997,
+          "text": "30°S",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 6,
+            "color": "#7C8896"
+          }
+        },
+        {
+          "type": "line",
+          "x": 21.006,
+          "y": 110.007,
+          "width": 167.996,
+          "height": 0,
+          "from": {
+            "x": 21.006,
+            "y": 110.007
+          },
+          "to": {
+            "x": 189.001,
+            "y": 110.007
+          },
+          "color": "#C7D2DD",
+          "thickness": 0.152
+        },
+        {
+          "type": "text",
+          "x": 21.615,
+          "y": 109.398,
+          "width": 13.995,
+          "height": 2.997,
+          "text": "25°S",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 6,
+            "color": "#7C8896"
+          }
+        },
+        {
+          "type": "line",
+          "x": 21.006,
+          "y": 97.536,
+          "width": 167.996,
+          "height": 0,
+          "from": {
+            "x": 21.006,
+            "y": 97.536
+          },
+          "to": {
+            "x": 189.001,
+            "y": 97.536
+          },
+          "color": "#C7D2DD",
+          "thickness": 0.152
+        },
+        {
+          "type": "text",
+          "x": 21.615,
+          "y": 96.952,
+          "width": 13.995,
+          "height": 2.997,
+          "text": "20°S",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 6,
+            "color": "#7C8896"
+          }
+        },
+        {
+          "type": "line",
+          "x": 21.006,
+          "y": 85.471,
+          "width": 167.996,
+          "height": 0,
+          "from": {
+            "x": 21.006,
+            "y": 85.471
+          },
+          "to": {
+            "x": 189.001,
+            "y": 85.471
+          },
+          "color": "#C7D2DD",
+          "thickness": 0.152
+        },
+        {
+          "type": "text",
+          "x": 21.615,
+          "y": 84.861,
+          "width": 13.995,
+          "height": 2.997,
+          "text": "15°S",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 6,
+            "color": "#7C8896"
+          }
+        },
+        {
+          "type": "line",
+          "x": 21.006,
+          "y": 73.685,
+          "width": 167.996,
+          "height": 0,
+          "from": {
+            "x": 21.006,
+            "y": 73.685
+          },
+          "to": {
+            "x": 189.001,
+            "y": 73.685
+          },
+          "color": "#C7D2DD",
+          "thickness": 0.152
+        },
+        {
+          "type": "text",
+          "x": 21.615,
+          "y": 73.076,
+          "width": 13.995,
+          "height": 2.997,
+          "text": "10°S",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 6,
+            "color": "#7C8896"
+          }
+        },
+        {
+          "type": "line",
+          "x": 21.006,
+          "y": 62.078,
+          "width": 167.996,
+          "height": 0,
+          "from": {
+            "x": 21.006,
+            "y": 62.078
+          },
+          "to": {
+            "x": 189.001,
+            "y": 62.078
+          },
+          "color": "#C7D2DD",
+          "thickness": 0.152
+        },
+        {
+          "type": "text",
+          "x": 21.615,
+          "y": 61.468,
+          "width": 13.995,
+          "height": 2.997,
+          "text": "5°S",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 6,
+            "color": "#7C8896"
+          }
+        },
+        {
+          "type": "line",
+          "x": 21.006,
+          "y": 50.546,
+          "width": 167.996,
+          "height": 0,
+          "from": {
+            "x": 21.006,
+            "y": 50.546
+          },
+          "to": {
+            "x": 189.001,
+            "y": 50.546
+          },
+          "color": "#C7D2DD",
+          "thickness": 0.152
+        },
+        {
+          "type": "text",
+          "x": 21.615,
+          "y": 49.936,
+          "width": 13.995,
+          "height": 2.997,
+          "text": "0°",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 6,
+            "color": "#7C8896"
+          }
+        },
+        {
+          "type": "polygon",
+          "x": 18.009,
+          "y": 36.017,
+          "width": 173.99,
+          "height": 100,
+          "closed": true,
+          "strokeColor": "#9CA3AF",
+          "strokeThickness": 0.152,
+          "fillColor": "#E8EDE4",
+          "points": [
+            {
+              "x": 90.5,
+              "y": 39.014
+            },
+            {
+              "x": 112.37,
+              "y": 41.097
+            },
+            {
+              "x": 115.113,
+              "y": 50.546
+            },
+            {
+              "x": 118.567,
+              "y": 54
+            },
+            {
+              "x": 128.245,
+              "y": 56.286
+            },
+            {
+              "x": 133.985,
+              "y": 57.226
+            },
+            {
+              "x": 141.58,
+              "y": 59.055
+            },
+            {
+              "x": 149.2,
+              "y": 63.906
+            },
+            {
+              "x": 150.114,
+              "y": 67.158
+            },
+            {
+              "x": 149.657,
+              "y": 72.974
+            },
+            {
+              "x": 145.034,
+              "y": 76.022
+            },
+            {
+              "x": 141.58,
+              "y": 80.721
+            },
+            {
+              "x": 140.437,
+              "y": 92.431
+            },
+            {
+              "x": 137.439,
+              "y": 98.273
+            },
+            {
+              "x": 130.785,
+              "y": 104.978
+            },
+            {
+              "x": 123.419,
+              "y": 107.467
+            },
+            {
+              "x": 118.567,
+              "y": 111.277
+            },
+            {
+              "x": 118.339,
+              "y": 119.024
+            },
+            {
+              "x": 115.113,
+              "y": 122.987
+            },
+            {
+              "x": 110.058,
+              "y": 128.346
+            },
+            {
+              "x": 107.29,
+              "y": 133.02
+            },
+            {
+              "x": 97.638,
+              "y": 123.52
+            },
+            {
+              "x": 101.321,
+              "y": 116.154
+            },
+            {
+              "x": 104.521,
+              "y": 111.531
+            },
+            {
+              "x": 96.926,
+              "y": 102.718
+            },
+            {
+              "x": 96.241,
+              "y": 97.053
+            },
+            {
+              "x": 92.1,
+              "y": 85.471
+            },
+            {
+              "x": 79.908,
+              "y": 76.022
+            },
+            {
+              "x": 69.088,
+              "y": 76.022
+            },
+            {
+              "x": 59.893,
+              "y": 67.843
+            },
+            {
+              "x": 69.088,
+              "y": 60.223
+            },
+            {
+              "x": 75.286,
+              "y": 47.777
+            },
+            {
+              "x": 82.906,
+              "y": 44.78
+            },
+            {
+              "x": 90.5,
+              "y": 39.014
+            }
+          ]
+        },
+        {
+          "type": "ellipse",
+          "x": 121.793,
+          "y": 105.258,
+          "width": 2.21,
+          "height": 2.21,
+          "strokeColor": "#FFFFFF",
+          "strokeThickness": 0.178,
+          "fillColor": "#1D4ED8"
+        },
+        {
+          "type": "ellipse",
+          "x": 129.692,
+          "y": 103.657,
+          "width": 2.21,
+          "height": 2.21,
+          "strokeColor": "#FFFFFF",
+          "strokeThickness": 0.178,
+          "fillColor": "#1D4ED8"
+        },
+        {
+          "type": "ellipse",
+          "x": 127.965,
+          "y": 96.266,
+          "width": 2.21,
+          "height": 2.21,
+          "strokeColor": "#FFFFFF",
+          "strokeThickness": 0.178,
+          "fillColor": "#1D4ED8"
+        },
+        {
+          "type": "ellipse",
+          "x": 115.697,
+          "y": 110.007,
+          "width": 2.21,
+          "height": 2.21,
+          "strokeColor": "#FFFFFF",
+          "strokeThickness": 0.178,
+          "fillColor": "#1D4ED8"
+        },
+        {
+          "type": "ellipse",
+          "x": 111.201,
+          "y": 121.971,
+          "width": 2.21,
+          "height": 2.21,
+          "strokeColor": "#FFFFFF",
+          "strokeThickness": 0.178,
+          "fillColor": "#1D4ED8"
+        },
+        {
+          "type": "ellipse",
+          "x": 140.487,
+          "y": 79.553,
+          "width": 2.21,
+          "height": 2.21,
+          "strokeColor": "#FFFFFF",
+          "strokeThickness": 0.178,
+          "fillColor": "#1D4ED8"
+        },
+        {
+          "type": "ellipse",
+          "x": 148.844,
+          "y": 68.047,
+          "width": 2.21,
+          "height": 2.21,
+          "strokeColor": "#FFFFFF",
+          "strokeThickness": 0.178,
+          "fillColor": "#1D4ED8"
+        },
+        {
+          "type": "ellipse",
+          "x": 118.897,
+          "y": 86.258,
+          "width": 2.21,
+          "height": 2.21,
+          "strokeColor": "#FFFFFF",
+          "strokeThickness": 0.178,
+          "fillColor": "#1D4ED8"
+        },
+        {
+          "type": "ellipse",
+          "x": 140.462,
+          "y": 58.039,
+          "width": 2.21,
+          "height": 2.21,
+          "strokeColor": "#FFFFFF",
+          "strokeThickness": 0.178,
+          "fillColor": "#1D4ED8"
+        },
+        {
+          "type": "ellipse",
+          "x": 90.957,
+          "y": 56.591,
+          "width": 2.21,
+          "height": 2.21,
+          "strokeColor": "#FFFFFF",
+          "strokeThickness": 0.178,
+          "fillColor": "#1D4ED8"
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 137.998,
+          "width": 91.999,
+          "height": 5.994,
+          "text": "Filial",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "fontStyle": "Bold",
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 110.007,
+          "y": 137.998,
+          "width": 18.009,
+          "height": 5.994,
+          "text": "UF",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "fontStyle": "Bold",
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 129.997,
+          "y": 137.998,
+          "width": 62.001,
+          "height": 5.994,
+          "text": "Faturamento",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "fontStyle": "Bold",
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "line",
+          "x": 18.009,
+          "y": 143.993,
+          "width": 173.99,
+          "height": 0,
+          "from": {
+            "x": 18.009,
+            "y": 143.993
+          },
+          "to": {
+            "x": 191.999,
+            "y": 143.993
+          },
+          "color": "#000000",
+          "thickness": 0.076
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 145.009,
+          "width": 91.999,
+          "height": 5.994,
+          "text": "São Paulo",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 110.007,
+          "y": 145.009,
+          "width": 18.009,
+          "height": 5.994,
+          "text": "SP",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 129.997,
+          "y": 145.009,
+          "width": 62.001,
+          "height": 5.994,
+          "text": "R$ 128.500,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 151.003,
+          "width": 91.999,
+          "height": 5.994,
+          "text": "Rio de Janeiro",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 110.007,
+          "y": 151.003,
+          "width": 18.009,
+          "height": 5.994,
+          "text": "RJ",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 129.997,
+          "y": 151.003,
+          "width": 62.001,
+          "height": 5.994,
+          "text": "R$ 98.700,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 156.997,
+          "width": 91.999,
+          "height": 5.994,
+          "text": "Belo Horizonte",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 110.007,
+          "y": 156.997,
+          "width": 18.009,
+          "height": 5.994,
+          "text": "MG",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 129.997,
+          "y": 156.997,
+          "width": 62.001,
+          "height": 5.994,
+          "text": "R$ 61.200,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 162.992,
+          "width": 91.999,
+          "height": 5.994,
+          "text": "Curitiba",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 110.007,
+          "y": 162.992,
+          "width": 18.009,
+          "height": 5.994,
+          "text": "PR",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 129.997,
+          "y": 162.992,
+          "width": 62.001,
+          "height": 5.994,
+          "text": "R$ 54.800,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 168.986,
+          "width": 91.999,
+          "height": 5.994,
+          "text": "Porto Alegre",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 110.007,
+          "y": 168.986,
+          "width": 18.009,
+          "height": 5.994,
+          "text": "RS",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 129.997,
+          "y": 168.986,
+          "width": 62.001,
+          "height": 5.994,
+          "text": "R$ 47.300,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 174.981,
+          "width": 91.999,
+          "height": 5.994,
+          "text": "Salvador",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 110.007,
+          "y": 174.981,
+          "width": 18.009,
+          "height": 5.994,
+          "text": "BA",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 129.997,
+          "y": 174.981,
+          "width": 62.001,
+          "height": 5.994,
+          "text": "R$ 52.900,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 180.975,
+          "width": 91.999,
+          "height": 5.994,
+          "text": "Recife",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 110.007,
+          "y": 180.975,
+          "width": 18.009,
+          "height": 5.994,
+          "text": "PE",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 129.997,
+          "y": 180.975,
+          "width": 62.001,
+          "height": 5.994,
+          "text": "R$ 44.100,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 186.969,
+          "width": 91.999,
+          "height": 5.994,
+          "text": "Brasília",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 110.007,
+          "y": 186.969,
+          "width": 18.009,
+          "height": 5.994,
+          "text": "DF",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 129.997,
+          "y": 186.969,
+          "width": 62.001,
+          "height": 5.994,
+          "text": "R$ 73.600,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 192.964,
+          "width": 91.999,
+          "height": 5.994,
+          "text": "Fortaleza",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 110.007,
+          "y": 192.964,
+          "width": 18.009,
+          "height": 5.994,
+          "text": "CE",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 129.997,
+          "y": 192.964,
+          "width": 62.001,
+          "height": 5.994,
+          "text": "R$ 39.800,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 198.958,
+          "width": 91.999,
+          "height": 5.994,
+          "text": "Manaus",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 110.007,
+          "y": 198.958,
+          "width": 18.009,
+          "height": 5.994,
+          "text": "AM",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 129.997,
+          "y": 198.958,
+          "width": 62.001,
+          "height": 5.994,
+          "text": "R$ 28.500,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "line",
+          "x": 18.009,
+          "y": 204.953,
+          "width": 173.99,
+          "height": 0,
+          "from": {
+            "x": 18.009,
+            "y": 204.953
+          },
+          "to": {
+            "x": 191.999,
+            "y": 204.953
+          },
+          "color": "#000000",
+          "thickness": 0.178
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 206.959,
+          "width": 173.99,
+          "height": 7.01,
+          "text": "Faturamento total: R$ 629.400,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 11,
+            "fontStyle": "Bold",
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        }
+      ]
+    }
+  ]
+}

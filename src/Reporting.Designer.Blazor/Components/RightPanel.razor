@@ -1,0 +1,56 @@
+@namespace Reporting.Designer.Blazor.Components
+
+<aside class="right-panel" aria-label="Painel direito">
+    <div class="split-handle left" aria-hidden="true"></div>
+
+    <div class="panel-tabs" role="tablist">
+        <button class="panel-tab @(_tab == 0 ? "is-active" : null)"
+                role="tab" type="button" @onclick="@(() => _tab = 0)">Propriedades</button>
+        <button class="panel-tab @(_tab == 1 ? "is-active" : null)"
+                role="tab" type="button" @onclick="@(() => _tab = 1)">Outline</button>
+    </div>
+
+    <div class="panel-body" id="propGrid">
+        @switch (_tab)
+        {
+            case 0:
+                @if (Selection.Count > 1)
+                {
+                    <MultiSelectionPanel Selection="Selection" />
+                }
+                else
+                {
+                    <PropertyGrid Element="Selected" BandLabel="@BandLabel" OnOpenExpressionEditor="OnOpenExpressionEditor" />
+                }
+                break;
+            case 1:
+                <OutlineTree Report="Report"
+                             SelectedElement="Selected"
+                             ActiveBand="ActiveBand"
+                             OnSelect="OnSelect"
+                             OnBandActivated="OnBandActivated"
+                             DataSources="DataSources"
+                             Relations="Relations"
+                             Parameters="Parameters" />
+                break;
+        }
+    </div>
+</aside>
+
+@code {
+    [Parameter, EditorRequired] public ReportDefinitionViewModel Report { get; set; } = default!;
+    [Parameter] public ElementViewModel? Selected { get; set; }
+    [Parameter] public IReadOnlyList<ElementViewModel> Selection { get; set; } = Array.Empty<ElementViewModel>();
+    [Parameter] public string BandLabel { get; set; } = "Detail";
+    [Parameter] public EventCallback<ElementViewModel?> OnSelect { get; set; }
+    [Parameter] public EventCallback OnOpenExpressionEditor { get; set; }
+    [Parameter] public BandViewModel? ActiveBand { get; set; }
+    [Parameter] public EventCallback<BandViewModel> OnBandActivated { get; set; }
+    [Parameter] public IReadOnlyList<DesignerDataSource> DataSources { get; set; } = Array.Empty<DesignerDataSource>();
+    [Parameter] public IReadOnlyList<DesignerParameter>  Parameters  { get; set; } = Array.Empty<DesignerParameter>();
+    /// <summary>Master-detail relations, forwarded to the OutlineTree's per-SubDetail
+    /// DataMember picker.</summary>
+    [Parameter] public System.Collections.ObjectModel.ObservableCollection<DesignerRelation>? Relations { get; set; }
+
+    private int _tab;
+}

@@ -1,0 +1,11 @@
+@namespace Reporting.Samples.MauiHybrid
+
+<Router AppAssembly="@typeof(Main).Assembly">
+    <Found Context="routeData">
+        <RouteView RouteData="@routeData" DefaultLayout="@typeof(Layout.MainLayout)" />
+        <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+    </Found>
+    <NotFound>
+        <p>Página não encontrada.</p>
+    </NotFound>
+</Router>

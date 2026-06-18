@@ -1,0 +1,282 @@
+{
+  "schemaVersion": "1.0",
+  "name": "Cat\u00E1logo de Produtos (Tablix)",
+  "pageSetup": {
+    "paper": {
+      "name": "A4",
+      "width": "8268",
+      "height": "11693"
+    },
+    "orientation": "Portrait",
+    "margins": "709,709,709,709",
+    "columns": 1,
+    "columnSpacing": "0"
+  },
+  "dataSources": [
+    {
+      "name": "Produtos",
+      "fields": [
+        {
+          "name": "Codigo",
+          "type": "System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e"
+        },
+        {
+          "name": "Descricao",
+          "type": "System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e"
+        },
+        {
+          "name": "Ean13",
+          "type": "System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e"
+        },
+        {
+          "name": "PrecoVarejo",
+          "type": "System.Decimal, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e"
+        },
+        {
+          "name": "PrecoAtacado",
+          "type": "System.Decimal, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e"
+        }
+      ]
+    }
+  ],
+  "reportHeader": {
+    "kind": "ReportHeader",
+    "height": "3740",
+    "visible": true,
+    "printOnFirstPage": true,
+    "printOnLastPage": true,
+    "elements": [
+      {
+        "kind": "TextBox",
+        "id": "50f72217ab5b42399f8ed0270a3560b1",
+        "bounds": "0,0,6850,394",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Center",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "font": {
+            "family": "Arial",
+            "size": 15,
+            "style": "Bold"
+          }
+        },
+        "expression": "Cat\u00E1logo de Produtos",
+        "canGrow": false,
+        "canShrink": false
+      },
+      {
+        "kind": "TextBox",
+        "id": "813616fa88d54621b39f3a6c3e3055ca",
+        "bounds": "0,433,6850,236",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Center",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "foreColor": "#808080"
+        },
+        "expression": "Tablix \u2014 cabe\u00E7alho \u002B uma linha por registro, com gridlines",
+        "canGrow": false,
+        "canShrink": false
+      },
+      {
+        "kind": "Tablix",
+        "id": "ef58287935504004a0f4c1b5f35a59df",
+        "bounds": "0,787,6850,2835",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Left",
+          "verticalAlignment": "Top",
+          "wordWrap": true
+        },
+        "columnWidths": [
+          1,
+          2.6,
+          1.5,
+          1.1,
+          1.1
+        ],
+        "cells": [
+          {
+            "rowIndex": 0,
+            "columnIndex": 0,
+            "content": {
+              "kind": "Label",
+              "id": "d753111cb3014e4cb042a9e197ffd8dd",
+              "bounds": "0,0,0,0",
+              "visible": true,
+              "style": {
+                "horizontalAlignment": "Left",
+                "verticalAlignment": "Top",
+                "wordWrap": true
+              },
+              "text": "C\u00F3digo"
+            }
+          },
+          {
+            "rowIndex": 1,
+            "columnIndex": 0,
+            "content": {
+              "kind": "TextBox",
+              "id": "29d1a037419a4654bfb19dc426cfd9ed",
+              "bounds": "0,0,0,0",
+              "visible": true,
+              "style": {
+                "horizontalAlignment": "Left",
+                "verticalAlignment": "Top",
+                "wordWrap": true
+              },
+              "expression": "Fields.Codigo",
+              "canGrow": false,
+              "canShrink": false
+            }
+          },
+          {
+            "rowIndex": 0,
+            "columnIndex": 1,
+            "content": {
+              "kind": "Label",
+              "id": "ff2f7c8faea942658e234e4843331f6e",
+              "bounds": "0,0,0,0",
+              "visible": true,
+              "style": {
+                "horizontalAlignment": "Left",
+                "verticalAlignment": "Top",
+                "wordWrap": true
+              },
+              "text": "Descri\u00E7\u00E3o"
+            }
+          },
+          {
+            "rowIndex": 1,
+            "columnIndex": 1,
+            "content": {
+              "kind": "TextBox",
+              "id": "72db4e4c911a4125aff7969682fba1c8",
+              "bounds": "0,0,0,0",
+              "visible": true,
+              "style": {
+                "horizontalAlignment": "Left",
+                "verticalAlignment": "Top",
+                "wordWrap": true
+              },
+              "expression": "Fields.Descricao",
+              "canGrow": false,
+              "canShrink": false
+            }
+          },
+          {
+            "rowIndex": 0,
+            "columnIndex": 2,
+            "content": {
+              "kind": "Label",
+              "id": "d981cb285dca446ba4e0393b4d5463c1",
+              "bounds": "0,0,0,0",
+              "visible": true,
+              "style": {
+                "horizontalAlignment": "Left",
+                "verticalAlignment": "Top",
+                "wordWrap": true
+              },
+              "text": "EAN-13"
+            }
+          },
+          {
+            "rowIndex": 1,
+            "columnIndex": 2,
+            "content": {
+              "kind": "TextBox",
+              "id": "e6edd1239806418cb672dcf9411001b9",
+              "bounds": "0,0,0,0",
+              "visible": true,
+              "style": {
+                "horizontalAlignment": "Left",
+                "verticalAlignment": "Top",
+                "wordWrap": true
+              },
+              "expression": "Fields.Ean13",
+              "canGrow": false,
+              "canShrink": false
+            }
+          },
+          {
+            "rowIndex": 0,
+            "columnIndex": 3,
+            "content": {
+              "kind": "Label",
+              "id": "1e011fb3e9514382b19692e8dc941e3f",
+              "bounds": "0,0,0,0",
+              "visible": true,
+              "style": {
+                "horizontalAlignment": "Left",
+                "verticalAlignment": "Top",
+                "wordWrap": true
+              },
+              "text": "Varejo"
+            }
+          },
+          {
+            "rowIndex": 1,
+            "columnIndex": 3,
+            "content": {
+              "kind": "TextBox",
+              "id": "2f7847d86af04b1397598d7899a561c5",
+              "bounds": "0,0,0,0",
+              "visible": true,
+              "style": {
+                "horizontalAlignment": "Left",
+                "verticalAlignment": "Top",
+                "wordWrap": true
+              },
+              "expression": "{Fields.PrecoVarejo:C}",
+              "canGrow": false,
+              "canShrink": false
+            }
+          },
+          {
+            "rowIndex": 0,
+            "columnIndex": 4,
+            "content": {
+              "kind": "Label",
+              "id": "576e275e61af4ac2a6ed6a6c0efac583",
+              "bounds": "0,0,0,0",
+              "visible": true,
+              "style": {
+                "horizontalAlignment": "Left",
+                "verticalAlignment": "Top",
+                "wordWrap": true
+              },
+              "text": "Atacado"
+            }
+          },
+          {
+            "rowIndex": 1,
+            "columnIndex": 4,
+            "content": {
+              "kind": "TextBox",
+              "id": "4892b6d838d2419994b5a123408bf8ca",
+              "bounds": "0,0,0,0",
+              "visible": true,
+              "style": {
+                "horizontalAlignment": "Left",
+                "verticalAlignment": "Top",
+                "wordWrap": true
+              },
+              "expression": "{Fields.PrecoAtacado:C}",
+              "canGrow": false,
+              "canShrink": false
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "detail": {
+    "height": "0",
+    "visible": true,
+    "canGrow": false,
+    "canShrink": false,
+    "elements": []
+  }
+}

@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Report SchemaVersion="1.0" Name="Blog Digest (RSS)">
+  <PageSetup Orientation="Portrait" Margins="709,709,709,709" Columns="1" ColumnSpacing="0">
+    <Paper Name="A4" Width="8268" Height="11693" />
+  </PageSetup>
+  <DataSources>
+    <DataSource Name="Posts">
+      <SortExpressions>
+        <Sort Expression="Fields.pubDate" Direction="Descending" />
+      </SortExpressions>
+    </DataSource>
+  </DataSources>
+  <ReportHeader Kind="ReportHeader" Height="1260" Visible="true" PrintOnFirstPage="true" PrintOnLastPage="true">
+    <Elements>
+      <TextBox Id="97e684048e964098a7fbb14bde764e36" Bounds="0,0,6850,551" Visible="true">
+        <Style HorizontalAlignment="Center" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Arial" Size="18" Style="Bold" />
+        </Style>
+        <Expression>OmniReport Blog · Resumo</Expression>
+      </TextBox>
+      <TextBox Id="59213af11150459e8f103dae8a33dbe6" Bounds="0,630,6850,236" Visible="true">
+        <Style HorizontalAlignment="Center" VerticalAlignment="Top" WordWrap="true">
+          <ForeColor>#808080</ForeColor>
+        </Style>
+        <Expression>5 últimos posts · Fonte: feed RSS XML</Expression>
+      </TextBox>
+      <Line Id="af1539ad4ab64b7f8c25245ed69b5484" Bounds="0,1024,6850,0" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true" />
+        <Direction>Horizontal</Direction>
+        <Pen Style="Solid" Thickness="7" Color="#000000" />
+      </Line>
+    </Elements>
+  </ReportHeader>
+  <Groups>
+    <Group Name="PorAutor" GroupExpression="Fields.author" KeepTogether="false" NewPageBefore="false" NewPageAfter="false" RepeatHeaderOnNewPage="false" Visible="true">
+      <SortExpressions>
+        <Sort Expression="Fields.author" Direction="Ascending" />
+      </SortExpressions>
+      <Header Kind="GroupHeader" Height="315" Visible="true" PrintOnFirstPage="true" PrintOnLastPage="true">
+        <Elements>
+          <TextBox Id="990ebd01d58e4acb9adb874d27affdbe" Bounds="0,39,6850,236" Visible="true">
+            <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true">
+              <Font Family="Arial" Size="11" Style="Bold" />
+              <ForeColor>#C2410C</ForeColor>
+            </Style>
+            <Expression>{Fields.author}</Expression>
+          </TextBox>
+        </Elements>
+      </Header>
+    </Group>
+  </Groups>
+  <Detail Height="551" Visible="true" CanGrow="false" CanShrink="false" NoRowsMessage="Nenhum post encontrado no feed.">
+    <Elements>
+      <TextBox Id="0598a789be3449c6a2fd962933d62dd6" Bounds="157,0,6693,236" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Arial" Size="10" Style="Bold" />
+        </Style>
+        <Expression>{Fields.title}</Expression>
+      </TextBox>
+      <TextBox Id="da0bfe1ced3c4ed6bf76d5a01ed6e666" Bounds="157,236,4724,197" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Arial" Size="8" Style="Italic" />
+          <ForeColor>#808080</ForeColor>
+        </Style>
+        <Expression>{Fields.category} · {Fields.pubDate:dd/MM/yyyy}</Expression>
+      </TextBox>
+      <TextBox Id="a5d2575463144275896a55110c2f74fa" Bounds="157,236,6693,197" Visible="true">
+        <Style HorizontalAlignment="Right" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Arial" Size="7" Style="Regular" />
+          <ForeColor>#2563EB</ForeColor>
+        </Style>
+        <Expression>{Fields.link}</Expression>
+      </TextBox>
+      <Line Id="4d76b603898a4e9db489d94b90861554" Bounds="157,472,6536,0" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true">
+          <ForeColor>#E5E5E5</ForeColor>
+        </Style>
+        <Direction>Horizontal</Direction>
+        <Pen Style="Solid" Thickness="2" Color="#000000" />
+      </Line>
+    </Elements>
+  </Detail>
+  <PageFooter Kind="PageFooter" Height="236" Visible="true" PrintOnFirstPage="true" PrintOnLastPage="true">
+    <Elements>
+      <TextBox Id="23e27416d15a4ac9a8c8aa0fea1525cf" Bounds="0,0,6850,236" Visible="true">
+        <Style HorizontalAlignment="Right" VerticalAlignment="Top" WordWrap="true">
+          <ForeColor>#808080</ForeColor>
+        </Style>
+        <Expression>OmniReport · Página {Page.Number} de {Page.Total}</Expression>
+      </TextBox>
+    </Elements>
+  </PageFooter>
+</Report>

@@ -1,0 +1,120 @@
+@namespace Reporting.Designer.Blazor.Components
+@using Reporting.Designer.Blazor.ViewModels
+
+@* Hierarchical browser: schemas → tables/views → columns. Click a table to inject
+   "SELECT * FROM <table>" into the SQL editor; click a column to insert just the column name. *@
+
+<div class="schema-explorer">
+    <div class="se-toolbar">
+        <input type="search" placeholder="Filtrar…"
+               value="@_filter"
+               @oninput="@(e => _filter = e.Value?.ToString() ?? string.Empty)" />
+        <button class="se-btn" type="button" @onclick="OnRefresh" disabled="@_busy">
+            @(_busy ? "Carregando…" : "↻ Atualizar")
+        </button>
+    </div>
+
+    @if (!string.IsNullOrEmpty(_error))
+    {
+        <div class="se-error">✕ @_error</div>
+    }
+    else if (_tables.Count == 0 && !_busy)
+    {
+        <div class="se-empty">
+            Clique em <strong>Atualizar</strong> para listar tabelas e views do banco.
+        </div>
+    }
+    else
+    {
+        <div class="se-tree">
+            @foreach (var grp in GroupBySchema(_tables))
+            {
+                <div class="se-schema">
+                    @if (!string.IsNullOrEmpty(grp.Key))
+                    {
+                        <div class="se-schema-name">@grp.Key</div>
+                    }
+                    @foreach (var t in grp)
+                    {
+                        var captured = t;
+                        <div class="se-table">
+                            <div class="se-table-row" @onclick="() => Toggle(captured)" title="@(captured.IsView ? "View" : "Tabela")">
+                                <span class="se-chevron">@(_expanded.Contains(captured) ? "▼" : "▶")</span>
+                                <span class="se-table-icon @(captured.IsView ? "se-icon-view" : "se-icon-table")">
+                                    @(captured.IsView ? "V" : "T")
+                                </span>
+                                <span class="se-table-name">@captured.Name</span>
+                                <span class="se-table-cols">(@captured.Columns.Count)</span>
+                                <button type="button" class="se-mini" title="Inserir SELECT no editor"
+                                        @onclick="async () => await OnInsertTable.InvokeAsync(captured)"
+                                        @onclick:stopPropagation="true">⇨</button>
+                            </div>
+                            @if (_expanded.Contains(captured))
+                            {
+                                <div class="se-columns">
+                                    @foreach (var col in captured.Columns)
+                                    {
+                                        var cc = col;
+                                        <div class="se-column" title="@cc.DataType">
+                                            <span class="se-col-type">@TypeIndicator(cc.DataType)</span>
+                                            <span class="se-col-name @(cc.IsPrimaryKey ? "se-col-pk" : null)">@cc.Name</span>
+                                            <span class="se-col-meta">@cc.DataType@(cc.IsNullable ? "?" : "")</span>
+                                            <button type="button" class="se-mini" title="Inserir nome da coluna"
+                                                    @onclick="async () => await OnInsertColumn.InvokeAsync((captured, cc))">⇨</button>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public IReadOnlyList<DatabaseTable> Tables { get; set; } = Array.Empty<DatabaseTable>();
+    [Parameter] public bool Busy { get; set; }
+    [Parameter] public string? Error { get; set; }
+    [Parameter] public EventCallback OnRefresh { get; set; }
+    [Parameter] public EventCallback<DatabaseTable> OnInsertTable { get; set; }
+    [Parameter] public EventCallback<(DatabaseTable Table, DatabaseColumn Column)> OnInsertColumn { get; set; }
+
+    private readonly HashSet<DatabaseTable> _expanded = new();
+    private string _filter = string.Empty;
+    private List<DatabaseTable> _tables = new();
+    private bool _busy;
+    private string? _error;
+
+    protected override void OnParametersSet()
+    {
+        _busy = Busy;
+        _error = Error;
+        _tables = Tables
+            .Where(t => string.IsNullOrEmpty(_filter)
+                     || t.Name.Contains(_filter, StringComparison.OrdinalIgnoreCase)
+                     || t.Columns.Any(c => c.Name.Contains(_filter, StringComparison.OrdinalIgnoreCase)))
+            .ToList();
+    }
+
+    private void Toggle(DatabaseTable t)
+    {
+        if (!_expanded.Add(t)) _expanded.Remove(t);
+    }
+
+    private static IEnumerable<IGrouping<string, DatabaseTable>> GroupBySchema(IEnumerable<DatabaseTable> tables)
+        => tables.GroupBy(t => t.Schema ?? string.Empty)
+                 .OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase);
+
+    private static string TypeIndicator(string dataType)
+    {
+        var lower = dataType.ToLowerInvariant();
+        if (lower.Contains("int") || lower.Contains("number") || lower.Contains("decimal")
+            || lower.Contains("real") || lower.Contains("float") || lower.Contains("double"))
+            return "#";
+        if (lower.Contains("date") || lower.Contains("time")) return "D";
+        if (lower.Contains("bool")) return "B";
+        return "T";
+    }
+}

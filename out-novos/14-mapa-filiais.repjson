@@ -1,0 +1,274 @@
+{
+  "schemaVersion": "1.0",
+  "name": "Mapa de Filiais",
+  "pageSetup": {
+    "paper": {
+      "name": "A4",
+      "width": "8268",
+      "height": "11693"
+    },
+    "orientation": "Portrait",
+    "margins": "709,709,709,709",
+    "columns": 1,
+    "columnSpacing": "0"
+  },
+  "dataSources": [
+    {
+      "name": "Filiais",
+      "fields": [
+        {
+          "name": "Nome",
+          "type": "System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e"
+        },
+        {
+          "name": "Uf",
+          "type": "System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e"
+        },
+        {
+          "name": "Lat",
+          "type": "System.Double, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e"
+        },
+        {
+          "name": "Lon",
+          "type": "System.Double, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e"
+        },
+        {
+          "name": "Faturamento",
+          "type": "System.Decimal, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e"
+        }
+      ]
+    }
+  ],
+  "reportHeader": {
+    "kind": "ReportHeader",
+    "height": "4724",
+    "visible": true,
+    "printOnFirstPage": true,
+    "printOnLastPage": true,
+    "elements": [
+      {
+        "kind": "TextBox",
+        "id": "9f84173dd28c487ba844835ba3457ceb",
+        "bounds": "0,0,6850,394",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Center",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "font": {
+            "family": "Arial",
+            "size": 15,
+            "style": "Bold"
+          }
+        },
+        "expression": "Distribui\u00E7\u00E3o de Filiais",
+        "canGrow": false,
+        "canShrink": false
+      },
+      {
+        "kind": "TextBox",
+        "id": "2db7ca97796647698a6b884dbcdc0e8c",
+        "bounds": "0,433,6850,236",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Center",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "foreColor": "#808080"
+        },
+        "expression": "Map \u2014 proje\u00E7\u00E3o Web Mercator, contorno do Brasil (shape) \u002B graticule",
+        "canGrow": false,
+        "canShrink": false
+      },
+      {
+        "kind": "Map",
+        "id": "03a91ccbe24640b2a77709f2be65608c",
+        "bounds": "0,709,6850,3937",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Left",
+          "verticalAlignment": "Top",
+          "wordWrap": true
+        },
+        "latitude": "Fields.Lat",
+        "longitude": "Fields.Lon",
+        "shapeSet": "brazil",
+        "showGraticule": true,
+        "shapeFill": "#E8EDE4",
+        "shapeStroke": "#9CA3AF"
+      }
+    ]
+  },
+  "pageHeader": {
+    "kind": "PageHeader",
+    "height": "276",
+    "visible": true,
+    "printOnFirstPage": true,
+    "printOnLastPage": true,
+    "elements": [
+      {
+        "kind": "Label",
+        "id": "9a3093e7e92540afb8e6e77d469e3629",
+        "bounds": "0,0,3622,236",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Left",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "font": {
+            "family": "Arial",
+            "size": 10,
+            "style": "Bold"
+          }
+        },
+        "text": "Filial"
+      },
+      {
+        "kind": "Label",
+        "id": "d4d8d21aec4c4dabb2105495faf620ca",
+        "bounds": "3622,0,709,236",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Left",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "font": {
+            "family": "Arial",
+            "size": 10,
+            "style": "Bold"
+          }
+        },
+        "text": "UF"
+      },
+      {
+        "kind": "Label",
+        "id": "a8af1234b3214116ac6df0d57ba6699b",
+        "bounds": "4409,0,2441,236",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Right",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "font": {
+            "family": "Arial",
+            "size": 10,
+            "style": "Bold"
+          }
+        },
+        "text": "Faturamento"
+      },
+      {
+        "kind": "Line",
+        "id": "5cff15a27bd048bbbd65faef3dcf2fd0",
+        "bounds": "0,236,6850,0",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Left",
+          "verticalAlignment": "Top",
+          "wordWrap": true
+        },
+        "direction": "Horizontal",
+        "pen": {
+          "style": "Solid",
+          "thickness": "3",
+          "color": "#000000"
+        }
+      }
+    ]
+  },
+  "detail": {
+    "height": "236",
+    "visible": true,
+    "canGrow": false,
+    "canShrink": false,
+    "elements": [
+      {
+        "kind": "TextBox",
+        "id": "70ecd225230b4229955c5b92c18bacd0",
+        "bounds": "0,0,3622,236",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Left",
+          "verticalAlignment": "Top",
+          "wordWrap": true
+        },
+        "expression": "{Fields.Nome}",
+        "canGrow": false,
+        "canShrink": false
+      },
+      {
+        "kind": "TextBox",
+        "id": "032d697b1ec14ef38db3295fc0e0ca1e",
+        "bounds": "3622,0,709,236",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Left",
+          "verticalAlignment": "Top",
+          "wordWrap": true
+        },
+        "expression": "{Fields.Uf}",
+        "canGrow": false,
+        "canShrink": false
+      },
+      {
+        "kind": "TextBox",
+        "id": "a60715bedd6b4fa1ae43b13e421e37ea",
+        "bounds": "4409,0,2441,236",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Right",
+          "verticalAlignment": "Top",
+          "wordWrap": true
+        },
+        "expression": "{Fields.Faturamento:C}",
+        "canGrow": false,
+        "canShrink": false
+      }
+    ]
+  },
+  "reportFooter": {
+    "kind": "ReportFooter",
+    "height": "394",
+    "visible": true,
+    "printOnFirstPage": true,
+    "printOnLastPage": true,
+    "elements": [
+      {
+        "kind": "Line",
+        "id": "fe6bd9552f96481f95ec68585dbe5d5e",
+        "bounds": "0,0,6850,0",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Left",
+          "verticalAlignment": "Top",
+          "wordWrap": true
+        },
+        "direction": "Horizontal",
+        "pen": {
+          "style": "Solid",
+          "thickness": "7",
+          "color": "#000000"
+        }
+      },
+      {
+        "kind": "TextBox",
+        "id": "4d163f05f1b4460bac7855ad2c5f3e9d",
+        "bounds": "0,79,6850,276",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Right",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "font": {
+            "family": "Arial",
+            "size": 11,
+            "style": "Bold"
+          }
+        },
+        "expression": "Faturamento total: {Sum(Fields.Faturamento):C}",
+        "canGrow": false,
+        "canShrink": false
+      }
+    ]
+  }
+}

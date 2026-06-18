@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<catalogo>
+  <produto id="P001" categoria="Periféricos">
+    <nome>Mouse Logitech MX Master 3</nome>
+    <preco>449.90</preco>
+    <estoque>23</estoque>
+  </produto>
+  <produto id="P002" categoria="Periféricos">
+    <nome>Teclado Keychron K2</nome>
+    <preco>890.00</preco>
+    <estoque>15</estoque>
+  </produto>
+  <produto id="P003" categoria="Notebooks">
+    <nome>Dell XPS 13 Plus</nome>
+    <preco>11500.00</preco>
+    <estoque>4</estoque>
+  </produto>
+  <produto id="P004" categoria="Notebooks">
+    <nome>MacBook Air M3</nome>
+    <preco>14990.00</preco>
+    <estoque>2</estoque>
+  </produto>
+  <produto id="P005" categoria="Monitores">
+    <nome>LG UltraFine 27 4K</nome>
+    <preco>3290.00</preco>
+    <estoque>8</estoque>
+  </produto>
+  <produto id="P006" categoria="Áudio">
+    <nome>Sony WH-1000XM5</nome>
+    <preco>2890.00</preco>
+    <estoque>12</estoque>
+  </produto>
+</catalogo>

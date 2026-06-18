@@ -1,0 +1,23 @@
+﻿Movimento de Caixa,,,
+Data: 23/05/2026,,,
+Forma de pagamento: Cartão Crédito,,,
+13:15,NFC-e 001238,Cartão Crédito,234
+18:25,NFC-e 001243,Cartão Crédito,312.7
+"Subtotal: R$ 546,70 · 2 movimento(s)",,,
+Forma de pagamento: Cartão Débito,,,
+10:03,NFC-e 001235,Cartão Débito,128.5
+15:30,NFC-e 001240,Cartão Débito,55.4
+"Subtotal: R$ 183,90 · 2 movimento(s)",,,
+Forma de pagamento: Dinheiro,,,
+09:12,NFC-e 001234,Dinheiro,45.2
+12:21,NFC-e 001237,Dinheiro,18.9
+16:11,NFC-e 001241,Dinheiro,12.5
+"Subtotal: R$ 76,60 · 3 movimento(s)",,,
+Forma de pagamento: PIX,,,
+11:47,NFC-e 001236,PIX,67.8
+14:42,NFC-e 001239,PIX,89.3
+17:03,NFC-e 001242,PIX,145
+"Subtotal: R$ 302,10 · 3 movimento(s)",,,
+"Total do dia: R$ 1.109,30",,,
+"Movimentos: 10 · Maior: R$ 312,70 · Menor: R$ 12,50",,,
+OmniReport · 17/06/2026 18:15,,Página 1 de 1,

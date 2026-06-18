@@ -1,0 +1,59 @@
+@page "/"
+
+<PageTitle>OmniReport — Samples</PageTitle>
+
+<h1>OmniReport · Galeria de samples</h1>
+
+<p class="lead">
+    Esta aplicação demonstra o componente <code>&lt;ReportViewer&gt;</code> em Blazor Server.
+    Cada item da barra lateral mostra um relatório real construído pela API code-first,
+    renderizado in-process pelo <code>SkiaRenderingContext</code>, e servido como sequência
+    de PNGs incorporados.
+</p>
+
+<h2 style="margin-top:24px;">Samples in-memory</h2>
+<ul class="sample-list">
+    <li><strong>01 · Vendas por Cliente</strong> — grupos, subtotais, formatação pt-BR (R$).</li>
+    <li><strong>02 · Espelho de Produtos</strong> — tabela larga, formatação condicional, EAN-13.</li>
+    <li><strong>03 · Relatório de Caixa</strong> — agrupamento por forma de pagamento, agregados.</li>
+    <li><strong>04 · Cupom NFC-e</strong> — papel térmico 80mm, layout monoespaçado.</li>
+</ul>
+
+<h2 style="margin-top:24px;">Data Providers (My-FyiReporting style)</h2>
+<p>
+    Estes relatórios mostram cada um dos quatro <em>data providers</em> portados de
+    My-FyiReporting para o nosso modelo <code>IReportDataSource</code> async. Cada um lê
+    de uma fonte diferente, com inferência de schema automática e binding direto a
+    <code>{Fields.x}</code> nas bandas.
+</p>
+<ul class="sample-list">
+    <li><strong>06 · JSON</strong> — <code>JsonDataSource</code> lendo <code>wwwroot/sample-data/pedidos.json</code>
+        com <em>root path</em> <code>data.results</code>. Filtro
+        (<code>status != 'Cancelado'</code>) e ordenação aplicados na fonte.</li>
+    <li><strong>07 · XML / RSS</strong> — <code>XmlDataSource</code> lendo
+        <code>wwwroot/sample-data/rss-feed.xml</code> via XPath
+        <code>/rss/channel/item</code>. Datas inferidas como <code>DateTime</code>.</li>
+    <li><strong>08 · REST WebService</strong> — <code>WebServiceDataSource</code> com
+        <code>HttpClient</code> stub (offline, determinístico). Header
+        <code>Authorization: Bearer</code> + <em>JsonRootPath</em> <code>items</code>.</li>
+    <li><strong>09 · FileSystem</strong> — <code>FileSystemDataSource</code> enumera o
+        diretório atual recursivamente, com schema fixo de 10 colunas (Id/ParentId/Name/Size/…).</li>
+</ul>
+
+<h2 style="margin-top:24px;">No Designer</h2>
+<p>
+    Abra <NavLink href="designer">🎨 Designer (MVP)</NavLink> e use <strong>Arquivo →
+    Abrir .repx…</strong> apontando para os arquivos gerados em
+    <code>wwwroot/reports/06-json-pedidos.repx</code> (e os demais 07/08/09). Os
+    relatórios round-trippam todo o estado RDL preservado.
+</p>
+<p>
+    A página <NavLink href="samples-repx">📚 Galeria de .repx</NavLink> oferece links
+    diretos para download dos arquivos prontos.
+</p>
+
+<p>
+    Os botões <strong>PDF</strong> e <strong>XLSX</strong> da toolbar dispararão downloads
+    do navegador via <code>URL.createObjectURL</code>. O zoom utiliza <em>CSS transform</em>
+    e não causa re-render do servidor.
+</p>

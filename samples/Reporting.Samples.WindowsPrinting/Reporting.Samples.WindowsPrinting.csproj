@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <RootNamespace>Reporting.Samples.WindowsPrinting</RootNamespace>
+    <AssemblyName>Reporting.Samples.WindowsPrinting</AssemblyName>
+    <IsPackable>false</IsPackable>
+    <InvariantGlobalization>false</InvariantGlobalization>
+    <SupportedOSPlatformVersion>7.0</SupportedOSPlatformVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Reporting.CodeFirst\Reporting.CodeFirst.csproj" />
+    <ProjectReference Include="..\..\src\Reporting.Printing.WindowsSpooler\Reporting.Printing.WindowsSpooler.csproj" />
+    <ProjectReference Include="..\Reporting.Samples.CodeFirst\Reporting.Samples.CodeFirst.csproj" />
+  </ItemGroup>
+
+</Project>

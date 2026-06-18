@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Reporting.Maps</RootNamespace>
+    <AssemblyName>Reporting.Maps</AssemblyName>
+    <Description>OmniReport — optional bundled vector shape sets for the Map element (offline GeoJSON basemaps). Register the built-ins via MapShapes.RegisterBuiltIns(); resolved by name through MapShapeRegistry. Shapes are simplified/low-resolution starters — register higher-resolution GeoJSON for production.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Reporting.Core\Reporting.Core.csproj" />
+  </ItemGroup>
+
+</Project>

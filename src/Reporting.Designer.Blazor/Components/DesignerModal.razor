@@ -1,0 +1,63 @@
+@namespace Reporting.Designer.Blazor.Components
+
+@if (Visible)
+{
+    <div class="dlg-overlay"
+         @onclick="OnBackdropClicked"
+         @onkeydown="OnKeyDown"
+         tabindex="-1">
+        <div class="dlg-modal" role="dialog" aria-label="@Title"
+             @onclick:stopPropagation="true">
+            <div class="dlg-head">
+                <Icon Name="@HeadIcon" Size="16" CssClass="icon icon-16" />
+                <span class="dlg-title">@Title</span>
+                <button class="icon-btn" type="button" @onclick="OnCloseClicked" title="Fechar (Esc)">
+                    <Icon Name="x" Size="14" />
+                </button>
+            </div>
+            <div class="dlg-body">
+                @ChildContent
+            </div>
+            @if (Footer is not null)
+            {
+                <div class="dlg-foot">
+                    @Footer
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool Visible { get; set; }
+    [Parameter] public string Title { get; set; } = "Diálogo";
+    [Parameter] public string HeadIcon { get; set; } = "settings";
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public RenderFragment? Footer { get; set; }
+
+    /// <summary>When true, clicking the backdrop closes the dialog. Industry default for
+    /// editing dialogs (Radzen <c>CloseDialogOnOverlayClick</c>, MudBlazor
+    /// <c>DisableBackdropClick=true</c>, FluentUI <c>PreventDismissOnOverlayClick</c>):
+    /// <c>false</c> — backdrop clicks are IGNORED so the user can't accidentally lose
+    /// in-progress edits. Opt-in via the parameter only for throw-away overlays
+    /// (Command Palette, tooltips, picker popovers).</summary>
+    [Parameter] public bool CloseOnBackdrop { get; set; } = false;
+
+    /// <summary>Whether Esc closes the modal (default true). Set false for modals that
+    /// guard against accidental dismissal (unsaved confirmations).</summary>
+    [Parameter] public bool CloseOnEscape { get; set; } = true;
+
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private Task OnCloseClicked() => OnClose.InvokeAsync();
+    private Task OnBackdropClicked() => CloseOnBackdrop ? OnClose.InvokeAsync() : Task.CompletedTask;
+
+    private Task OnKeyDown(KeyboardEventArgs e)
+    {
+        if (CloseOnEscape && e.Key == "Escape")
+        {
+            return OnClose.InvokeAsync();
+        }
+        return Task.CompletedTask;
+    }
+}

@@ -1,0 +1,361 @@
+{
+  "schemaVersion": "1.0",
+  "name": "Espelho de Produtos",
+  "pageSetup": {
+    "paper": {
+      "name": "A4",
+      "width": "8268",
+      "height": "11693"
+    },
+    "orientation": "Portrait",
+    "margins": "591,591,591,591",
+    "columns": 1,
+    "columnSpacing": "0"
+  },
+  "dataSources": [
+    {
+      "name": "Produtos",
+      "fields": [
+        {
+          "name": "Codigo",
+          "type": "System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e"
+        },
+        {
+          "name": "Descricao",
+          "type": "System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e"
+        },
+        {
+          "name": "Ean13",
+          "type": "System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e"
+        },
+        {
+          "name": "PrecoVarejo",
+          "type": "System.Decimal, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e"
+        },
+        {
+          "name": "PrecoAtacado",
+          "type": "System.Decimal, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e"
+        }
+      ]
+    }
+  ],
+  "reportHeader": {
+    "kind": "ReportHeader",
+    "height": "787",
+    "visible": true,
+    "printOnFirstPage": true,
+    "printOnLastPage": true,
+    "elements": [
+      {
+        "kind": "TextBox",
+        "id": "4c3b750813304991bbcbac457bb099ec",
+        "bounds": "0,0,7087,472",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Center",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "font": {
+            "family": "Arial",
+            "size": 18,
+            "style": "Bold"
+          }
+        },
+        "expression": "Espelho de Produtos",
+        "canGrow": false,
+        "canShrink": false
+      },
+      {
+        "kind": "TextBox",
+        "id": "f68e433237434f2c805d757393be7138",
+        "bounds": "0,512,7087,236",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Center",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "foreColor": "#808080"
+        },
+        "expression": "Atualizado em {Today:dd/MM/yyyy}",
+        "canGrow": false,
+        "canShrink": false
+      }
+    ]
+  },
+  "pageHeader": {
+    "kind": "PageHeader",
+    "height": "315",
+    "visible": true,
+    "printOnFirstPage": true,
+    "printOnLastPage": true,
+    "elements": [
+      {
+        "kind": "Rectangle",
+        "id": "2c97495e08de4c9ba7a5bececa84bc04",
+        "bounds": "0,0,7087,236",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Left",
+          "verticalAlignment": "Top",
+          "wordWrap": true
+        },
+        "fillColor": "#F4F2EC",
+        "cornerRadius": "0"
+      },
+      {
+        "kind": "Label",
+        "id": "86b35b67cdd546b9ab7dc480b6f1293c",
+        "bounds": "79,0,591,236",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Left",
+          "verticalAlignment": "Middle",
+          "wordWrap": true,
+          "font": {
+            "family": "Arial",
+            "size": 10,
+            "style": "Bold"
+          }
+        },
+        "text": "C\u00F3digo"
+      },
+      {
+        "kind": "Label",
+        "id": "e310b66dd2924d46884bad708d2e95bb",
+        "bounds": "787,0,3346,236",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Left",
+          "verticalAlignment": "Middle",
+          "wordWrap": true,
+          "font": {
+            "family": "Arial",
+            "size": 10,
+            "style": "Bold"
+          }
+        },
+        "text": "Descri\u00E7\u00E3o"
+      },
+      {
+        "kind": "Label",
+        "id": "6af022a6624540118c212823eb6dd67e",
+        "bounds": "4252,0,1102,236",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Left",
+          "verticalAlignment": "Middle",
+          "wordWrap": true,
+          "font": {
+            "family": "Arial",
+            "size": 10,
+            "style": "Bold"
+          }
+        },
+        "text": "EAN-13"
+      },
+      {
+        "kind": "Label",
+        "id": "4150972d2dc54636b5695fbc3605e80e",
+        "bounds": "5433,0,787,236",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Right",
+          "verticalAlignment": "Middle",
+          "wordWrap": true,
+          "font": {
+            "family": "Arial",
+            "size": 10,
+            "style": "Bold"
+          }
+        },
+        "text": "Atacado"
+      },
+      {
+        "kind": "Label",
+        "id": "814f4ada0775476cbb5455cd2ec166f8",
+        "bounds": "6299,0,787,236",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Right",
+          "verticalAlignment": "Middle",
+          "wordWrap": true,
+          "font": {
+            "family": "Arial",
+            "size": 10,
+            "style": "Bold"
+          }
+        },
+        "text": "Varejo"
+      }
+    ]
+  },
+  "detail": {
+    "height": "276",
+    "visible": true,
+    "canGrow": false,
+    "canShrink": false,
+    "elements": [
+      {
+        "kind": "TextBox",
+        "id": "46148df68edd48d39980739649ce7262",
+        "bounds": "79,0,591,276",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Left",
+          "verticalAlignment": "Middle",
+          "wordWrap": true
+        },
+        "expression": "{Fields.Codigo}",
+        "canGrow": false,
+        "canShrink": false
+      },
+      {
+        "kind": "TextBox",
+        "id": "5741fa0b3b7745d3a3198d50049e08b6",
+        "bounds": "787,0,3346,276",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Left",
+          "verticalAlignment": "Middle",
+          "wordWrap": true
+        },
+        "expression": "{Fields.Descricao}",
+        "canGrow": false,
+        "canShrink": false
+      },
+      {
+        "kind": "TextBox",
+        "id": "be49f97661b548989cc4775f2d498a17",
+        "bounds": "4252,0,1102,276",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Left",
+          "verticalAlignment": "Middle",
+          "wordWrap": true,
+          "font": {
+            "family": "Consolas",
+            "size": 9,
+            "style": "Regular"
+          }
+        },
+        "expression": "{Fields.Ean13}",
+        "canGrow": false,
+        "canShrink": false
+      },
+      {
+        "kind": "TextBox",
+        "id": "0c6b9b3902d74b5cafe4c77b6662e186",
+        "bounds": "5433,0,787,276",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Right",
+          "verticalAlignment": "Middle",
+          "wordWrap": true
+        },
+        "expression": "{Fields.PrecoAtacado:C}",
+        "canGrow": false,
+        "canShrink": false
+      },
+      {
+        "kind": "TextBox",
+        "id": "019bfbfc446545229a1144e6b48dc353",
+        "bounds": "6299,0,787,276",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Right",
+          "verticalAlignment": "Middle",
+          "wordWrap": true
+        },
+        "conditionalFormats": [
+          {
+            "condition": "Fields.PrecoVarejo \u003E 100",
+            "style": {
+              "horizontalAlignment": "Left",
+              "verticalAlignment": "Top",
+              "wordWrap": true,
+              "font": {
+                "family": "Arial",
+                "size": 10,
+                "style": "Bold"
+              },
+              "foreColor": "#C2410C"
+            }
+          }
+        ],
+        "expression": "{Fields.PrecoVarejo:C}",
+        "canGrow": false,
+        "canShrink": false
+      }
+    ]
+  },
+  "pageFooter": {
+    "kind": "PageFooter",
+    "height": "236",
+    "visible": true,
+    "printOnFirstPage": true,
+    "printOnLastPage": true,
+    "elements": [
+      {
+        "kind": "TextBox",
+        "id": "249c7a89c4a24854976ecb770b7f4844",
+        "bounds": "0,0,7087,236",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Center",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "font": {
+            "family": "Arial",
+            "size": 8,
+            "style": "Regular"
+          },
+          "foreColor": "#808080"
+        },
+        "expression": "OmniReport \u2014 Espelho de Produtos \u00B7 P\u00E1gina {Page.Number}/{Page.Total}",
+        "canGrow": false,
+        "canShrink": false
+      }
+    ]
+  },
+  "reportFooter": {
+    "kind": "ReportFooter",
+    "height": "394",
+    "visible": true,
+    "printOnFirstPage": true,
+    "printOnLastPage": true,
+    "elements": [
+      {
+        "kind": "Line",
+        "id": "fd6f0ad78b8948d78f57c1c18ba695fa",
+        "bounds": "0,0,7087,0",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Left",
+          "verticalAlignment": "Top",
+          "wordWrap": true
+        },
+        "direction": "Horizontal",
+        "pen": {
+          "style": "Solid",
+          "thickness": "3",
+          "color": "#000000"
+        }
+      },
+      {
+        "kind": "TextBox",
+        "id": "c6e1b4fe1a65447486288795c8c12869",
+        "bounds": "0,79,7087,236",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Right",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "foreColor": "#808080"
+        },
+        "expression": "Total de itens: {Count(Fields.Codigo)} \u00B7 Maior pre\u00E7o: {Max(Fields.PrecoVarejo):C}",
+        "canGrow": false,
+        "canShrink": false
+      }
+    ]
+  }
+}

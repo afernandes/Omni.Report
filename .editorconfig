@@ -1,0 +1,44 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = crlf
+indent_style = space
+indent_size = 4
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{md,yml,yaml,json}]
+indent_size = 2
+
+[*.cs]
+# Sort using directives
+dotnet_sort_system_directives_first = true
+dotnet_separate_import_directive_groups = false
+
+# Naming conventions
+dotnet_naming_rule.private_fields_underscore.severity = warning
+dotnet_naming_rule.private_fields_underscore.symbols = private_fields
+dotnet_naming_rule.private_fields_underscore.style = underscore_prefix
+dotnet_naming_symbols.private_fields.applicable_kinds = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private
+dotnet_naming_style.underscore_prefix.required_prefix = _
+dotnet_naming_style.underscore_prefix.capitalization = camel_case
+
+# Modern C# preferences
+csharp_style_namespace_declarations = file_scoped:warning
+csharp_style_prefer_primary_constructors = true:suggestion
+csharp_prefer_braces = when_multiline:warning
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_style_expression_bodied_methods = when_on_single_line:suggestion
+csharp_style_expression_bodied_properties = true:suggestion
+
+# Analyzer tweaks
+dotnet_diagnostic.CA1303.severity = none      # Pass strings as IFormattable — not needed for engine
+dotnet_diagnostic.CA1062.severity = suggestion # Validate args (nullable handles much of this)
+dotnet_diagnostic.CA2007.severity = none      # ConfigureAwait — engine is not lib hosting
+dotnet_diagnostic.CA1716.severity = none      # Reserved words in identifiers
+dotnet_diagnostic.CA1819.severity = none      # Arrays as properties
+
+[*.{sln,csproj,props,targets}]
+indent_size = 2

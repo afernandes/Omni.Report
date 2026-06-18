@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Report SchemaVersion="1.0" Name="Mapa de Filiais">
+  <PageSetup Orientation="Portrait" Margins="709,709,709,709" Columns="1" ColumnSpacing="0">
+    <Paper Name="A4" Width="8268" Height="11693" />
+  </PageSetup>
+  <DataSources>
+    <DataSource Name="Filiais">
+      <Fields>
+        <Field Name="Nome" Type="System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" />
+        <Field Name="Uf" Type="System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" />
+        <Field Name="Lat" Type="System.Double, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" />
+        <Field Name="Lon" Type="System.Double, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" />
+        <Field Name="Faturamento" Type="System.Decimal, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" />
+      </Fields>
+    </DataSource>
+  </DataSources>
+  <ReportHeader Kind="ReportHeader" Height="4724" Visible="true" PrintOnFirstPage="true" PrintOnLastPage="true">
+    <Elements>
+      <TextBox Id="9f84173dd28c487ba844835ba3457ceb" Bounds="0,0,6850,394" Visible="true">
+        <Style HorizontalAlignment="Center" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Arial" Size="15" Style="Bold" />
+        </Style>
+        <Expression>Distribuição de Filiais</Expression>
+      </TextBox>
+      <TextBox Id="2db7ca97796647698a6b884dbcdc0e8c" Bounds="0,433,6850,236" Visible="true">
+        <Style HorizontalAlignment="Center" VerticalAlignment="Top" WordWrap="true">
+          <ForeColor>#808080</ForeColor>
+        </Style>
+        <Expression>Map — projeção Web Mercator, contorno do Brasil (shape) + graticule</Expression>
+      </TextBox>
+      <Map Id="03a91ccbe24640b2a77709f2be65608c" Bounds="0,709,6850,3937" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true" />
+        <Latitude>Fields.Lat</Latitude>
+        <Longitude>Fields.Lon</Longitude>
+        <ShapeSet>brazil</ShapeSet>
+        <ShowGraticule>True</ShowGraticule>
+        <ShapeFill>#E8EDE4</ShapeFill>
+        <ShapeStroke>#9CA3AF</ShapeStroke>
+      </Map>
+    </Elements>
+  </ReportHeader>
+  <PageHeader Kind="PageHeader" Height="276" Visible="true" PrintOnFirstPage="true" PrintOnLastPage="true">
+    <Elements>
+      <Label Id="9a3093e7e92540afb8e6e77d469e3629" Bounds="0,0,3622,236" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Arial" Size="10" Style="Bold" />
+        </Style>
+        <Text>Filial</Text>
+      </Label>
+      <Label Id="d4d8d21aec4c4dabb2105495faf620ca" Bounds="3622,0,709,236" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Arial" Size="10" Style="Bold" />
+        </Style>
+        <Text>UF</Text>
+      </Label>
+      <Label Id="a8af1234b3214116ac6df0d57ba6699b" Bounds="4409,0,2441,236" Visible="true">
+        <Style HorizontalAlignment="Right" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Arial" Size="10" Style="Bold" />
+        </Style>
+        <Text>Faturamento</Text>
+      </Label>
+      <Line Id="5cff15a27bd048bbbd65faef3dcf2fd0" Bounds="0,236,6850,0" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true" />
+        <Direction>Horizontal</Direction>
+        <Pen Style="Solid" Thickness="3" Color="#000000" />
+      </Line>
+    </Elements>
+  </PageHeader>
+  <Detail Height="236" Visible="true" CanGrow="false" CanShrink="false">
+    <Elements>
+      <TextBox Id="70ecd225230b4229955c5b92c18bacd0" Bounds="0,0,3622,236" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true" />
+        <Expression>{Fields.Nome}</Expression>
+      </TextBox>
+      <TextBox Id="032d697b1ec14ef38db3295fc0e0ca1e" Bounds="3622,0,709,236" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true" />
+        <Expression>{Fields.Uf}</Expression>
+      </TextBox>
+      <TextBox Id="a60715bedd6b4fa1ae43b13e421e37ea" Bounds="4409,0,2441,236" Visible="true">
+        <Style HorizontalAlignment="Right" VerticalAlignment="Top" WordWrap="true" />
+        <Expression>{Fields.Faturamento:C}</Expression>
+      </TextBox>
+    </Elements>
+  </Detail>
+  <ReportFooter Kind="ReportFooter" Height="394" Visible="true" PrintOnFirstPage="true" PrintOnLastPage="true">
+    <Elements>
+      <Line Id="fe6bd9552f96481f95ec68585dbe5d5e" Bounds="0,0,6850,0" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true" />
+        <Direction>Horizontal</Direction>
+        <Pen Style="Solid" Thickness="7" Color="#000000" />
+      </Line>
+      <TextBox Id="4d163f05f1b4460bac7855ad2c5f3e9d" Bounds="0,79,6850,276" Visible="true">
+        <Style HorizontalAlignment="Right" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Arial" Size="11" Style="Bold" />
+        </Style>
+        <Expression>Faturamento total: {Sum(Fields.Faturamento):C}</Expression>
+      </TextBox>
+    </Elements>
+  </ReportFooter>
+</Report>

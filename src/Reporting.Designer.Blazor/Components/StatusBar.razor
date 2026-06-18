@@ -1,0 +1,78 @@
+@namespace Reporting.Designer.Blazor.Components
+@using System.Globalization
+
+@* Every item here reflects real designer state — no decorative/hardcoded chrome. *@
+<footer class="statusbar no-select">
+    <span class="sb-item"><span class="key">Papel</span><span class="val">@PaperLabel</span></span>
+    <span class="sb-item"><span class="key">X</span><span class="val">@(FormatMm(SelectedX))mm</span></span>
+    <span class="sb-item"><span class="key">Y</span><span class="val">@(FormatMm(SelectedY))mm</span></span>
+    <span class="sb-item"><span class="key">W</span><span class="val">@(FormatMm(SelectedW))mm</span></span>
+    <span class="sb-item"><span class="key">H</span><span class="val">@(FormatMm(SelectedH))mm</span></span>
+    <span class="sb-item"><span class="key">Zoom</span><span class="val">@($"{Zoom * 100:F0}%")</span></span>
+    <span class="sb-item" data-sb="bands"><span class="key">Bandas</span><span class="val">@BandCount</span></span>
+    <span class="sb-item" data-sb="elements"><span class="key">Elementos</span><span class="val">@ElementCount</span></span>
+    <span class="sb-item" data-sb="selection"><span class="key">Seleção</span><span class="val">@SelectionLabel</span></span>
+    <span class="sb-spacer"></span>
+    @if (IsDirty)
+    {
+        <span class="sb-item"><span class="val" style="color:var(--accent);">● não salvo</span></span>
+    }
+    @if (ErrorCount > 0)
+    {
+        <span class="sb-item" title="Expressões inválidas no relatório">
+            <Icon Name="alert-triangle" Size="11" />
+            <span class="val" style="color:var(--danger,#c0392b);font-weight:600;">@ErrorCount erro@(ErrorCount > 1 ? "s" : "")</span>
+        </span>
+    }
+    else
+    {
+        <span class="sb-item ok"><Icon Name="check-circle-2" Size="11" /><span class="val" style="color:var(--success);">Sem erros</span></span>
+    }
+    @if (DataSourceCount > 0)
+    {
+        <span class="sb-item" title="@DataSourceTitle">
+            <Icon Name="database" Size="11" />
+            <span class="val">@DataSourceName</span>
+            @if (!string.IsNullOrEmpty(DataSourceKind))
+            {
+                <span class="key">@DataSourceKind</span>
+            }
+        </span>
+    }
+    else
+    {
+        <span class="sb-item"><Icon Name="database" Size="11" /><span class="key">sem fonte</span></span>
+    }
+</footer>
+
+@code {
+    [Parameter] public double SelectedX { get; set; }
+    [Parameter] public double SelectedY { get; set; }
+    [Parameter] public double SelectedW { get; set; }
+    [Parameter] public double SelectedH { get; set; }
+    [Parameter] public double Zoom      { get; set; } = 1.0;
+    /// <summary>Real paper + orientation, e.g. "A4 · Retrato". Replaces the old static page counter
+    /// (the design canvas isn't paginated — page totals only exist in Preview, which has its own nav).</summary>
+    [Parameter] public string PaperLabel { get; set; } = "—";
+    [Parameter] public int BandCount    { get; set; }
+    [Parameter] public int ElementCount { get; set; }
+    /// <summary>Number of currently-selected elements — reflects multi-selection, not a fixed "1".</summary>
+    [Parameter] public int SelectionCount { get; set; }
+    [Parameter] public bool IsDirty     { get; set; }
+    [Parameter] public int ErrorCount   { get; set; }
+    [Parameter] public string DataSourceName { get; set; } = "—";
+    /// <summary>Real connection kind of the first source (in-memory / SQLite / …) — not a fixed
+    /// "conectado" claim, since the designer doesn't verify live connections.</summary>
+    [Parameter] public string DataSourceKind { get; set; } = string.Empty;
+    [Parameter] public int DataSourceCount { get; set; }
+
+    private string SelectionLabel
+        => SelectionCount == 0 ? "—" : $"{SelectionCount} element{(SelectionCount > 1 ? "os" : "o")}";
+
+    private string DataSourceTitle
+        => DataSourceCount > 1
+            ? $"{DataSourceCount} fontes de dados (exibindo a primeira)"
+            : "Fonte de dados";
+
+    private static string FormatMm(double mm) => mm.ToString("F0", CultureInfo.InvariantCulture);
+}

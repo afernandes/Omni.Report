@@ -1,0 +1,175 @@
+/* ============================================================
+   Report Designer — Design Tokens
+   Palette: "Print Studio" (Option A) — paper + ink + rust
+   ============================================================ */
+
+:root,
+[data-theme="light"] {
+  /* Surfaces */
+  --bg-canvas:        #FAFAF7;   /* paper, subtle ivory */
+  --bg-surface:       #FFFFFF;
+  --bg-panel:         #F4F2EC;   /* off-white cool */
+  --bg-panel-strong:  #ECE9E0;
+  --bg-overlay:       rgba(20, 18, 14, 0.32);
+
+  /* Borders & rules */
+  --border:           #E5E2D9;
+  --border-soft:      #EFEDE5;
+  --border-strong:    #C7C2B3;
+  --border-divider:   #DBD7CB;
+
+  /* Text */
+  --text-primary:     #1A1A1A;
+  --text-secondary:   #5A5750;
+  --text-tertiary:    #8E8A7E;
+  --text-inverted:    #FAFAF7;
+
+  /* Accent — rust / pressroom mark */
+  --accent:           #C2410C;
+  --accent-hover:     #9A3209;
+  --accent-soft:      #FFF1E6;
+  --accent-border:    #F5C6A4;
+
+  /* Semantic */
+  --data-bound:       #0F766E;   /* teal — binding */
+  --data-bound-soft:  #D6F0EC;
+  --selection:        #3B82F6;
+  --selection-soft:   rgba(59, 130, 246, 0.10);
+  --selection-strong: #1D4ED8;
+  --danger:           #B91C1C;
+  --danger-soft:      #FEE2E2;
+  --warning:          #A16207;
+  --warning-soft:     #FEF3C7;
+  --success:          #047857;
+  --smart-guide:      #E879F9;   /* magenta align lines */
+
+  /* Component-specific */
+  --band-strip:       #F0EDE4;
+  --band-strip-hover: #E8E4D8;
+  --ruler-bg:         #F4F2EC;
+  --ruler-tick:       #A8A395;
+  --ruler-text:       #6B675D;
+  --grid-dot:         #D8D4C7;
+  --page-shadow:      0 1px 0 rgba(20, 18, 14, 0.04), 0 4px 18px rgba(20, 18, 14, 0.06);
+  --popover-shadow:   0 1px 0 rgba(20, 18, 14, 0.06), 0 8px 28px rgba(20, 18, 14, 0.14), 0 24px 56px -8px rgba(20, 18, 14, 0.18);
+
+  /* Syntax highlighting (expression editor) */
+  --syn-keyword:      #9333EA;
+  --syn-function:     #C2410C;
+  --syn-string:       #047857;
+  --syn-number:       #1D4ED8;
+  --syn-field:        #0F766E;
+  --syn-comment:      #8E8A7E;
+}
+
+[data-theme="dark"] {
+  --bg-canvas:        #1A1A1A;
+  --bg-surface:       #232323;
+  --bg-panel:         #1E1E1E;
+  --bg-panel-strong:  #181818;
+  --bg-overlay:       rgba(0, 0, 0, 0.6);
+
+  --border:           #2E2E2E;
+  --border-soft:      #262626;
+  --border-strong:    #3D3D3D;
+  --border-divider:   #353535;
+
+  --text-primary:     #F0EFE9;
+  --text-secondary:   #A8A59C;
+  --text-tertiary:    #6F6C64;
+  --text-inverted:    #1A1A1A;
+
+  --accent:           #F97316;
+  --accent-hover:     #FB923C;
+  --accent-soft:      #3A1F0E;
+  --accent-border:    #7A3812;
+
+  --data-bound:       #14B8A6;
+  --data-bound-soft:  #0B3D38;
+  --selection:        #60A5FA;
+  --selection-soft:   rgba(96, 165, 250, 0.14);
+  --selection-strong: #93C5FD;
+  --danger:           #EF4444;
+  --danger-soft:      #3C1414;
+  --warning:          #EAB308;
+  --warning-soft:     #3A2C09;
+  --success:          #34D399;
+  --smart-guide:      #F0ABFC;
+
+  --band-strip:       #1B1B1B;
+  --band-strip-hover: #242424;
+  --ruler-bg:         #1B1B1B;
+  --ruler-tick:       #4F4C44;
+  --ruler-text:       #8A867B;
+  --grid-dot:         #2E2E2E;
+  --page-shadow:      0 0 0 1px #2A2A2A, 0 16px 40px rgba(0, 0, 0, 0.5);
+  --popover-shadow:   0 0 0 1px #303030, 0 16px 40px rgba(0, 0, 0, 0.55);
+
+  --syn-keyword:      #C084FC;
+  --syn-function:     #F97316;
+  --syn-string:       #34D399;
+  --syn-number:       #93C5FD;
+  --syn-field:        #14B8A6;
+  --syn-comment:      #6F6C64;
+}
+
+/* ----- Type scale ----- */
+:root {
+  --font-sans: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  --fs-xxs: 10px;    /* ruler */
+  --fs-xs:  11px;    /* panel headers, labels, statusbar */
+  --fs-sm:  12px;    /* property grid, mono */
+  --fs-md:  13px;    /* UI base */
+  --fs-lg:  14px;
+  --fs-xl:  16px;
+
+  --lh-ui:    1.4;
+  --lh-text:  1.6;
+
+  --tracked:  0.04em;
+  --tracked-loose: 0.08em;
+
+  /* ----- Spacing (4px system) ----- */
+  --sp-0: 0;
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+  --sp-10: 48px;
+
+  /* ----- Radii ----- */
+  --r-1: 3px;
+  --r-2: 4px;
+  --r-3: 6px;
+  --r-4: 8px;
+  --r-pill: 999px;
+
+  /* ----- Heights ----- */
+  --h-statesbar: 32px;
+  --h-topbar:    44px;
+  --h-tabbar:    36px;
+  --h-toolbar:   40px;
+  --h-statusbar: 24px;
+  --h-row:       24px;       /* property row */
+  --h-control:   24px;
+  --h-control-lg: 28px;
+
+  /* ----- Motion ----- */
+  --t-fast:   120ms;
+  --t-base:   200ms;
+  --t-slow:   320ms;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+
+  /* ----- Canvas geometry ----- */
+  --page-w: 720px;     /* A4 at chosen zoom */
+  --page-h: 1018px;    /* preserves A4 ratio */
+  --mm: 3.43px;        /* 720 / 210 */
+  --band-strip-w: 38px;
+  --ruler-size: 22px;
+}

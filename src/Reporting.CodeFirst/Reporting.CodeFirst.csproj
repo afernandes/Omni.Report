@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Reporting.CodeFirst</RootNamespace>
+    <AssemblyName>Reporting.CodeFirst</AssemblyName>
+    <Description>OmniReport — fluent code-first builder for ReportDefinition + automatic data source registration.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Reporting.Core\Reporting.Core.csproj" />
+    <ProjectReference Include="..\Reporting.Expressions\Reporting.Expressions.csproj" />
+    <ProjectReference Include="..\Reporting.DataSources\Reporting.DataSources.csproj" />
+    <ProjectReference Include="..\Reporting.Layout\Reporting.Layout.csproj" />
+  </ItemGroup>
+
+</Project>

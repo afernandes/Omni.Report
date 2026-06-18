@@ -1,0 +1,65 @@
+@page "/report/{Name}"
+@rendermode InteractiveServer
+@using Reporting.Samples.CodeFirst.Reports
+
+<PageTitle>@TitleFor(Name)</PageTitle>
+
+<h1>@TitleFor(Name)</h1>
+
+@if (_rendered is null)
+{
+    <p>Carregando…</p>
+}
+else
+{
+    <div class="viewer-host">
+        <ReportViewer Report="_rendered" />
+    </div>
+}
+
+@code {
+    [Parameter] public string Name { get; set; } = "vendas";
+
+    private RenderedReport? _rendered;
+    private string _lastName = "";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (_lastName == Name) return;
+        _lastName = Name;
+        _rendered = null;
+        StateHasChanged();
+
+        var report = Name switch
+        {
+            "vendas"     => Sample01_VendasPorCliente.Build(),
+            "espelho"    => Sample02_EspelhoProdutos.Build(),
+            "caixa"      => Sample03_RelatorioCaixa.Build(),
+            "nfce"       => Sample04_CupomNfce.Build(),
+            // RDL-style data providers — each uses a different IReportDataSource shipped
+            // with OmniReport. The sample data (JSON / XML files) is copied into the
+            // wwwroot/sample-data folder; the providers read it via FilePath on demand.
+            "json"       => Sample06_JsonPedidos.Build(),
+            "xml"        => Sample07_XmlRssFeed.Build(),
+            "webservice" => Sample08_WebServiceApi.Build(),
+            "filesystem" => Sample09_FileSystemLogs.Build(),
+            "sqlite"     => Sample11_AdoNetSqlite.Build(),
+            _            => Sample01_VendasPorCliente.Build(),
+        };
+        _rendered = await report.PaginateAsync();
+    }
+
+    private static string TitleFor(string name) => name switch
+    {
+        "vendas"     => "Vendas por Cliente",
+        "espelho"    => "Espelho de Produtos",
+        "caixa"      => "Relatório de Caixa",
+        "nfce"       => "Cupom NFC-e",
+        "json"       => "Pedidos (JSON · data.results)",
+        "xml"        => "Blog Digest (RSS · XML XPath)",
+        "webservice" => "Catálogo (REST · WebService)",
+        "filesystem" => "Auditoria de Arquivos (FileSystem)",
+        "sqlite"     => "Vendas SQLite (ADO.NET)",
+        _            => "Relatório",
+    };
+}

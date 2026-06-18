@@ -1,0 +1,1050 @@
+{
+  "name": "Pedidos (JSON)",
+  "pageCount": 1,
+  "unit": "millimeters",
+  "pages": [
+    {
+      "pageNumber": 1,
+      "size": {
+        "width": 210.007,
+        "height": 297.002
+      },
+      "primitives": [
+        {
+          "type": "text",
+          "x": 19.99,
+          "y": 19.99,
+          "width": 170.002,
+          "height": 11.989,
+          "text": "Relatório de Pedidos · Fonte JSON",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 16,
+            "fontStyle": "Bold",
+            "color": "#000000",
+            "horizontalAlignment": "Center"
+          }
+        },
+        {
+          "type": "text",
+          "x": 19.99,
+          "y": 33.985,
+          "width": 170.002,
+          "height": 5.994,
+          "text": "Origem: pedidos.json · Carregado via JsonDataSource (path: data.results)",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#808080",
+            "horizontalAlignment": "Center"
+          }
+        },
+        {
+          "type": "line",
+          "x": 19.99,
+          "y": 41.986,
+          "width": 170.002,
+          "height": 0,
+          "from": {
+            "x": 19.99,
+            "y": 41.986
+          },
+          "to": {
+            "x": 189.992,
+            "y": 41.986
+          },
+          "color": "#000000",
+          "thickness": 0.178
+        },
+        {
+          "type": "text",
+          "x": 19.99,
+          "y": 47.981,
+          "width": 80.01,
+          "height": 5.994,
+          "text": "Produto",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "fontStyle": "Bold",
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 101.981,
+          "y": 47.981,
+          "width": 15.011,
+          "height": 5.994,
+          "text": "Qtde",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "fontStyle": "Bold",
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 118.999,
+          "y": 47.981,
+          "width": 27.991,
+          "height": 5.994,
+          "text": "Preço",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "fontStyle": "Bold",
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 148.996,
+          "y": 47.981,
+          "width": 27.991,
+          "height": 5.994,
+          "text": "Total",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "fontStyle": "Bold",
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 178.994,
+          "y": 47.981,
+          "width": 10.998,
+          "height": 5.994,
+          "text": "Status",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "fontStyle": "Bold",
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "line",
+          "x": 19.99,
+          "y": 53.975,
+          "width": 170.002,
+          "height": 0,
+          "from": {
+            "x": 19.99,
+            "y": 53.975
+          },
+          "to": {
+            "x": 189.992,
+            "y": 53.975
+          },
+          "color": "#000000",
+          "thickness": 0.076
+        },
+        {
+          "type": "text",
+          "x": 19.99,
+          "y": 57.988,
+          "width": 170.002,
+          "height": 5.994,
+          "text": "Cliente: Ana Souza",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 11,
+            "fontStyle": "Bold",
+            "color": "#C2410C"
+          }
+        },
+        {
+          "type": "text",
+          "x": 19.99,
+          "y": 65.989,
+          "width": 80.01,
+          "height": 5.994,
+          "text": "Notebook Dell XPS 13",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 101.981,
+          "y": 65.989,
+          "width": 15.011,
+          "height": 5.994,
+          "text": "1",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 118.999,
+          "y": 65.989,
+          "width": 27.991,
+          "height": 5.994,
+          "text": "R$ 9.500,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 148.996,
+          "y": 65.989,
+          "width": 27.991,
+          "height": 5.994,
+          "text": "R$ 9.500,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 178.994,
+          "y": 65.989,
+          "width": 10.998,
+          "height": 5.994,
+          "text": "Pago",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8,
+            "color": "#808080",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 19.99,
+          "y": 71.984,
+          "width": 80.01,
+          "height": 5.994,
+          "text": "Mouse Logitech MX",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 101.981,
+          "y": 71.984,
+          "width": 15.011,
+          "height": 5.994,
+          "text": "2",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 118.999,
+          "y": 71.984,
+          "width": 27.991,
+          "height": 5.994,
+          "text": "R$ 350,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 148.996,
+          "y": 71.984,
+          "width": 27.991,
+          "height": 5.994,
+          "text": "R$ 700,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 178.994,
+          "y": 71.984,
+          "width": 10.998,
+          "height": 5.994,
+          "text": "Pago",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8,
+            "color": "#808080",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "line",
+          "x": 19.99,
+          "y": 77.978,
+          "width": 170.002,
+          "height": 0,
+          "from": {
+            "x": 19.99,
+            "y": 77.978
+          },
+          "to": {
+            "x": 189.992,
+            "y": 77.978
+          },
+          "color": "#000000",
+          "thickness": 0.076
+        },
+        {
+          "type": "text",
+          "x": 19.99,
+          "y": 78.969,
+          "width": 170.002,
+          "height": 5.994,
+          "text": "Subtotal: R$ 10.200,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "fontStyle": "Bold",
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 19.99,
+          "y": 87.986,
+          "width": 170.002,
+          "height": 5.994,
+          "text": "Cliente: Beto Lima",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 11,
+            "fontStyle": "Bold",
+            "color": "#C2410C"
+          }
+        },
+        {
+          "type": "text",
+          "x": 19.99,
+          "y": 95.987,
+          "width": 80.01,
+          "height": 5.994,
+          "text": "Teclado Mecânico",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 101.981,
+          "y": 95.987,
+          "width": 15.011,
+          "height": 5.994,
+          "text": "1",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 118.999,
+          "y": 95.987,
+          "width": 27.991,
+          "height": 5.994,
+          "text": "R$ 890,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 148.996,
+          "y": 95.987,
+          "width": 27.991,
+          "height": 5.994,
+          "text": "R$ 890,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 178.994,
+          "y": 95.987,
+          "width": 10.998,
+          "height": 5.994,
+          "text": "Pago",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8,
+            "color": "#808080",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 19.99,
+          "y": 101.981,
+          "width": 80.01,
+          "height": 5.994,
+          "text": "Monitor 27 4K",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 101.981,
+          "y": 101.981,
+          "width": 15.011,
+          "height": 5.994,
+          "text": "1",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 118.999,
+          "y": 101.981,
+          "width": 27.991,
+          "height": 5.994,
+          "text": "R$ 3.200,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 148.996,
+          "y": 101.981,
+          "width": 27.991,
+          "height": 5.994,
+          "text": "R$ 3.200,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 178.994,
+          "y": 101.981,
+          "width": 10.998,
+          "height": 5.994,
+          "text": "Pendente",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8,
+            "color": "#808080",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "line",
+          "x": 19.99,
+          "y": 107.975,
+          "width": 170.002,
+          "height": 0,
+          "from": {
+            "x": 19.99,
+            "y": 107.975
+          },
+          "to": {
+            "x": 189.992,
+            "y": 107.975
+          },
+          "color": "#000000",
+          "thickness": 0.076
+        },
+        {
+          "type": "text",
+          "x": 19.99,
+          "y": 108.966,
+          "width": 170.002,
+          "height": 5.994,
+          "text": "Subtotal: R$ 4.090,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "fontStyle": "Bold",
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 19.99,
+          "y": 117.983,
+          "width": 170.002,
+          "height": 5.994,
+          "text": "Cliente: Carla Mendes",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 11,
+            "fontStyle": "Bold",
+            "color": "#C2410C"
+          }
+        },
+        {
+          "type": "text",
+          "x": 19.99,
+          "y": 125.984,
+          "width": 80.01,
+          "height": 5.994,
+          "text": "Webcam Full HD",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 101.981,
+          "y": 125.984,
+          "width": 15.011,
+          "height": 5.994,
+          "text": "1",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 118.999,
+          "y": 125.984,
+          "width": 27.991,
+          "height": 5.994,
+          "text": "R$ 480,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 148.996,
+          "y": 125.984,
+          "width": 27.991,
+          "height": 5.994,
+          "text": "R$ 480,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 178.994,
+          "y": 125.984,
+          "width": 10.998,
+          "height": 5.994,
+          "text": "Pago",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8,
+            "color": "#808080",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 19.99,
+          "y": 131.978,
+          "width": 80.01,
+          "height": 5.994,
+          "text": "Headset Bluetooth",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 101.981,
+          "y": 131.978,
+          "width": 15.011,
+          "height": 5.994,
+          "text": "1",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 118.999,
+          "y": 131.978,
+          "width": 27.991,
+          "height": 5.994,
+          "text": "R$ 690,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 148.996,
+          "y": 131.978,
+          "width": 27.991,
+          "height": 5.994,
+          "text": "R$ 690,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 178.994,
+          "y": 131.978,
+          "width": 10.998,
+          "height": 5.994,
+          "text": "Pago",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8,
+            "color": "#808080",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "line",
+          "x": 19.99,
+          "y": 137.973,
+          "width": 170.002,
+          "height": 0,
+          "from": {
+            "x": 19.99,
+            "y": 137.973
+          },
+          "to": {
+            "x": 189.992,
+            "y": 137.973
+          },
+          "color": "#000000",
+          "thickness": 0.076
+        },
+        {
+          "type": "text",
+          "x": 19.99,
+          "y": 138.963,
+          "width": 170.002,
+          "height": 5.994,
+          "text": "Subtotal: R$ 1.170,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "fontStyle": "Bold",
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 19.99,
+          "y": 147.98,
+          "width": 170.002,
+          "height": 5.994,
+          "text": "Cliente: Diego Costa",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 11,
+            "fontStyle": "Bold",
+            "color": "#C2410C"
+          }
+        },
+        {
+          "type": "text",
+          "x": 19.99,
+          "y": 155.981,
+          "width": 80.01,
+          "height": 5.994,
+          "text": "SSD NVMe 1TB",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 101.981,
+          "y": 155.981,
+          "width": 15.011,
+          "height": 5.994,
+          "text": "2",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 118.999,
+          "y": 155.981,
+          "width": 27.991,
+          "height": 5.994,
+          "text": "R$ 750,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 148.996,
+          "y": 155.981,
+          "width": 27.991,
+          "height": 5.994,
+          "text": "R$ 1.500,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 178.994,
+          "y": 155.981,
+          "width": 10.998,
+          "height": 5.994,
+          "text": "Pago",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8,
+            "color": "#808080",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 19.99,
+          "y": 161.976,
+          "width": 80.01,
+          "height": 5.994,
+          "text": "Cabo USB-C 2m",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 101.981,
+          "y": 161.976,
+          "width": 15.011,
+          "height": 5.994,
+          "text": "5",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 118.999,
+          "y": 161.976,
+          "width": 27.991,
+          "height": 5.994,
+          "text": "R$ 45,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 148.996,
+          "y": 161.976,
+          "width": 27.991,
+          "height": 5.994,
+          "text": "R$ 225,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 178.994,
+          "y": 161.976,
+          "width": 10.998,
+          "height": 5.994,
+          "text": "Pago",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8,
+            "color": "#808080",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "line",
+          "x": 19.99,
+          "y": 167.97,
+          "width": 170.002,
+          "height": 0,
+          "from": {
+            "x": 19.99,
+            "y": 167.97
+          },
+          "to": {
+            "x": 189.992,
+            "y": 167.97
+          },
+          "color": "#000000",
+          "thickness": 0.076
+        },
+        {
+          "type": "text",
+          "x": 19.99,
+          "y": 168.961,
+          "width": 170.002,
+          "height": 5.994,
+          "text": "Subtotal: R$ 1.725,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "fontStyle": "Bold",
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 19.99,
+          "y": 177.978,
+          "width": 170.002,
+          "height": 5.994,
+          "text": "Cliente: Fábio Almeida",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 11,
+            "fontStyle": "Bold",
+            "color": "#C2410C"
+          }
+        },
+        {
+          "type": "text",
+          "x": 19.99,
+          "y": 185.979,
+          "width": 80.01,
+          "height": 5.994,
+          "text": "Roteador Wi-Fi 6",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 101.981,
+          "y": 185.979,
+          "width": 15.011,
+          "height": 5.994,
+          "text": "1",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 118.999,
+          "y": 185.979,
+          "width": 27.991,
+          "height": 5.994,
+          "text": "R$ 1.400,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 148.996,
+          "y": 185.979,
+          "width": 27.991,
+          "height": 5.994,
+          "text": "R$ 1.400,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 178.994,
+          "y": 185.979,
+          "width": 10.998,
+          "height": 5.994,
+          "text": "Pago",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8,
+            "color": "#808080",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "line",
+          "x": 19.99,
+          "y": 191.973,
+          "width": 170.002,
+          "height": 0,
+          "from": {
+            "x": 19.99,
+            "y": 191.973
+          },
+          "to": {
+            "x": 189.992,
+            "y": 191.973
+          },
+          "color": "#000000",
+          "thickness": 0.076
+        },
+        {
+          "type": "text",
+          "x": 19.99,
+          "y": 192.964,
+          "width": 170.002,
+          "height": 5.994,
+          "text": "Subtotal: R$ 1.400,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "fontStyle": "Bold",
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "line",
+          "x": 19.99,
+          "y": 199.974,
+          "width": 170.002,
+          "height": 0,
+          "from": {
+            "x": 19.99,
+            "y": 199.974
+          },
+          "to": {
+            "x": 189.992,
+            "y": 199.974
+          },
+          "color": "#000000",
+          "thickness": 0.178
+        },
+        {
+          "type": "text",
+          "x": 19.99,
+          "y": 201.981,
+          "width": 170.002,
+          "height": 10.008,
+          "text": "Total geral: R$ 18.585,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 11,
+            "fontStyle": "Bold",
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 19.99,
+          "y": 270.002,
+          "width": 170.002,
+          "height": 5.994,
+          "text": "OmniReport · Página 1 de 1",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#808080",
+            "horizontalAlignment": "Right"
+          }
+        }
+      ]
+    }
+  ]
+}

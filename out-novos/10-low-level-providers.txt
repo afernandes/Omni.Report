@@ -1,0 +1,24 @@
+─── JSON · pedidos.json (data.results) ─────────────────────────
+  schema: id:Int32  cliente:String  produto:String  quantidade:Int32  precoUnitario:Double  total:Double  data:DateTime  status:String
+  row 1: 1001 | Ana Souza | Notebook Dell XPS 13 | 1 | 9500 | 9500 | 2026-05-15 00:00 | Pago
+  row 2: 1002 | Ana Souza | Mouse Logitech MX | 2 | 350 | 700 | 2026-05-15 00:00 | Pago
+  row 3: 1003 | Beto Lima | Teclado Mecânico | 1 | 890 | 890 | 2026-05-18 00:00 | Pago
+
+─── XML · rss-feed.xml (RSS items) ─────────────────────────
+  schema: title:String  author:String  pubDate:DateTime  category:String  link:String
+  row 1: RDL Phase 1 lançada | Anderson Fernandes | 2026-05-25 10:00 | Release | https://omnireport.example.…
+  row 2: 4 novos data providers (JSO… | Anderson Fernandes | 2026-05-26 09:30 | Release | https://omnireport.example.…
+  row 3: Designer UI: PropertyGrid c… | Equipe OmniReport | 2026-05-26 11:15 | UX | https://omnireport.example.…
+
+─── XML · produtos.xml (id+categoria attrs + child elements) ─────────────────────────
+  schema: id:String  categoria:String  nome:String  preco:Double  estoque:Int32
+  row 1: P001 | Periféricos | Mouse Logitech MX Master 3 | 449,9 | 23
+  row 2: P002 | Periféricos | Teclado Keychron K2 | 890 | 15
+  row 3: P003 | Notebooks | Dell XPS 13 Plus | 11500 | 4
+
+─── FileSystem · C:\Users\ander\source\repos\afernandes\Omni\OmniReport\samples\Reporting.Samples.CodeFirst\bin\Debug\net10.0\ (*.dll) ─────────────────────────
+  schema: Id:Int32  ParentId:Int32  Name:String  FullName:String  Extension:String  IsDirectory:Boolean  Size:Int64  CreationTime:DateTime  LastAccessTime:DateTime  LastWriteTime:DateTime
+  row 1: 1 | 0 | ClosedXML.dll | C:\Users\ander\source\repos… | .dll | False | 1691136 | 2026-06-16 14:51 | 2026-06-17 18:15 | 2025-05-14 17:51
+  row 2: 2 | 0 | ClosedXML.Parser.dll | C:\Users\ander\source\repos… | .dll | False | 192000 | 2026-06-16 14:51 | 2026-06-17 18:15 | 2025-04-03 20:11
+  row 3: 3 | 0 | DocumentFormat.OpenXml.dll | C:\Users\ander\source\repos… | .dll | False | 6349424 | 2026-06-16 14:51 | 2026-06-17 18:15 | 2024-10-15 16:18
+

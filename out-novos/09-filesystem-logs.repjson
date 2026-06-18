@@ -1,0 +1,455 @@
+{
+  "schemaVersion": "1.0",
+  "name": "Auditoria de Arquivos (FileSystem)",
+  "pageSetup": {
+    "paper": {
+      "name": "A4",
+      "width": "8268",
+      "height": "11693"
+    },
+    "orientation": "Landscape",
+    "margins": "591,591,591,591",
+    "columns": 1,
+    "columnSpacing": "0"
+  },
+  "parameters": [
+    {
+      "name": "Root",
+      "type": "System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e",
+      "required": true,
+      "allowMultiple": false,
+      "prompt": "Diret\u00F3rio raiz",
+      "defaultValue": "C:\\Users\\ander\\source\\repos\\afernandes\\Omni\\OmniReport\\samples\\Reporting.Samples.CodeFirst\\bin\\Debug\\net10.0\\"
+    }
+  ],
+  "dataSources": [
+    {
+      "name": "Files",
+      "fields": [
+        {
+          "name": "Id",
+          "type": "System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e"
+        },
+        {
+          "name": "ParentId",
+          "type": "System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e"
+        },
+        {
+          "name": "Name",
+          "type": "System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e"
+        },
+        {
+          "name": "FullName",
+          "type": "System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e"
+        },
+        {
+          "name": "Extension",
+          "type": "System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e"
+        },
+        {
+          "name": "IsDirectory",
+          "type": "System.Boolean, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e"
+        },
+        {
+          "name": "Size",
+          "type": "System.Int64, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e"
+        },
+        {
+          "name": "CreationTime",
+          "type": "System.DateTime, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e"
+        },
+        {
+          "name": "LastAccessTime",
+          "type": "System.DateTime, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e"
+        },
+        {
+          "name": "LastWriteTime",
+          "type": "System.DateTime, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e"
+        }
+      ]
+    }
+  ],
+  "reportHeader": {
+    "kind": "ReportHeader",
+    "height": "945",
+    "visible": true,
+    "printOnFirstPage": true,
+    "printOnLastPage": true,
+    "elements": [
+      {
+        "kind": "TextBox",
+        "id": "d4b46d4dc9eb4988a6b0fabb1e7a2139",
+        "bounds": "0,0,10512,472",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Center",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "font": {
+            "family": "Arial",
+            "size": 16,
+            "style": "Bold"
+          }
+        },
+        "expression": "Auditoria de Arquivos \u00B7 Fonte FileSystem",
+        "canGrow": false,
+        "canShrink": false
+      },
+      {
+        "kind": "TextBox",
+        "id": "2381f9f7340543919b0acb59287014d5",
+        "bounds": "0,551,10512,236",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Center",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "foreColor": "#808080"
+        },
+        "expression": "Diret\u00F3rio: {Parameters.Root}",
+        "canGrow": false,
+        "canShrink": false
+      },
+      {
+        "kind": "Line",
+        "id": "0b28c37d55a347a5b6bbef6be650c3ae",
+        "bounds": "0,866,10512,0",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Left",
+          "verticalAlignment": "Top",
+          "wordWrap": true
+        },
+        "direction": "Horizontal",
+        "pen": {
+          "style": "Solid",
+          "thickness": "7",
+          "color": "#000000"
+        }
+      }
+    ]
+  },
+  "pageHeader": {
+    "kind": "PageHeader",
+    "height": "315",
+    "visible": true,
+    "printOnFirstPage": true,
+    "printOnLastPage": true,
+    "elements": [
+      {
+        "kind": "Label",
+        "id": "53f6a570711443d7b3b56e4e3ad292d1",
+        "bounds": "0,0,5512,236",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Left",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "font": {
+            "family": "Arial",
+            "size": 10,
+            "style": "Bold"
+          }
+        },
+        "text": "Arquivo"
+      },
+      {
+        "kind": "Label",
+        "id": "4d98a2348ece4d2eaabd889f00699076",
+        "bounds": "5591,0,787,236",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Left",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "font": {
+            "family": "Arial",
+            "size": 10,
+            "style": "Bold"
+          }
+        },
+        "text": "Extens\u00E3o"
+      },
+      {
+        "kind": "Label",
+        "id": "b73b44dfc07d4e06b4aa8244ab6b6a8b",
+        "bounds": "6457,0,1181,236",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Right",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "font": {
+            "family": "Arial",
+            "size": 10,
+            "style": "Bold"
+          }
+        },
+        "text": "Tamanho (B)"
+      },
+      {
+        "kind": "Label",
+        "id": "29793b54689c46c79cfd82ecead36a7d",
+        "bounds": "7717,0,1575,236",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Right",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "font": {
+            "family": "Arial",
+            "size": 10,
+            "style": "Bold"
+          }
+        },
+        "text": "Modificado em"
+      },
+      {
+        "kind": "Label",
+        "id": "b7719eb8b06541adab5e17a4391c252d",
+        "bounds": "9370,0,1142,236",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Right",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "font": {
+            "family": "Arial",
+            "size": 10,
+            "style": "Bold"
+          }
+        },
+        "text": "Criado em"
+      },
+      {
+        "kind": "Line",
+        "id": "41c2bf18c2b44e978a497308472d7e06",
+        "bounds": "0,236,10512,0",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Left",
+          "verticalAlignment": "Top",
+          "wordWrap": true
+        },
+        "direction": "Horizontal",
+        "pen": {
+          "style": "Solid",
+          "thickness": "3",
+          "color": "#000000"
+        }
+      }
+    ]
+  },
+  "groups": [
+    {
+      "name": "PorExtensao",
+      "groupExpression": "Fields.Extension",
+      "keepTogether": false,
+      "newPageBefore": false,
+      "newPageAfter": false,
+      "repeatHeaderOnNewPage": false,
+      "visible": true,
+      "header": {
+        "kind": "GroupHeader",
+        "height": "315",
+        "visible": true,
+        "printOnFirstPage": true,
+        "printOnLastPage": true,
+        "elements": [
+          {
+            "kind": "TextBox",
+            "id": "76434493ff8b427e91d8d0ecc45a0587",
+            "bounds": "0,39,10512,236",
+            "visible": true,
+            "style": {
+              "horizontalAlignment": "Left",
+              "verticalAlignment": "Top",
+              "wordWrap": true,
+              "font": {
+                "family": "Arial",
+                "size": 10,
+                "style": "Bold"
+              },
+              "foreColor": "#C2410C"
+            },
+            "expression": "Extens\u00E3o: {Fields.Extension}",
+            "canGrow": false,
+            "canShrink": false
+          }
+        ]
+      }
+    }
+  ],
+  "detail": {
+    "height": "197",
+    "visible": true,
+    "canGrow": false,
+    "canShrink": false,
+    "elements": [
+      {
+        "kind": "TextBox",
+        "id": "dd6c3e8b0fd2459e9ea99a82e5c20210",
+        "bounds": "0,0,5512,197",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Left",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "font": {
+            "family": "Arial",
+            "size": 8,
+            "style": "Regular"
+          }
+        },
+        "expression": "{Fields.Name}",
+        "canGrow": false,
+        "canShrink": false
+      },
+      {
+        "kind": "TextBox",
+        "id": "fc977eb7ca3c41138efd2dbdbe4265f5",
+        "bounds": "5591,0,787,197",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Left",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "font": {
+            "family": "Arial",
+            "size": 8,
+            "style": "Regular"
+          }
+        },
+        "expression": "{Fields.Extension}",
+        "canGrow": false,
+        "canShrink": false
+      },
+      {
+        "kind": "TextBox",
+        "id": "524e57a56a9c47b4a7256de5a0b9cf79",
+        "bounds": "6457,0,1181,197",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Right",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "font": {
+            "family": "Arial",
+            "size": 8,
+            "style": "Regular"
+          }
+        },
+        "expression": "{Fields.Size:N0}",
+        "canGrow": false,
+        "canShrink": false
+      },
+      {
+        "kind": "TextBox",
+        "id": "229aae398080443196f047587a9f4ace",
+        "bounds": "7717,0,1575,197",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Right",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "font": {
+            "family": "Arial",
+            "size": 8,
+            "style": "Regular"
+          }
+        },
+        "expression": "{Fields.LastWriteTime:dd/MM/yyyy HH:mm}",
+        "canGrow": false,
+        "canShrink": false
+      },
+      {
+        "kind": "TextBox",
+        "id": "cb697a9f6d2d4e8195e57dbfc0b66ba7",
+        "bounds": "9370,0,1142,197",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Right",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "font": {
+            "family": "Arial",
+            "size": 8,
+            "style": "Regular"
+          }
+        },
+        "expression": "{Fields.CreationTime:dd/MM/yyyy HH:mm}",
+        "canGrow": false,
+        "canShrink": false
+      }
+    ]
+  },
+  "pageFooter": {
+    "kind": "PageFooter",
+    "height": "236",
+    "visible": true,
+    "printOnFirstPage": true,
+    "printOnLastPage": true,
+    "elements": [
+      {
+        "kind": "TextBox",
+        "id": "1f4d4638288543b3b1f2e4740aca13b5",
+        "bounds": "0,0,10512,236",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Right",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "foreColor": "#808080"
+        },
+        "expression": "OmniReport \u00B7 P\u00E1gina {Page.Number} de {Page.Total}",
+        "canGrow": false,
+        "canShrink": false
+      }
+    ]
+  },
+  "reportFooter": {
+    "kind": "ReportFooter",
+    "height": "472",
+    "visible": true,
+    "printOnFirstPage": true,
+    "printOnLastPage": true,
+    "elements": [
+      {
+        "kind": "Line",
+        "id": "64071e90f28c48f1af6115d4452452c6",
+        "bounds": "0,0,10512,0",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Left",
+          "verticalAlignment": "Top",
+          "wordWrap": true
+        },
+        "direction": "Horizontal",
+        "pen": {
+          "style": "Solid",
+          "thickness": "7",
+          "color": "#000000"
+        }
+      },
+      {
+        "kind": "TextBox",
+        "id": "950ac681e33342a3acdac4eb0d0dc686",
+        "bounds": "0,79,10512,236",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Right",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "font": {
+            "family": "Arial",
+            "size": 10,
+            "style": "Bold"
+          }
+        },
+        "expression": "Arquivos: {Count(Fields.Name)} \u00B7 Tamanho total: {Sum(Fields.Size):N0} bytes",
+        "canGrow": false,
+        "canShrink": false
+      }
+    ]
+  }
+}

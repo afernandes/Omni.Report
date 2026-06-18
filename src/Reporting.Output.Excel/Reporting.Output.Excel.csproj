@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Reporting.Output.Excel</RootNamespace>
+    <AssemblyName>Reporting.Output.Excel</AssemblyName>
+    <Description>OmniReport — XLSX exporter via ClosedXML. Tabular strategy that translates Sum/Avg/Count aggregates into real Excel formulas.</Description>
+    <!-- ClosedXML triggers a few CA warnings; relax for this adapter project. -->
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Reporting.Core\Reporting.Core.csproj" />
+    <ProjectReference Include="..\Reporting.Layout\Reporting.Layout.csproj" />
+    <ProjectReference Include="..\Reporting.Output.Pdf\Reporting.Output.Pdf.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ClosedXML" />
+  </ItemGroup>
+
+</Project>

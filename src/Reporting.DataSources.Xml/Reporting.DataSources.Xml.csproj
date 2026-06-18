@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Reporting.DataSources.Xml</RootNamespace>
+    <AssemblyName>Reporting.DataSources.Xml</AssemblyName>
+    <Description>OmniReport — XML data provider. Streams rows from an XML file path, HTTP URL, or inline string via System.Xml.XPath. Mirrors the RDL/My-FyiReporting XmlDataReader: RowsXPath selects row nodes, columns either come from explicit XPaths or auto-discovered (attributes / child elements / both).</Description>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Reporting.DataSources\Reporting.DataSources.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Reporting.Barcode</RootNamespace>
+    <AssemblyName>Reporting.Barcode</AssemblyName>
+    <Description>OmniReport — pure-managed 1D barcode + QR encoders. Zero external dependencies. Symbology coverage: Code128B, Code39, ITF, Codabar, EAN-13, EAN-8, UPC-A, ISBN, ISSN, QR (versions 1–40, ECC L/M/Q/H). Algorithms ported from Radzen.Blazor (MIT) — see ATTRIBUTION.md.</Description>
+    <!-- Barcode/QR algorithms are dense table-driven math (Reed-Solomon, GF(256),
+         BCH, mask penalties). The compact single-line if/for form mirrors the
+         ISO/IEC 18004 reference and stays readable; brace-on-every-line would
+         double the line count for no clarity gain. -->
+    <NoWarn>$(NoWarn);IDE0011</NoWarn>
+  </PropertyGroup>
+
+</Project>

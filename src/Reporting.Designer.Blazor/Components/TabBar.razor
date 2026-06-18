@@ -1,0 +1,36 @@
+@namespace Reporting.Designer.Blazor.Components
+
+<div class="tabbar no-select" role="tablist">
+    @foreach (var tab in Tabs)
+    {
+        <div class="tab @(ReferenceEquals(tab, ActiveTab) ? "is-active" : null)"
+             role="tab"
+             @onclick="@(() => Activate.InvokeAsync(tab))">
+            <Icon Name="@tab.Icon" Size="12" CssClass="icon icon-12 tab-icon" />
+            <span class="tab-name">@tab.FileName</span>
+            @if (tab.IsDirty)
+            {
+                <span class="dirty-dot" title="Alterações não salvas"></span>
+            }
+            <button class="tab-close" type="button"
+                    aria-label="Fechar"
+                    @onclick:stopPropagation="true"
+                    @onclick="@(() => Close.InvokeAsync(tab))">
+                <Icon Name="x" Size="12" CssClass="icon icon-12" />
+            </button>
+        </div>
+    }
+    <button class="tab-new" type="button" title="Novo relatório" @onclick="OnNewClicked">
+        <Icon Name="plus" Size="16" CssClass="icon icon-16" />
+    </button>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<DocumentTab> Tabs { get; set; } = default!;
+    [Parameter] public DocumentTab? ActiveTab { get; set; }
+    [Parameter] public EventCallback<DocumentTab> Activate { get; set; }
+    [Parameter] public EventCallback<DocumentTab> Close { get; set; }
+    [Parameter] public EventCallback OnNew { get; set; }
+
+    private Task OnNewClicked() => OnNew.InvokeAsync();
+}

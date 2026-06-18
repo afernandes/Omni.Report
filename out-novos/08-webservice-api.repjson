@@ -1,0 +1,383 @@
+{
+  "schemaVersion": "1.0",
+  "name": "Cat\u00E1logo de Produtos (REST)",
+  "pageSetup": {
+    "paper": {
+      "name": "A4",
+      "width": "8268",
+      "height": "11693"
+    },
+    "orientation": "Portrait",
+    "margins": "709,709,709,709",
+    "columns": 1,
+    "columnSpacing": "0"
+  },
+  "dataSources": [
+    {
+      "name": "Produtos"
+    }
+  ],
+  "reportHeader": {
+    "kind": "ReportHeader",
+    "height": "1102",
+    "visible": true,
+    "printOnFirstPage": true,
+    "printOnLastPage": true,
+    "elements": [
+      {
+        "kind": "TextBox",
+        "id": "4b18cfd29e4947b192b10cc6070cf938",
+        "bounds": "0,0,6850,472",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Center",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "font": {
+            "family": "Arial",
+            "size": 16,
+            "style": "Bold"
+          }
+        },
+        "expression": "Cat\u00E1logo de Produtos \u00B7 Fonte REST",
+        "canGrow": false,
+        "canShrink": false
+      },
+      {
+        "kind": "TextBox",
+        "id": "001f42ee4fb643b7a510ab19a15b1491",
+        "bounds": "0,551,6850,236",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Center",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "foreColor": "#808080"
+        },
+        "expression": "Origem: GET https://api.demo/produtos \u00B7 Bearer demo-token \u00B7 path: items",
+        "canGrow": false,
+        "canShrink": false
+      },
+      {
+        "kind": "Line",
+        "id": "196aad8929344f59b6f66f3db855b290",
+        "bounds": "0,866,6850,0",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Left",
+          "verticalAlignment": "Top",
+          "wordWrap": true
+        },
+        "direction": "Horizontal",
+        "pen": {
+          "style": "Solid",
+          "thickness": "7",
+          "color": "#000000"
+        }
+      }
+    ]
+  },
+  "pageHeader": {
+    "kind": "PageHeader",
+    "height": "315",
+    "visible": true,
+    "printOnFirstPage": true,
+    "printOnLastPage": true,
+    "elements": [
+      {
+        "kind": "Label",
+        "id": "cde0991cdb85454f973e445a32e5f122",
+        "bounds": "0,0,866,236",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Left",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "font": {
+            "family": "Arial",
+            "size": 10,
+            "style": "Bold"
+          }
+        },
+        "text": "SKU"
+      },
+      {
+        "kind": "Label",
+        "id": "9c39289cad38441795a249889860739f",
+        "bounds": "945,0,3071,236",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Left",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "font": {
+            "family": "Arial",
+            "size": 10,
+            "style": "Bold"
+          }
+        },
+        "text": "Produto"
+      },
+      {
+        "kind": "Label",
+        "id": "61f04baa5a1648059fe4b55dd0dedf41",
+        "bounds": "4094,0,1024,236",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Right",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "font": {
+            "family": "Arial",
+            "size": 10,
+            "style": "Bold"
+          }
+        },
+        "text": "Pre\u00E7o"
+      },
+      {
+        "kind": "Label",
+        "id": "1a82fb59989d4f1a99a428222f691053",
+        "bounds": "5197,0,787,236",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Right",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "font": {
+            "family": "Arial",
+            "size": 10,
+            "style": "Bold"
+          }
+        },
+        "text": "Estoque"
+      },
+      {
+        "kind": "Label",
+        "id": "06eebf2d283147938984b409863263da",
+        "bounds": "6063,0,787,236",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Right",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "font": {
+            "family": "Arial",
+            "size": 10,
+            "style": "Bold"
+          }
+        },
+        "text": "\u2605"
+      },
+      {
+        "kind": "Line",
+        "id": "862892f5c7b740e48925e246828463a9",
+        "bounds": "0,236,6850,0",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Left",
+          "verticalAlignment": "Top",
+          "wordWrap": true
+        },
+        "direction": "Horizontal",
+        "pen": {
+          "style": "Solid",
+          "thickness": "3",
+          "color": "#000000"
+        }
+      }
+    ]
+  },
+  "groups": [
+    {
+      "name": "PorCategoria",
+      "groupExpression": "Fields.category",
+      "keepTogether": false,
+      "newPageBefore": false,
+      "newPageAfter": false,
+      "repeatHeaderOnNewPage": false,
+      "visible": true,
+      "header": {
+        "kind": "GroupHeader",
+        "height": "315",
+        "visible": true,
+        "printOnFirstPage": true,
+        "printOnLastPage": true,
+        "elements": [
+          {
+            "kind": "TextBox",
+            "id": "d44de576312041da9a1cb8ea6ce534ff",
+            "bounds": "0,39,6850,236",
+            "visible": true,
+            "style": {
+              "horizontalAlignment": "Left",
+              "verticalAlignment": "Top",
+              "wordWrap": true,
+              "font": {
+                "family": "Arial",
+                "size": 11,
+                "style": "Bold"
+              },
+              "foreColor": "#C2410C"
+            },
+            "expression": "{Fields.category}",
+            "canGrow": false,
+            "canShrink": false
+          }
+        ]
+      }
+    }
+  ],
+  "detail": {
+    "height": "236",
+    "visible": true,
+    "canGrow": false,
+    "canShrink": false,
+    "elements": [
+      {
+        "kind": "TextBox",
+        "id": "fdeda8d74e144329baf26ebc368ccddc",
+        "bounds": "0,0,866,236",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Left",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "font": {
+            "family": "Arial",
+            "size": 9,
+            "style": "Regular"
+          }
+        },
+        "expression": "{Fields.sku}",
+        "canGrow": false,
+        "canShrink": false
+      },
+      {
+        "kind": "TextBox",
+        "id": "1cfd8d134d1b4affb8ed3cab23b9e240",
+        "bounds": "945,0,3071,236",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Left",
+          "verticalAlignment": "Top",
+          "wordWrap": true
+        },
+        "expression": "{Fields.name}",
+        "canGrow": false,
+        "canShrink": false
+      },
+      {
+        "kind": "TextBox",
+        "id": "4d0cd1baa100479682eb75414e4b919b",
+        "bounds": "4094,0,1024,236",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Right",
+          "verticalAlignment": "Top",
+          "wordWrap": true
+        },
+        "expression": "{Fields.price:C}",
+        "canGrow": false,
+        "canShrink": false
+      },
+      {
+        "kind": "TextBox",
+        "id": "d8cd4da7d8e043f5889627cf4663582b",
+        "bounds": "5197,0,787,236",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Right",
+          "verticalAlignment": "Top",
+          "wordWrap": true
+        },
+        "expression": "{Fields.stock:N0}",
+        "canGrow": false,
+        "canShrink": false
+      },
+      {
+        "kind": "TextBox",
+        "id": "38a8bf006048442180d9606a97399c99",
+        "bounds": "6063,0,787,236",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Right",
+          "verticalAlignment": "Top",
+          "wordWrap": true
+        },
+        "expression": "{Fields.rating:N1}",
+        "canGrow": false,
+        "canShrink": false
+      }
+    ]
+  },
+  "pageFooter": {
+    "kind": "PageFooter",
+    "height": "236",
+    "visible": true,
+    "printOnFirstPage": true,
+    "printOnLastPage": true,
+    "elements": [
+      {
+        "kind": "TextBox",
+        "id": "2af8f6fea32540c48a42ed592904c099",
+        "bounds": "0,0,6850,236",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Right",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "foreColor": "#808080"
+        },
+        "expression": "OmniReport \u00B7 P\u00E1gina {Page.Number} de {Page.Total}",
+        "canGrow": false,
+        "canShrink": false
+      }
+    ]
+  },
+  "reportFooter": {
+    "kind": "ReportFooter",
+    "height": "472",
+    "visible": true,
+    "printOnFirstPage": true,
+    "printOnLastPage": true,
+    "elements": [
+      {
+        "kind": "Line",
+        "id": "e6f5172084cd4e78acf6a45cfc34df39",
+        "bounds": "0,0,6850,0",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Left",
+          "verticalAlignment": "Top",
+          "wordWrap": true
+        },
+        "direction": "Horizontal",
+        "pen": {
+          "style": "Solid",
+          "thickness": "7",
+          "color": "#000000"
+        }
+      },
+      {
+        "kind": "TextBox",
+        "id": "fd69023f17ce4ffca2d5b11b87305279",
+        "bounds": "0,79,6850,236",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Right",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "font": {
+            "family": "Arial",
+            "size": 10,
+            "style": "Bold"
+          }
+        },
+        "expression": "Itens: {Count(Fields.sku)} \u00B7 Estoque total: {Sum(Fields.stock):N0}",
+        "canGrow": false,
+        "canShrink": false
+      }
+    ]
+  }
+}

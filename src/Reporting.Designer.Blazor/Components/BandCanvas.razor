@@ -1,0 +1,544 @@
+@namespace Reporting.Designer.Blazor.Components
+@using System.Globalization
+@implements IAsyncDisposable
+@inject IJSRuntime Js
+
+<div class="page-shell" style="@($"width:{PxStr(PageWidthMm)}px;")">
+    @* The white "paper" — its CSS padding mirrors PageSetup.Margins so bands stack
+       INSIDE the safe content area on all four sides (FastReport / DevExpress layout).
+       box-sizing:border-box keeps the paper's total width = page-width regardless of
+       margins. *@
+    <div class="page @(GridVisible ? "with-grid" : null)"
+         id="designerPage"
+         style="@($"width:{PxStr(PageWidthMm)}px;padding:{PxStr(MarginTopMm)}px {PxStr(MarginRightMm)}px {PxStr(MarginBottomMm)}px {PxStr(MarginLeftMm)}px;box-sizing:border-box;")"
+         @ref="_pageRef"
+         @onclick="ClearSelection">
+        @* Margin guide — dashed box marking the content/margin boundary on all 4 sides.
+           Positioned absolutely from .page's padding-box (which equals .page's outer edges,
+           since there's no border). Explicit top/left/right/bottom match PageSetup.Margins
+           so the dashed lines sit exactly where bands begin/end on every side. z-index
+           lifts it above the bands so the lines are always visible; pointer-events:none
+           lets clicks pass through to the bands underneath. *@
+        <div class="page-margins"
+             style="@($"top:{PxStr(MarginTopMm)}px;left:{PxStr(MarginLeftMm)}px;right:{PxStr(MarginRightMm)}px;bottom:{PxStr(MarginBottomMm)}px;")"></div>
+
+        @foreach (var band in Report.Bands)
+        {
+            <div class="band @band.ToneClass @(band == ActiveBand ? "is-active" : null)"
+                 data-band-kind="@band.Kind"
+                 style="@($"height:{PxStr(band.Height.ToMm())}px;")">
+                @* Band label gutter — sits FULLY OUTSIDE the white paper, in the canvas
+                   gutter. Inline left = -(strip width + marginLeft) so the strip's right
+                   edge stops at .page's outer left edge regardless of the report's margins.
+                   This mirrors FastReport / Crystal where band names "RH/PH/DT/..." live
+                   off the page, leaving the paper pristine. *@
+                <div class="band-strip @(band == ActiveBand ? "is-active" : null) @(band.Kind == DesignerBandKind.SubDetail ? "is-subdetail" : null)"
+                     style="@($"left:-{StripLeftOffsetPx()}px;")"
+                     @onclick="@(e => OnBandStripClicked(band))"
+                     @onclick:stopPropagation="true"
+                     title="@(BandStripTitle(band))">
+                    <span class="band-label">@band.ShortCode</span>
+                    <span class="band-meta">@FormatMm(band.Height.ToMm())</span>
+                    @if (!string.IsNullOrEmpty(band.GroupExpression))
+                    {
+                        <span class="band-group-badge" title="@($"Agrupar por: {band.GroupExpression}")">↳</span>
+                    }
+                </div>
+                <div class="band-resize"
+                     data-band-kind="@band.Kind"
+                     title="Arrastar para redimensionar (@FormatMm(band.Height.ToMm()))"
+                     @ref="_bandResizeRefs[band]"></div>
+                <div class="band-content"
+                     data-band-kind="@band.Kind"
+                     @ref="_bandRefs[band]"
+                     @onclick="@(e => OnBandClicked(band, e))"
+                     @onclick:stopPropagation="true">
+                    @foreach (var el in band.Elements)
+                    {
+                        var exprError = GetExpressionError(el);
+                        <div class="el @(el.IsSelected ? "is-selected" : null) @(IsDataKind(el) ? "is-data" : null) @(el.IsBold ? "bold" : null) @(el.IsLocked ? "is-locked" : null) @(AlignClass(el)) @(exprError is not null ? "has-expr-error" : null)"
+                             data-element-id="@el.Id"
+                             data-band-kind="@band.Kind"
+                             @ref="_elementRefs[el]"
+                             @onclick:stopPropagation="true"
+                             @onclick="@(e => OnElementClicked(el, e))"
+                             @ondblclick:stopPropagation="true"
+                             @ondblclick="@(e => OnElementDoubleClicked(el))"
+                             style="@(ElementStyle(el) + (el.IsVisible ? string.Empty : "opacity:0.4;"))"
+                             title="@(exprError ?? OverflowTitle(el))">
+                            @* Content wrapper enforces the WYSIWYG clip — text that doesn't fit
+                               the designer bounds is hidden, matching Crystal Reports / SSRS / FastReport. *@
+                            <div class="el-content">
+                                @ElementInner(el)
+                            </div>
+                            @if (IsDataKind(el))
+                            {
+                                <span class="fx-badge">fx</span>
+                            }
+                            @if (el.IsSelected)
+                            {
+                                <div class="selection-ring" aria-hidden="true"></div>
+                                <div class="handles">
+                                    <div class="handle nw"></div>
+                                    <div class="handle n"></div>
+                                    <div class="handle ne"></div>
+                                    <div class="handle e"></div>
+                                    <div class="handle se"></div>
+                                    <div class="handle s"></div>
+                                    <div class="handle sw"></div>
+                                    <div class="handle w"></div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+            @* Sub-Detail "Data Member" footer caption — appears only when this band is
+               the active (focused) one, mirroring DevExpress XtraReports' band properties
+               surface that shows up below the active band. Rendered AFTER the band div in
+               flow so it never overlaps the data row's elements. Always-on access stays
+               available in the OutlineTree on the right panel. *@
+            @if (band.Kind == DesignerBandKind.SubDetail && band == ActiveBand)
+            {
+                <div class="band-caption-row" @onclick:stopPropagation="true"
+                     title="@DataMemberTitle(band)">
+                    <span class="band-caption-lbl">⤷ Sub-Detail · Data Member:</span>
+                    <select class="band-caption-select"
+                            value="@band.DataMember"
+                            @onchange="@(e => band.DataMember = e.Value?.ToString() ?? string.Empty)">
+                        <option value="">— selecione uma relação ou fonte —</option>
+                        @if (Relations is not null && Relations.Count > 0)
+                        {
+                            <optgroup label="Relações (master-detail)">
+                                @foreach (var r in Relations)
+                                {
+                                    <option value="@r.Name">@r.Name · @r.ParentSource → @r.ChildSource</option>
+                                }
+                            </optgroup>
+                        }
+                        @if (DataSources.Count > 0)
+                        {
+                            <optgroup label="Fontes (iteração solta)">
+                                @foreach (var ds in DataSources)
+                                {
+                                    <option value="@ds.Name">@ds.Name (todas as linhas)</option>
+                                }
+                            </optgroup>
+                        }
+                        @* Surface stale bindings so the user can see what was renamed/deleted. *@
+                        @if (!string.IsNullOrEmpty(band.DataMember)
+                             && (Relations is null || !Relations.Any(r => r.Name == band.DataMember))
+                             && !DataSources.Any(d => d.Name == band.DataMember))
+                        {
+                            <option value="@band.DataMember">⚠ @band.DataMember (não encontrado)</option>
+                        }
+                    </select>
+                    @if (string.IsNullOrEmpty(band.DataMember))
+                    {
+                        <span class="band-caption-warn"
+                              title="Sem DataMember a sub-banda não itera nada — escolha uma relação ou fonte.">
+                            ⚠ não configurado
+                        </span>
+                    }
+                </div>
+            }
+            else if (band.Kind == DesignerBandKind.SubDetail && string.IsNullOrEmpty(band.DataMember))
+            {
+                @* When the SubDetail is INactive but still unconfigured, leave a thin
+                   "click here to bind" pill so the user discovers the affordance without
+                   having to read docs. Clicking it focuses the band and the full caption
+                   row appears. *@
+                <div class="band-caption-hint"
+                     @onclick="@(e => OnBandStripClicked(band))"
+                     @onclick:stopPropagation="true"
+                     title="Sub-Detail sem DataMember — clique para configurar.">
+                    ⚠ Sub-Detail sem DataMember — clique para configurar
+                </div>
+            }
+        }
+
+        @if (_inlineEditElement is not null)
+        {
+            <textarea class="inline-editor"
+                      @ref="_inlineEditorRef"
+                      style="@InlineEditorStyle"
+                      @onblur="CommitInlineEdit"
+                      @onkeydown="OnInlineEditKey"
+                      @bind="_inlineEditValue"></textarea>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public ReportDefinitionViewModel Report { get; set; } = default!;
+    [Parameter] public ElementViewModel? SelectedElement { get; set; }
+    [Parameter] public EventCallback<ElementViewModel?> SelectedElementChanged { get; set; }
+    [Parameter] public BandViewModel? ActiveBand { get; set; }
+    [Parameter] public EventCallback<BandViewModel?> ActiveBandChanged { get; set; }
+    [Parameter] public DotNetObjectReference<object>? InteropRef { get; set; }
+    [Parameter] public bool GridVisible { get; set; }
+    [Parameter] public IReadOnlyList<DesignerDataSource> DataSources { get; set; } = Array.Empty<DesignerDataSource>();
+    [Parameter] public IReadOnlyList<DesignerParameter>  Parameters  { get; set; } = Array.Empty<DesignerParameter>();
+    /// <summary>Master-detail relations from the catalog. Passed straight through to the
+    /// SubDetail band's DataMember picker so the user picks from a list rather than typing
+    /// the relation name from memory.</summary>
+    [Parameter] public System.Collections.ObjectModel.ObservableCollection<DesignerRelation>? Relations { get; set; }
+
+    private string BandStripTitle(BandViewModel band)
+    {
+        var baseTitle = $"Banda {band.DisplayLabel} — clique para focar";
+        if (!string.IsNullOrEmpty(band.GroupExpression))
+            return baseTitle + $"\nAgrupada por: {band.GroupExpression}";
+        return baseTitle;
+    }
+
+    /// <summary>Tooltip for the SubDetail's DataMember select — resolves the chosen
+    /// identifier against the catalog and explains what the band will iterate.</summary>
+    private string DataMemberTitle(BandViewModel band)
+    {
+        if (string.IsNullOrEmpty(band.DataMember))
+            return "Escolha uma relação (master-detail) ou uma fonte (iteração solta).";
+        var rel = Relations?.FirstOrDefault(r => r.Name == band.DataMember);
+        if (rel is not null)
+            return $"Relação '{rel.Name}': filtra {rel.ChildSource} pelo campo {rel.ChildField} " +
+                   $"= linha atual de {rel.ParentSource}.{rel.ParentField}.";
+        if (DataSources.Any(d => d.Name == band.DataMember))
+            return $"Fonte '{band.DataMember}': itera todas as linhas (sem filtro de pai).";
+        return $"⚠ '{band.DataMember}' não foi encontrado nas relações nem nas fontes — " +
+               "verifique se foi renomeado/excluído.";
+    }
+
+    /// <summary>Returns the inline expression error for <paramref name="el"/> or null when
+    /// the expression is valid / the element doesn't carry one. Computed on every render —
+    /// the underlying regex/walker is cheap (typical .repx has &lt;50 elements with
+    /// expressions) and avoids the cache-invalidation complexity of persisting it on the VM.</summary>
+    private string? GetExpressionError(ElementViewModel el)
+    {
+        if (string.IsNullOrEmpty(el.Expression)) return null;
+        return ExpressionValidator.Validate(el.Expression, DataSources, Parameters);
+    }
+
+    /// <summary>Pixels per mm — chosen so that A4 (210mm) prints at the canonical 720px.</summary>
+    private const double PxPerMm = 720.0 / 210.0; // ≈ 3.4286
+
+    private readonly Dictionary<ElementViewModel, ElementReference> _elementRefs = new();
+    private readonly Dictionary<BandViewModel,    ElementReference> _bandRefs    = new();
+    private readonly Dictionary<BandViewModel,    ElementReference> _bandResizeRefs = new();
+    private readonly HashSet<string> _attachedElements = new();
+    private readonly HashSet<string> _lockedElementSnapshot = new();
+    private readonly HashSet<DesignerBandKind> _attachedBands = new();
+    private readonly HashSet<DesignerBandKind> _attachedBandResizers = new();
+    private ElementReference _pageRef;
+    private bool _pageMarqueeAttached;
+
+    private ElementViewModel? _inlineEditElement;
+    private string _inlineEditValue = string.Empty;
+    private ElementReference _inlineEditorRef;
+
+    private double PageWidthMm    => Report.PageSetup.PageWidth.ToMm();
+    private double MarginTopMm    => Report.PageSetup.Margins.Top.ToMm();
+    private double MarginLeftMm   => Report.PageSetup.Margins.Left.ToMm();
+    private double MarginRightMm  => Report.PageSetup.Margins.Right.ToMm();
+    private double MarginBottomMm => Report.PageSetup.Margins.Bottom.ToMm();
+
+    /// <summary>Always-invariant px-string. Critical: server-side Blazor in pt-BR would otherwise
+    /// format <c>154.35</c> as <c>"154,35px"</c> — CSS invalid — and every band would collapse
+    /// to height 0, stacking every element on the same Y.</summary>
+    private static string PxStr(double mm)
+        => (mm * PxPerMm).ToString("F2", CultureInfo.InvariantCulture);
+
+    /// <summary>Returns the band-strip's negative-left offset in pixels: enough to clear
+    /// the band's left edge (38 px gutter width, matching --band-strip-w) plus the page's
+    /// left margin (converted from mm to px). The strip's right edge then lands EXACTLY
+    /// at the page's outer left edge — band labels live in the canvas gutter, never on
+    /// top of the paper. Returns a positive number (the caller prefixes the minus sign).</summary>
+    private string StripLeftOffsetPx()
+    {
+        const double StripWidthPx = 38;
+        var marginPx = MarginLeftMm * PxPerMm;
+        return (StripWidthPx + marginPx).ToString("F2", CultureInfo.InvariantCulture);
+    }
+
+    private static string FormatMm(double mm)
+        => mm.ToString("F0", CultureInfo.InvariantCulture) + "mm";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        // NOTE: InteropRef is intentionally unused — the .NET ref the JS module needs is
+        // registered once globally by ReportDesigner via `omniDesigner.register(_selfRef)`.
+        // Earlier this guard short-circuited the whole method when no per-canvas ref was
+        // passed; that left every `.el` without pointer handlers, breaking drag/resize.
+
+        // Page-level marquee for multi-selection — wire once.
+        if (firstRender && !_pageMarqueeAttached)
+        {
+            _pageMarqueeAttached = true;
+            try { await Js.InvokeVoidAsync("omniDesigner.attachPageMarquee", _pageRef); }
+            catch (JSException) { }
+            catch (InvalidOperationException) { }
+        }
+
+        // Attach pointer handlers to new elements (idempotent — we track ids).
+        foreach (var (el, eref) in _elementRefs)
+        {
+            // Lock state can change at runtime → re-attach when it flips.
+            var lockKey = el.Id + (el.IsLocked ? ":locked" : ":free");
+            if (_attachedElements.Add(lockKey))
+            {
+                // Remove previous attachment marker for the other lock state.
+                _attachedElements.Remove(el.Id + (el.IsLocked ? ":free" : ":locked"));
+                try
+                {
+                    await Js.InvokeVoidAsync("omniDesigner.attachElement", eref,
+                        new { snap = true, snapMm = 1, locked = el.IsLocked });
+                }
+                catch (JSException) { /* test runtime - JS unavailable */ }
+                catch (InvalidOperationException) { /* pre-rendering */ }
+            }
+        }
+
+        // Wire drop zones once per band.
+        foreach (var (band, bref) in _bandRefs)
+        {
+            if (_attachedBands.Add(band.Kind))
+            {
+                try
+                {
+                    await Js.InvokeVoidAsync("omniDesigner.attachDropZone", bref, band.Kind.ToString());
+                }
+                catch (JSException) { }
+                catch (InvalidOperationException) { }
+            }
+        }
+
+        // Wire band resize handles once per band.
+        foreach (var (band, href) in _bandResizeRefs)
+        {
+            if (_attachedBandResizers.Add(band.Kind))
+            {
+                try
+                {
+                    await Js.InvokeVoidAsync("omniDesigner.attachBandResize", href, band.Kind.ToString());
+                }
+                catch (JSException) { }
+                catch (InvalidOperationException) { }
+            }
+        }
+
+        // Focus inline editor if it just opened.
+        if (_inlineEditElement is not null)
+        {
+            try { await Js.InvokeVoidAsync("omniDesigner.focus", _inlineEditorRef); }
+            catch (JSException) { }
+            catch (InvalidOperationException) { }
+        }
+    }
+
+    private Task ClearSelection()
+    {
+        if (_inlineEditElement is not null) return CommitInlineEdit();
+        return SelectedElementChanged.InvokeAsync(null);
+    }
+
+    private async Task OnBandClicked(BandViewModel band, MouseEventArgs e)
+    {
+        // Click on the band content (empty area between elements): focus that band so the
+        // next paste / Insert-menu / toolbox-click lands here. Element selection is left
+        // alone — Figma / DevExpress / Telerik all keep the current multi-selection when
+        // the user clicks an empty band area. To clear selection, click outside the page
+        // or press Escape.
+        await ActiveBandChanged.InvokeAsync(band);
+    }
+
+    private Task OnBandStripClicked(BandViewModel band)
+        => ActiveBandChanged.InvokeAsync(band);
+
+    private Task OnElementClicked(ElementViewModel element, MouseEventArgs e)
+    {
+        // Shift+click on the server side too (in case JS short-circuit didn't fire).
+        if (e.ShiftKey) return Task.CompletedTask;
+        return SelectedElementChanged.InvokeAsync(element);
+    }
+
+    private void OnElementDoubleClicked(ElementViewModel element)
+    {
+        // Only Label and TextBox support inline edit (their content is editable).
+        if (element.Kind != DesignerElementKind.Label && element.Kind != DesignerElementKind.TextBox)
+            return;
+        if (element.IsLocked) return;
+        _inlineEditElement = element;
+        _inlineEditValue = element.Kind == DesignerElementKind.Label
+            ? element.Text
+            : element.Expression;
+    }
+
+    private async Task CommitInlineEdit()
+    {
+        if (_inlineEditElement is null) return;
+        var el = _inlineEditElement;
+        var newValue = _inlineEditValue ?? string.Empty;
+        if (el.Kind == DesignerElementKind.Label) el.Text = newValue;
+        else el.Expression = newValue;
+        _inlineEditElement = null;
+        _inlineEditValue = string.Empty;
+        await Task.CompletedTask;
+    }
+
+    private async Task OnInlineEditKey(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape")
+        {
+            _inlineEditElement = null;
+            _inlineEditValue = string.Empty;
+        }
+        else if (e.Key == "Enter" && !e.ShiftKey)
+        {
+            await CommitInlineEdit();
+        }
+    }
+
+    private string InlineEditorStyle
+    {
+        get
+        {
+            if (_inlineEditElement is null) return string.Empty;
+            var el = _inlineEditElement;
+            // Position relative to .page (we know the band offsets via index lookup).
+            var bandIdx = -1;
+            double offsetMm = 0;
+            for (int i = 0; i < Report.Bands.Count; i++)
+            {
+                if (Report.Bands[i].Elements.Contains(el)) { bandIdx = i; break; }
+                offsetMm += Report.Bands[i].Height.ToMm();
+            }
+            var x = PxStr(el.X.ToMm());
+            var y = PxStr(offsetMm + el.Y.ToMm());
+            var w = PxStr(el.Width.ToMm());
+            var h = PxStr(el.Height.ToMm());
+            return $"position:absolute;left:{x}px;top:{y}px;width:{w}px;height:{h}px;z-index:40;" +
+                   "background:white;border:2px solid var(--accent);font-family:inherit;font-size:11px;padding:2px;outline:none;resize:none;";
+        }
+    }
+
+    private static bool IsDataKind(ElementViewModel e)
+        => e.Kind == DesignerElementKind.TextBox && !string.IsNullOrEmpty(e.Expression);
+
+    private static string AlignClass(ElementViewModel e) => e.HorizontalAlignment switch
+    {
+        HorizontalAlignment.Right  => "txt-right",
+        HorizontalAlignment.Center => "txt-center",
+        _ => string.Empty,
+    };
+
+    private static string ElementStyle(ElementViewModel e)
+    {
+        // All CSS numerics must be invariant-formatted — see PxStr docstring above.
+        var x = PxStr(e.X.ToMm());
+        var y = PxStr(e.Y.ToMm());
+        var w = PxStr(e.Width.ToMm());
+        var h = PxStr(e.Height.ToMm());
+        var sizePt = (e.FontSize * 1.333).ToString("F1", CultureInfo.InvariantCulture); // pt→px @ 96dpi
+        var color = "#" + (e.ForeColor.ToHex().Length == 9
+                             ? e.ForeColor.ToHex()[3..]
+                             : e.ForeColor.ToHex().TrimStart('#'));
+        return $"left:{x}px;top:{y}px;width:{w}px;height:{h}px;font-size:{sizePt}px;color:{color};font-family:{e.FontFamily};";
+    }
+
+    /// <summary>If the element has bound text/expression, surface its raw value as a tooltip
+    /// so the user can read content that gets clipped by the WYSIWYG overflow.</summary>
+    private static string? OverflowTitle(ElementViewModel e) => e.Kind switch
+    {
+        DesignerElementKind.Label => string.IsNullOrEmpty(e.Text) ? null : e.Text,
+        DesignerElementKind.TextBox or DesignerElementKind.Barcode or DesignerElementKind.QrCode =>
+            string.IsNullOrEmpty(e.Expression) ? null : e.Expression,
+        _ => null,
+    };
+
+    private static RenderFragment ElementInner(ElementViewModel e) => builder =>
+    {
+        switch (e.Kind)
+        {
+            case DesignerElementKind.Label:
+                builder.AddContent(0, e.Text);
+                break;
+
+            case DesignerElementKind.TextBox:
+            case DesignerElementKind.Barcode:
+            case DesignerElementKind.QrCode:
+                var expr = string.IsNullOrEmpty(e.Expression) ? "{expressão}" : e.Expression;
+                builder.OpenElement(0, "span");
+                builder.AddAttribute(1, "style", "color:var(--data-bound);font-family:var(--font-mono);");
+                builder.AddContent(2, expr);
+                builder.CloseElement();
+                break;
+
+            case DesignerElementKind.Line:
+                builder.OpenElement(0, "span");
+                builder.AddAttribute(1, "style", "display:block;width:100%;border-top:1px solid currentColor;");
+                builder.CloseElement();
+                break;
+
+            case DesignerElementKind.Rectangle:
+                builder.OpenElement(0, "span");
+                var bg = e.FillColor is null ? "transparent" : "#" + (e.FillColor.Value.ToHex().Length == 9
+                                                                       ? e.FillColor.Value.ToHex()[3..]
+                                                                       : e.FillColor.Value.ToHex().TrimStart('#'));
+                builder.AddAttribute(1, "style", $"display:block;width:100%;height:100%;background:{bg};border:1px solid currentColor;box-sizing:border-box;");
+                builder.CloseElement();
+                break;
+
+            case DesignerElementKind.Ellipse:
+                builder.OpenElement(0, "span");
+                var bg2 = e.FillColor is null ? "transparent" : "#" + (e.FillColor.Value.ToHex().Length == 9
+                                                                       ? e.FillColor.Value.ToHex()[3..]
+                                                                       : e.FillColor.Value.ToHex().TrimStart('#'));
+                builder.AddAttribute(1, "style", $"display:block;width:100%;height:100%;background:{bg2};border:1px solid currentColor;border-radius:50%;box-sizing:border-box;");
+                builder.CloseElement();
+                break;
+
+            case DesignerElementKind.Image:
+                builder.OpenElement(0, "span");
+                builder.AddAttribute(1, "style", "display:flex;align-items:center;justify-content:center;width:100%;height:100%;background:var(--bg-panel);border:1px dashed var(--text-tertiary);color:var(--text-tertiary);font-size:11px;");
+                builder.AddContent(2, "Imagem");
+                builder.CloseElement();
+                break;
+
+            case DesignerElementKind.Chart:
+                builder.OpenElement(0, "span");
+                builder.AddAttribute(1, "style", "display:flex;align-items:center;justify-content:center;width:100%;height:100%;background:var(--bg-panel);border:1px dashed var(--text-tertiary);color:var(--text-tertiary);font-size:11px;");
+                builder.AddContent(2, "📊 Gráfico");
+                builder.CloseElement();
+                break;
+
+            case DesignerElementKind.Tablix:
+            case DesignerElementKind.Gauge:
+            case DesignerElementKind.DataBar:
+            case DesignerElementKind.Sparkline:
+            case DesignerElementKind.Indicator:
+            case DesignerElementKind.Map:
+            case DesignerElementKind.Subreport:
+            case DesignerElementKind.Code:
+                builder.OpenElement(0, "span");
+                builder.AddAttribute(1, "style", "display:flex;align-items:center;justify-content:center;width:100%;height:100%;background:var(--bg-panel);border:1px dashed var(--text-tertiary);color:var(--text-tertiary);font-size:11px;");
+                builder.AddContent(2, e.Kind switch
+                {
+                    DesignerElementKind.Tablix => "▦ Tabela",
+                    DesignerElementKind.Gauge => "◷ Medidor",
+                    DesignerElementKind.DataBar => "▬ Barra de dados",
+                    DesignerElementKind.Sparkline => "∿ Mini-gráfico",
+                    DesignerElementKind.Indicator => "◆ Indicador",
+                    DesignerElementKind.Map => "🗺 Mapa",
+                    DesignerElementKind.Subreport => "📄 Sub-relatório",
+                    DesignerElementKind.Code => "{ } Código",
+                    _ => "Elemento",
+                });
+                builder.CloseElement();
+                break;
+        }
+    };
+
+    public async ValueTask DisposeAsync()
+    {
+        await Task.CompletedTask;
+    }
+}

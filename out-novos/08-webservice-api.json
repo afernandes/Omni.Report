@@ -1,0 +1,744 @@
+{
+  "name": "Catálogo de Produtos (REST)",
+  "pageCount": 1,
+  "unit": "millimeters",
+  "pages": [
+    {
+      "pageNumber": 1,
+      "size": {
+        "width": 210.007,
+        "height": 297.002
+      },
+      "primitives": [
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 18.009,
+          "width": 173.99,
+          "height": 11.989,
+          "text": "Catálogo de Produtos · Fonte REST",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 16,
+            "fontStyle": "Bold",
+            "color": "#000000",
+            "horizontalAlignment": "Center"
+          }
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 32.004,
+          "width": 173.99,
+          "height": 5.994,
+          "text": "Origem: GET https://api.demo/produtos · Bearer demo-token · path: items",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#808080",
+            "horizontalAlignment": "Center"
+          }
+        },
+        {
+          "type": "line",
+          "x": 18.009,
+          "y": 40.005,
+          "width": 173.99,
+          "height": 0,
+          "from": {
+            "x": 18.009,
+            "y": 40.005
+          },
+          "to": {
+            "x": 191.999,
+            "y": 40.005
+          },
+          "color": "#000000",
+          "thickness": 0.178
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 45.999,
+          "width": 21.996,
+          "height": 5.994,
+          "text": "SKU",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "fontStyle": "Bold",
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 42.012,
+          "y": 45.999,
+          "width": 78.003,
+          "height": 5.994,
+          "text": "Produto",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "fontStyle": "Bold",
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 121.996,
+          "y": 45.999,
+          "width": 26.01,
+          "height": 5.994,
+          "text": "Preço",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "fontStyle": "Bold",
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 150.012,
+          "y": 45.999,
+          "width": 19.99,
+          "height": 5.994,
+          "text": "Estoque",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "fontStyle": "Bold",
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 172.009,
+          "y": 45.999,
+          "width": 19.99,
+          "height": 5.994,
+          "text": "★",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "fontStyle": "Bold",
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "line",
+          "x": 18.009,
+          "y": 51.994,
+          "width": 173.99,
+          "height": 0,
+          "from": {
+            "x": 18.009,
+            "y": 51.994
+          },
+          "to": {
+            "x": 191.999,
+            "y": 51.994
+          },
+          "color": "#000000",
+          "thickness": 0.076
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 54.991,
+          "width": 173.99,
+          "height": 5.994,
+          "text": "Acessórios",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 11,
+            "fontStyle": "Bold",
+            "color": "#C2410C"
+          }
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 62.001,
+          "width": 21.996,
+          "height": 5.994,
+          "text": "SKU-002",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 9,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 42.012,
+          "y": 62.001,
+          "width": 78.003,
+          "height": 5.994,
+          "text": "Mouse Logitech MX Master",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 121.996,
+          "y": 62.001,
+          "width": 26.01,
+          "height": 5.994,
+          "text": "R$ 449,90",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 150.012,
+          "y": 62.001,
+          "width": 19.99,
+          "height": 5.994,
+          "text": "23",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 172.009,
+          "y": 62.001,
+          "width": 19.99,
+          "height": 5.994,
+          "text": "4,8",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 67.996,
+          "width": 21.996,
+          "height": 5.994,
+          "text": "SKU-003",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 9,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 42.012,
+          "y": 67.996,
+          "width": 78.003,
+          "height": 5.994,
+          "text": "Teclado Keychron K2",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 121.996,
+          "y": 67.996,
+          "width": 26.01,
+          "height": 5.994,
+          "text": "R$ 890,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 150.012,
+          "y": 67.996,
+          "width": 19.99,
+          "height": 5.994,
+          "text": "15",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 172.009,
+          "y": 67.996,
+          "width": 19.99,
+          "height": 5.994,
+          "text": "4,7",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 73.99,
+          "width": 21.996,
+          "height": 5.994,
+          "text": "SKU-007",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 9,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 42.012,
+          "y": 73.99,
+          "width": 78.003,
+          "height": 5.994,
+          "text": "Webcam Logitech Brio",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 121.996,
+          "y": 73.99,
+          "width": 26.01,
+          "height": 5.994,
+          "text": "R$ 990,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 150.012,
+          "y": 73.99,
+          "width": 19.99,
+          "height": 5.994,
+          "text": "6",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 172.009,
+          "y": 73.99,
+          "width": 19.99,
+          "height": 5.994,
+          "text": "4,4",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 80.975,
+          "width": 173.99,
+          "height": 5.994,
+          "text": "Áudio",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 11,
+            "fontStyle": "Bold",
+            "color": "#C2410C"
+          }
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 87.986,
+          "width": 21.996,
+          "height": 5.994,
+          "text": "SKU-005",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 9,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 42.012,
+          "y": 87.986,
+          "width": 78.003,
+          "height": 5.994,
+          "text": "Headset Sony WH-1000XM5",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 121.996,
+          "y": 87.986,
+          "width": 26.01,
+          "height": 5.994,
+          "text": "R$ 2.890,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 150.012,
+          "y": 87.986,
+          "width": 19.99,
+          "height": 5.994,
+          "text": "12",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 172.009,
+          "y": 87.986,
+          "width": 19.99,
+          "height": 5.994,
+          "text": "4,9",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 94.971,
+          "width": 173.99,
+          "height": 5.994,
+          "text": "Laptops",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 11,
+            "fontStyle": "Bold",
+            "color": "#C2410C"
+          }
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 101.981,
+          "width": 21.996,
+          "height": 5.994,
+          "text": "SKU-001",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 9,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 42.012,
+          "y": 101.981,
+          "width": 78.003,
+          "height": 5.994,
+          "text": "Notebook Dell XPS 13",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 121.996,
+          "y": 101.981,
+          "width": 26.01,
+          "height": 5.994,
+          "text": "R$ 9.500,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 150.012,
+          "y": 101.981,
+          "width": 19.99,
+          "height": 5.994,
+          "text": "4",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 172.009,
+          "y": 101.981,
+          "width": 19.99,
+          "height": 5.994,
+          "text": "4,6",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 108.966,
+          "width": 173.99,
+          "height": 5.994,
+          "text": "Monitores",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 11,
+            "fontStyle": "Bold",
+            "color": "#C2410C"
+          }
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 115.976,
+          "width": 21.996,
+          "height": 5.994,
+          "text": "SKU-004",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 9,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 42.012,
+          "y": 115.976,
+          "width": 78.003,
+          "height": 5.994,
+          "text": "Monitor LG 27 UltraFine",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 121.996,
+          "y": 115.976,
+          "width": 26.01,
+          "height": 5.994,
+          "text": "R$ 3.290,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 150.012,
+          "y": 115.976,
+          "width": 19.99,
+          "height": 5.994,
+          "text": "8",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 172.009,
+          "y": 115.976,
+          "width": 19.99,
+          "height": 5.994,
+          "text": "4,5",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 122.961,
+          "width": 173.99,
+          "height": 5.994,
+          "text": "Storage",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 11,
+            "fontStyle": "Bold",
+            "color": "#C2410C"
+          }
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 129.972,
+          "width": 21.996,
+          "height": 5.994,
+          "text": "SKU-006",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 9,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 42.012,
+          "y": 129.972,
+          "width": 78.003,
+          "height": 5.994,
+          "text": "SSD Samsung 980 PRO 1TB",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 121.996,
+          "y": 129.972,
+          "width": 26.01,
+          "height": 5.994,
+          "text": "R$ 799,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 150.012,
+          "y": 129.972,
+          "width": 19.99,
+          "height": 5.994,
+          "text": "18",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 172.009,
+          "y": 129.972,
+          "width": 19.99,
+          "height": 5.994,
+          "text": "4,8",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "line",
+          "x": 18.009,
+          "y": 135.966,
+          "width": 173.99,
+          "height": 0,
+          "from": {
+            "x": 18.009,
+            "y": 135.966
+          },
+          "to": {
+            "x": 191.999,
+            "y": 135.966
+          },
+          "color": "#000000",
+          "thickness": 0.178
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 137.973,
+          "width": 173.99,
+          "height": 5.994,
+          "text": "Itens: 7 · Estoque total: 86",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "fontStyle": "Bold",
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 272.999,
+          "width": 173.99,
+          "height": 5.994,
+          "text": "OmniReport · Página 1 de 1",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#808080",
+            "horizontalAlignment": "Right"
+          }
+        }
+      ]
+    }
+  ]
+}

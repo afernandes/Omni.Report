@@ -1,0 +1,106 @@
+@namespace Reporting.Designer.Blazor.Components
+@using Reporting.Designer.Blazor.ViewModels
+
+<DesignerModal Visible="@(Visible && Band is not null)"
+               Title="Agrupar por…"
+               HeadIcon="indent-increase"
+               OnClose="OnClosed">
+    <ChildContent>
+        <p style="color:var(--text-secondary);font-size:var(--fs-sm);margin:0 0 12px 0;">
+            Quebras de grupo (GH/GF) precisam de uma expressão que retorne o valor de
+            agrupamento. Quando o valor muda entre linhas, o GroupFooter da quebra anterior
+            é emitido e o GroupHeader da nova abre — exatamente como em Crystal / SSRS.
+        </p>
+
+        <div class="form-row">
+            <label>Banda</label>
+            <span class="mono" style="color:var(--text-tertiary);">@Band?.DisplayLabel</span>
+        </div>
+
+        <div class="form-row">
+            <label>Campo</label>
+            <select @bind="_selectedField" @bind:after="OnFieldPicked">
+                <option value="">— escolher campo —</option>
+                @foreach (var ds in DataSources)
+                {
+                    <optgroup label="@ds.Name">
+                        @foreach (var f in ds.Fields)
+                        {
+                            <option value="@($"Fields.{f.Name}")">@f.Name (@f.Type)</option>
+                        }
+                    </optgroup>
+                }
+            </select>
+        </div>
+
+        <div class="form-row">
+            <label>Expressão</label>
+            <input type="text" value="@_expression"
+                   @oninput="@(e => _expression = e.Value?.ToString() ?? string.Empty)"
+                   placeholder="Fields.Cliente.Nome ou Substring(Fields.CNPJ, 0, 8)"
+                   style="font-family:var(--font-mono);font-size:11.5px;" />
+        </div>
+
+        <div style="background:var(--bg-panel);border:1px solid var(--border);border-radius:var(--r-2);padding:8px 10px;margin-top:8px;font-size:var(--fs-xs);color:var(--text-tertiary);">
+            <strong>Exemplos comuns:</strong><br/>
+            • <code>Fields.Cliente</code> — agrupa por cliente<br/>
+            • <code>Fields.Data.Month</code> — agrupa por mês<br/>
+            • <code>Fields.Total &gt; 1000 ? "Alto" : "Baixo"</code> — agrupa por faixa
+        </div>
+    </ChildContent>
+    <Footer>
+        @if (Band is not null && !string.IsNullOrEmpty(Band.GroupExpression))
+        {
+            <button class="btn ds-danger" type="button" @onclick="HandleClear">Remover agrupamento</button>
+        }
+        <span style="flex:1"></span>
+        <button class="btn" type="button" @onclick="OnClosed">Cancelar</button>
+        <button class="btn primary" type="button" @onclick="HandleApply">Aplicar</button>
+    </Footer>
+</DesignerModal>
+
+@code {
+    [Parameter] public bool Visible { get; set; }
+    [Parameter] public BandViewModel? Band { get; set; }
+    [Parameter] public IReadOnlyList<DesignerDataSource> DataSources { get; set; } = Array.Empty<DesignerDataSource>();
+    [Parameter] public EventCallback OnApplied { get; set; }
+    [Parameter] public EventCallback OnClosed { get; set; }
+
+    private string _expression = string.Empty;
+    private string _selectedField = string.Empty;
+    private BandViewModel? _tracked;
+
+    protected override void OnParametersSet()
+    {
+        if (Visible && !ReferenceEquals(_tracked, Band))
+        {
+            _tracked = Band;
+            _expression = Band?.GroupExpression ?? string.Empty;
+            // If the existing expression is just a Fields.X reference, preselect it in the
+            // dropdown so the user sees their current choice; otherwise leave blank (custom).
+            _selectedField = _expression.StartsWith("Fields.") ? _expression : string.Empty;
+        }
+        else if (!Visible) _tracked = null;
+    }
+
+    private void OnFieldPicked()
+    {
+        if (!string.IsNullOrEmpty(_selectedField)) _expression = _selectedField;
+    }
+
+    private async Task HandleApply()
+    {
+        if (Band is null) return;
+        Band.GroupExpression = string.IsNullOrWhiteSpace(_expression) ? null : _expression.Trim();
+        await OnApplied.InvokeAsync();
+        await OnClosed.InvokeAsync();
+    }
+
+    private async Task HandleClear()
+    {
+        if (Band is null) return;
+        Band.GroupExpression = null;
+        await OnApplied.InvokeAsync();
+        await OnClosed.InvokeAsync();
+    }
+}

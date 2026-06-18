@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Reporting.Designer.Blazor</RootNamespace>
+    <AssemblyName>Reporting.Designer.Blazor</AssemblyName>
+    <Description>OmniReport — Razor Class Library exposing the visual ReportDesigner (drag-drop canvas, property grid, expression editor) for Blazor Web App + MAUI Blazor Hybrid hosts.</Description>
+    <IsPackable>true</IsPackable>
+    <Nullable>enable</Nullable>
+    <!-- Designer is the largest module; tighten warnings progressively after MVP. -->
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Reporting.Core\Reporting.Core.csproj" />
+    <ProjectReference Include="..\Reporting.CodeFirst\Reporting.CodeFirst.csproj" />
+    <ProjectReference Include="..\Reporting.Layout\Reporting.Layout.csproj" />
+    <ProjectReference Include="..\Reporting.Serialization\Reporting.Serialization.csproj" />
+    <ProjectReference Include="..\Reporting.Printing\Reporting.Printing.csproj" />
+    <ProjectReference Include="..\Reporting.Viewer.Blazor\Reporting.Viewer.Blazor.csproj" />
+    <!-- Direct references to every exporter the Designer's AddDefaultExporters() instantiates.
+         They're already transitive via Viewer.Blazor, but some IDE/LSP setups don't surface
+         transitive types for IntelliSense — listing them explicitly keeps the editor happy
+         and makes the dependency surface obvious to readers. -->
+    <ProjectReference Include="..\Reporting.Output.Pdf\Reporting.Output.Pdf.csproj" />
+    <ProjectReference Include="..\Reporting.Output.Excel\Reporting.Output.Excel.csproj" />
+    <ProjectReference Include="..\Reporting.Output.Html\Reporting.Output.Html.csproj" />
+    <ProjectReference Include="..\Reporting.Output.Svg\Reporting.Output.Svg.csproj" />
+    <ProjectReference Include="..\Reporting.Output.Csv\Reporting.Output.Csv.csproj" />
+    <ProjectReference Include="..\Reporting.Output.Json\Reporting.Output.Json.csproj" />
+    <ProjectReference Include="..\Reporting.Output.Markdown\Reporting.Output.Markdown.csproj" />
+  </ItemGroup>
+
+</Project>

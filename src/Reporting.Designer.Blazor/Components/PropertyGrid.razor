@@ -1,0 +1,1034 @@
+@namespace Reporting.Designer.Blazor.Components
+@using System.Globalization
+@using Reporting.Elements
+@implements IDisposable
+
+@if (Element is null)
+{
+    <div style="padding:24px 16px; color:var(--text-tertiary); font-size:var(--fs-sm);">
+        Selecione um elemento para editar suas propriedades.
+    </div>
+}
+else
+{
+    <!-- Header chip: element kind + name + selection count -->
+    <div style="display:flex;align-items:center;gap:8px;height:34px;padding:0 12px;border-bottom:1px solid var(--border);background:var(--bg-surface);">
+        <Icon Name="@KindIcon(Element)" Size="16" CssClass="icon icon-16" />
+        <div style="flex:1;min-width:0;">
+            <div style="font-size:12px;font-weight:600;color:var(--text-primary);">
+                @Element.Kind · @(Element.Name ?? Element.Id[..Math.Min(6, Element.Id.Length)])
+            </div>
+            <div style="font-size:10px;color:var(--text-tertiary);font-family:var(--font-mono);">
+                @BandLabel · #@Element.Id[..Math.Min(6, Element.Id.Length)]
+            </div>
+        </div>
+        <span style="font-family:var(--font-mono);font-size:10px;color:var(--text-tertiary);padding:1px 5px;border:1px solid var(--border);border-radius:2px;">1 sel.</span>
+    </div>
+
+    <div class="prop-section">
+        <div class="prop-section-head"><Icon Name="chevron-down" Size="12" CssClass="chev icon icon-12" /><span>Layout</span><span class="count">4</span></div>
+        @Row("X",      ToMm(Element.X),      v => Element.X      = ParseMm(v) ?? Element.X)
+        @Row("Y",      ToMm(Element.Y),      v => Element.Y      = ParseMm(v) ?? Element.Y)
+        @Row("Width",  ToMm(Element.Width),  v => Element.Width  = ParseMm(v) ?? Element.Width)
+        @Row("Height", ToMm(Element.Height), v => Element.Height = ParseMm(v) ?? Element.Height)
+    </div>
+
+    @if (HasTextContent(Element))
+    {
+        <div class="prop-section">
+            <div class="prop-section-head"><Icon Name="chevron-down" Size="12" CssClass="chev icon icon-12" /><span>Appearance</span><span class="count">5</span></div>
+            <div class="prop-row">
+                <div class="p-label">Font</div>
+                <div class="p-editor">
+                    <input value="@Element.FontFamily"
+                           @onchange="@(e => Element.FontFamily = e.Value?.ToString() ?? "Arial")"
+                           style="flex:1;font-family:var(--font-mono);font-size:11.5px;" />
+                    <span style="color:var(--text-tertiary);">·</span>
+                    <input value="@Element.FontSize" type="number" step="0.5"
+                           @onchange="@(e => SetFontSize(e.Value?.ToString()))"
+                           style="width:46px;font-family:var(--font-mono);font-size:11.5px;text-align:right;" />
+                    <span class="p-unit">pt</span>
+                </div>
+            </div>
+            <div class="prop-row">
+                <div class="p-label">Style</div>
+                <div class="p-editor">
+                    <span class="editor-toggle">
+                        <button class="@(Element.IsBold ? "is-on" : null)" type="button"
+                                @onclick="@(() => Element.IsBold = !Element.IsBold)">B</button>
+                        <button class="@(Element.IsItalic ? "is-on" : null)" type="button"
+                                @onclick="@(() => Element.IsItalic = !Element.IsItalic)">I</button>
+                        <button class="@(Element.IsUnderline ? "is-on" : null)" type="button"
+                                @onclick="@(() => Element.IsUnderline = !Element.IsUnderline)">U</button>
+                        <button class="@(Element.IsStrikethrough ? "is-on" : null)" type="button"
+                                @onclick="@(() => Element.IsStrikethrough = !Element.IsStrikethrough)">S</button>
+                    </span>
+                </div>
+            </div>
+            <div class="prop-row">
+                <div class="p-label">Color</div>
+                <div class="p-editor">
+                    <span class="color-swatch" style="background:@ColorHex(Element.ForeColor);"></span>
+                    <input type="color" value="@ColorHex(Element.ForeColor)"
+                           @onchange="@(e => SetColor(e.Value?.ToString()))"
+                           style="width:36px;height:16px;cursor:pointer;" />
+                    <span class="mono" style="font-size:11.5px;">@ColorHex(Element.ForeColor)</span>
+                </div>
+            </div>
+            <div class="prop-row">
+                <div class="p-label">Background</div>
+                <div class="p-editor">
+                    @{
+                        var bg = Element.BackColor ?? Element.FillColor;
+                    }
+                    @if (bg is null)
+                    {
+                        <span class="color-swatch" style="background:transparent;border-style:dashed;"></span>
+                        <input type="color" value="#ffffff"
+                               @onchange="@(e => SetBackground(e.Value?.ToString()))"
+                               style="width:36px;height:16px;cursor:pointer;" />
+                        <span style="color:var(--text-tertiary);font-size:11.5px;">Transparente</span>
+                        <button class="icon-btn" type="button" title="Definir transparente"
+                                @onclick="ClearBackground"
+                                style="width:18px;height:18px;color:var(--text-tertiary);">×</button>
+                    }
+                    else
+                    {
+                        <span class="color-swatch" style="background:@ColorHex(bg.Value);"></span>
+                        <input type="color" value="@ColorHex(bg.Value)"
+                               @onchange="@(e => SetBackground(e.Value?.ToString()))"
+                               style="width:36px;height:16px;cursor:pointer;" />
+                        <span class="mono" style="font-size:11.5px;">@ColorHex(bg.Value)</span>
+                        <button class="icon-btn" type="button" title="Tornar transparente"
+                                @onclick="ClearBackground"
+                                style="width:18px;height:18px;color:var(--text-tertiary);">×</button>
+                    }
+                </div>
+            </div>
+            <div class="prop-row">
+                <div class="p-label">Align H</div>
+                <div class="p-editor">
+                    <span class="align-row" aria-label="Horizontal">
+                        <button class="@(Element.HorizontalAlignment == HorizontalAlignment.Left ? "is-on" : null)" type="button"
+                                title="Esquerda" @onclick="@(() => Element.HorizontalAlignment = HorizontalAlignment.Left)">
+                            <Icon Name="align-left" Size="12" CssClass="icon icon-12" />
+                        </button>
+                        <button class="@(Element.HorizontalAlignment == HorizontalAlignment.Center ? "is-on" : null)" type="button"
+                                title="Centro" @onclick="@(() => Element.HorizontalAlignment = HorizontalAlignment.Center)">
+                            <Icon Name="align-center" Size="12" CssClass="icon icon-12" />
+                        </button>
+                        <button class="@(Element.HorizontalAlignment == HorizontalAlignment.Right ? "is-on" : null)" type="button"
+                                title="Direita" @onclick="@(() => Element.HorizontalAlignment = HorizontalAlignment.Right)">
+                            <Icon Name="align-right" Size="12" CssClass="icon icon-12" />
+                        </button>
+                    </span>
+                </div>
+            </div>
+            <div class="prop-row">
+                <div class="p-label">Align V</div>
+                <div class="p-editor">
+                    <span class="align-row" aria-label="Vertical">
+                        <button class="@(Element.VerticalAlignment == VerticalAlignment.Top ? "is-on" : null)" type="button"
+                                title="Topo" @onclick="@(() => Element.VerticalAlignment = VerticalAlignment.Top)">
+                            <Icon Name="align-start-horizontal" Size="12" CssClass="icon icon-12" />
+                        </button>
+                        <button class="@(Element.VerticalAlignment == VerticalAlignment.Middle ? "is-on" : null)" type="button"
+                                title="Centro" @onclick="@(() => Element.VerticalAlignment = VerticalAlignment.Middle)">
+                            <Icon Name="align-center-horizontal" Size="12" CssClass="icon icon-12" />
+                        </button>
+                        <button class="@(Element.VerticalAlignment == VerticalAlignment.Bottom ? "is-on" : null)" type="button"
+                                title="Base" @onclick="@(() => Element.VerticalAlignment = VerticalAlignment.Bottom)">
+                            <Icon Name="align-end-horizontal" Size="12" CssClass="icon icon-12" />
+                        </button>
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        @* ── Border + Padding section ──────────────────────────────────────── *@
+        <div class="prop-section">
+            <div class="prop-section-head"><Icon Name="chevron-down" Size="12" CssClass="chev icon icon-12" /><span>Border &amp; Padding</span><span class="count">2</span></div>
+            <div class="prop-row">
+                <div class="p-label">Border</div>
+                <div class="p-editor">
+                    <select @onchange="@(e => SetBorderStyle(e.Value?.ToString()))" style="flex:1;font-size:11.5px;">
+                        <option value="None" selected="@(Element.Border is null || Element.Border.Top.Style == BorderLineStyle.None)">— Nenhuma —</option>
+                        <option value="Solid"  selected="@(Element.Border?.Top.Style == BorderLineStyle.Solid)">Solid</option>
+                        <option value="Dashed" selected="@(Element.Border?.Top.Style == BorderLineStyle.Dashed)">Dashed</option>
+                        <option value="Dotted" selected="@(Element.Border?.Top.Style == BorderLineStyle.Dotted)">Dotted</option>
+                        <option value="Double" selected="@(Element.Border?.Top.Style == BorderLineStyle.Double)">Double</option>
+                    </select>
+                    @if (Element.Border is not null && Element.Border.Top.Style != BorderLineStyle.None)
+                    {
+                        <input type="number" step="0.1" min="0" max="10"
+                               value="@BorderThickness"
+                               @onchange="@(e => SetBorderThickness(e.Value?.ToString()))"
+                               style="width:52px;font-family:var(--font-mono);font-size:11.5px;" />
+                        <span class="p-unit">pt</span>
+                        <input type="color"
+                               value="@ColorHex(Element.Border.Top.Color)"
+                               @onchange="@(e => SetBorderColor(e.Value?.ToString()))"
+                               style="width:36px;height:16px;cursor:pointer;" />
+                    }
+                </div>
+            </div>
+            <div class="prop-row">
+                <div class="p-label">Padding</div>
+                <div class="p-editor">
+                    <input type="number" step="0.1" min="0"
+                           value="@PaddingMm"
+                           @onchange="@(e => SetUniformPadding(e.Value?.ToString()))"
+                           style="width:60px;font-family:var(--font-mono);font-size:11.5px;" />
+                    <span class="p-unit">mm</span>
+                    <span style="color:var(--text-tertiary);font-size:10.5px;">(uniforme)</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="prop-section">
+            <div class="prop-section-head" style="background:var(--accent-soft);color:var(--accent);">
+                <Icon Name="chevron-down" Size="12" CssClass="chev icon icon-12" />
+                <span>Data</span>
+                <span class="count" style="color:var(--accent);background:var(--bg-surface);border:1px solid var(--accent-border);padding:1px 4px;border-radius:2px;">@(IsBound ? 2 : 1)</span>
+            </div>
+            <div class="prop-row @(IsBound ? "is-bound is-focused" : null)">
+                <div class="p-label">@(Element.Kind == DesignerElementKind.Label ? "Text" : "Expression")</div>
+                <div class="p-editor">
+                    @if (Element.Kind == DesignerElementKind.Label)
+                    {
+                        <input type="text" value="@Element.Text"
+                               @onchange="@(e => Element.Text = e.Value?.ToString() ?? string.Empty)"
+                               style="flex:1;font-family:var(--font-mono);font-size:11.5px;" />
+                    }
+                    else
+                    {
+                        <input type="text" value="@Element.Expression"
+                               @onchange="@(e => Element.Expression = e.Value?.ToString() ?? string.Empty)"
+                               style="flex:1;font-family:var(--font-mono);font-size:11.5px;" />
+                        <button class="icon-btn" type="button"
+                                @onclick="OpenExpressionEditor"
+                                style="width:18px;height:18px;color:var(--data-bound);background:var(--data-bound-soft);border-radius:3px;font-family:var(--font-mono);font-size:9.5px;font-weight:600;cursor:pointer;"
+                                title="Editor de expressões (F8)">fx</button>
+                    }
+                </div>
+            </div>
+            <div class="prop-row">
+                <div class="p-label">Format</div>
+                <div class="p-editor">
+                    <select @onchange="@(e => SetFormatPreset(e.Value?.ToString()))" style="flex:1;font-size:11.5px;font-family:var(--font-mono);">
+                        <option value=""    selected="@(string.IsNullOrEmpty(Element.Format))">— sem formato —</option>
+                        <option value="C"   selected="@(Element.Format == "C")">C — Moeda (R$ 1.234,56)</option>
+                        <option value="N0"  selected="@(Element.Format == "N0")">N0 — Inteiro (1.234)</option>
+                        <option value="N2"  selected="@(Element.Format == "N2")">N2 — Decimal (1.234,56)</option>
+                        <option value="P"   selected="@(Element.Format == "P")">P — Percent (12,34%)</option>
+                        <option value="dd/MM/yyyy" selected="@(Element.Format == "dd/MM/yyyy")">Data dd/MM/yyyy</option>
+                        <option value="HH:mm"      selected="@(Element.Format == "HH:mm")">Hora HH:mm</option>
+                        <option value="dd/MM/yyyy HH:mm" selected="@(Element.Format == "dd/MM/yyyy HH:mm")">Data+Hora</option>
+                        <option value="__custom__" selected="@(!string.IsNullOrEmpty(Element.Format) && !_knownFormats.Contains(Element.Format!))">— Custom… —</option>
+                    </select>
+                    @if (!string.IsNullOrEmpty(Element.Format) && !_knownFormats.Contains(Element.Format!))
+                    {
+                        <input type="text" value="@Element.Format" placeholder="ex: #,##0.00"
+                               @onchange="@(e => Element!.Format = e.Value?.ToString())"
+                               style="width:120px;font-family:var(--font-mono);font-size:11.5px;" />
+                    }
+                </div>
+            </div>
+        </div>
+    }
+
+    <div class="prop-section">
+        <div class="prop-section-head"><Icon Name="chevron-down" Size="12" CssClass="chev icon icon-12" /><span>Behavior</span><span class="count">3</span></div>
+        <div class="prop-row">
+            <div class="p-label">Visible</div>
+            <div class="p-editor">
+                <span class="editor-toggle">
+                    <button class="@(Element!.IsVisible ? "is-on" : null)" type="button"
+                            @onclick="@(() => Element.IsVisible = true)">On</button>
+                    <button class="@(!Element.IsVisible ? "is-on" : null)" type="button"
+                            @onclick="@(() => Element.IsVisible = false)">Off</button>
+                </span>
+            </div>
+        </div>
+        <div class="prop-row">
+            <div class="p-label">CanGrow</div>
+            <div class="p-editor">
+                <span class="editor-toggle">
+                    <button class="@(Element.CanGrow ? "is-on" : null)" type="button"
+                            @onclick="@(() => Element.CanGrow = true)">On</button>
+                    <button class="@(!Element.CanGrow ? "is-on" : null)" type="button"
+                            @onclick="@(() => Element.CanGrow = false)">Off</button>
+                </span>
+            </div>
+        </div>
+        <div class="prop-row">
+            <div class="p-label">KeepTogether</div>
+            <div class="p-editor">
+                <span class="editor-toggle">
+                    <button class="@(Element.KeepTogether ? "is-on" : null)" type="button"
+                            @onclick="@(() => Element.KeepTogether = true)">On</button>
+                    <button class="@(!Element.KeepTogether ? "is-on" : null)" type="button"
+                            @onclick="@(() => Element.KeepTogether = false)">Off</button>
+                </span>
+            </div>
+        </div>
+        <div class="prop-row">
+            <div class="p-label">Locked</div>
+            <div class="p-editor">
+                <span class="editor-toggle">
+                    <button class="@(Element.IsLocked ? "is-on" : null)" type="button"
+                            title="Bloqueia drag/resize" @onclick="@(() => Element.IsLocked = true)">On</button>
+                    <button class="@(!Element.IsLocked ? "is-on" : null)" type="button"
+                            @onclick="@(() => Element.IsLocked = false)">Off</button>
+                </span>
+                @if (Element.IsLocked)
+                {
+                    <Icon Name="lock" Size="12" CssClass="icon icon-12" />
+                }
+            </div>
+        </div>
+    </div>
+
+    @* ── Image upload (when element kind is Image) ────────────────────────────── *@
+    @if (Element.Kind == DesignerElementKind.Image)
+    {
+        <div class="prop-section">
+            <div class="prop-section-head"><Icon Name="chevron-down" Size="12" CssClass="chev icon icon-12" /><span>Image</span></div>
+            <div class="prop-row">
+                <div class="p-label">Source</div>
+                <div class="p-editor" style="flex-direction:column;align-items:stretch;gap:6px;">
+                    <InputFile OnChange="OnImageSelected" accept="image/png,image/jpeg,image/gif"
+                               style="font-size:11.5px;" />
+                    @if (Element.InlineImageData is { Length: > 0 })
+                    {
+                        <div style="display:flex;align-items:center;gap:6px;">
+                            <img src="@($"data:image/png;base64,{Convert.ToBase64String(Element.InlineImageData)}")"
+                                 alt="thumb" style="max-width:60px;max-height:60px;border:1px solid var(--border);" />
+                            <span style="font-size:10.5px;color:var(--text-tertiary);">@(Element.InlineImageData.Length / 1024) KB</span>
+                            <button class="icon-btn" type="button" title="Remover imagem"
+                                    @onclick="@(() => Element.InlineImageData = null)"
+                                    style="width:18px;height:18px;color:var(--text-tertiary);">×</button>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+
+    @* ── Chart editor (when element kind is Chart) ──────────────────────────────── *@
+    @if (Element.Kind == DesignerElementKind.Chart)
+    {
+        <div class="prop-section">
+            <div class="prop-section-head"><Icon Name="chevron-down" Size="12" CssClass="chev icon icon-12" /><span>Gráfico</span><span class="count">@Element.ChartSeries.Count</span></div>
+            <div class="prop-row">
+                <div class="p-label">Tipo</div>
+                <div class="p-editor">
+                    <select value="@Element.ChartKind"
+                            @onchange="@(e => Element.ChartKind = Enum.TryParse<ChartKind>(e.Value?.ToString(), out var k) ? k : ChartKind.Bar)"
+                            style="flex:1;font-size:11.5px;">
+                        @foreach (var k in Enum.GetValues<ChartKind>())
+                        {
+                            <option value="@k">@k</option>
+                        }
+                    </select>
+                </div>
+            </div>
+            <div class="prop-row">
+                <div class="p-label">Título</div>
+                <div class="p-editor">
+                    <input type="text" value="@Element.ChartTitle" placeholder="(sem título)"
+                           @onchange="@(e => Element.ChartTitle = e.Value?.ToString() ?? string.Empty)"
+                           style="flex:1;font-size:11.5px;" />
+                </div>
+            </div>
+            <div class="prop-row">
+                <div class="p-label">Legenda</div>
+                <div class="p-editor">
+                    <label style="font-size:11px;"><input type="checkbox" checked="@Element.ShowLegend"
+                           @onchange="@(e => Element.ShowLegend = (bool)(e.Value ?? false))" /> Mostrar</label>
+                </div>
+            </div>
+            <div style="padding:6px 10px;">
+                @foreach (var (s, i) in Element.ChartSeries.Select((s, i) => (s, i)).ToArray())
+                {
+                    <div style="border:1px solid var(--border-soft);padding:6px;margin-bottom:6px;border-radius:var(--r-2);background:var(--bg-panel);">
+                        <div style="display:flex;align-items:center;gap:4px;margin-bottom:4px;">
+                            <span style="font-size:10.5px;color:var(--text-tertiary);flex:1;">Série @(i + 1)</span>
+                            <button class="icon-btn" type="button" title="Remover"
+                                    @onclick="@(() => Element.ChartSeries.Remove(s))"
+                                    style="width:18px;height:18px;color:var(--danger);">×</button>
+                        </div>
+                        <input type="text" value="@s.Name" placeholder="Nome da série"
+                               @onchange="@(e => s.Name = e.Value?.ToString() ?? string.Empty)"
+                               style="width:100%;font-size:11px;margin-bottom:4px;" />
+                        <input type="text" value="@s.CategoryExpression" placeholder="Fields.Categoria"
+                               @onchange="@(e => s.CategoryExpression = e.Value?.ToString() ?? string.Empty)"
+                               style="width:100%;font-family:var(--font-mono);font-size:11px;margin-bottom:4px;" />
+                        <input type="text" value="@s.ValueExpression" placeholder="Fields.Valor"
+                               @onchange="@(e => s.ValueExpression = e.Value?.ToString() ?? string.Empty)"
+                               style="width:100%;font-family:var(--font-mono);font-size:11px;" />
+                    </div>
+                }
+                <button class="btn" type="button" style="font-size:11px;padding:3px 8px;cursor:pointer;border:1px dashed var(--border);background:transparent;color:var(--text-secondary);width:100%;"
+                        @onclick="@(() => Element.ChartSeries.Add(new ChartSeriesRule()))">+ Adicionar série</button>
+            </div>
+        </div>
+    }
+
+    @* ── DataBar editor ──────────────────────────────────────────────────────── *@
+    @if (Element.Kind == DesignerElementKind.DataBar)
+    {
+        <div class="prop-section">
+            <div class="prop-section-head"><Icon Name="chevron-down" Size="12" CssClass="chev icon icon-12" /><span>Barra de dados</span></div>
+            <div class="prop-row"><div class="p-label">Valor</div><div class="p-editor">
+                <input type="text" value="@Element.DataBarValue" placeholder="Fields.X"
+                       @onchange="@(e => Element.DataBarValue = e.Value?.ToString() ?? string.Empty)"
+                       style="flex:1;font-family:var(--font-mono);font-size:11.5px;" /></div></div>
+            <div class="prop-row"><div class="p-label">Mín</div><div class="p-editor">
+                <input type="text" value="@Element.DataBarMin"
+                       @onchange="@(e => Element.DataBarMin = e.Value?.ToString() ?? string.Empty)"
+                       style="flex:1;font-family:var(--font-mono);font-size:11.5px;" /></div></div>
+            <div class="prop-row"><div class="p-label">Máx</div><div class="p-editor">
+                <input type="text" value="@Element.DataBarMax"
+                       @onchange="@(e => Element.DataBarMax = e.Value?.ToString() ?? string.Empty)"
+                       style="flex:1;font-family:var(--font-mono);font-size:11.5px;" /></div></div>
+            <div class="prop-row"><div class="p-label">Cor</div><div class="p-editor">
+                <input type="color" value="@Element.DataBarFill"
+                       @onchange="@(e => Element.DataBarFill = e.Value?.ToString() ?? "#C2410C")"
+                       style="width:28px;height:18px;cursor:pointer;" /></div></div>
+        </div>
+    }
+
+    @* ── Sparkline editor ────────────────────────────────────────────────────── *@
+    @if (Element.Kind == DesignerElementKind.Sparkline)
+    {
+        <div class="prop-section">
+            <div class="prop-section-head"><Icon Name="chevron-down" Size="12" CssClass="chev icon icon-12" /><span>Mini-gráfico</span></div>
+            <div class="prop-row"><div class="p-label">Tipo</div><div class="p-editor">
+                <select value="@Element.SparkKind"
+                        @onchange="@(e => Element.SparkKind = Enum.TryParse<SparklineKind>(e.Value?.ToString(), out var k) ? k : SparklineKind.Line)"
+                        style="flex:1;font-size:11.5px;">
+                    @foreach (var k in Enum.GetValues<SparklineKind>())
+                    {
+                        <option value="@k">@k</option>
+                    }
+                </select></div></div>
+            <div class="prop-row"><div class="p-label">Valor</div><div class="p-editor">
+                <input type="text" value="@Element.SparkValue" placeholder="Fields.Value"
+                       @onchange="@(e => Element.SparkValue = e.Value?.ToString() ?? string.Empty)"
+                       style="flex:1;font-family:var(--font-mono);font-size:11.5px;" /></div></div>
+            <div class="prop-row"><div class="p-label">Fonte</div><div class="p-editor">
+                <input type="text" value="@Element.SparkDataSet" placeholder="(fonte primária)"
+                       @onchange="@(e => Element.SparkDataSet = e.Value?.ToString() ?? string.Empty)"
+                       style="flex:1;font-size:11.5px;" /></div></div>
+        </div>
+    }
+
+    @* ── Map editor ──────────────────────────────────────────────────────────── *@
+    @if (Element.Kind == DesignerElementKind.Map)
+    {
+        <div class="prop-section">
+            <div class="prop-section-head"><Icon Name="chevron-down" Size="12" CssClass="chev icon icon-12" /><span>Mapa</span></div>
+            <div class="prop-row"><div class="p-label">Latitude</div><div class="p-editor">
+                <input type="text" value="@Element.MapLatitude" placeholder="Fields.lat"
+                       @onchange="@(e => Element.MapLatitude = e.Value?.ToString() ?? string.Empty)"
+                       style="flex:1;font-family:var(--font-mono);font-size:11.5px;" /></div></div>
+            <div class="prop-row"><div class="p-label">Longitude</div><div class="p-editor">
+                <input type="text" value="@Element.MapLongitude" placeholder="Fields.lon"
+                       @onchange="@(e => Element.MapLongitude = e.Value?.ToString() ?? string.Empty)"
+                       style="flex:1;font-family:var(--font-mono);font-size:11.5px;" /></div></div>
+            <div class="prop-row"><div class="p-label">Fonte</div><div class="p-editor">
+                <input type="text" value="@Element.MapDataSet" placeholder="(fonte primária)"
+                       @onchange="@(e => Element.MapDataSet = e.Value?.ToString() ?? string.Empty)"
+                       style="flex:1;font-size:11.5px;" /></div></div>
+        </div>
+    }
+
+    @* ── Gauge editor ────────────────────────────────────────────────────────── *@
+    @if (Element.Kind == DesignerElementKind.Gauge)
+    {
+        <div class="prop-section">
+            <div class="prop-section-head"><Icon Name="chevron-down" Size="12" CssClass="chev icon icon-12" /><span>Medidor</span><span class="count">@Element.GaugeRanges.Count</span></div>
+            <div class="prop-row"><div class="p-label">Tipo</div><div class="p-editor">
+                <select value="@Element.GaugeType"
+                        @onchange="@(e => Element.GaugeType = Enum.TryParse<GaugeKind>(e.Value?.ToString(), out var k) ? k : GaugeKind.Radial)"
+                        style="flex:1;font-size:11.5px;">
+                    @foreach (var k in Enum.GetValues<GaugeKind>())
+                    {
+                        <option value="@k">@k</option>
+                    }
+                </select></div></div>
+            <div class="prop-row"><div class="p-label">Valor</div><div class="p-editor">
+                <input type="text" value="@Element.GaugeValue" placeholder="Sum(Fields.total)"
+                       @onchange="@(e => Element.GaugeValue = e.Value?.ToString() ?? string.Empty)"
+                       style="flex:1;font-family:var(--font-mono);font-size:11.5px;" /></div></div>
+            <div class="prop-row"><div class="p-label">Mín</div><div class="p-editor">
+                <input type="text" value="@Element.GaugeMin"
+                       @onchange="@(e => Element.GaugeMin = e.Value?.ToString() ?? string.Empty)"
+                       style="flex:1;font-family:var(--font-mono);font-size:11.5px;" /></div></div>
+            <div class="prop-row"><div class="p-label">Máx</div><div class="p-editor">
+                <input type="text" value="@Element.GaugeMax"
+                       @onchange="@(e => Element.GaugeMax = e.Value?.ToString() ?? string.Empty)"
+                       style="flex:1;font-family:var(--font-mono);font-size:11.5px;" /></div></div>
+            <div style="padding:6px 10px;">
+                @foreach (var (r, i) in Element.GaugeRanges.Select((r, i) => (r, i)).ToArray())
+                {
+                    <div style="border:1px solid var(--border-soft);padding:6px;margin-bottom:6px;border-radius:var(--r-2);background:var(--bg-panel);">
+                        <div style="display:flex;align-items:center;gap:4px;margin-bottom:4px;">
+                            <span style="flex:1;font-size:10.5px;color:var(--text-tertiary);">Faixa @(i + 1)</span>
+                            <input type="color" value="@r.ColorHex"
+                                   @onchange="@(e => Element.SetGaugeRange(i, color: e.Value?.ToString()))"
+                                   title="Cor" style="width:24px;height:16px;cursor:pointer;" />
+                            <button class="icon-btn" type="button" title="Remover"
+                                    @onclick="@(() => Element.RemoveGaugeRange(i))"
+                                    style="width:18px;height:18px;color:var(--danger);">×</button>
+                        </div>
+                        <div style="display:flex;gap:4px;">
+                            <input type="text" value="@r.StartExpression" placeholder="início"
+                                   @onchange="@(e => Element.SetGaugeRange(i, start: e.Value?.ToString()))"
+                                   style="flex:1;font-size:11px;" />
+                            <input type="text" value="@r.EndExpression" placeholder="fim"
+                                   @onchange="@(e => Element.SetGaugeRange(i, end: e.Value?.ToString()))"
+                                   style="flex:1;font-size:11px;" />
+                        </div>
+                    </div>
+                }
+                <button class="btn" type="button" style="font-size:11px;padding:3px 8px;cursor:pointer;border:1px dashed var(--border);background:transparent;color:var(--text-secondary);width:100%;"
+                        @onclick="@(() => Element.AddGaugeRange())">+ Adicionar faixa</button>
+            </div>
+        </div>
+    }
+
+    @* ── Indicator editor ───────────────────────────────────────────────────── *@
+    @if (Element.Kind == DesignerElementKind.Indicator)
+    {
+        <div class="prop-section">
+            <div class="prop-section-head"><Icon Name="chevron-down" Size="12" CssClass="chev icon icon-12" /><span>Indicador</span><span class="count">@Element.IndicatorStates.Count</span></div>
+            <div class="prop-row"><div class="p-label">Tipo</div><div class="p-editor">
+                <select value="@Element.IndicatorType"
+                        @onchange="@(e => Element.IndicatorType = Enum.TryParse<IndicatorKind>(e.Value?.ToString(), out var k) ? k : IndicatorKind.DirectionalArrow)"
+                        style="flex:1;font-size:11.5px;">
+                    @foreach (var k in Enum.GetValues<IndicatorKind>())
+                    {
+                        <option value="@k">@k</option>
+                    }
+                </select></div></div>
+            <div class="prop-row"><div class="p-label">Valor</div><div class="p-editor">
+                <input type="text" value="@Element.IndicatorValue" placeholder="Fields.kpi"
+                       @onchange="@(e => Element.IndicatorValue = e.Value?.ToString() ?? string.Empty)"
+                       style="flex:1;font-family:var(--font-mono);font-size:11.5px;" /></div></div>
+            <div style="padding:6px 10px;">
+                @foreach (var (s, i) in Element.IndicatorStates.Select((s, i) => (s, i)).ToArray())
+                {
+                    <div style="border:1px solid var(--border-soft);padding:6px;margin-bottom:6px;border-radius:var(--r-2);background:var(--bg-panel);">
+                        <div style="display:flex;align-items:center;gap:4px;margin-bottom:4px;">
+                            <span style="flex:1;font-size:10.5px;color:var(--text-tertiary);">Estado @(i + 1)</span>
+                            <button class="icon-btn" type="button" title="Remover"
+                                    @onclick="@(() => Element.RemoveIndicatorState(i))"
+                                    style="width:18px;height:18px;color:var(--danger);">×</button>
+                        </div>
+                        <div style="display:flex;gap:4px;">
+                            <input type="text" value="@s.StartExpression" placeholder="início"
+                                   @onchange="@(e => Element.SetIndicatorState(i, start: e.Value?.ToString()))"
+                                   style="flex:1;font-size:11px;" />
+                            <input type="text" value="@s.EndExpression" placeholder="fim"
+                                   @onchange="@(e => Element.SetIndicatorState(i, end: e.Value?.ToString()))"
+                                   style="flex:1;font-size:11px;" />
+                        </div>
+                    </div>
+                }
+                <button class="btn" type="button" style="font-size:11px;padding:3px 8px;cursor:pointer;border:1px dashed var(--border);background:transparent;color:var(--text-secondary);width:100%;"
+                        @onclick="@(() => Element.AddIndicatorState())">+ Adicionar estado</button>
+            </div>
+        </div>
+    }
+
+    @* ── Tablix editor ──────────────────────────────────────────────────────── *@
+    @if (Element.Kind == DesignerElementKind.Tablix)
+    {
+        <div class="prop-section">
+            <div class="prop-section-head"><Icon Name="chevron-down" Size="12" CssClass="chev icon icon-12" /><span>Tabela</span><span class="count">@Element.TablixColumns.Count</span></div>
+            <div class="prop-row"><div class="p-label">Fonte</div><div class="p-editor">
+                <input type="text" value="@Element.TablixDataSet" placeholder="(fonte primária)"
+                       @onchange="@(e => Element.TablixDataSet = e.Value?.ToString() ?? string.Empty)"
+                       style="flex:1;font-size:11.5px;" /></div></div>
+            <div style="padding:6px 10px;">
+                @foreach (var (col, i) in Element.TablixColumns.Select((c, i) => (c, i)).ToArray())
+                {
+                    <div style="border:1px solid var(--border-soft);padding:6px;margin-bottom:6px;border-radius:var(--r-2);background:var(--bg-panel);">
+                        <div style="display:flex;align-items:center;gap:4px;margin-bottom:4px;">
+                            <span style="flex:1;font-size:10.5px;color:var(--text-tertiary);">Coluna @(i + 1)</span>
+                            <button class="icon-btn" type="button" title="Remover"
+                                    @onclick="@(() => Element.RemoveTablixColumn(i))"
+                                    style="width:18px;height:18px;color:var(--danger);">×</button>
+                        </div>
+                        <input type="text" value="@col.Header" placeholder="Cabeçalho"
+                               @onchange="@(e => Element.SetTablixColumn(i, header: e.Value?.ToString()))"
+                               style="width:100%;font-size:11px;margin-bottom:4px;" />
+                        <input type="text" value="@col.Expression" placeholder="Fields.X"
+                               @onchange="@(e => Element.SetTablixColumn(i, expression: e.Value?.ToString()))"
+                               style="width:100%;font-family:var(--font-mono);font-size:11px;margin-bottom:4px;" />
+                        <div style="display:flex;align-items:center;gap:6px;">
+                            <span style="font-size:10.5px;color:var(--text-tertiary);white-space:nowrap;">Largura</span>
+                            <input type="number" min="0" step="0.1"
+                                   value="@(col.Width > 0 ? col.Width.ToString(System.Globalization.CultureInfo.InvariantCulture) : "")"
+                                   placeholder="auto"
+                                   @onchange="@(e => Element.SetTablixColumn(i, width: ParseWeight(e.Value?.ToString())))"
+                                   title="Peso relativo da coluna (ex.: 2 = o dobro de uma coluna de peso 1). Vazio/0 = divide igualmente."
+                                   style="width:64px;font-size:11px;" />
+                            <span style="font-size:10px;color:var(--text-tertiary);">peso (0 = igual)</span>
+                        </div>
+                    </div>
+                }
+                <button class="btn" type="button" style="font-size:11px;padding:3px 8px;cursor:pointer;border:1px dashed var(--border);background:transparent;color:var(--text-secondary);width:100%;"
+                        @onclick="@(() => Element.AddTablixColumn())">+ Adicionar coluna</button>
+            </div>
+        </div>
+    }
+
+    @* ── Conditional Formatting ──────────────────────────────────────────────── *@
+    <div class="prop-section">
+        <div class="prop-section-head">
+            <Icon Name="chevron-down" Size="12" CssClass="chev icon icon-12" />
+            <span>Conditional Format</span>
+            <span class="count">@Element.ConditionalFormats.Count</span>
+        </div>
+        <div style="padding:6px 10px;">
+            @foreach (var (rule, i) in Element.ConditionalFormats.Select((r, i) => (r, i)).ToArray())
+            {
+                <div style="border:1px solid var(--border-soft);padding:6px;margin-bottom:6px;border-radius:var(--r-2);background:var(--bg-panel);">
+                    <div style="display:flex;align-items:center;gap:4px;margin-bottom:4px;">
+                        <span style="font-size:10.5px;color:var(--text-tertiary);flex:1;">Regra @(i + 1)</span>
+                        <button class="icon-btn" type="button" title="Remover"
+                                @onclick="@(() => Element.ConditionalFormats.Remove(rule))"
+                                style="width:18px;height:18px;color:var(--danger);">×</button>
+                    </div>
+                    <input type="text" value="@rule.Condition" placeholder="Fields.X > 100"
+                           @onchange="@(e => rule.Condition = e.Value?.ToString() ?? string.Empty)"
+                           style="width:100%;font-family:var(--font-mono);font-size:11px;margin-bottom:4px;" />
+                    <div style="display:flex;align-items:center;gap:6px;font-size:11px;">
+                        <label><input type="checkbox" checked="@rule.Bold"
+                                      @onchange="@(e => rule.Bold = (bool)(e.Value ?? false))" /> Bold</label>
+                        <label><input type="checkbox" checked="@rule.Italic"
+                                      @onchange="@(e => rule.Italic = (bool)(e.Value ?? false))" /> Italic</label>
+                        <input type="color" value="@(rule.ForeColor is null ? "#000000" : ColorHex(rule.ForeColor.Value))"
+                               @onchange="@(e => rule.ForeColor = TryColor(e.Value?.ToString()))"
+                               title="Fore" style="width:24px;height:16px;cursor:pointer;" />
+                        <input type="color" value="@(rule.BackColor is null ? "#ffffff" : ColorHex(rule.BackColor.Value))"
+                               @onchange="@(e => rule.BackColor = TryColor(e.Value?.ToString()))"
+                               title="Back" style="width:24px;height:16px;cursor:pointer;" />
+                    </div>
+                </div>
+            }
+            <button class="btn" type="button" style="font-size:11px;padding:3px 8px;cursor:pointer;border:1px dashed var(--border);background:transparent;color:var(--text-secondary);width:100%;"
+                    @onclick="AddConditionalFormat">+ Adicionar regra</button>
+        </div>
+    </div>
+
+    @* ── RDL Interactions: Bookmark + DocumentMap + Action ──────────────────── *@
+    <div class="prop-section">
+        <div class="prop-section-head">
+            <Icon Name="chevron-down" Size="12" CssClass="chev icon icon-12" />
+            <span>Interactions</span>
+            <span class="count">@InteractionCount(Element)</span>
+        </div>
+        <div class="prop-row">
+            <div class="p-label" title="RDL <Bookmark>: âncora que outras ações Action.BookmarkLink podem referenciar.">Bookmark</div>
+            <div class="p-editor">
+                <input type="text" value="@(Element.Bookmark ?? "")" placeholder="ex: linha-totais"
+                       @onchange="@(e => Element.Bookmark = AsNullable(e.Value?.ToString()))"
+                       style="flex:1;font-family:var(--font-mono);font-size:11.5px;" />
+            </div>
+        </div>
+        <div class="prop-row">
+            <div class="p-label" title="RDL <Label>: rótulo do elemento no Document Map / sumário lateral.">Doc Map</div>
+            <div class="p-editor">
+                <input type="text" value="@(Element.DocumentMapLabel ?? "")" placeholder="ex: Total geral"
+                       @onchange="@(e => Element.DocumentMapLabel = AsNullable(e.Value?.ToString()))"
+                       style="flex:1;font-size:11.5px;" />
+            </div>
+        </div>
+        <div class="prop-row">
+            <div class="p-label" title="RDL <Action>: tipo de ação ao clicar no elemento (PDF link, navegação interna, drill-through).">Action</div>
+            <div class="p-editor">
+                <span class="editor-toggle">
+                    <button class="@(!Element.HasAction ? "is-on" : null)" type="button"
+                            title="Sem ação" @onclick="@(() => Element.HasAction = false)">—</button>
+                    <button class="@(Element.HasAction && Element.ActionKind == ActionKind.Hyperlink ? "is-on" : null)" type="button"
+                            title="Hyperlink" @onclick="@(() => { Element.HasAction = true; Element.ActionKind = ActionKind.Hyperlink; })">🔗</button>
+                    <button class="@(Element.HasAction && Element.ActionKind == ActionKind.BookmarkLink ? "is-on" : null)" type="button"
+                            title="Pular para bookmark" @onclick="@(() => { Element.HasAction = true; Element.ActionKind = ActionKind.BookmarkLink; })">⤵</button>
+                    <button class="@(Element.HasAction && Element.ActionKind == ActionKind.DrillthroughReport ? "is-on" : null)" type="button"
+                            title="Drillthrough (abrir outro relatório)" @onclick="@(() => { Element.HasAction = true; Element.ActionKind = ActionKind.DrillthroughReport; })">⤴</button>
+                </span>
+            </div>
+        </div>
+        @if (Element.HasAction)
+        {
+            if (Element.ActionKind == ActionKind.Hyperlink)
+            {
+                <div class="prop-row">
+                    <div class="p-label">URL</div>
+                    <div class="p-editor">
+                        <input type="text" value="@(Element.Hyperlink ?? "")"
+                               placeholder="https://example.com/{Fields.Id}"
+                               @onchange="@(e => Element.Hyperlink = AsNullable(e.Value?.ToString()))"
+                               style="flex:1;font-family:var(--font-mono);font-size:11.5px;" />
+                    </div>
+                </div>
+            }
+            else if (Element.ActionKind == ActionKind.BookmarkLink)
+            {
+                <div class="prop-row">
+                    <div class="p-label">Bookmark ID</div>
+                    <div class="p-editor">
+                        <input type="text" value="@(Element.BookmarkLinkId ?? "")"
+                               placeholder="id-do-bookmark-alvo"
+                               @onchange="@(e => Element.BookmarkLinkId = AsNullable(e.Value?.ToString()))"
+                               style="flex:1;font-family:var(--font-mono);font-size:11.5px;" />
+                    </div>
+                </div>
+            }
+            else if (Element.ActionKind == ActionKind.DrillthroughReport)
+            {
+                <div class="prop-row">
+                    <div class="p-label">Report</div>
+                    <div class="p-editor">
+                        <input type="text" value="@(Element.DrillthroughReportName ?? "")"
+                               placeholder="NomeDoRelatorioAlvo"
+                               @onchange="@(e => Element.DrillthroughReportName = AsNullable(e.Value?.ToString()))"
+                               style="flex:1;font-family:var(--font-mono);font-size:11.5px;" />
+                    </div>
+                </div>
+                <div style="padding:6px 10px;border-top:1px dashed var(--border-soft);">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+                        <span style="font-size:10.5px;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.04em;">Parâmetros</span>
+                        <button class="btn" type="button"
+                                @onclick="AddDrillthroughParameter"
+                                style="font-size:10.5px;padding:1px 6px;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text-secondary);">+ Adicionar</button>
+                    </div>
+                    @foreach (var (param, i) in Element.DrillthroughParameters.Select((p, i) => (p, i)).ToArray())
+                    {
+                        <div style="display:flex;align-items:center;gap:4px;margin-bottom:3px;">
+                            <input type="text" value="@param.Name" placeholder="Nome"
+                                   @onchange="@(e => param.Name = e.Value?.ToString() ?? string.Empty)"
+                                   style="width:70px;font-family:var(--font-mono);font-size:11px;" />
+                            <span style="color:var(--text-tertiary);">=</span>
+                            <input type="text" value="@param.Value" placeholder="{Fields.X}"
+                                   @onchange="@(e => param.Value = e.Value?.ToString() ?? string.Empty)"
+                                   style="flex:1;font-family:var(--font-mono);font-size:11px;" />
+                            <label title="Omit: não passa o parâmetro" style="font-size:10.5px;">
+                                <input type="checkbox" checked="@param.Omit"
+                                       @onchange="@(e => param.Omit = (bool)(e.Value ?? false))" />∅</label>
+                            <button class="icon-btn" type="button" title="Remover"
+                                    @onclick="@(() => Element.DrillthroughParameters.Remove(param))"
+                                    style="width:18px;height:18px;color:var(--danger);">×</button>
+                        </div>
+                    }
+                    @if (Element.DrillthroughParameters.Count == 0)
+                    {
+                        <div style="font-size:10.5px;color:var(--text-tertiary);font-style:italic;padding:2px 0;">
+                            Nenhum parâmetro. Clique em + para adicionar.
+                        </div>
+                    }
+                </div>
+            }
+        }
+    </div>
+
+    @* ── RDL Visibility (ToggleItem drill-down) ─────────────────────────────── *@
+    <div class="prop-section">
+        <div class="prop-section-head">
+            <Icon Name="chevron-down" Size="12" CssClass="chev icon icon-12" />
+            <span>Drill-down</span>
+            <span class="count">@(string.IsNullOrEmpty(Element.ToggleItemId) ? 0 : (Element.InitiallyHidden ? 2 : 1))</span>
+        </div>
+        <div class="prop-row">
+            <div class="p-label" title="RDL <ToggleItem>: bookmark do elemento que controla o expand/collapse deste.">Toggle by</div>
+            <div class="p-editor">
+                <input type="text" value="@(Element.ToggleItemId ?? "")" placeholder="bookmark-do-elemento-toggle"
+                       @onchange="@(e => Element.ToggleItemId = AsNullable(e.Value?.ToString()))"
+                       style="flex:1;font-family:var(--font-mono);font-size:11.5px;" />
+            </div>
+        </div>
+        @if (!string.IsNullOrEmpty(Element.ToggleItemId))
+        {
+            <div class="prop-row">
+                <div class="p-label" title="RDL <Hidden>: inicia colapsado, o usuário expande clicando no toggle.">Start hidden</div>
+                <div class="p-editor">
+                    <span class="editor-toggle">
+                        <button class="@(Element.InitiallyHidden ? "is-on" : null)" type="button"
+                                @onclick="@(() => Element.InitiallyHidden = true)">On</button>
+                        <button class="@(!Element.InitiallyHidden ? "is-on" : null)" type="button"
+                                @onclick="@(() => Element.InitiallyHidden = false)">Off</button>
+                    </span>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="prop-section">
+        <div class="prop-section-head"><Icon Name="chevron-right" Size="12" CssClass="chev icon icon-12" /><span>Misc</span><span class="count">4</span></div>
+    </div>
+
+    <!-- legacy heading kept for backward-compatible tests (Identidade/Posição/Tipografia). -->
+    <div style="display:none">Identidade · Posição (mm) · Tipografia</div>
+}
+
+@code {
+    [Parameter] public ElementViewModel? Element { get; set; }
+    [Parameter] public string BandLabel { get; set; } = "Detail";
+    [Parameter] public EventCallback OnOpenExpressionEditor { get; set; }
+
+    private Task OpenExpressionEditor() => OnOpenExpressionEditor.InvokeAsync();
+
+    private ElementViewModel? _subscribed;
+
+    private bool IsBound => Element is not null
+        && Element.Kind is DesignerElementKind.TextBox or DesignerElementKind.Barcode
+        && !string.IsNullOrEmpty(Element.Expression);
+
+    protected override void OnParametersSet()
+    {
+        if (!ReferenceEquals(_subscribed, Element))
+        {
+            if (_subscribed is not null) _subscribed.Changed -= StateHasChanged;
+            _subscribed = Element;
+            if (_subscribed is not null) _subscribed.Changed += StateHasChanged;
+        }
+    }
+
+    public void Dispose()
+    {
+        if (_subscribed is not null) _subscribed.Changed -= StateHasChanged;
+    }
+
+    private RenderFragment Row(string label, string value, Action<string?> setter) => builder =>
+    {
+        builder.OpenElement(0, "div");
+        builder.AddAttribute(1, "class", "prop-row");
+        {
+            builder.OpenElement(2, "div");
+            builder.AddAttribute(3, "class", "p-label");
+            builder.AddContent(4, label);
+            builder.CloseElement();
+
+            builder.OpenElement(5, "div");
+            builder.AddAttribute(6, "class", "p-editor");
+            {
+                builder.OpenElement(7, "input");
+                builder.AddAttribute(8, "type", "number");
+                builder.AddAttribute(9, "step", "0.1");
+                builder.AddAttribute(10, "value", value);
+                builder.AddAttribute(11, "style", "flex:1;font-family:var(--font-mono);font-size:11.5px;");
+                builder.AddAttribute(12, "onchange", Microsoft.AspNetCore.Components.EventCallback.Factory.Create<ChangeEventArgs>(
+                    this, e => setter(e.Value?.ToString())));
+                builder.CloseElement();
+
+                builder.OpenElement(13, "span");
+                builder.AddAttribute(14, "class", "p-unit");
+                builder.AddContent(15, "mm");
+                builder.CloseElement();
+            }
+            builder.CloseElement();
+        }
+        builder.CloseElement();
+    };
+
+    private static bool HasTextContent(ElementViewModel e)
+        => e.Kind is DesignerElementKind.Label or DesignerElementKind.TextBox or DesignerElementKind.Barcode;
+
+    private static string ToMm(Unit u) => u.ToMm().ToString("F1", CultureInfo.InvariantCulture);
+
+    private static string ColorHex(Color c)
+    {
+        var h = c.ToHex();
+        return h.Length == 9 ? "#" + h[3..] : h; // strip alpha for HTML color picker
+    }
+
+    private static string KindIcon(ElementViewModel e) => e.Kind switch
+    {
+        DesignerElementKind.Label     => "hash",
+        DesignerElementKind.TextBox   => "type",
+        DesignerElementKind.Line      => "minus",
+        DesignerElementKind.Rectangle => "square",
+        DesignerElementKind.Ellipse   => "circle",
+        DesignerElementKind.Image     => "image",
+        DesignerElementKind.Barcode   => "barcode",
+        _ => "type",
+    };
+
+    private void SetFontSize(string? v)
+    {
+        if (double.TryParse(v, NumberStyles.Any, CultureInfo.InvariantCulture, out var d)) Element!.FontSize = d;
+    }
+
+    private void SetColor(string? v)
+    {
+        if (string.IsNullOrEmpty(v)) return;
+        try { Element!.ForeColor = Color.FromHex(v); } catch { /* ignore invalid color */ }
+    }
+
+    private void SetBackground(string? v)
+    {
+        if (string.IsNullOrEmpty(v) || Element is null) return;
+        try
+        {
+            var color = Color.FromHex(v);
+            // Shape elements use FillColor; text elements use BackColor.
+            if (Element.Kind is DesignerElementKind.Rectangle or DesignerElementKind.Ellipse)
+            {
+                Element.FillColor = color;
+            }
+            else
+            {
+                Element.BackColor = color;
+            }
+        }
+        catch { /* ignore invalid color */ }
+    }
+
+    private void ClearBackground()
+    {
+        if (Element is null) return;
+        Element.FillColor = null;
+        Element.BackColor = null;
+    }
+
+    private static Unit? ParseMm(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return null;
+        return double.TryParse(raw, NumberStyles.Any, CultureInfo.InvariantCulture, out var mm)
+            ? Unit.FromMm(mm) : null;
+    }
+
+    // ─── Format presets ────────────────────────────────────────────────────────
+    private static readonly HashSet<string> _knownFormats = new(StringComparer.Ordinal)
+    {
+        "C", "N0", "N2", "P", "dd/MM/yyyy", "HH:mm", "dd/MM/yyyy HH:mm",
+    };
+
+    private void SetFormatPreset(string? value)
+    {
+        if (Element is null) return;
+        if (value == "__custom__")
+        {
+            Element.Format = "custom";
+            return;
+        }
+        Element.Format = string.IsNullOrEmpty(value) ? null : value;
+    }
+
+    // ─── Border editing ────────────────────────────────────────────────────────
+    private string BorderThickness => Element?.Border is null
+        ? "0.5"
+        : ((double)Element.Border.Top.Thickness.ToPoints()).ToString("F1", CultureInfo.InvariantCulture);
+
+    private void SetBorderStyle(string? value)
+    {
+        if (Element is null) return;
+        if (string.IsNullOrEmpty(value) || value == "None")
+        {
+            Element.Border = null;
+            return;
+        }
+        if (!Enum.TryParse<BorderLineStyle>(value, out var lineStyle)) return;
+        var current = Element.Border ?? Border.Uniform(BorderLineStyle.Solid, 0.5.Pt(), Color.Black);
+        var side = current.Top with { Style = lineStyle };
+        Element.Border = new Border(side, side, side, side);
+    }
+
+    private void SetBorderThickness(string? value)
+    {
+        if (Element?.Border is null) return;
+        if (!double.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out var pt)) return;
+        var side = Element.Border.Top with { Thickness = Unit.FromPoint(pt) };
+        Element.Border = new Border(side, side, side, side);
+    }
+
+    private void SetBorderColor(string? value)
+    {
+        if (Element?.Border is null || string.IsNullOrEmpty(value)) return;
+        try
+        {
+            var c = Color.FromHex(value);
+            var side = Element.Border.Top with { Color = c };
+            Element.Border = new Border(side, side, side, side);
+        }
+        catch { /* ignore invalid color */ }
+    }
+
+    // ─── Padding (uniform editor) ──────────────────────────────────────────────
+    private string PaddingMm
+    {
+        get => Element?.Padding is null
+            ? "0"
+            : Element.Padding.Value.Top.ToMm().ToString("F1", CultureInfo.InvariantCulture);
+    }
+
+    private void SetUniformPadding(string? value)
+    {
+        if (Element is null) return;
+        if (!double.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out var mm))
+        {
+            return;
+        }
+        if (mm <= 0)
+        {
+            Element.Padding = null;
+            return;
+        }
+        var u = Unit.FromMm(mm);
+        Element.Padding = new Thickness(u, u, u, u);
+    }
+
+    // ─── Image upload ──────────────────────────────────────────────────────────
+    private async Task OnImageSelected(InputFileChangeEventArgs e)
+    {
+        if (Element is null || e.File is null) return;
+        using var ms = new MemoryStream();
+        await using var src = e.File.OpenReadStream(maxAllowedSize: 4 * 1024 * 1024);
+        await src.CopyToAsync(ms);
+        Element.InlineImageData = ms.ToArray();
+    }
+
+    /// <summary>Parses a Tablix column-weight input. <c>type="number"</c> always posts an
+    /// invariant (dot-decimal) string; blank or non-positive means "equal share" (weight 0).</summary>
+    private static double ParseWeight(string? raw)
+        => double.TryParse(raw, System.Globalization.NumberStyles.Any,
+               System.Globalization.CultureInfo.InvariantCulture, out var w) && w > 0 ? w : 0;
+
+    // ─── Conditional formats ───────────────────────────────────────────────────
+    private void AddConditionalFormat()
+    {
+        Element?.ConditionalFormats.Add(new ConditionalFormatRule());
+    }
+
+    private static Color? TryColor(string? hex)
+    {
+        if (string.IsNullOrEmpty(hex)) return null;
+        try { return Color.FromHex(hex); } catch { return null; }
+    }
+
+    // ─── RDL interactions (Bookmark / DocumentMap / Action) ────────────────────
+
+    /// <summary>Returns the empty string as null so the PropertyGrid round-trips
+    /// "cleared" inputs back to a clean null on the VM — matching how the serializer
+    /// treats empty + null identically.</summary>
+    private static string? AsNullable(string? v) => string.IsNullOrWhiteSpace(v) ? null : v;
+
+    /// <summary>How many interaction fields are set — used as the section badge count.</summary>
+    private static int InteractionCount(ElementViewModel e)
+    {
+        int n = 0;
+        if (!string.IsNullOrWhiteSpace(e.Bookmark)) n++;
+        if (!string.IsNullOrWhiteSpace(e.DocumentMapLabel)) n++;
+        if (e.HasAction) n++;
+        return n;
+    }
+
+    private void AddDrillthroughParameter()
+    {
+        Element?.DrillthroughParameters.Add(new DrillthroughParameterRule { Name = "Param", Value = "" });
+    }
+}

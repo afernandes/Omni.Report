@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Report SchemaVersion="1.0" Name="Movimento de Caixa">
+  <PageSetup Orientation="Portrait" Margins="787,787,787,787" Columns="1" ColumnSpacing="0">
+    <Paper Name="A4" Width="8268" Height="11693" />
+  </PageSetup>
+  <Parameters>
+    <Parameter Name="Data" Type="System.DateTime, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" Required="true" AllowMultiple="false" Prompt="Data do movimento">
+      <DefaultValue Value="05/23/2026 00:00:00" />
+    </Parameter>
+  </Parameters>
+  <DataSources>
+    <DataSource Name="Caixa">
+      <Fields>
+        <Field Name="Data" Type="System.DateTime, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" />
+        <Field Name="Documento" Type="System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" />
+        <Field Name="FormaPagamento" Type="System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" />
+        <Field Name="Valor" Type="System.Decimal, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" />
+      </Fields>
+    </DataSource>
+  </DataSources>
+  <ReportHeader Kind="ReportHeader" Height="984" Visible="true" PrintOnFirstPage="true" PrintOnLastPage="true">
+    <Elements>
+      <TextBox Id="58792f0aa0f24f898c65ea36450b5432" Bounds="0,0,6693,472" Visible="true">
+        <Style HorizontalAlignment="Center" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Arial" Size="16" Style="Bold" />
+        </Style>
+        <Expression>Movimento de Caixa</Expression>
+      </TextBox>
+      <TextBox Id="b92fed9ce75048fcbaa997fa224fd8f9" Bounds="0,512,6693,236" Visible="true">
+        <Style HorizontalAlignment="Center" VerticalAlignment="Top" WordWrap="true" />
+        <Expression>Data: {Parameters.Data:dd/MM/yyyy}</Expression>
+      </TextBox>
+      <Line Id="6939a54d96b342e5b24fdc93296afd19" Bounds="0,866,6693,0" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true" />
+        <Direction>Horizontal</Direction>
+        <Pen Style="Solid" Thickness="7" Color="#000000" />
+      </Line>
+    </Elements>
+  </ReportHeader>
+  <Groups>
+    <Group Name="PorFormaPagamento" GroupExpression="Fields.FormaPagamento" KeepTogether="false" NewPageBefore="false" NewPageAfter="false" RepeatHeaderOnNewPage="false" Visible="true">
+      <Header Kind="GroupHeader" Height="394" Visible="true" PrintOnFirstPage="true" PrintOnLastPage="true">
+        <Elements>
+          <Rectangle Id="8d4fe7c5435b47d48a9e8a5e53263fe4" Bounds="0,39,6693,276" Visible="true">
+            <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true" />
+            <FillColor>#F4F2EC</FillColor>
+            <CornerRadius>0</CornerRadius>
+          </Rectangle>
+          <TextBox Id="6a6e6e41698c4ebeabe5c45ec62a1a5a" Bounds="79,79,6693,197" Visible="true">
+            <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true">
+              <Font Family="Arial" Size="10" Style="Bold" />
+              <ForeColor>#C2410C</ForeColor>
+            </Style>
+            <Expression>Forma de pagamento: {Fields.FormaPagamento}</Expression>
+          </TextBox>
+        </Elements>
+      </Header>
+      <Footer Kind="GroupFooter" Height="315" Visible="true" PrintOnFirstPage="true" PrintOnLastPage="true">
+        <Elements>
+          <Line Id="2dd2556108b246b7adab92d269863d1d" Bounds="0,0,6693,0" Visible="true">
+            <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true" />
+            <Direction>Horizontal</Direction>
+            <Pen Style="Solid" Thickness="3" Color="#000000" />
+          </Line>
+          <TextBox Id="5f273d41f0bb42f69ee0a2d6f30032fb" Bounds="0,79,6693,197" Visible="true">
+            <Style HorizontalAlignment="Right" VerticalAlignment="Top" WordWrap="true">
+              <Font Family="Arial" Size="10" Style="Bold" />
+            </Style>
+            <Expression>Subtotal: {Sum(Fields.Valor, 'Group'):C} · {Count(Fields.Valor, 'Group')} movimento(s)</Expression>
+          </TextBox>
+        </Elements>
+      </Footer>
+    </Group>
+  </Groups>
+  <Detail Height="236" Visible="true" CanGrow="false" CanShrink="false">
+    <Elements>
+      <TextBox Id="dba99fef5281489d9d3166cecb15ec15" Bounds="79,0,787,236" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Consolas" Size="9" Style="Regular" />
+        </Style>
+        <Expression>{Fields.Data:HH:mm}</Expression>
+      </TextBox>
+      <TextBox Id="db3c2bc592c047efa616b9b51bfe3a7a" Bounds="945,0,2362,236" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true" />
+        <Expression>{Fields.Documento}</Expression>
+      </TextBox>
+      <TextBox Id="cb3324a03783415e8919f09c00a6c388" Bounds="3386,0,1969,236" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true">
+          <ForeColor>#808080</ForeColor>
+        </Style>
+        <Expression>{Fields.FormaPagamento}</Expression>
+      </TextBox>
+      <TextBox Id="eca35feb47814ee1ae34d3b89e7e3779" Bounds="5433,0,1181,236" Visible="true">
+        <Style HorizontalAlignment="Right" VerticalAlignment="Top" WordWrap="true" />
+        <Expression>{Fields.Valor:C}</Expression>
+      </TextBox>
+    </Elements>
+  </Detail>
+  <PageFooter Kind="PageFooter" Height="315" Visible="true" PrintOnFirstPage="true" PrintOnLastPage="true">
+    <Elements>
+      <TextBox Id="c4006b61435a481c8930a1ac24ed4deb" Bounds="0,39,3346,197" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Arial" Size="8" Style="Regular" />
+          <ForeColor>#808080</ForeColor>
+        </Style>
+        <Expression>OmniReport · {Now:dd/MM/yyyy HH:mm}</Expression>
+      </TextBox>
+      <TextBox Id="7d8fb3d0a8d1453bbf65bf60ff6b6b5b" Bounds="3346,39,3346,197" Visible="true">
+        <Style HorizontalAlignment="Right" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Arial" Size="8" Style="Regular" />
+          <ForeColor>#808080</ForeColor>
+        </Style>
+        <Expression>Página {Page.Number} de {Page.Total}</Expression>
+      </TextBox>
+    </Elements>
+  </PageFooter>
+  <ReportFooter Kind="ReportFooter" Height="709" Visible="true" PrintOnFirstPage="true" PrintOnLastPage="true">
+    <Elements>
+      <Line Id="bfc7fd8af8cd439fbc1453de917eb944" Bounds="0,0,6693,0" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true" />
+        <Direction>Horizontal</Direction>
+        <Pen Style="Solid" Thickness="7" Color="#000000" />
+      </Line>
+      <TextBox Id="38b2ed4068824f8497c91efe9b1b92af" Bounds="0,118,6693,315" Visible="true">
+        <Style HorizontalAlignment="Right" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Arial" Size="12" Style="Bold" />
+        </Style>
+        <Expression>Total do dia: {Sum(Fields.Valor):C}</Expression>
+      </TextBox>
+      <TextBox Id="e9085cb38ce24824965ca48740aa1e0b" Bounds="0,472,6693,197" Visible="true">
+        <Style HorizontalAlignment="Right" VerticalAlignment="Top" WordWrap="true">
+          <ForeColor>#808080</ForeColor>
+        </Style>
+        <Expression>Movimentos: {Count(Fields.Valor)} · Maior: {Max(Fields.Valor):C} · Menor: {Min(Fields.Valor):C}</Expression>
+      </TextBox>
+    </Elements>
+  </ReportFooter>
+</Report>

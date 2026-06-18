@@ -1,0 +1,412 @@
+{
+  "schemaVersion": "1.0",
+  "name": "Dashboard de Vendas",
+  "pageSetup": {
+    "paper": {
+      "name": "A4",
+      "width": "8268",
+      "height": "11693"
+    },
+    "orientation": "Portrait",
+    "margins": "709,709,709,709",
+    "columns": 1,
+    "columnSpacing": "0"
+  },
+  "dataSources": [
+    {
+      "name": "Mensal",
+      "fields": [
+        {
+          "name": "Mes",
+          "type": "System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e"
+        },
+        {
+          "name": "Total",
+          "type": "System.Decimal, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e"
+        },
+        {
+          "name": "Meta",
+          "type": "System.Decimal, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e"
+        }
+      ]
+    }
+  ],
+  "reportHeader": {
+    "kind": "ReportHeader",
+    "height": "7165",
+    "visible": true,
+    "printOnFirstPage": true,
+    "printOnLastPage": true,
+    "elements": [
+      {
+        "kind": "TextBox",
+        "id": "9fc04cb819a34b35aac354cae5256665",
+        "bounds": "0,0,6850,394",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Center",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "font": {
+            "family": "Arial",
+            "size": 15,
+            "style": "Bold"
+          }
+        },
+        "expression": "Dashboard de Vendas \u2014 1\u00BA semestre",
+        "canGrow": false,
+        "canShrink": false
+      },
+      {
+        "kind": "Chart",
+        "id": "bd219deee02e45029b175442975ed988",
+        "bounds": "0,551,3386,2205",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Left",
+          "verticalAlignment": "Top",
+          "wordWrap": true
+        },
+        "chartKind": "Bar",
+        "title": "Faturamento por m\u00EAs",
+        "showLegend": true,
+        "series": [
+          {
+            "name": "Total",
+            "categoryExpression": "Fields.Mes",
+            "valueExpression": "Fields.Total"
+          }
+        ]
+      },
+      {
+        "kind": "Chart",
+        "id": "b0a04bfe6fa743a982541b6e58dc997b",
+        "bounds": "3543,551,3307,2205",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Left",
+          "verticalAlignment": "Top",
+          "wordWrap": true
+        },
+        "chartKind": "Pie",
+        "title": "Participa\u00E7\u00E3o por m\u00EAs",
+        "showLegend": true,
+        "series": [
+          {
+            "name": "Total",
+            "categoryExpression": "Fields.Mes",
+            "valueExpression": "Fields.Total"
+          }
+        ]
+      },
+      {
+        "kind": "Chart",
+        "id": "6445a86080da4dd980604c36499ef061",
+        "bounds": "0,2913,6850,2047",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Left",
+          "verticalAlignment": "Top",
+          "wordWrap": true
+        },
+        "chartKind": "Line",
+        "title": "Realizado vs. Meta",
+        "showLegend": true,
+        "series": [
+          {
+            "name": "Realizado",
+            "categoryExpression": "Fields.Mes",
+            "valueExpression": "Fields.Total"
+          },
+          {
+            "name": "Meta",
+            "categoryExpression": "Fields.Mes",
+            "valueExpression": "Fields.Meta"
+          }
+        ]
+      },
+      {
+        "kind": "Gauge",
+        "id": "a397f31b8d4045f4a9fd1ff5b77fc1ef",
+        "bounds": "0,5118,2362,1969",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Left",
+          "verticalAlignment": "Top",
+          "wordWrap": true
+        },
+        "gaugeKind": "Radial",
+        "minimum": "0",
+        "maximum": "300000",
+        "value": "Sum(Fields.Total)",
+        "ranges": [
+          {
+            "start": "0",
+            "end": "150000",
+            "color": "#DC2626"
+          },
+          {
+            "start": "150000",
+            "end": "250000",
+            "color": "#F59E0B"
+          },
+          {
+            "start": "250000",
+            "end": "300000",
+            "color": "#16A34A"
+          }
+        ]
+      },
+      {
+        "kind": "Label",
+        "id": "8af3d749bfaf469ca9fef831cad94589",
+        "bounds": "2598,5118,2362,197",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Left",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "font": {
+            "family": "Arial",
+            "size": 9,
+            "style": "Bold"
+          }
+        },
+        "text": "Tend\u00EAncia (sparkline)"
+      },
+      {
+        "kind": "Sparkline",
+        "id": "42f94ece9ced4ef5b0931103e1b78bca",
+        "bounds": "2598,5354,2362,1024",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Left",
+          "verticalAlignment": "Top",
+          "wordWrap": true
+        },
+        "sparklineKind": "Area",
+        "value": "Fields.Total"
+      },
+      {
+        "kind": "Label",
+        "id": "d3a2e1955cdf4e8b8748ff9b1278ea06",
+        "bounds": "5197,5118,1654,197",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Left",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "font": {
+            "family": "Arial",
+            "size": 9,
+            "style": "Bold"
+          }
+        },
+        "text": "Meta do semestre"
+      },
+      {
+        "kind": "Indicator",
+        "id": "e3acbead56914a1a86376b6c34a2eb83",
+        "bounds": "5748,5433,630,630",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Left",
+          "verticalAlignment": "Top",
+          "wordWrap": true
+        },
+        "indicatorKind": "DirectionalArrow",
+        "value": "Sum(Fields.Total)",
+        "states": [
+          {
+            "start": "0",
+            "end": "150000",
+            "icon": ""
+          },
+          {
+            "start": "150000",
+            "end": "250000",
+            "icon": ""
+          },
+          {
+            "start": "250000",
+            "end": "400000",
+            "icon": ""
+          }
+        ]
+      }
+    ]
+  },
+  "pageHeader": {
+    "kind": "PageHeader",
+    "height": "276",
+    "visible": true,
+    "printOnFirstPage": true,
+    "printOnLastPage": true,
+    "elements": [
+      {
+        "kind": "Label",
+        "id": "db10c9b811d3429db0cbc2f1b706b993",
+        "bounds": "0,0,945,236",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Left",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "font": {
+            "family": "Arial",
+            "size": 10,
+            "style": "Bold"
+          }
+        },
+        "text": "M\u00EAs"
+      },
+      {
+        "kind": "Label",
+        "id": "b66f6d8efe134ba084d1b11b6f8cafe2",
+        "bounds": "945,0,1575,236",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Right",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "font": {
+            "family": "Arial",
+            "size": 10,
+            "style": "Bold"
+          }
+        },
+        "text": "Faturamento"
+      },
+      {
+        "kind": "Label",
+        "id": "ab71b4a52d9e48c9a046a4595d0bb0c2",
+        "bounds": "2756,0,4094,236",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Left",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "font": {
+            "family": "Arial",
+            "size": 10,
+            "style": "Bold"
+          }
+        },
+        "text": "Progresso (teto R$ 55.000)"
+      },
+      {
+        "kind": "Line",
+        "id": "5f7fbd990c2048aea2cfbc2e41a588ec",
+        "bounds": "0,236,6850,0",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Left",
+          "verticalAlignment": "Top",
+          "wordWrap": true
+        },
+        "direction": "Horizontal",
+        "pen": {
+          "style": "Solid",
+          "thickness": "3",
+          "color": "#000000"
+        }
+      }
+    ]
+  },
+  "detail": {
+    "height": "276",
+    "visible": true,
+    "canGrow": false,
+    "canShrink": false,
+    "elements": [
+      {
+        "kind": "TextBox",
+        "id": "357b070a53f2450fb19402c9e09a5a4d",
+        "bounds": "0,0,945,236",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Left",
+          "verticalAlignment": "Top",
+          "wordWrap": true
+        },
+        "expression": "{Fields.Mes}",
+        "canGrow": false,
+        "canShrink": false
+      },
+      {
+        "kind": "TextBox",
+        "id": "34d199e2f481452bb5a5f41ef78980e1",
+        "bounds": "945,0,1575,236",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Right",
+          "verticalAlignment": "Top",
+          "wordWrap": true
+        },
+        "expression": "{Fields.Total:C}",
+        "canGrow": false,
+        "canShrink": false
+      },
+      {
+        "kind": "DataBar",
+        "id": "2232b43851114bfabc8fc573224468d7",
+        "bounds": "2756,39,4094,157",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Left",
+          "verticalAlignment": "Top",
+          "wordWrap": true
+        },
+        "value": "Fields.Total",
+        "minimum": "0",
+        "maximum": "55000",
+        "fillColor": "#2563EB"
+      }
+    ]
+  },
+  "reportFooter": {
+    "kind": "ReportFooter",
+    "height": "394",
+    "visible": true,
+    "printOnFirstPage": true,
+    "printOnLastPage": true,
+    "elements": [
+      {
+        "kind": "Line",
+        "id": "64be54e62df341359c472887c7042349",
+        "bounds": "0,0,6850,0",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Left",
+          "verticalAlignment": "Top",
+          "wordWrap": true
+        },
+        "direction": "Horizontal",
+        "pen": {
+          "style": "Solid",
+          "thickness": "7",
+          "color": "#000000"
+        }
+      },
+      {
+        "kind": "TextBox",
+        "id": "407a4733b8074befb6dfb043c17e6e14",
+        "bounds": "0,79,6850,276",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Right",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "font": {
+            "family": "Arial",
+            "size": 11,
+            "style": "Bold"
+          }
+        },
+        "expression": "Total do semestre: {Sum(Fields.Total):C}",
+        "canGrow": false,
+        "canShrink": false
+      }
+    ]
+  }
+}

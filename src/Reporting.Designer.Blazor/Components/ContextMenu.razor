@@ -1,0 +1,93 @@
+@namespace Reporting.Designer.Blazor.Components
+@implements IAsyncDisposable
+@inject IJSRuntime Js
+
+@if (Visible)
+{
+    @* The outside-click handler in designer.js explicitly skips the `.ctx-menu` class
+       (alongside .dropdown-host / .dropdown-panel) so clicks inside the menu don't close
+       it before the menu item handler can fire. *@
+    <div class="ctx-menu"
+         style="@($"position:fixed;left:{X}px;top:{Y}px;z-index:2000;")"
+         @onclick:stopPropagation="true"
+         @oncontextmenu="@(e => {})"
+         @oncontextmenu:preventDefault="true">
+        @foreach (var item in Items)
+        {
+            @if (item.IsSeparator)
+            {
+                <div class="ctx-sep"></div>
+            }
+            else
+            {
+                <button type="button"
+                        class="ctx-item @(item.IsDanger ? "is-danger" : null)"
+                        disabled="@item.IsDisabled"
+                        @onclick="@(() => Invoke(item))"
+                        @onclick:stopPropagation="true">
+                    <span class="ctx-label">@item.Label</span>
+                    @if (!string.IsNullOrEmpty(item.Shortcut))
+                    {
+                        <span class="ctx-shortcut">@item.Shortcut</span>
+                    }
+                </button>
+            }
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public bool Visible { get; set; }
+    [Parameter] public double X { get; set; }
+    [Parameter] public double Y { get; set; }
+    [Parameter] public IReadOnlyList<ContextMenuItem> Items { get; set; } = Array.Empty<ContextMenuItem>();
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private DotNetObjectReference<ContextMenu>? _selfRef;
+    private bool _wasVisible;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        // Each open transition (false → true) re-registers the outside-click listener so
+        // the menu is closed when the user pointer-downs anywhere except inside it.
+        if (Visible && !_wasVisible)
+        {
+            _wasVisible = true;
+            _selfRef ??= DotNetObjectReference.Create(this);
+            try { await Js.InvokeVoidAsync("omniDesigner.registerOutsideClick", _selfRef); }
+            catch (JSException) { }
+            catch (InvalidOperationException) { }
+        }
+        else if (!Visible && _wasVisible)
+        {
+            _wasVisible = false;
+        }
+    }
+
+    [JSInvokable]
+    public Task CloseFromOutside() => OnClose.InvokeAsync();
+
+    private async Task Invoke(ContextMenuItem item)
+    {
+        if (item.OnClick.HasValue) await item.OnClick.Value.InvokeAsync();
+        await OnClose.InvokeAsync();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        _selfRef?.Dispose();
+        await Task.CompletedTask;
+    }
+
+    public sealed class ContextMenuItem
+    {
+        public string Label { get; init; } = string.Empty;
+        public string? Shortcut { get; init; }
+        public bool IsSeparator { get; init; }
+        public bool IsDisabled { get; init; }
+        public bool IsDanger { get; init; }
+        public EventCallback? OnClick { get; init; }
+
+        public static ContextMenuItem Separator() => new() { IsSeparator = true };
+    }
+}

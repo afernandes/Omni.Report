@@ -1,0 +1,864 @@
+<!doctype html>
+<html lang="pt-BR" data-theme="light" data-state="1">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1480">
+<title>Report Designer — Vendas por Cliente</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="styles/tokens.css">
+<link rel="stylesheet" href="styles/base.css">
+<link rel="stylesheet" href="styles/layout.css">
+<link rel="stylesheet" href="styles/components.css">
+<link rel="stylesheet" href="styles/overlays.css">
+</head>
+<body>
+
+<div class="too-small">
+  <div>
+    <div style="font-size:18px;font-weight:600;margin-bottom:8px;">Designer requer tela maior</div>
+    <div style="font-size:13px;color:var(--text-tertiary);">Mínimo recomendado: 1280×720. Esta ferramenta foi pensada para desktop.</div>
+  </div>
+</div>
+
+<!-- ============================================================
+     STATES BAR — switch between the 8 demo states
+     ============================================================ -->
+<header class="states-bar no-select" aria-label="Mock states">
+  <span class="states-label">Estado</span>
+  <button data-go="1" class="is-active"><span class="num">01</span> Default</button>
+  <button data-go="2"><span class="num">02</span> Selection</button>
+  <button data-go="3"><span class="num">03</span> Multi-select</button>
+  <button data-go="4"><span class="num">04</span> Drag + Smart Guides</button>
+  <button data-go="5"><span class="num">05</span> Command Palette</button>
+  <button data-go="6"><span class="num">06</span> Expression Editor</button>
+  <button data-go="7"><span class="num">07</span> Preview</button>
+  <button data-go="8"><span class="num">08</span> Dark mode</button>
+  <span class="spacer"></span>
+  <button class="theme-toggle" id="themeToggle" aria-label="Theme">
+    <span class="light-only"><i data-lucide="moon" class="icon icon-12"></i> Dark</span>
+    <span class="dark-only"><i data-lucide="sun" class="icon icon-12"></i> Light</span>
+  </button>
+</header>
+
+<!-- ============================================================
+     APP SHELL
+     ============================================================ -->
+<div class="app" id="app">
+
+  <!-- ─── TopBar ─── -->
+  <header class="topbar no-select">
+    <div class="brand">
+      <span class="brand-mark">R</span>
+      <span>Report Designer</span>
+      <span class="crumb">·  Vendas/Outubro</span>
+    </div>
+
+    <nav class="menu" aria-label="Menu principal">
+      <button class="menu-item">Arquivo</button>
+      <button class="menu-item">Editar</button>
+      <button class="menu-item">Visualizar</button>
+      <button class="menu-item">Inserir</button>
+      <button class="menu-item">Relatório</button>
+      <button class="menu-item">Ajuda</button>
+    </nav>
+
+    <button class="cmd-trigger" id="openCmdP" aria-label="Command palette">
+      <i data-lucide="search" class="icon"></i>
+      <span class="cmd-text">Buscar comando ou propriedade…</span>
+      <span class="cmd-kbd">
+        <kbd>⌘</kbd><kbd>K</kbd>
+      </span>
+    </button>
+
+    <div class="topbar-right">
+      <button class="icon-btn" title="Validar relatório"><i data-lucide="shield-check" class="icon icon-16"></i></button>
+      <button class="icon-btn" title="Histórico de versões"><i data-lucide="history" class="icon icon-16"></i></button>
+      <button class="icon-btn" title="Compartilhar"><i data-lucide="share-2" class="icon icon-16"></i></button>
+      <div class="div-v"></div>
+      <button class="icon-btn" title="Notificações"><i data-lucide="bell" class="icon icon-16"></i></button>
+      <button class="icon-btn" title="Configurações"><i data-lucide="settings" class="icon icon-16"></i></button>
+      <button class="icon-btn" title="Conta">
+        <span style="width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,#C2410C,#A16207);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;">DC</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ─── TabBar ─── -->
+  <div class="tabbar no-select" role="tablist">
+    <div class="tab is-active" role="tab">
+      <i data-lucide="file-text" class="icon icon-12 tab-icon"></i>
+      <span class="tab-name">Vendas por Cliente.repx</span>
+      <span class="dirty-dot" title="Alterações não salvas"></span>
+      <button class="tab-close" aria-label="Fechar"><i data-lucide="x" class="icon icon-12"></i></button>
+    </div>
+    <div class="tab" role="tab">
+      <i data-lucide="receipt" class="icon icon-12 tab-icon"></i>
+      <span class="tab-name">Cupom NFCe.repx</span>
+      <button class="tab-close" aria-label="Fechar"><i data-lucide="x" class="icon icon-12"></i></button>
+    </div>
+    <div class="tab" role="tab">
+      <i data-lucide="bar-chart-3" class="icon icon-12 tab-icon"></i>
+      <span class="tab-name">DRE Gerencial.repx</span>
+      <button class="tab-close" aria-label="Fechar"><i data-lucide="x" class="icon icon-12"></i></button>
+    </div>
+    <button class="tab-new" title="Novo relatório"><i data-lucide="plus" class="icon icon-16"></i></button>
+
+    <div class="tabbar-right">
+      <button class="icon-btn" title="Lista de abas"><i data-lucide="chevrons-down" class="icon icon-12"></i></button>
+    </div>
+  </div>
+
+  <!-- ─── Toolbar ─── -->
+  <div class="toolbar no-select">
+    <div class="tb-group">
+      <button class="tb-btn" title="Desfazer (⌘Z)"><i data-lucide="undo-2" class="icon icon-16"></i></button>
+      <button class="tb-btn" title="Refazer (⌘⇧Z)"><i data-lucide="redo-2" class="icon icon-16"></i></button>
+    </div>
+    <div class="tb-sep"></div>
+
+    <div class="tb-group">
+      <button class="tb-btn" title="Recortar"><i data-lucide="scissors" class="icon icon-16"></i></button>
+      <button class="tb-btn" title="Copiar"><i data-lucide="copy" class="icon icon-16"></i></button>
+      <button class="tb-btn" title="Colar"><i data-lucide="clipboard-paste" class="icon icon-16"></i></button>
+    </div>
+    <div class="tb-sep"></div>
+
+    <div class="tb-group" aria-label="Inserir">
+      <button class="tb-btn" title="Texto"><i data-lucide="type" class="icon icon-16"></i></button>
+      <button class="tb-btn" title="Retângulo"><i data-lucide="square" class="icon icon-16"></i></button>
+      <button class="tb-btn" title="Linha"><i data-lucide="minus" class="icon icon-16"></i></button>
+      <button class="tb-btn" title="Imagem"><i data-lucide="image" class="icon icon-16"></i></button>
+      <button class="tb-btn" title="Tabela"><i data-lucide="table" class="icon icon-16"></i></button>
+      <button class="tb-btn" title="Código de barras"><i data-lucide="barcode" class="icon icon-16"></i></button>
+      <button class="tb-btn" title="Gráfico"><i data-lucide="bar-chart-2" class="icon icon-16"></i></button>
+      <button class="tb-btn" title="Sub-relatório"><i data-lucide="layers" class="icon icon-16"></i></button>
+    </div>
+
+    <!-- Align group, only on state 3 (multi-select) -->
+    <div class="tb-align-grp" aria-label="Alinhar">
+      <span class="tb-align-label">Alinhar</span>
+      <button class="tb-btn" title="Esquerda"><i data-lucide="align-start-vertical" class="icon icon-16"></i></button>
+      <button class="tb-btn" title="Centro vert."><i data-lucide="align-center-vertical" class="icon icon-16"></i></button>
+      <button class="tb-btn" title="Direita"><i data-lucide="align-end-vertical" class="icon icon-16"></i></button>
+      <span class="tb-sep"></span>
+      <button class="tb-btn" title="Topo"><i data-lucide="align-start-horizontal" class="icon icon-16"></i></button>
+      <button class="tb-btn" title="Centro hor."><i data-lucide="align-center-horizontal" class="icon icon-16"></i></button>
+      <button class="tb-btn" title="Base"><i data-lucide="align-end-horizontal" class="icon icon-16"></i></button>
+      <span class="tb-sep"></span>
+      <span class="tb-align-label">Distribuir</span>
+      <button class="tb-btn" title="Horizontal"><i data-lucide="columns-3" class="icon icon-16"></i></button>
+      <button class="tb-btn" title="Vertical"><i data-lucide="rows-3" class="icon icon-16"></i></button>
+    </div>
+
+    <div class="tb-spacer"></div>
+
+    <div class="tb-group">
+      <button class="tb-btn" title="Grade"><i data-lucide="grid-3x3" class="icon icon-16"></i></button>
+      <button class="tb-btn is-toggled" title="Snap"><i data-lucide="magnet" class="icon icon-16"></i></button>
+      <button class="tb-btn" title="Régua"><i data-lucide="ruler" class="icon icon-16"></i></button>
+    </div>
+    <div class="tb-sep"></div>
+
+    <div class="tb-zoom">
+      <button class="zoom-btn"><i data-lucide="minus" class="icon icon-12"></i></button>
+      <span class="zoom-val">100%</span>
+      <button class="zoom-btn"><i data-lucide="plus" class="icon icon-12"></i></button>
+    </div>
+
+    <button class="tb-btn" title="Configuração de página" style="margin-left:6px;"><i data-lucide="file-cog" class="icon icon-16"></i></button>
+    <button class="tb-btn primary" id="goPreview" title="Preview (F5)">
+      <i data-lucide="play" class="icon icon-16"></i> Preview
+    </button>
+  </div>
+
+  <!-- ─── Workspace ─── -->
+  <div class="workspace">
+
+    <!-- ============ LEFT PANEL ============ -->
+    <aside class="left-panel" aria-label="Painel esquerdo">
+      <div class="panel-tabs" role="tablist">
+        <button class="panel-tab is-active" role="tab">Toolbox <span class="badge-count">22</span></button>
+        <button class="panel-tab" role="tab">Dados</button>
+        <button class="panel-tab" role="tab">Parâmetros <span class="badge-count">2</span></button>
+      </div>
+
+      <div class="panel-body">
+        <div class="toolbox-search">
+          <i data-lucide="search" class="icon icon-12"></i>
+          <input placeholder="Filtrar elementos…" type="text">
+          <kbd>/</kbd>
+        </div>
+
+        <!-- Básicos -->
+        <div class="tb-group-h">
+          <i data-lucide="chevron-down" class="chev icon icon-12"></i>
+          <span>Básicos</span>
+        </div>
+        <div class="toolbox-list">
+          <div class="tbx-item" draggable="true"><i data-lucide="type" class="icon"></i><span>TextBox</span><span class="meta">T</span></div>
+          <div class="tbx-item"><i data-lucide="hash" class="icon"></i><span>Label</span></div>
+          <div class="tbx-item"><i data-lucide="square" class="icon"></i><span>Rectangle</span></div>
+          <div class="tbx-item"><i data-lucide="minus" class="icon"></i><span>Line</span></div>
+          <div class="tbx-item"><i data-lucide="image" class="icon"></i><span>Picture</span></div>
+          <div class="tbx-item"><i data-lucide="check-square" class="icon"></i><span>CheckBox</span></div>
+        </div>
+
+        <!-- Dados -->
+        <div class="tb-group-h">
+          <i data-lucide="chevron-down" class="chev icon icon-12"></i>
+          <span>Dados</span>
+        </div>
+        <div class="toolbox-list">
+          <div class="tbx-item"><i data-lucide="table" class="icon"></i><span>Table</span></div>
+          <div class="tbx-item"><i data-lucide="layout-list" class="icon"></i><span>DataBand</span></div>
+          <div class="tbx-item"><i data-lucide="indent-increase" class="icon"></i><span>Group</span></div>
+          <div class="tbx-item"><i data-lucide="layers" class="icon"></i><span>Subreport</span></div>
+        </div>
+
+        <!-- Gráficos -->
+        <div class="tb-group-h">
+          <i data-lucide="chevron-down" class="chev icon icon-12"></i>
+          <span>Gráficos</span>
+        </div>
+        <div class="toolbox-list">
+          <div class="tbx-item"><i data-lucide="bar-chart-2" class="icon"></i><span>Chart</span></div>
+          <div class="tbx-item"><i data-lucide="gauge" class="icon"></i><span>Gauge</span></div>
+          <div class="tbx-item"><i data-lucide="map" class="icon"></i><span>Map</span></div>
+          <div class="tbx-item"><i data-lucide="trending-up" class="icon"></i><span>Sparkline</span></div>
+        </div>
+
+        <!-- Avançados -->
+        <div class="tb-group-h">
+          <i data-lucide="chevron-right" class="chev icon icon-12"></i>
+          <span>Avançados</span>
+        </div>
+      </div>
+
+      <div class="split-handle right" aria-hidden="true"></div>
+    </aside>
+
+    <!-- ============ CANVAS REGION ============ -->
+    <section class="canvas-region" aria-label="Canvas">
+
+      <!-- Standard (design) canvas -->
+      <div class="standard-canvas">
+
+        <!-- Horizontal ruler -->
+        <div class="canvas-ruler-h">
+          <div class="corner"></div>
+          <svg class="ruler-h-svg" width="100%" height="22" style="display:block;flex:1;">
+            <!-- Generated below via JS for ticks. Decorative SVG ticks -->
+            <defs>
+              <pattern id="rh10" width="34.3" height="22" patternUnits="userSpaceOnUse">
+                <line x1="0" y1="14" x2="0" y2="22" stroke="var(--ruler-tick)" stroke-width="0.7"/>
+                <line x1="3.43" y1="18" x2="3.43" y2="22" stroke="var(--ruler-tick)" stroke-width="0.5"/>
+                <line x1="6.86" y1="18" x2="6.86" y2="22" stroke="var(--ruler-tick)" stroke-width="0.5"/>
+                <line x1="10.29" y1="18" x2="10.29" y2="22" stroke="var(--ruler-tick)" stroke-width="0.5"/>
+                <line x1="13.72" y1="18" x2="13.72" y2="22" stroke="var(--ruler-tick)" stroke-width="0.5"/>
+                <line x1="17.15" y1="16" x2="17.15" y2="22" stroke="var(--ruler-tick)" stroke-width="0.6"/>
+                <line x1="20.58" y1="18" x2="20.58" y2="22" stroke="var(--ruler-tick)" stroke-width="0.5"/>
+                <line x1="24.01" y1="18" x2="24.01" y2="22" stroke="var(--ruler-tick)" stroke-width="0.5"/>
+                <line x1="27.44" y1="18" x2="27.44" y2="22" stroke="var(--ruler-tick)" stroke-width="0.5"/>
+                <line x1="30.87" y1="18" x2="30.87" y2="22" stroke="var(--ruler-tick)" stroke-width="0.5"/>
+              </pattern>
+            </defs>
+            <rect width="100%" height="22" fill="url(#rh10)"/>
+            <g id="rulerHLabels" font-family="IBM Plex Mono" font-size="9" fill="var(--ruler-text)"></g>
+            <line id="rulerHCursor" x1="0" y1="0" x2="0" y2="22" stroke="var(--accent)" stroke-width="1" opacity="0.85"/>
+          </svg>
+        </div>
+
+        <div class="canvas-scroll" id="canvasScroll">
+          <div class="canvas-stage">
+
+            <div class="page-shell">
+              <!-- Vertical ruler is positioned via CSS, optional - skipped for brevity to keep density. Bands have own labels. -->
+
+              <div class="page" id="page">
+                <div class="page-margins"></div>
+
+                <!-- ========= ReportHeader band ========= -->
+                <div class="band t-rh" style="height: 75.5px;">
+                  <div class="band-strip">
+                    <span class="band-label">RH</span>
+                    <span class="band-meta">22mm</span>
+                  </div>
+                  <div class="band-content">
+                    <!-- Title -->
+                    <div class="el bold" style="left:51.5px; top:14px; width:617px; height:22px; font-size:16px; font-weight:600; letter-spacing:-0.005em;">
+                      Relatório de Vendas por Cliente
+                    </div>
+                    <!-- Horizontal line -->
+                    <div style="position:absolute; left:51.5px; top:42px; width:617px; height:1px; background:var(--text-primary);"></div>
+                    <!-- Subtitle / period -->
+                    <div class="el is-data" style="left:51.5px; top:48px; width:617px; height:14px; font-family:var(--font-sans); font-size:11px; color:var(--text-secondary);">
+                      Período: <span style="color:var(--data-bound);font-family:var(--font-mono);">{DataInicio:dd/MM/yyyy}</span> a <span style="color:var(--data-bound);font-family:var(--font-mono);">{DataFim:dd/MM/yyyy}</span>
+                      <span class="fx-badge">fx</span>
+                      <div class="handles">
+                        <div class="handle nw"></div><div class="handle n"></div><div class="handle ne"></div>
+                        <div class="handle e"></div><div class="handle se"></div><div class="handle s"></div>
+                        <div class="handle sw"></div><div class="handle w"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- ========= PageHeader band ========= -->
+                <div class="band t-ph" style="height: 34.3px;">
+                  <div class="band-strip"><span class="band-label">PH</span><span class="band-meta">10mm</span></div>
+                  <div class="band-content">
+                    <div class="el bold" style="left:51.5px; top:8px; width:228px; height:16px; font-size:10px; text-transform:uppercase; letter-spacing:0.04em; color:var(--text-secondary);">Produto</div>
+                    <div class="el bold txt-right" style="left:373px; top:8px; width:78px; height:16px; font-size:10px; text-transform:uppercase; letter-spacing:0.04em; color:var(--text-secondary);">Qtd</div>
+                    <div class="el bold txt-right" style="left:470px; top:8px; width:88px; height:16px; font-size:10px; text-transform:uppercase; letter-spacing:0.04em; color:var(--text-secondary);">Unit.</div>
+                    <div class="el bold txt-right" style="left:570px; top:8px; width:98px; height:16px; font-size:10px; text-transform:uppercase; letter-spacing:0.04em; color:var(--text-secondary);">Total</div>
+                    <div style="position:absolute; left:51.5px; top:25px; width:617px; height:1px; background:var(--text-secondary);"></div>
+                  </div>
+                </div>
+
+                <!-- ========= GroupHeader band ========= -->
+                <div class="band t-gh" style="height: 27.4px;">
+                  <div class="band-strip"><span class="band-label">GH</span><span class="band-meta">8mm</span></div>
+                  <div class="band-content">
+                    <div class="el is-data bold" style="left:51.5px; top:7px; width:617px; height:14px; font-family:var(--font-sans); color:var(--text-primary); font-weight:600;">
+                      Cliente: <span style="color:var(--data-bound);font-family:var(--font-mono);">{Cliente.Nome}</span>
+                      <span class="fx-badge">fx</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- ========= Detail band ========= -->
+                <div class="band t-d" style="height: 20.6px;">
+                  <div class="band-strip"><span class="band-label">DT</span><span class="band-meta">6mm</span></div>
+                  <div class="band-content">
+                    <div class="el is-data" style="left:51.5px; top:4px; width:228px; height:14px; font-family:var(--font-sans); color:var(--text-primary);">
+                      <span style="color:var(--data-bound);font-family:var(--font-mono);">{Produto}</span>
+                      <span class="fx-badge">fx</span>
+                    </div>
+                    <div class="el is-data ms-1 txt-right" style="left:373px; top:4px; width:78px; height:14px; font-family:var(--font-sans); color:var(--text-primary);">
+                      <span style="color:var(--data-bound);font-family:var(--font-mono);">{Quantidade:N2}</span>
+                      <span class="fx-badge">fx</span>
+                      <div class="handles">
+                        <div class="handle nw"></div><div class="handle n"></div><div class="handle ne"></div>
+                        <div class="handle e"></div><div class="handle se"></div><div class="handle s"></div>
+                        <div class="handle sw"></div><div class="handle w"></div>
+                      </div>
+                    </div>
+                    <div class="el is-data ms-2 txt-right" style="left:470px; top:4px; width:88px; height:14px; font-family:var(--font-sans); color:var(--text-primary);">
+                      <span style="color:var(--data-bound);font-family:var(--font-mono);">{PrecoUnitario:C}</span>
+                      <span class="fx-badge">fx</span>
+                      <div class="handles">
+                        <div class="handle nw"></div><div class="handle n"></div><div class="handle ne"></div>
+                        <div class="handle e"></div><div class="handle se"></div><div class="handle s"></div>
+                        <div class="handle sw"></div><div class="handle w"></div>
+                      </div>
+                    </div>
+                    <div class="el is-data target-total ms-3 txt-right" id="elTotal" style="left:570px; top:4px; width:98px; height:14px; font-family:var(--font-sans); color:var(--text-primary); font-weight:600;">
+                      <span style="color:var(--data-bound);font-family:var(--font-mono);">{Total:C}</span>
+                      <span class="fx-badge">fx</span>
+                      <div class="handles">
+                        <div class="handle nw"></div><div class="handle n"></div><div class="handle ne"></div>
+                        <div class="handle e"></div><div class="handle se"></div><div class="handle s"></div>
+                        <div class="handle sw"></div><div class="handle w"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- ========= GroupFooter band ========= -->
+                <div class="band t-gf" style="height: 34.3px;">
+                  <div class="band-strip"><span class="band-label">GF</span><span class="band-meta">10mm</span></div>
+                  <div class="band-content">
+                    <div style="position:absolute; left:373px; top:5px; width:295px; height:1px; background:var(--border-strong);"></div>
+                    <div class="el bold" style="left:373px; top:9px; width:175px; height:14px; font-size:11px;">Subtotal:</div>
+                    <div class="el is-data bold txt-right" style="left:570px; top:9px; width:98px; height:14px; font-family:var(--font-sans); color:var(--text-primary); font-weight:600;">
+                      <span style="color:var(--data-bound);font-family:var(--font-mono);">{Sum(Total):C}</span>
+                      <span class="fx-badge">fx</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- ========= PageFooter band ========= -->
+                <div class="band t-pf" style="height: 34.3px;">
+                  <div class="band-strip"><span class="band-label">PF</span><span class="band-meta">10mm</span></div>
+                  <div class="band-content">
+                    <div style="position:absolute; left:51.5px; top:6px; width:617px; height:1px; background:var(--border-strong);"></div>
+                    <div class="el is-data" style="left:51.5px; top:12px; width:228px; height:14px; font-size:10px; color:var(--text-secondary);">
+                      Página <span style="color:var(--data-bound);font-family:var(--font-mono);">{PageNumber}</span>/<span style="color:var(--data-bound);font-family:var(--font-mono);">{TotalPages}</span>
+                      <span class="fx-badge">fx</span>
+                    </div>
+                    <div class="el is-data txt-right" style="left:373px; top:12px; width:295px; height:14px; font-size:10px; color:var(--text-secondary);">
+                      Emitido em <span style="color:var(--data-bound);font-family:var(--font-mono);">{Now():dd/MM/yyyy HH:mm}</span>
+                      <span class="fx-badge">fx</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- ========= ReportFooter band ========= -->
+                <div class="band t-rf" style="height: 51.5px;">
+                  <div class="band-strip"><span class="band-label">RF</span><span class="band-meta">15mm</span></div>
+                  <div class="band-content">
+                    <div style="position:absolute; left:51.5px; top:12px; width:617px; height:2px; background:var(--text-primary);"></div>
+                    <div class="el bold" style="left:373px; top:20px; width:175px; height:18px; font-size:13px; font-weight:600;">Total Geral:</div>
+                    <div class="el is-data bold txt-right" style="left:498px; top:18px; width:170px; height:22px; font-family:var(--font-sans); color:var(--accent); font-weight:700; font-size:14px;">
+                      <span style="color:var(--accent);font-family:var(--font-mono);">{Sum(Total):C}</span>
+                      <span class="fx-badge" style="background:var(--accent);">fx</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- ====== Smart Guides + drag ghost (state 4) ====== -->
+                <!-- Vertical guide aligning to left edge of Total column (570px from page left) -->
+                <div class="smart-guide v sg-1" style="left:570px; top:0; height:300px;">
+                  <span class="dim" style="top:280px; left:-40px;">12mm</span>
+                </div>
+                <!-- Horizontal guide aligning to the top of Detail band y=~145px (depends on stacking) -->
+                <div class="smart-guide h sg-2" style="top:163px; left:0; width:100%;">
+                  <span class="dim" style="left:280px; top:-20px;">aligned: 47mm</span>
+                </div>
+                <!-- Drag ghost — placing a new TextBox -->
+                <div class="drag-ghost" style="left:570px; top:163px; width:98px; height:14px;">
+                  TextBox · 28×4mm
+                </div>
+
+                <!-- ====== Marquee selection (state 3) ====== -->
+                <div class="marquee ms-marquee" style="left:368px; top:140px; width:305px; height:30px;"></div>
+              </div>
+
+            </div><!-- /page-shell -->
+
+            <!-- ====== Expression editor popover (state 6) ====== -->
+            <!-- Positioned near the right side, pointing to the property grid. -->
+            <div class="expr-popover expression-popover" style="right:-340px; top:80px;">
+              <div class="expr-head">
+                <i data-lucide="function-square" class="icon icon-16" style="color:var(--accent);"></i>
+                <span class="h-title">Expressão</span>
+                <span class="h-prop">TextBox5 · Text</span>
+                <button class="icon-btn" style="margin-left:auto;"><i data-lucide="x" class="icon icon-12"></i></button>
+              </div>
+              <div class="expr-body">
+                <div class="expr-side">
+                  <div class="expr-cat">Campos</div>
+                  <div class="leaf"><span class="ti" style="color:var(--text-primary);">T</span><span>Cliente.Nome</span></div>
+                  <div class="leaf"><span class="ti" style="color:var(--syn-number);">#</span><span>Quantidade</span></div>
+                  <div class="leaf"><span class="ti" style="color:var(--syn-number);">#</span><span>PrecoUnitario</span></div>
+                  <div class="leaf"><span class="ti" style="color:var(--syn-number);">#</span><span>Total</span></div>
+                  <div class="leaf"><span class="ti" style="color:var(--text-primary);">T</span><span>Produto</span></div>
+                  <div class="expr-cat">Agregações</div>
+                  <div class="leaf is-hl"><span class="ti">ƒ</span><span>Sum( )</span></div>
+                  <div class="leaf"><span class="ti">ƒ</span><span>Avg( )</span></div>
+                  <div class="leaf"><span class="ti">ƒ</span><span>Count( )</span></div>
+                  <div class="leaf"><span class="ti">ƒ</span><span>Min( )</span></div>
+                  <div class="leaf"><span class="ti">ƒ</span><span>Max( )</span></div>
+                  <div class="expr-cat">Funções</div>
+                  <div class="leaf"><span class="ti">ƒ</span><span>Format( )</span></div>
+                  <div class="leaf"><span class="ti">ƒ</span><span>IIF( )</span></div>
+                  <div class="leaf"><span class="ti">ƒ</span><span>ToString( )</span></div>
+                </div>
+                <div class="expr-edit">
+                  <div class="expr-textarea">
+<span class="cmt">// Soma do total por cliente</span>
+<span class="fn">Sum</span>(<span class="fld">[Fields.Total]</span>)<span class="cursor"></span>
+                    <!-- autocomplete popup -->
+                    <div class="expr-autocomplete" style="left:60px; top:62px;">
+                      <div class="ac-row is-hl">
+                        <span class="ti">ƒ</span>
+                        <span>Sum<span style="color:var(--text-tertiary);">(field)</span></span>
+                        <span class="ret">decimal</span>
+                      </div>
+                      <div class="ac-row">
+                        <span class="ti">ƒ</span>
+                        <span>SumGroup<span style="color:var(--text-tertiary);">(field, scope)</span></span>
+                        <span class="ret">decimal</span>
+                      </div>
+                      <div class="ac-row">
+                        <span class="ti">ƒ</span>
+                        <span>SumIf<span style="color:var(--text-tertiary);">(field, cond)</span></span>
+                        <span class="ret">decimal</span>
+                      </div>
+                      <div class="ac-row">
+                        <span class="ti">ƒ</span>
+                        <span>SumDistinct<span style="color:var(--text-tertiary);">(field)</span></span>
+                        <span class="ret">decimal</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="expr-foot">
+                    <span class="validated">
+                      <i data-lucide="check-circle-2" class="icon icon-12"></i>
+                      Expressão válida — retorna <span class="mono" style="font-size:11px;">decimal</span>
+                    </span>
+                    <button class="btn">Cancelar</button>
+                    <button class="btn primary">Aplicar</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div><!-- /canvas-stage -->
+        </div><!-- /canvas-scroll -->
+      </div><!-- /standard-canvas -->
+
+      <!-- ===== Preview mode (state 7) ===== -->
+      <div class="preview-region">
+        <div class="preview-toolbar no-select">
+          <button class="tb-btn" title="Voltar ao designer"><i data-lucide="arrow-left" class="icon icon-16"></i> Designer</button>
+          <div class="tb-sep"></div>
+          <div class="pg-nav">
+            <button class="nav-btn" title="Primeira"><i data-lucide="chevrons-left" class="icon icon-12"></i></button>
+            <button class="nav-btn"><i data-lucide="chevron-left" class="icon icon-12"></i></button>
+            <span class="pg-input">1 / 3</span>
+            <button class="nav-btn"><i data-lucide="chevron-right" class="icon icon-12"></i></button>
+            <button class="nav-btn"><i data-lucide="chevrons-right" class="icon icon-12"></i></button>
+          </div>
+          <div class="tb-zoom" style="margin-left:8px;">
+            <button class="zoom-btn"><i data-lucide="minus" class="icon icon-12"></i></button>
+            <span class="zoom-val">90%</span>
+            <button class="zoom-btn"><i data-lucide="plus" class="icon icon-12"></i></button>
+          </div>
+          <div class="tb-spacer"></div>
+          <div class="tb-group">
+            <button class="tb-btn"><i data-lucide="search" class="icon icon-16"></i> Buscar</button>
+            <button class="tb-btn"><i data-lucide="bookmark" class="icon icon-16"></i> Marcadores</button>
+          </div>
+          <div class="tb-sep"></div>
+          <div class="tb-group">
+            <button class="tb-btn"><i data-lucide="file-text" class="icon icon-16"></i> PDF</button>
+            <button class="tb-btn"><i data-lucide="file-spreadsheet" class="icon icon-16"></i> XLSX</button>
+            <button class="tb-btn"><i data-lucide="file-code" class="icon icon-16"></i> HTML</button>
+          </div>
+          <button class="tb-btn primary" style="margin-left:6px;">
+            <i data-lucide="printer" class="icon icon-16"></i> Imprimir
+          </button>
+        </div>
+
+        <div class="preview-scroll">
+          <div class="preview-page">
+            <div class="pv-title">Relatório de Vendas por Cliente</div>
+            <div class="pv-sub">Período: 01/10/2025 a 31/10/2025  ·  3 clientes  ·  18 itens</div>
+            <div class="pv-cols"><div>Produto</div><div>Qtd</div><div>Unit.</div><div>Total</div></div>
+
+            <div class="pv-group-h">Cliente: Padaria Real Pão Ltda</div>
+            <div class="pv-row"><div>Farinha de Trigo Tipo 1 — 25kg</div><div>12,00</div><div>R$ 148,90</div><div>R$ 1.786,80</div></div>
+            <div class="pv-row"><div>Açúcar Refinado União — 5kg</div><div>30,00</div><div>R$ 27,40</div><div>R$ 822,00</div></div>
+            <div class="pv-row"><div>Manteiga Aviação — 200g</div><div>48,00</div><div>R$ 11,90</div><div>R$ 571,20</div></div>
+            <div class="pv-row"><div>Fermento Biológico Fleischmann</div><div>24,00</div><div>R$ 8,75</div><div>R$ 210,00</div></div>
+            <div class="pv-subtotal"><div>Subtotal</div><div>R$ 3.390,00</div></div>
+
+            <div class="pv-group-h">Cliente: Mercearia da Esquina ME</div>
+            <div class="pv-row"><div>Arroz Tio João — 5kg</div><div>20,00</div><div>R$ 32,50</div><div>R$ 650,00</div></div>
+            <div class="pv-row"><div>Feijão Carioca Camil — 1kg</div><div>40,00</div><div>R$ 8,90</div><div>R$ 356,00</div></div>
+            <div class="pv-row"><div>Óleo de Soja Liza — 900ml</div><div>24,00</div><div>R$ 7,15</div><div>R$ 171,60</div></div>
+            <div class="pv-row"><div>Macarrão Espaguete Galo — 500g</div><div>60,00</div><div>R$ 4,29</div><div>R$ 257,40</div></div>
+            <div class="pv-row"><div>Sal Refinado Cisne — 1kg</div><div>30,00</div><div>R$ 2,49</div><div>R$ 74,70</div></div>
+            <div class="pv-subtotal"><div>Subtotal</div><div>R$ 1.509,70</div></div>
+
+            <div class="pv-group-h">Cliente: Restaurante Sabor Mineiro</div>
+            <div class="pv-row"><div>Café Torrado Pilão — 500g</div><div>15,00</div><div>R$ 18,90</div><div>R$ 283,50</div></div>
+            <div class="pv-row"><div>Açúcar Cristal — 5kg</div><div>10,00</div><div>R$ 22,40</div><div>R$ 224,00</div></div>
+            <div class="pv-row"><div>Leite Integral Itambé — 1L</div><div>36,00</div><div>R$ 6,45</div><div>R$ 232,20</div></div>
+            <div class="pv-subtotal"><div>Subtotal</div><div>R$ 739,70</div></div>
+
+            <div class="pv-grand"><div>Total Geral</div><div>R$ 5.639,40</div></div>
+
+            <div class="pv-footer">
+              <span>Página 1/3</span>
+              <span>Emitido em 23/10/2025 14:32</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </section><!-- /canvas-region -->
+
+    <!-- ============ RIGHT PANEL ============ -->
+    <aside class="right-panel" aria-label="Painel direito">
+      <div class="split-handle left" aria-hidden="true"></div>
+
+      <div class="panel-tabs" role="tablist">
+        <button class="panel-tab is-active" role="tab">Propriedades</button>
+        <button class="panel-tab" role="tab">Outline</button>
+        <button class="panel-tab" role="tab">Eventos <span class="badge-count">2</span></button>
+      </div>
+
+      <!-- Property grid header (object info) -->
+      <div style="display:flex;align-items:center;gap:8px;height:34px;padding:0 12px;border-bottom:1px solid var(--border);background:var(--bg-surface);">
+        <i data-lucide="type" class="icon icon-16" style="color:var(--selection);"></i>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:12px;font-weight:600;color:var(--text-primary);">TextBox · txtTotal</div>
+          <div style="font-size:10px;color:var(--text-tertiary);font-family:var(--font-mono);">Detail → Cell #4</div>
+        </div>
+        <span style="font-family:var(--font-mono);font-size:10px;color:var(--text-tertiary);padding:1px 5px;border:1px solid var(--border);border-radius:2px;">1 sel.</span>
+      </div>
+
+      <div class="panel-body" id="propGrid">
+
+        <div class="prop-section">
+          <div class="prop-section-head">
+            <i data-lucide="chevron-down" class="chev icon icon-12"></i>
+            <span>Layout</span>
+            <span class="count">4</span>
+          </div>
+          <div class="prop-row">
+            <div class="p-label">X</div>
+            <div class="p-editor">
+              <input value="136" style="width:100%;font-family:var(--font-mono);font-size:12px;">
+              <span class="p-unit">mm</span>
+              <span class="p-stepper">
+                <button><i data-lucide="chevron-up" class="icon icon-12"></i></button>
+                <button><i data-lucide="chevron-down" class="icon icon-12"></i></button>
+              </span>
+            </div>
+          </div>
+          <div class="prop-row">
+            <div class="p-label">Y</div>
+            <div class="p-editor">
+              <input value="0" style="width:100%;font-family:var(--font-mono);font-size:12px;">
+              <span class="p-unit">mm</span>
+              <span class="p-stepper">
+                <button><i data-lucide="chevron-up" class="icon icon-12"></i></button>
+                <button><i data-lucide="chevron-down" class="icon icon-12"></i></button>
+              </span>
+            </div>
+          </div>
+          <div class="prop-row">
+            <div class="p-label">Width</div>
+            <div class="p-editor">
+              <input value="30" style="width:100%;font-family:var(--font-mono);font-size:12px;">
+              <span class="p-unit">mm</span>
+              <span class="p-stepper">
+                <button><i data-lucide="chevron-up" class="icon icon-12"></i></button>
+                <button><i data-lucide="chevron-down" class="icon icon-12"></i></button>
+              </span>
+            </div>
+          </div>
+          <div class="prop-row">
+            <div class="p-label">Height</div>
+            <div class="p-editor">
+              <input value="6" style="width:100%;font-family:var(--font-mono);font-size:12px;">
+              <span class="p-unit">mm</span>
+              <span class="p-stepper">
+                <button><i data-lucide="chevron-up" class="icon icon-12"></i></button>
+                <button><i data-lucide="chevron-down" class="icon icon-12"></i></button>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="prop-section">
+          <div class="prop-section-head">
+            <i data-lucide="chevron-down" class="chev icon icon-12"></i>
+            <span>Appearance</span>
+            <span class="count">7</span>
+          </div>
+          <div class="prop-row">
+            <div class="p-label">Font</div>
+            <div class="p-editor" style="font-family:var(--font-mono);font-size:11.5px;">IBM Plex Sans <span style="color:var(--text-tertiary);">· 10</span></div>
+          </div>
+          <div class="prop-row">
+            <div class="p-label">Style</div>
+            <div class="p-editor">
+              <span class="editor-toggle">
+                <button class="is-on">B</button><button>I</button><button>U</button><button>S</button>
+              </span>
+            </div>
+          </div>
+          <div class="prop-row">
+            <div class="p-label">Color</div>
+            <div class="p-editor">
+              <span class="color-swatch" style="background:#1A1A1A;"></span>
+              <span class="mono" style="font-size:11.5px;">#1A1A1A</span>
+            </div>
+          </div>
+          <div class="prop-row">
+            <div class="p-label">Background</div>
+            <div class="p-editor">
+              <span class="color-swatch" style="background:transparent;border-style:dashed;"></span>
+              <span style="color:var(--text-tertiary);font-size:11.5px;">Transparente</span>
+            </div>
+          </div>
+          <div class="prop-row">
+            <div class="p-label">Align</div>
+            <div class="p-editor">
+              <span class="align-row" aria-label="Horizontal">
+                <button title="Esquerda"><i data-lucide="align-left" class="icon icon-12"></i></button>
+                <button title="Centro"><i data-lucide="align-center" class="icon icon-12"></i></button>
+                <button class="is-on" title="Direita"><i data-lucide="align-right" class="icon icon-12"></i></button>
+              </span>
+              <span class="align-row" aria-label="Vertical" style="margin-left:4px;">
+                <button title="Topo"><i data-lucide="align-start-horizontal" class="icon icon-12"></i></button>
+                <button class="is-on" title="Centro"><i data-lucide="align-center-horizontal" class="icon icon-12"></i></button>
+                <button title="Base"><i data-lucide="align-end-horizontal" class="icon icon-12"></i></button>
+              </span>
+            </div>
+          </div>
+          <div class="prop-row">
+            <div class="p-label">Border</div>
+            <div class="p-editor"><span style="color:var(--text-tertiary);font-size:11.5px;">Nenhuma</span></div>
+          </div>
+          <div class="prop-row">
+            <div class="p-label">Padding</div>
+            <div class="p-editor"><span class="mono" style="font-size:11.5px;">0 · 2 · 0 · 2</span><span class="p-unit">px</span></div>
+          </div>
+        </div>
+
+        <div class="prop-section">
+          <div class="prop-section-head" style="background:var(--accent-soft);color:var(--accent);">
+            <i data-lucide="chevron-down" class="chev icon icon-12"></i>
+            <span>Data</span>
+            <span class="count" style="color:var(--accent);background:var(--bg-surface);border:1px solid var(--accent-border);padding:1px 4px;border-radius:2px;">3</span>
+          </div>
+          <div class="prop-row is-bound is-focused">
+            <div class="p-label">Expression</div>
+            <div class="p-editor">
+              <span style="flex:1;font-family:var(--font-mono);font-size:11.5px;overflow:hidden;text-overflow:ellipsis;">{Fields.Total:C}</span>
+              <button class="icon-btn" style="width:18px;height:18px;color:var(--data-bound);background:var(--data-bound-soft);border-radius:3px;font-family:var(--font-mono);font-size:9.5px;font-weight:600;">fx</button>
+            </div>
+          </div>
+          <div class="prop-row">
+            <div class="p-label">Format</div>
+            <div class="p-editor"><span class="mono" style="font-size:11.5px;">pt-BR / R$ #,##0.00</span></div>
+          </div>
+          <div class="prop-row">
+            <div class="p-label">Null Display</div>
+            <div class="p-editor"><span class="mono" style="font-size:11.5px;color:var(--text-tertiary);">—</span></div>
+          </div>
+        </div>
+
+        <div class="prop-section">
+          <div class="prop-section-head">
+            <i data-lucide="chevron-down" class="chev icon icon-12"></i>
+            <span>Behavior</span>
+            <span class="count">5</span>
+          </div>
+          <div class="prop-row">
+            <div class="p-label">CanGrow</div>
+            <div class="p-editor"><span class="editor-toggle"><button>On</button><button class="is-on">Off</button></span></div>
+          </div>
+          <div class="prop-row">
+            <div class="p-label">CanShrink</div>
+            <div class="p-editor"><span class="editor-toggle"><button>On</button><button class="is-on">Off</button></span></div>
+          </div>
+          <div class="prop-row">
+            <div class="p-label">Visible</div>
+            <div class="p-editor"><span class="editor-toggle"><button class="is-on">On</button><button>Off</button></span></div>
+          </div>
+          <div class="prop-row">
+            <div class="p-label">KeepTogether</div>
+            <div class="p-editor"><span class="editor-toggle"><button class="is-on">On</button><button>Off</button></span></div>
+          </div>
+          <div class="prop-row">
+            <div class="p-label">ProcessNullValues</div>
+            <div class="p-editor"><span style="font-size:11.5px;">Suppress</span></div>
+          </div>
+        </div>
+
+        <div class="prop-section">
+          <div class="prop-section-head">
+            <i data-lucide="chevron-right" class="chev icon icon-12"></i>
+            <span>Misc</span>
+            <span class="count">8</span>
+          </div>
+        </div>
+
+      </div>
+    </aside>
+
+  </div><!-- /workspace -->
+
+  <!-- ─── StatusBar ─── -->
+  <footer class="statusbar no-select">
+    <span class="sb-item"><i data-lucide="git-branch" class="icon"></i><span class="val">main</span></span>
+    <span class="sb-item"><span class="key">X</span><span class="val">136mm</span></span>
+    <span class="sb-item"><span class="key">Y</span><span class="val">0mm</span></span>
+    <span class="sb-item"><span class="key">W</span><span class="val">30mm</span></span>
+    <span class="sb-item"><span class="key">H</span><span class="val">6mm</span></span>
+    <span class="sb-item"><span class="key">Página</span><span class="val">1/3</span></span>
+    <span class="sb-item"><span class="key">Zoom</span><span class="val">100%</span></span>
+    <span class="sb-item"><span class="key">Seleção</span><span class="val" id="sbSelCount">1 elemento</span></span>
+    <span class="sb-spacer"></span>
+    <span class="sb-item ok"><i data-lucide="check-circle-2" class="icon" style="color:var(--success);"></i><span class="val" style="color:var(--success);">Validado</span></span>
+    <span class="sb-item"><i data-lucide="database" class="icon"></i><span class="val">Vendas</span><span class="key">conectado</span></span>
+    <span class="sb-item"><span class="key">UTF-8 · CRLF · pt-BR</span></span>
+  </footer>
+
+  <!-- ============ Command Palette overlay (state 5) ============ -->
+  <div class="overlay cmd-overlay" id="cmdpOverlay">
+    <div class="cmdp" role="dialog" aria-label="Command palette">
+      <div class="cmdp-input">
+        <i data-lucide="search" class="icon icon-16" style="color:var(--text-tertiary);"></i>
+        <input value="tot" placeholder="Buscar comando ou propriedade…" type="text">
+        <span class="esc-hint">Esc <kbd>Esc</kbd></span>
+      </div>
+      <div class="cmdp-list">
+        <div class="cmdp-group">Sugestões</div>
+        <div class="cmdp-item is-hl">
+          <i data-lucide="sigma" class="icon icon-16 ic"></i>
+          <span>Inserir <b>Tot</b>al de grupo</span>
+          <span class="crumb">Inserir › Agregação</span>
+          <span class="kbd-line"><kbd>⌘</kbd><kbd>⇧</kbd><kbd>T</kbd></span>
+        </div>
+        <div class="cmdp-item">
+          <i data-lucide="function-square" class="icon icon-16 ic"></i>
+          <span>Editar expressão <b>Tot</b>al…</span>
+          <span class="crumb">Propriedade › Data</span>
+          <span class="kbd-line"><kbd>F</kbd><kbd>4</kbd></span>
+        </div>
+        <div class="cmdp-item">
+          <i data-lucide="circle-dollar-sign" class="icon icon-16 ic"></i>
+          <span>Formatar como Moeda (R$)</span>
+          <span class="crumb">Propriedade › Format</span>
+          <span class="kbd-line"><kbd>⌘</kbd><kbd>⇧</kbd><kbd>$</kbd></span>
+        </div>
+
+        <div class="cmdp-group">Navegação</div>
+        <div class="cmdp-item">
+          <i data-lucide="locate" class="icon icon-16 ic"></i>
+          <span>Ir para Field <b>Tot</b>al</span>
+          <span class="crumb">Dados › Vendas</span>
+          <span class="kbd-line"><kbd>⌘</kbd><kbd>↵</kbd></span>
+        </div>
+        <div class="cmdp-item">
+          <i data-lucide="box-select" class="icon icon-16 ic"></i>
+          <span>Selecionar <b>Tot</b>al Geral (ReportFooter)</span>
+          <span class="crumb">Outline</span>
+          <span class="kbd-line"><kbd>⌘</kbd><kbd>L</kbd></span>
+        </div>
+
+        <div class="cmdp-group">Recentes</div>
+        <div class="cmdp-item">
+          <i data-lucide="play" class="icon icon-16 ic"></i>
+          <span>Preview</span>
+          <span class="crumb">Relatório</span>
+          <span class="kbd-line"><kbd>F</kbd><kbd>5</kbd></span>
+        </div>
+        <div class="cmdp-item">
+          <i data-lucide="save" class="icon icon-16 ic"></i>
+          <span>Salvar</span>
+          <span class="crumb">Arquivo</span>
+          <span class="kbd-line"><kbd>⌘</kbd><kbd>S</kbd></span>
+        </div>
+      </div>
+      <div class="cmdp-foot">
+        <span class="ft-item"><kbd>↑</kbd><kbd>↓</kbd> navegar</span>
+        <span class="ft-item"><kbd>↵</kbd> executar</span>
+        <span class="ft-item"><kbd>⌘</kbd><kbd>↵</kbd> executar e fechar</span>
+        <span style="margin-left:auto;">17 resultados</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ Toast (only visible briefly) ============ -->
+  <!-- Hidden by default; not tied to a state, kept as reference. -->
+
+</div><!-- /app -->
+
+<!-- Lucide icons -->
+<script src="https://unpkg.com/lucide@latest"></script>
+<script src="scripts/app.js"></script>
+</body>
+</html>

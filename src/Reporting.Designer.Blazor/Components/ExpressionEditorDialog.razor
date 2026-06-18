@@ -1,0 +1,538 @@
+@namespace Reporting.Designer.Blazor.Components
+@using Reporting.Expressions
+
+<DesignerModal Visible="Visible" Title="Editor de Expressões" HeadIcon="function-square" OnClose="OnCancel">
+    <ChildContent>
+        @* Wider dialog frame — 3-column layout: catalog | editor | snippets/preview *@
+        <div style="width:1000px;max-width:90vw;display:grid;grid-template-columns:240px 1fr 260px;gap:12px;min-height:440px;">
+
+            @* ╔════ LEFT: Catalog with search + collapsible categories ════════ *@
+            <div style="display:flex;flex-direction:column;min-width:0;border:1px solid var(--border);border-radius:var(--r-2);background:var(--bg-panel);">
+                <div style="display:flex;align-items:center;gap:6px;padding:6px 8px;border-bottom:1px solid var(--border);">
+                    <Icon Name="search" Size="12" CssClass="icon icon-12" />
+                    <input type="text" value="@_filter"
+                           placeholder="Filtrar..."
+                           @oninput="@(e => _filter = e.Value?.ToString() ?? string.Empty)"
+                           style="flex:1;background:transparent;border:0;outline:none;font-size:11.5px;color:var(--text-primary);" />
+                </div>
+                <div style="flex:1;overflow:auto;padding:4px 0;">
+                    @RenderCategory("Fields", AllFields(), true, "field")
+                    @RenderCategory("Parameters", AllParameters(), true, "parameter")
+                    @RenderCategory("Aggregates", _aggregates.Select(f => (f.Name, $"{f.Name}(Fields.X)", (string?)f.Description)).ToArray(), true, "function")
+                    @RenderCategory("Math", _math.Select(f => (f.Name, f.Insert, (string?)f.Description)).ToArray(), false, "function")
+                    @RenderCategory("String", _string.Select(f => (f.Name, f.Insert, (string?)f.Description)).ToArray(), false, "function")
+                    @RenderCategory("Date / Time", _date.Select(f => (f.Name, f.Insert, (string?)f.Description)).ToArray(), false, "function")
+                    @RenderCategory("Logical", _logical.Select(f => (f.Name, f.Insert, (string?)f.Description)).ToArray(), false, "function")
+                    @RenderCategory("Conversion", _conversion.Select(f => (f.Name, f.Insert, (string?)f.Description)).ToArray(), false, "function")
+                </div>
+            </div>
+
+            @* ╔════ CENTER: Operator toolbar + Monaco + validation ═══════════ *@
+            <div style="display:flex;flex-direction:column;min-width:0;">
+                @* Operator quick-insert bar — Excel-style helpers *@
+                <div style="display:flex;flex-wrap:wrap;gap:2px;padding:4px 0 6px;align-items:center;">
+                    @foreach (var op in _operators)
+                    {
+                        <button class="op-btn" type="button" @onclick="@(() => Insert(op.Insert))"
+                                title="@op.Tooltip"
+                                style="height:24px;min-width:28px;padding:0 6px;border:1px solid var(--border);background:var(--bg-surface);font-family:var(--font-mono);font-size:11.5px;border-radius:var(--r-2);cursor:pointer;color:var(--text-primary);">
+                            @op.Label
+                        </button>
+                    }
+                    <span style="flex:1;"></span>
+                    <button class="op-btn" type="button" @onclick="@(() => Insert("{ }"))"
+                            title="Inserir template"
+                            style="height:24px;padding:0 8px;border:1px solid var(--accent-border);background:var(--accent-soft);font-family:var(--font-mono);font-size:11.5px;border-radius:var(--r-2);cursor:pointer;color:var(--accent);">
+                        { template }
+                    </button>
+                </div>
+
+                @* Monaco editor itself *@
+                @if (Visible)
+                {
+                    <MonacoEditor @ref="_monaco"
+                                  DomId="@_monacoId"
+                                  InitialValue="@_initialSnapshot"
+                                  Height="280px"
+                                  Theme="@Theme"
+                                  Completions="_completions"
+                                  OnValueChanged="OnEditorChanged" />
+                }
+
+                @* Validation + tip strip *@
+                <div style="margin-top:8px;display:flex;align-items:center;gap:8px;font-size:11px;">
+                    @if (_validationResult is null)
+                    {
+                        <span style="color:var(--text-tertiary);">Pressione <kbd>Ctrl</kbd>+<kbd>Space</kbd> para auto-complete · <strong>Validar</strong> verifica sintaxe</span>
+                    }
+                    else if (_validationResult.IsValid)
+                    {
+                        <Icon Name="check-circle-2" Size="12" CssClass="icon icon-12" />
+                        <span style="color:var(--success);">@_validationResult.Message</span>
+                    }
+                    else
+                    {
+                        <Icon Name="x" Size="12" CssClass="icon icon-12" />
+                        <span style="color:var(--danger);">@_validationResult.Message</span>
+                    }
+                    <button class="btn" type="button" @onclick="OnValidate" style="margin-left:auto;">Validar</button>
+                    <button class="btn" type="button" @onclick="OnEvaluate" title="Avaliar com dados de amostra">▶ Testar</button>
+                </div>
+
+                @* Live preview output *@
+                @if (_evalResult is not null)
+                {
+                    <div style="margin-top:6px;padding:6px 8px;border:1px solid var(--border);border-radius:var(--r-2);background:var(--bg-panel);font-size:11.5px;">
+                        <span style="color:var(--text-tertiary);font-size:10.5px;">Resultado:</span>
+                        <span style="font-family:var(--font-mono);color:@(_evalResult.IsError ? "var(--danger)" : "var(--data-bound)");margin-left:6px;">
+                            @_evalResult.Display
+                        </span>
+                    </div>
+                }
+
+                <div style="margin-top:6px;font-size:10.5px;color:var(--text-tertiary);">
+                    Monaco · VS Code engine · OmniReport language ·
+                    <kbd>Ctrl+Space</kbd> auto-complete · <kbd>Ctrl+F</kbd> find · <kbd>Alt+click</kbd> multi-cursor
+                </div>
+            </div>
+
+            @* ╔════ RIGHT: Snippet patterns ══════════════════════════════════ *@
+            <div style="display:flex;flex-direction:column;min-width:0;border:1px solid var(--border);border-radius:var(--r-2);background:var(--bg-panel);">
+                <div style="padding:6px 8px;border-bottom:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text-tertiary);letter-spacing:var(--tracked);text-transform:uppercase;">
+                    Padrões prontos
+                </div>
+                <div style="flex:1;overflow:auto;padding:4px;">
+                    @foreach (var s in _snippets)
+                    {
+                        <button class="snippet-btn" type="button" @onclick="@(() => InsertSnippet(s.Template))"
+                                style="display:block;width:100%;text-align:left;padding:6px 8px;margin-bottom:4px;border:1px solid var(--border);border-radius:var(--r-2);background:var(--bg-surface);cursor:pointer;">
+                            <div style="font-size:11.5px;font-weight:600;color:var(--text-primary);">@s.Title</div>
+                            <div style="font-family:var(--font-mono);font-size:10.5px;color:var(--data-bound);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">@s.Preview</div>
+                            <div style="font-size:10.5px;color:var(--text-tertiary);margin-top:2px;">@s.Description</div>
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+    </ChildContent>
+    <Footer>
+        <button class="btn" type="button" @onclick="OnCancel">Cancelar</button>
+        <button class="btn primary" type="button" @onclick="OnApply">Aplicar</button>
+    </Footer>
+</DesignerModal>
+
+@code {
+    [Parameter] public bool Visible { get; set; }
+    [Parameter] public string InitialExpression { get; set; } = string.Empty;
+    [Parameter] public IReadOnlyList<DesignerDataSource> DataSources { get; set; } = Array.Empty<DesignerDataSource>();
+    [Parameter] public IReadOnlyList<DesignerParameter> Parameters { get; set; } = Array.Empty<DesignerParameter>();
+    [Parameter] public string Theme { get; set; } = "light";
+    [Parameter] public EventCallback<string> OnApplied { get; set; }
+    [Parameter] public EventCallback OnClosed { get; set; }
+
+    private MonacoEditor? _monaco;
+    private readonly string _monacoId = "expr-monaco-" + Guid.NewGuid().ToString("n")[..8];
+    private string _value = string.Empty;
+    private string _initialSnapshot = string.Empty;
+    private string _filter = string.Empty;
+    private bool _wasVisible;
+    private ValidationResult? _validationResult;
+    private EvalResult? _evalResult;
+    private IReadOnlyList<MonacoCompletionItem> _completions = Array.Empty<MonacoCompletionItem>();
+    private readonly HashSet<string> _expandedCategories = new() { "Fields", "Parameters", "Aggregates" };
+
+    private static readonly ExpressionCompiler _compiler = new();
+    private static readonly ExpressionEvaluator _evaluator = new();
+
+    // ─── Function catalog by category ──────────────────────────────────────────
+    private sealed record FunctionEntry(string Name, string Insert, string Description);
+
+    private static readonly FunctionEntry[] _aggregates =
+    {
+        new("Sum",           "Sum(Fields.X)",         "Soma os valores do campo no escopo corrente."),
+        new("Avg",           "Avg(Fields.X)",         "Média aritmética dos valores."),
+        new("Count",         "Count(Fields.X)",       "Quantos valores não-nulos existem."),
+        new("Min",           "Min(Fields.X)",         "Menor valor do campo."),
+        new("Max",           "Max(Fields.X)",         "Maior valor do campo."),
+        new("RunningTotal",  "RunningTotal(Fields.X)","Soma acumulada linha-a-linha."),
+    };
+
+    private static readonly FunctionEntry[] _math =
+    {
+        new("Round",   "Round(value, digits)",    "Arredonda value para digits casas decimais."),
+        new("Floor",   "Floor(value)",            "Arredonda para baixo."),
+        new("Ceiling", "Ceiling(value)",          "Arredonda para cima."),
+        new("Abs",     "Abs(value)",              "Valor absoluto."),
+        new("Pow",     "Pow(base, exp)",          "base elevado a exp."),
+        new("Sqrt",    "Sqrt(value)",             "Raiz quadrada."),
+        new("Mod",     "value % divisor",         "Resto da divisão."),
+    };
+
+    private static readonly FunctionEntry[] _string =
+    {
+        new("Upper",     "Upper(text)",                       "Converte para MAIÚSCULAS."),
+        new("Lower",     "Lower(text)",                       "Converte para minúsculas."),
+        new("Trim",      "Trim(text)",                        "Remove espaços nas pontas."),
+        new("Length",    "Length(text)",                      "Tamanho da string."),
+        new("Substring", "Substring(text, start, length)",    "Extrai um trecho."),
+        new("Replace",   "Replace(text, old, new)",           "Substitui ocorrências."),
+        new("Concat",    "Concat(a, b)",                      "Concatena strings."),
+        new("StartsWith","StartsWith(text, prefix)",          "Verifica prefixo."),
+        new("EndsWith",  "EndsWith(text, suffix)",            "Verifica sufixo."),
+        new("Contains",  "Contains(text, needle)",            "Verifica substring."),
+    };
+
+    private static readonly FunctionEntry[] _date =
+    {
+        new("Now",        "Now()",                       "Data + hora atual."),
+        new("Today",      "Today()",                     "Data atual (sem hora)."),
+        new("Year",       "Year(date)",                  "Extrai o ano."),
+        new("Month",      "Month(date)",                 "Extrai o mês."),
+        new("Day",        "Day(date)",                   "Extrai o dia."),
+        new("Hour",       "Hour(date)",                  "Extrai a hora."),
+        new("AddDays",    "AddDays(date, n)",            "Soma n dias à data."),
+        new("AddMonths",  "AddMonths(date, n)",          "Soma n meses."),
+        new("DateDiff",   "DateDiff('day', a, b)",       "Diferença entre datas."),
+    };
+
+    private static readonly FunctionEntry[] _logical =
+    {
+        new("IIF",   "IIF(condition, ifTrue, ifFalse)", "Operador ternário."),
+        new("If",    "if(condition, a, b)",             "Equivalente ao IIF (lowercase)."),
+        new("IsNull","IsNull(value)",                   "Verifica se é nulo."),
+        new("Coalesce","Coalesce(a, b, c)",             "Retorna o primeiro não-nulo."),
+        new("In",    "In(value, 'a', 'b', 'c')",        "Verifica pertinência."),
+    };
+
+    private static readonly FunctionEntry[] _conversion =
+    {
+        new("ToString",  "ToString(value)",       "Converte para texto."),
+        new("ToDecimal", "ToDecimal(value)",      "Converte para decimal."),
+        new("ToInt",     "ToInt(value)",          "Converte para inteiro."),
+        new("ToDate",    "ToDate('yyyy-MM-dd')",  "Converte para DateTime."),
+        new("Format",    "Format(value, 'C')",    "Formata com um spec (C/N/P/data...)."),
+    };
+
+    private sealed record OperatorEntry(string Label, string Insert, string Tooltip);
+    private static readonly OperatorEntry[] _operators =
+    {
+        new("+",   "+",   "Adição"),
+        new("−",   "-",   "Subtração"),
+        new("×",   "*",   "Multiplicação"),
+        new("÷",   "/",   "Divisão"),
+        new("%",   "%",   "Módulo"),
+        new("=",   "==",  "Igual"),
+        new("≠",   "!=",  "Diferente"),
+        new("<",   "<",   "Menor"),
+        new("≤",   "<=",  "Menor ou igual"),
+        new(">",   ">",   "Maior"),
+        new("≥",   ">=",  "Maior ou igual"),
+        new("AND", " AND ", "E lógico"),
+        new("OR",  " OR ",  "OU lógico"),
+        new("NOT", "!",     "Negação"),
+        new("( )", "()",    "Parênteses"),
+        new("[ ]", "[]",    "Colchetes"),
+    };
+
+    private sealed record SnippetEntry(string Title, string Template, string Preview, string Description);
+    private static readonly SnippetEntry[] _snippets =
+    {
+        new("Total geral (Sum no rodapé)",
+            "{Sum(Fields.Total):C}",
+            "{Sum(Fields.Total):C}",
+            "Soma de todos os registros formatada como moeda."),
+        new("Subtotal por grupo",
+            "{Sum(Fields.Total, 'Group'):C}",
+            "{Sum(Fields.Total, 'Group'):C}",
+            "Soma apenas do grupo corrente."),
+        new("Total acumulado por linha",
+            "{RunningTotal(Fields.Total):C}",
+            "{RunningTotal(Fields.Total):C}",
+            "Saldo crescente — útil em extratos."),
+        new("Página X de Y",
+            "Página {PageNumber} de {TotalPages}",
+            "Página {PageNumber} de {TotalPages}",
+            "Numeração de páginas no rodapé."),
+        new("Condicional simples",
+            "{IIF(Fields.Total > 1000, 'Alto', 'Baixo')}",
+            "{IIF(Fields.Total > 1000, 'Alto', 'Baixo')}",
+            "Ternário — valor depende da condição."),
+        new("Total com tributos (Lei 12.741)",
+            "Tributos: {Sum(Fields.Total) * 0.18:C}",
+            "{Sum(Fields.Total) * 0.18:C}",
+            "Cálculo aproximado de tributos."),
+        new("Data emissão pt-BR",
+            "Emitido em {Now():dd/MM/yyyy HH:mm}",
+            "{Now():dd/MM/yyyy HH:mm}",
+            "Formato brasileiro de data/hora."),
+        new("Nome em maiúsculas",
+            "{Upper(Fields.Cliente)}",
+            "{Upper(Fields.Cliente)}",
+            "Conversão para caixa alta."),
+        new("Concatenação de campos",
+            "{Concat(Fields.Cidade, ' / ', Fields.UF)}",
+            "{Concat(Fields.Cidade, ' / ', Fields.UF)}",
+            "Junta dois campos com separador."),
+    };
+
+    // ─── Lifecycle ─────────────────────────────────────────────────────────────
+    protected override void OnParametersSet()
+    {
+        // Rising-edge only — only initialize when the dialog OPENS so user input
+        // isn't wiped by parent re-renders during typing.
+        if (Visible && !_wasVisible)
+        {
+            _initialSnapshot = InitialExpression ?? string.Empty;
+            _value = _initialSnapshot;
+            _validationResult = null;
+            _evalResult = null;
+            _filter = string.Empty;
+            _completions = BuildCompletions();
+        }
+        _wasVisible = Visible;
+    }
+
+    private IReadOnlyList<MonacoCompletionItem> BuildCompletions()
+    {
+        var list = new List<MonacoCompletionItem>();
+        foreach (var ds in DataSources)
+        {
+            foreach (var f in ds.Fields)
+            {
+                list.Add(new MonacoCompletionItem
+                {
+                    Label = $"Fields.{f.Name}",
+                    Kind = "field",
+                    InsertText = $"Fields.{f.Name}",
+                    Detail = $"{f.Type} · {ds.Name}",
+                    Documentation = f.Sample is null ? null : $"**Amostra:** `{f.Sample}`",
+                });
+            }
+        }
+        foreach (var p in Parameters)
+        {
+            list.Add(new MonacoCompletionItem
+            {
+                Label = $"Parameters.{p.Name}",
+                Kind = "parameter",
+                InsertText = $"Parameters.{p.Name}",
+                Detail = $"{p.Type} · default: {p.DefaultValue ?? "—"}",
+            });
+        }
+        foreach (var fn in _aggregates.Concat(_math).Concat(_string).Concat(_date).Concat(_logical).Concat(_conversion))
+        {
+            list.Add(new MonacoCompletionItem
+            {
+                Label = fn.Insert,
+                Kind = "function",
+                InsertText = fn.Insert.Replace("(", "(${1:").Replace(")", "})"),
+                Snippet = true,
+                Detail = fn.Name,
+                Documentation = fn.Description,
+            });
+        }
+        return list;
+    }
+
+    // ─── Catalog rendering ─────────────────────────────────────────────────────
+    private (string Name, string Insert, string? Tooltip)[] AllFields()
+        => DataSources.SelectMany(ds =>
+            ds.Fields.Select(f => ($"Fields.{f.Name}", $"Fields.{f.Name}", (string?)$"{ds.Name} · {f.Type}{(f.Sample is null ? "" : " — " + f.Sample)}"))
+        ).ToArray();
+
+    private (string Name, string Insert, string? Tooltip)[] AllParameters()
+        => Parameters.Select(p =>
+            ($"Parameters.{p.Name}", $"Parameters.{p.Name}", (string?)$"{p.Type} · default: {p.DefaultValue ?? "—"}")
+        ).ToArray();
+
+    private RenderFragment RenderCategory(
+        string category,
+        (string Name, string Insert, string? Tooltip)[] items,
+        bool defaultExpanded,
+        string kind) => builder =>
+    {
+        // When filtering, force-expand every category so matches are visible.
+        var expanded = !string.IsNullOrEmpty(_filter) || _expandedCategories.Contains(category);
+
+        var filtered = string.IsNullOrEmpty(_filter)
+            ? items
+            : items.Where(i => i.Name.Contains(_filter, StringComparison.OrdinalIgnoreCase)).ToArray();
+
+        if (!string.IsNullOrEmpty(_filter) && filtered.Length == 0) return;
+
+        int seq = 0;
+        builder.OpenElement(seq++, "div");
+        builder.AddAttribute(seq++, "class", "expr-category");
+        {
+            // Header
+            builder.OpenElement(seq++, "button");
+            builder.AddAttribute(seq++, "type", "button");
+            builder.AddAttribute(seq++, "style", "display:grid;grid-template-columns:14px 1fr auto;align-items:center;gap:4px;width:100%;text-align:left;padding:6px 8px;background:transparent;border:0;cursor:pointer;font-size:11px;font-weight:600;color:var(--text-tertiary);letter-spacing:var(--tracked);text-transform:uppercase;");
+            builder.AddAttribute(seq++, "onclick", Microsoft.AspNetCore.Components.EventCallback.Factory.Create(
+                this, () =>
+                {
+                    if (_expandedCategories.Contains(category)) _expandedCategories.Remove(category);
+                    else _expandedCategories.Add(category);
+                }));
+            builder.AddContent(seq++, expanded ? "▾" : "▸");
+            builder.AddContent(seq++, category);
+
+            builder.OpenElement(seq++, "span");
+            builder.AddAttribute(seq++, "style", "font-family:var(--font-mono);font-size:10px;color:var(--text-tertiary);text-transform:none;letter-spacing:0;");
+            builder.AddContent(seq++, filtered.Length.ToString());
+            builder.CloseElement();
+
+            builder.CloseElement(); // button
+
+            // Items
+            if (expanded)
+            {
+                foreach (var item in filtered)
+                {
+                    builder.OpenElement(seq++, "button");
+                    builder.AddAttribute(seq++, "type", "button");
+                    builder.AddAttribute(seq++, "title", item.Tooltip ?? string.Empty);
+                    var colorVar = kind == "field" ? "var(--data-bound)"
+                                  : kind == "parameter" ? "var(--syn-number)"
+                                  : "var(--syn-function)";
+                    builder.AddAttribute(seq++, "style",
+                        $"display:block;width:100%;text-align:left;padding:3px 22px;font-family:var(--font-mono);font-size:11px;border:0;background:transparent;cursor:pointer;color:{colorVar};line-height:1.5;");
+                    var insert = item.Insert;
+                    builder.AddAttribute(seq++, "onclick", Microsoft.AspNetCore.Components.EventCallback.Factory.Create(
+                        this, () => Insert(insert)));
+                    builder.AddContent(seq++, item.Name);
+                    builder.CloseElement();
+                }
+            }
+        }
+        builder.CloseElement();
+    };
+
+    // ─── Editor interactions ───────────────────────────────────────────────────
+    private async void Insert(string token)
+    {
+        if (_monaco is not null)
+        {
+            await _monaco.InsertAsync(token);
+        }
+        _validationResult = null;
+    }
+
+    private async void InsertSnippet(string template)
+    {
+        if (_monaco is not null)
+        {
+            await _monaco.SetValueAsync(template);
+        }
+        _validationResult = null;
+    }
+
+    private void OnEditorChanged(string value)
+    {
+        _value = value;
+        if (_validationResult is not null) _validationResult = null;
+        if (_evalResult is not null) _evalResult = null;
+    }
+
+    private void OnValidate()
+    {
+        if (string.IsNullOrWhiteSpace(_value))
+        {
+            _validationResult = new ValidationResult(true, "Expressão vazia.");
+            return;
+        }
+        try
+        {
+            if (_value.Contains('{'))
+            {
+                int open = _value.Count(c => c == '{');
+                int close = _value.Count(c => c == '}');
+                if (open != close)
+                {
+                    _validationResult = new ValidationResult(false, $"Chaves desbalanceadas: {open} '{{' vs {close} '}}'.");
+                    return;
+                }
+                _validationResult = new ValidationResult(true, "Template balanceado.");
+            }
+            else
+            {
+                _compiler.Compile(_value);
+                _validationResult = new ValidationResult(true, "Expressão sintaticamente válida.");
+            }
+        }
+        catch (Exception ex)
+        {
+            _validationResult = new ValidationResult(false, ex.Message);
+        }
+    }
+
+    private void OnEvaluate()
+    {
+        // Build a sample context from the first data source's first sample row.
+        try
+        {
+            var ctx = new ReportExpressionContext();
+            var row = new Dictionary<string, object?>();
+            foreach (var ds in DataSources)
+            {
+                foreach (var f in ds.Fields)
+                {
+                    row[f.Name] = SampleValueFor(f);
+                }
+            }
+            ctx.SetCurrentRow(row);
+            foreach (var p in Parameters)
+            {
+                ctx.ParametersStore.Set(p.Name, p.DefaultValue ?? string.Empty);
+            }
+
+            if (string.IsNullOrWhiteSpace(_value))
+            {
+                _evalResult = new EvalResult("(vazio)", false);
+                return;
+            }
+
+            // Templates vs raw expression
+            if (_value.Contains('{'))
+            {
+                var tpl = new TemplateRenderer(_evaluator);
+                var output = tpl.Render(_value, ctx);
+                _evalResult = new EvalResult(output, false);
+            }
+            else
+            {
+                var compiled = _compiler.Compile(_value);
+                var raw = _evaluator.Evaluate(_value, ctx);
+                _evalResult = new EvalResult(raw?.ToString() ?? "(null)", false);
+            }
+        }
+        catch (Exception ex)
+        {
+            _evalResult = new EvalResult($"⚠ {ex.Message}", true);
+        }
+    }
+
+    private static object? SampleValueFor(DesignerField f) => f.Type switch
+    {
+        DesignerFieldType.Number => 42m,
+        DesignerFieldType.Money  => 1234.56m,
+        DesignerFieldType.Date   => DateTime.Now,
+        DesignerFieldType.Bool   => true,
+        _                        => f.Sample ?? f.Name,
+    };
+
+    private async Task OnApply()
+    {
+        if (_monaco is not null)
+        {
+            var live = await _monaco.GetValueAsync();
+            if (live is not null) _value = live;
+        }
+        await OnApplied.InvokeAsync(_value);
+    }
+
+    private Task OnCancel() => OnClosed.InvokeAsync();
+
+    private sealed record ValidationResult(bool IsValid, string Message);
+    private sealed record EvalResult(string Display, bool IsError);
+}

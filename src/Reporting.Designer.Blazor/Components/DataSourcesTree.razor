@@ -1,0 +1,178 @@
+@namespace Reporting.Designer.Blazor.Components
+@using System.Collections.ObjectModel
+@using Reporting.Designer.Blazor.ViewModels
+@inject IJSRuntime Js
+
+@*
+    Hierarchical data sources tree — Crystal Reports / SSRS / FastReport pattern.
+
+    Master-detail relationships are NOT a separate sidebar panel; instead, child
+    sources nest under their parent (just like FastReport's "Data" window or Crystal's
+    "Database Expert" tree). The "↳ via <fk>" badge surfaces the join key at a glance.
+    Editing the relation itself happens in the Data Source Editor dialog ("Relações" tab).
+
+    Implementation note: instead of a recursive RenderFragment (which Blazor handles
+    inconsistently when self-referenced), we flatten the tree into a list of "row"
+    descriptors and render them top-level. Same DOM, predictable Razor compilation.
+*@
+
+<div class="tree">
+    @foreach (var node in BuildFlatTree())
+    {
+        switch (node)
+        {
+            case RelationBadge badge:
+                <div class="tree-node @badge.DepthClass ds-rel-badge"
+                     title="@badge.Title">
+                    <span></span>
+                    <span class="ds-rel-arrow">↳</span>
+                    <span class="ds-rel-text">@badge.Text</span>
+                </div>
+                break;
+
+            case SourceRow row:
+                {
+                    var capturedDs = row.Source;
+                    <div class="tree-node @row.DepthClass ds-source-node">
+                        <Icon Name="chevron-down" Size="12" CssClass="chev icon icon-12" />
+                        <Icon Name="database" Size="14" CssClass="icon" />
+                        <span class="field-name">@capturedDs.Name</span>
+                        <span class="field-tail">@capturedDs.Fields.Count campos</span>
+                        <button class="ds-row-btn" type="button" title="Editar data source"
+                                @onclick="@(() => OnEdit.InvokeAsync(capturedDs))"
+                                @onclick:stopPropagation="true">
+                            <Icon Name="settings" Size="12" CssClass="icon icon-12" />
+                        </button>
+                    </div>
+                    break;
+                }
+
+            case FieldRow field:
+                {
+                    var capturedSource = field.Source;
+                    var capturedField = field.Field;
+                    var ambiguous = field.IsAmbiguous;
+                    <div class="tree-node @field.DepthClass is-field"
+                         draggable="true"
+                         data-field-name="@capturedField.Name"
+                         data-source-name="@capturedSource.Name"
+                         data-ambiguous="@(ambiguous ? "1" : "0")"
+                         title="@(ambiguous
+                                  ? $"Arraste — {capturedSource.Name}.{capturedField.Name} (qualificará por causa de ambiguidade entre fontes)"
+                                  : $"Arraste para o canvas — {capturedField.Name}")">
+                        <span></span>
+                        <span class="type-icon @capturedField.TypeCssClass">@capturedField.TypeIndicator</span>
+                        <span class="field-name">@capturedField.Name</span>
+                        @if (ambiguous)
+                        {
+                            <span class="field-amb" title="Existe em mais de uma fonte — será qualificado como Fields.@(capturedSource.Name).@(capturedField.Name)">⚠</span>
+                        }
+                        @if (!string.IsNullOrEmpty(capturedField.Sample))
+                        {
+                            <span class="field-tail">@capturedField.Sample</span>
+                        }
+                    </div>
+                    break;
+                }
+        }
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<DesignerDataSource> DataSources { get; set; } = default!;
+    [Parameter] public ObservableCollection<DesignerRelation>? Relations { get; set; }
+    [Parameter] public EventCallback<DesignerDataSource> OnEdit { get; set; }
+
+    // ── Flattened-tree row descriptors ──────────────────────────────────────
+    private abstract record TreeRow(string DepthClass);
+    private sealed record RelationBadge(string DepthClass, string Title, string Text) : TreeRow(DepthClass);
+    private sealed record SourceRow(string DepthClass, DesignerDataSource Source) : TreeRow(DepthClass);
+    private sealed record FieldRow(string DepthClass, DesignerDataSource Source, DesignerField Field, bool IsAmbiguous) : TreeRow(DepthClass);
+
+    /// <summary>Builds the entire visible tree as a flat ordered list. Each parent emits its
+    /// source-row, its fields, and then recursively every child relation pair (badge + nested
+    /// source-row + nested fields). The recursion is in plain C# — Razor only sees the
+    /// flattened list, so rendering is deterministic.</summary>
+    private List<TreeRow> BuildFlatTree()
+    {
+        var rows = new List<TreeRow>(DataSources.Count * 4);
+        var childSourceNames = ComputeChildSourceNames();
+        foreach (var ds in DataSources)
+        {
+            if (childSourceNames.Contains(ds.Name)) continue; // shown only as a nested child
+            EmitSource(rows, ds, depth: 0, viaLabel: null);
+        }
+        return rows;
+    }
+
+    private void EmitSource(List<TreeRow> rows, DesignerDataSource ds, int depth, string? viaLabel)
+    {
+        var depthClass = depth == 0 ? "depth-0" : "depth-1";
+        var fieldDepthClass = depth == 0 ? "depth-1" : "depth-2";
+
+        if (viaLabel is not null)
+        {
+            rows.Add(new RelationBadge(depthClass, viaLabel + " — editar na aba 'Relações' do data source", viaLabel));
+        }
+
+        rows.Add(new SourceRow(depthClass, ds));
+
+        foreach (var f in ds.Fields)
+        {
+            rows.Add(new FieldRow(fieldDepthClass, ds, f, IsAmbiguous(f.Name)));
+        }
+
+        // Recurse into nested children — every relation where this source is the parent.
+        if (Relations is null) return;
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var r in Relations)
+        {
+            if (!string.Equals(r.ParentSource, ds.Name, StringComparison.Ordinal)) continue;
+            if (!seen.Add(r.ChildSource)) continue;
+            var child = DataSources.FirstOrDefault(d => string.Equals(d.Name, r.ChildSource, StringComparison.Ordinal));
+            if (child is null) continue;
+            var via = string.Equals(r.ParentField, r.ChildField, StringComparison.Ordinal)
+                ? $"via {r.ParentField}"
+                : $"via {r.ParentField} → {r.ChildField}";
+            EmitSource(rows, child, depth + 1, via);
+        }
+    }
+
+    /// <summary>Sources that appear as the child side of at least one relation — these are
+    /// shown nested under their parent and skipped at root. Orphan child sources (relation
+    /// references a deleted parent) fall back to root so the user can repair them.</summary>
+    private HashSet<string> ComputeChildSourceNames()
+    {
+        var set = new HashSet<string>(StringComparer.Ordinal);
+        if (Relations is null) return set;
+        foreach (var r in Relations)
+        {
+            if (DataSources.Any(d => string.Equals(d.Name, r.ParentSource, StringComparison.Ordinal)) &&
+                DataSources.Any(d => string.Equals(d.Name, r.ChildSource, StringComparison.Ordinal)))
+            {
+                set.Add(r.ChildSource);
+            }
+        }
+        return set;
+    }
+
+    /// <summary>True when the given field name appears in more than one registered data source.
+    /// The drop handler reads <c>data-ambiguous</c>/<c>data-source-name</c> from the DOM and
+    /// emits the qualified form <c>{Fields.SourceName.FieldName}</c> in that case.</summary>
+    private bool IsAmbiguous(string fieldName)
+    {
+        int count = 0;
+        foreach (var ds in DataSources)
+        {
+            foreach (var f in ds.Fields)
+            {
+                if (string.Equals(f.Name, fieldName, StringComparison.Ordinal))
+                {
+                    count++;
+                    if (count > 1) return true;
+                }
+            }
+        }
+        return false;
+    }
+}

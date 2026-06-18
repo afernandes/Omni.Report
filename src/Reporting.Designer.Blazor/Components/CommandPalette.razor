@@ -1,0 +1,104 @@
+@namespace Reporting.Designer.Blazor.Components
+
+@if (Visible)
+{
+    <div class="overlay cmd-overlay" style="display:flex;" @onclick="OnCloseClicked">
+        <div class="cmdp" role="dialog" aria-label="Command palette" @onclick:stopPropagation="true">
+            <div class="cmdp-input">
+                <Icon Name="search" Size="16" CssClass="icon icon-16" />
+                <input type="text" autofocus
+                       value="@_query"
+                       placeholder="Buscar comando ou propriedade…"
+                       @oninput="@(e => _query = e.Value?.ToString() ?? string.Empty)"
+                       @onkeydown="HandleKey" />
+                <span class="esc-hint">Esc <kbd>Esc</kbd></span>
+            </div>
+            <div class="cmdp-list">
+                @{
+                    var groups = Filter().GroupBy(c => c.Group);
+                }
+                @foreach (var g in groups)
+                {
+                    <div class="cmdp-group">@g.Key</div>
+                    @foreach (var cmd in g)
+                    {
+                        <div class="cmdp-item @(cmd == _highlight ? "is-hl" : null)"
+                             @onclick="@(() => Execute(cmd))">
+                            <Icon Name="@cmd.Icon" Size="16" CssClass="icon icon-16 ic" />
+                            <span>@cmd.Title</span>
+                            <span class="crumb">@cmd.Crumb</span>
+                            <span class="kbd-line">
+                                @foreach (var k in cmd.Hotkey.Split('+'))
+                                {
+                                    <kbd>@k</kbd>
+                                }
+                            </span>
+                        </div>
+                    }
+                }
+            </div>
+            <div class="cmdp-foot">
+                <span class="ft-item"><kbd>↑</kbd><kbd>↓</kbd> navegar</span>
+                <span class="ft-item"><kbd>↵</kbd> executar</span>
+                <span style="margin-left:auto;">@Filter().Count() resultados</span>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool Visible { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback<string> OnExecute { get; set; }
+
+    private string _query = string.Empty;
+    private CommandEntry? _highlight;
+
+    private CommandEntry[] _all =
+    [
+        new("new",     "Sugestões", "Novo relatório",        "Arquivo",          "Ctrl+N",     "plus"),
+        new("save",    "Sugestões", "Salvar",                "Arquivo",          "Ctrl+S",     "save"),
+        new("open",    "Sugestões", "Abrir .repx…",          "Arquivo",          "Ctrl+O",     "folder-open"),
+        new("preview", "Sugestões", "Preview",               "Relatório",        "F5",         "play"),
+        new("undo",    "Editar",    "Desfazer",              "Editar",           "Ctrl+Z",     "undo-2"),
+        new("redo",    "Editar",    "Refazer",               "Editar",           "Ctrl+Y",     "redo-2"),
+        new("delete",  "Editar",    "Excluir seleção",       "Editar",           "Del",        "trash-2"),
+        new("insert.text",  "Inserir", "Inserir TextBox",    "Inserir › Texto",  "Ctrl+Shift+T", "type"),
+        new("insert.label", "Inserir", "Inserir Label",      "Inserir › Texto",  "Ctrl+Shift+L", "hash"),
+        new("insert.rect",  "Inserir", "Inserir Retângulo",  "Inserir › Forma",  "Ctrl+Shift+R", "square"),
+        new("insert.line",  "Inserir", "Inserir Linha",      "Inserir › Forma",  "",           "minus"),
+        new("insert.img",   "Inserir", "Inserir Imagem",     "Inserir › Mídia",  "",           "image"),
+        new("theme",   "Visualizar","Alternar tema",         "Tema",             "Ctrl+Shift+L", "moon"),
+    ];
+
+    private IEnumerable<CommandEntry> Filter()
+    {
+        if (string.IsNullOrWhiteSpace(_query)) return _all;
+        var q = _query.Trim();
+        return _all.Where(c =>
+            c.Title.Contains(q, StringComparison.OrdinalIgnoreCase) ||
+            c.Crumb.Contains(q, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private Task Execute(CommandEntry cmd)
+    {
+        _query = string.Empty;
+        _highlight = null;
+        return OnExecute.InvokeAsync(cmd.Id);
+    }
+
+    private Task OnCloseClicked() => OnClose.InvokeAsync();
+
+    private async Task HandleKey(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape") { await OnClose.InvokeAsync(); return; }
+        var items = Filter().ToList();
+        if (items.Count == 0) return;
+        var idx = _highlight is null ? 0 : items.IndexOf(_highlight);
+        if (e.Key == "ArrowDown") _highlight = items[Math.Min(items.Count - 1, idx + 1)];
+        else if (e.Key == "ArrowUp") _highlight = items[Math.Max(0, idx - 1)];
+        else if (e.Key == "Enter") await Execute(_highlight ?? items[0]);
+    }
+
+    private sealed record CommandEntry(string Id, string Group, string Title, string Crumb, string Hotkey, string Icon);
+}

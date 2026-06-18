@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Reporting.Expressions\Reporting.Expressions.csproj" />
+    <ProjectReference Include="..\..\src\Reporting.Expressions.Roslyn\Reporting.Expressions.Roslyn.csproj" />
+    <ProjectReference Include="..\..\src\Reporting.CodeFirst\Reporting.CodeFirst.csproj" />
+    <ProjectReference Include="..\..\src\Reporting.Layout\Reporting.Layout.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="FluentAssertions" />
+    <PackageReference Include="coverlet.collector" />
+  </ItemGroup>
+
+</Project>

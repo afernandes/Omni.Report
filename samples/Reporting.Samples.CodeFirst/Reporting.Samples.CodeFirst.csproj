@@ -1,0 +1,52 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Reporting.Samples.CodeFirst</RootNamespace>
+    <AssemblyName>Reporting.Samples.CodeFirst</AssemblyName>
+    <IsPackable>false</IsPackable>
+    <InvariantGlobalization>false</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Reporting.CodeFirst\Reporting.CodeFirst.csproj" />
+    <ProjectReference Include="..\..\src\Reporting.Rendering.Skia\Reporting.Rendering.Skia.csproj" />
+    <ProjectReference Include="..\..\src\Reporting.Serialization\Reporting.Serialization.csproj" />
+    <ProjectReference Include="..\..\src\Reporting.Output.Pdf\Reporting.Output.Pdf.csproj" />
+    <ProjectReference Include="..\..\src\Reporting.Output.Excel\Reporting.Output.Excel.csproj" />
+    <ProjectReference Include="..\..\src\Reporting.Output.Html\Reporting.Output.Html.csproj" />
+    <ProjectReference Include="..\..\src\Reporting.Output.Svg\Reporting.Output.Svg.csproj" />
+    <ProjectReference Include="..\..\src\Reporting.Output.Csv\Reporting.Output.Csv.csproj" />
+    <ProjectReference Include="..\..\src\Reporting.Output.Markdown\Reporting.Output.Markdown.csproj" />
+    <ProjectReference Include="..\..\src\Reporting.Output.Json\Reporting.Output.Json.csproj" />
+    <ProjectReference Include="..\..\src\Reporting.Printing.EscPos\Reporting.Printing.EscPos.csproj" />
+    <!-- My-FyiReporting-style data providers — used by Sample06..Sample10 to demonstrate
+         binding JSON / XML / REST / FileSystem sources to reports without going through
+         the ADO.NET path. -->
+    <ProjectReference Include="..\..\src\Reporting.DataSources.Json\Reporting.DataSources.Json.csproj" />
+    <ProjectReference Include="..\..\src\Reporting.DataSources.Xml\Reporting.DataSources.Xml.csproj" />
+    <ProjectReference Include="..\..\src\Reporting.DataSources.WebService\Reporting.DataSources.WebService.csproj" />
+    <ProjectReference Include="..\..\src\Reporting.DataSources.FileSystem\Reporting.DataSources.FileSystem.csproj" />
+    <!-- AdoNet + SQLite for Sample11 — demonstrates the canonical DB-backed report path.
+         Microsoft.Data.Sqlite gets the actual provider; Reporting.DataSources.Sqlite wraps
+         AdoNetDataSource with a SqliteConnection factory. -->
+    <ProjectReference Include="..\..\src\Reporting.DataSources.AdoNet\Reporting.DataSources.AdoNet.csproj" />
+    <ProjectReference Include="..\..\src\Reporting.DataSources.Sqlite\Reporting.DataSources.Sqlite.csproj" />
+    <!-- Opt-in Roslyn code evaluation for Sample 15 (Code.X compiled at runtime). -->
+    <ProjectReference Include="..\..\src\Reporting.Expressions.Roslyn\Reporting.Expressions.Roslyn.csproj" />
+    <!-- Bundled vector map shapes for Sample 14 (the "brazil" basemap). -->
+    <ProjectReference Include="..\..\src\Reporting.Maps\Reporting.Maps.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" />
+  </ItemGroup>
+
+  <!-- Sample data files are shipped alongside the binary so the provider samples can
+       point at them via deterministic relative paths. -->
+  <ItemGroup>
+    <None Include="SampleData\**\*.*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

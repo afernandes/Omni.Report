@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Reporting.DataSources.Json</RootNamespace>
+    <AssemblyName>Reporting.DataSources.Json</AssemblyName>
+    <Description>OmniReport — JSON data provider. Streams rows from a JSON file path, HTTP URL, or inline string. Mirrors the RDL/My-FyiReporting JsonDataReader: locate a JSON array (root or nested via dot-path), and yield each element as a row. Schema is inferred per column across N rows; supports root-array and root-object-with-array-property documents.</Description>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Reporting.DataSources\Reporting.DataSources.csproj" />
+  </ItemGroup>
+
+</Project>

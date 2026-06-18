@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Reporting.Hosting</RootNamespace>
+    <AssemblyName>Reporting.Hosting.AspNetCore</AssemblyName>
+    <Description>OmniReport — DI helpers for ASP.NET Core / Blazor / MAUI hosts. Wires renderers, exporters, printers and data sources via a single AddReporting(opts =&gt; ...) call.</Description>
+    <IsPackable>true</IsPackable>
+    <PackageTags>omnireport;reporting;blazor;maui;skia;di;hosting</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Reporting.Core\Reporting.Core.csproj" />
+    <ProjectReference Include="..\Reporting.DataSources\Reporting.DataSources.csproj" />
+    <ProjectReference Include="..\Reporting.Expressions\Reporting.Expressions.csproj" />
+    <ProjectReference Include="..\Reporting.Layout\Reporting.Layout.csproj" />
+    <ProjectReference Include="..\Reporting.Rendering\Reporting.Rendering.csproj" />
+    <ProjectReference Include="..\Reporting.Rendering.Skia\Reporting.Rendering.Skia.csproj" />
+    <ProjectReference Include="..\Reporting.Output.Pdf\Reporting.Output.Pdf.csproj" />
+    <ProjectReference Include="..\Reporting.Output.Excel\Reporting.Output.Excel.csproj" />
+    <ProjectReference Include="..\Reporting.Printing\Reporting.Printing.csproj" />
+    <ProjectReference Include="..\Reporting.Serialization\Reporting.Serialization.csproj" />
+  </ItemGroup>
+
+</Project>

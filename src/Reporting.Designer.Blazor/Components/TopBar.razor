@@ -1,0 +1,196 @@
+@namespace Reporting.Designer.Blazor.Components
+
+<header class="topbar no-select">
+    <div class="brand">
+        <span class="brand-mark">R</span>
+        <span>Report Designer</span>
+        @if (!string.IsNullOrEmpty(DocumentName))
+        {
+            <span class="crumb">· @DocumentName</span>
+        }
+    </div>
+
+    <nav class="menu" aria-label="Menu principal">
+        <DropdownMenu Label="Arquivo">
+            <button class="dropdown-item" type="button" @onclick="@(() => OnMenuCommand.InvokeAsync("file.new"))">
+                <Icon Name="plus" Size="12" CssClass="icon icon-12" /><span>Novo</span><span class="shortcut">Ctrl+N</span>
+            </button>
+            <label class="dropdown-item" style="cursor:pointer;">
+                <Icon Name="folder-open" Size="12" CssClass="icon icon-12" />
+                <span>Abrir .repx…</span>
+                <span class="shortcut">Ctrl+O</span>
+                <InputFile OnChange="OnLoadFile" accept=".repx" style="display:none" />
+            </label>
+            <button class="dropdown-item" type="button" @onclick="@(() => OnMenuCommand.InvokeAsync("file.save"))">
+                <Icon Name="save" Size="12" CssClass="icon icon-12" /><span>Salvar</span><span class="shortcut">Ctrl+S</span>
+            </button>
+            <button class="dropdown-item" type="button" @onclick="@(() => OnMenuCommand.InvokeAsync("file.saveas"))">
+                <Icon Name="save" Size="12" CssClass="icon icon-12" /><span>Salvar como…</span><span class="shortcut">Ctrl+Shift+S</span>
+            </button>
+            <div class="dropdown-sep"></div>
+            <button class="dropdown-item" type="button" @onclick="@(() => OnMenuCommand.InvokeAsync("file.export.pdf"))">
+                <Icon Name="file-text" Size="12" CssClass="icon icon-12" /><span>Exportar PDF</span><span class="shortcut"></span>
+            </button>
+            <button class="dropdown-item" type="button" @onclick="@(() => OnMenuCommand.InvokeAsync("file.export.xlsx"))">
+                <Icon Name="file-spreadsheet" Size="12" CssClass="icon icon-12" /><span>Exportar XLSX</span><span class="shortcut"></span>
+            </button>
+            <button class="dropdown-item" type="button" @onclick="@(() => OnMenuCommand.InvokeAsync("file.export.html"))">
+                <Icon Name="file-code" Size="12" CssClass="icon icon-12" /><span>Exportar HTML</span><span class="shortcut"></span>
+            </button>
+            <button class="dropdown-item" type="button" @onclick="@(() => OnMenuCommand.InvokeAsync("file.export.svg"))">
+                <Icon Name="file-code" Size="12" CssClass="icon icon-12" /><span>Exportar SVG</span><span class="shortcut"></span>
+            </button>
+            <button class="dropdown-item" type="button" @onclick="@(() => OnMenuCommand.InvokeAsync("file.export.csv"))">
+                <Icon Name="file" Size="12" CssClass="icon icon-12" /><span>Exportar CSV</span><span class="shortcut"></span>
+            </button>
+            <button class="dropdown-item" type="button" @onclick="@(() => OnMenuCommand.InvokeAsync("file.export.json"))">
+                <Icon Name="file" Size="12" CssClass="icon icon-12" /><span>Exportar JSON</span><span class="shortcut"></span>
+            </button>
+            <button class="dropdown-item" type="button" @onclick="@(() => OnMenuCommand.InvokeAsync("file.export.markdown"))">
+                <Icon Name="file" Size="12" CssClass="icon icon-12" /><span>Exportar Markdown</span><span class="shortcut"></span>
+            </button>
+            <div class="dropdown-sep"></div>
+            <button class="dropdown-item" type="button" @onclick="@(() => OnMenuCommand.InvokeAsync("view.preview"))">
+                <Icon Name="eye" Size="12" CssClass="icon icon-12" /><span>Pré-visualizar</span><span class="shortcut">F5</span>
+            </button>
+            <button class="dropdown-item" type="button" @onclick="@(() => OnMenuCommand.InvokeAsync("file.print"))">
+                <Icon Name="printer" Size="12" CssClass="icon icon-12" /><span>Imprimir</span><span class="shortcut">Ctrl+P</span>
+            </button>
+        </DropdownMenu>
+
+        <DropdownMenu Label="Editar">
+            <button class="dropdown-item" type="button" @onclick="@(() => OnMenuCommand.InvokeAsync("edit.undo"))">
+                <Icon Name="undo-2" Size="12" CssClass="icon icon-12" /><span>Desfazer</span><span class="shortcut">Ctrl+Z</span>
+            </button>
+            <button class="dropdown-item" type="button" @onclick="@(() => OnMenuCommand.InvokeAsync("edit.redo"))">
+                <Icon Name="redo-2" Size="12" CssClass="icon icon-12" /><span>Refazer</span><span class="shortcut">Ctrl+Y</span>
+            </button>
+            <div class="dropdown-sep"></div>
+            <button class="dropdown-item" type="button" @onclick="@(() => OnMenuCommand.InvokeAsync("edit.cut"))">
+                <Icon Name="scissors" Size="12" CssClass="icon icon-12" /><span>Recortar</span><span class="shortcut">Ctrl+X</span>
+            </button>
+            <button class="dropdown-item" type="button" @onclick="@(() => OnMenuCommand.InvokeAsync("edit.copy"))">
+                <Icon Name="copy" Size="12" CssClass="icon icon-12" /><span>Copiar</span><span class="shortcut">Ctrl+C</span>
+            </button>
+            <button class="dropdown-item" type="button" @onclick="@(() => OnMenuCommand.InvokeAsync("edit.paste"))">
+                <Icon Name="clipboard-paste" Size="12" CssClass="icon icon-12" /><span>Colar</span><span class="shortcut">Ctrl+V</span>
+            </button>
+            <button class="dropdown-item" type="button" @onclick="@(() => OnMenuCommand.InvokeAsync("edit.delete"))">
+                <Icon Name="trash-2" Size="12" CssClass="icon icon-12" /><span>Excluir</span><span class="shortcut">Del</span>
+            </button>
+            <div class="dropdown-sep"></div>
+            <button class="dropdown-item" type="button" @onclick="@(() => OnMenuCommand.InvokeAsync("edit.selectall"))">
+                <Icon Name="box-select" Size="12" CssClass="icon icon-12" /><span>Selecionar tudo</span><span class="shortcut">Ctrl+A</span>
+            </button>
+        </DropdownMenu>
+
+        <DropdownMenu Label="Visualizar">
+            <button class="dropdown-item" type="button" @onclick="@(() => OnMenuCommand.InvokeAsync("view.grid"))">
+                <Icon Name="grid-3x3" Size="12" CssClass="icon icon-12" /><span>Alternar grade</span>
+            </button>
+            <button class="dropdown-item" type="button" @onclick="@(() => OnMenuCommand.InvokeAsync("view.snap"))">
+                <Icon Name="magnet" Size="12" CssClass="icon icon-12" /><span>Alternar snap</span>
+            </button>
+            <button class="dropdown-item" type="button" @onclick="@(() => OnMenuCommand.InvokeAsync("view.theme"))">
+                <Icon Name="moon" Size="12" CssClass="icon icon-12" /><span>Alternar tema</span><span class="shortcut">Ctrl+Shift+L</span>
+            </button>
+            <div class="dropdown-sep"></div>
+            <button class="dropdown-item" type="button" @onclick="@(() => OnMenuCommand.InvokeAsync("view.zoomin"))">
+                <Icon Name="plus" Size="12" CssClass="icon icon-12" /><span>Aumentar zoom</span>
+            </button>
+            <button class="dropdown-item" type="button" @onclick="@(() => OnMenuCommand.InvokeAsync("view.zoomout"))">
+                <Icon Name="minus" Size="12" CssClass="icon icon-12" /><span>Diminuir zoom</span>
+            </button>
+            <button class="dropdown-item" type="button" @onclick="@(() => OnMenuCommand.InvokeAsync("view.zoom100"))">
+                <Icon Name="search" Size="12" CssClass="icon icon-12" /><span>Zoom 100%</span>
+            </button>
+        </DropdownMenu>
+
+        <DropdownMenu Label="Inserir">
+            <button class="dropdown-item" type="button" @onclick="@(() => OnMenuCommand.InvokeAsync("insert.textbox"))">
+                <Icon Name="type" Size="12" CssClass="icon icon-12" /><span>TextBox</span>
+            </button>
+            <button class="dropdown-item" type="button" @onclick="@(() => OnMenuCommand.InvokeAsync("insert.label"))">
+                <Icon Name="hash" Size="12" CssClass="icon icon-12" /><span>Label</span>
+            </button>
+            <button class="dropdown-item" type="button" @onclick="@(() => OnMenuCommand.InvokeAsync("insert.line"))">
+                <Icon Name="minus" Size="12" CssClass="icon icon-12" /><span>Linha</span>
+            </button>
+            <button class="dropdown-item" type="button" @onclick="@(() => OnMenuCommand.InvokeAsync("insert.rectangle"))">
+                <Icon Name="square" Size="12" CssClass="icon icon-12" /><span>Retângulo</span>
+            </button>
+            <button class="dropdown-item" type="button" @onclick="@(() => OnMenuCommand.InvokeAsync("insert.image"))">
+                <Icon Name="image" Size="12" CssClass="icon icon-12" /><span>Imagem</span>
+            </button>
+            <button class="dropdown-item" type="button" @onclick="@(() => OnMenuCommand.InvokeAsync("insert.barcode"))">
+                <Icon Name="barcode" Size="12" CssClass="icon icon-12" /><span>Código de barras</span>
+            </button>
+        </DropdownMenu>
+
+        <DropdownMenu Label="Relatório">
+            <button class="dropdown-item" type="button" @onclick="@(() => OnMenuCommand.InvokeAsync("report.pagesetup"))">
+                <Icon Name="file-cog" Size="12" CssClass="icon icon-12" /><span>Configuração de página…</span>
+            </button>
+            <button class="dropdown-item" type="button" @onclick="@(() => OnMenuCommand.InvokeAsync("report.preview"))">
+                <Icon Name="play" Size="12" CssClass="icon icon-12" /><span>Preview</span><span class="shortcut">F5</span>
+            </button>
+            <div class="dropdown-sep"></div>
+            <button class="dropdown-item" type="button" @onclick="@(() => OnMenuCommand.InvokeAsync("report.validate"))">
+                <Icon Name="shield-check" Size="12" CssClass="icon icon-12" /><span>Validar expressões</span>
+            </button>
+        </DropdownMenu>
+
+        <DropdownMenu Label="Ajuda">
+            <button class="dropdown-item" type="button" @onclick="@(() => OnMenuCommand.InvokeAsync("help.shortcuts"))">
+                <Icon Name="keyboard" Size="12" CssClass="icon icon-12" /><span>Atalhos de teclado</span><span class="shortcut">Ctrl+/</span>
+            </button>
+            <button class="dropdown-item" type="button" @onclick="@(() => OnMenuCommand.InvokeAsync("help.about"))">
+                <Icon Name="info" Size="12" CssClass="icon icon-12" /><span>Sobre OmniReport…</span>
+            </button>
+        </DropdownMenu>
+    </nav>
+
+    <button class="cmd-trigger" type="button" @onclick="OnOpenPaletteClicked" aria-label="Command palette">
+        <Icon Name="search" Size="14" />
+        <span class="cmd-text">Buscar comando ou propriedade…</span>
+        <span class="cmd-kbd">
+            <kbd>Ctrl</kbd><kbd>K</kbd>
+        </span>
+    </button>
+
+    <div class="topbar-right">
+        <label class="icon-btn" type="button" title="Abrir .repx (Ctrl+O)" style="cursor:pointer;">
+            <Icon Name="folder-open" Size="16" />
+            <InputFile id="__designer_open_repx" style="display:none" OnChange="OnLoadFile" accept=".repx" />
+        </label>
+        <button class="icon-btn" type="button" title="Salvar (Ctrl+S)" @onclick="OnSaveClicked"><Icon Name="save" Size="16" /></button>
+        <button class="icon-btn" type="button" title="Validar relatório" @onclick="@(() => OnMenuCommand.InvokeAsync("report.validate"))"><Icon Name="shield-check" Size="16" /></button>
+        <div class="div-v"></div>
+        <button class="icon-btn" type="button" title="Tema (Ctrl+Shift+L)" @onclick="OnToggleThemeClicked">
+            @if (IsDarkTheme)
+            {
+                <Icon Name="sun" Size="16" />
+            }
+            else
+            {
+                <Icon Name="moon" Size="16" />
+            }
+        </button>
+        <button class="icon-btn" type="button" title="Configuração de página" @onclick="@(() => OnMenuCommand.InvokeAsync("report.pagesetup"))"><Icon Name="settings" Size="16" /></button>
+    </div>
+</header>
+
+@code {
+    [Parameter] public string? DocumentName { get; set; }
+    [Parameter] public bool IsDarkTheme { get; set; }
+    [Parameter] public EventCallback OnToggleTheme { get; set; }
+    [Parameter] public EventCallback OnOpenPalette { get; set; }
+    [Parameter] public EventCallback OnSave { get; set; }
+    [Parameter] public EventCallback<InputFileChangeEventArgs> OnLoad { get; set; }
+    [Parameter] public EventCallback<string> OnMenuCommand { get; set; }
+
+    private Task OnToggleThemeClicked() => OnToggleTheme.InvokeAsync();
+    private Task OnOpenPaletteClicked() => OnOpenPalette.InvokeAsync();
+    private Task OnSaveClicked()        => OnSave.InvokeAsync();
+    private Task OnLoadFile(InputFileChangeEventArgs e) => OnLoad.InvokeAsync(e);
+}

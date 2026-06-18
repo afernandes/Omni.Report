@@ -1,0 +1,146 @@
+/* ============================================================
+   Base — reset, typography, native control restyle
+   ============================================================ */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: var(--bg-panel);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: var(--fs-md);
+  line-height: var(--lh-ui);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "ss01", "cv11";
+  text-rendering: optimizeLegibility;
+  overflow: hidden;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Bootstrap override — keep tokens primitive */
+:root {
+  --bs-body-bg: var(--bg-panel);
+  --bs-body-color: var(--text-primary);
+  --bs-border-color: var(--border);
+  --bs-primary: var(--accent);
+  --bs-primary-rgb: 194, 65, 12;
+  --bs-link-color: var(--accent);
+  --bs-font-sans-serif: var(--font-sans);
+  --bs-font-monospace: var(--font-mono);
+  --bs-body-font-size: var(--fs-md);
+}
+
+h1, h2, h3, h4, h5, h6, p {
+  margin: 0;
+  font-weight: 500;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+input, select, textarea {
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  padding: 0;
+}
+
+input:focus, select:focus, textarea:focus, button:focus { outline: none; }
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 999px;
+  border: 2px solid var(--bg-panel);
+}
+::-webkit-scrollbar-thumb:hover { background: var(--text-tertiary); }
+
+/* SVG icon defaults — Lucide stroke 1.5 */
+.icon {
+  width: 14px;
+  height: 14px;
+  stroke-width: 1.5;
+  stroke: currentColor;
+  fill: none;
+  flex-shrink: 0;
+  vertical-align: -2px;
+}
+.icon-16 { width: 16px; height: 16px; }
+.icon-18 { width: 18px; height: 18px; }
+.icon-20 { width: 20px; height: 20px; vertical-align: -4px; }
+.icon-12 { width: 12px; height: 12px; }
+
+/* Small caps panel header */
+.panel-heading {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  letter-spacing: var(--tracked);
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+  font-feature-settings: "zero", "ss02";
+}
+
+.dim { color: var(--text-tertiary); }
+.muted { color: var(--text-secondary); }
+
+/* Kbd token */
+kbd, .kbd {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  padding: 1px 5px;
+  border: 1px solid var(--border);
+  border-bottom-color: var(--border-strong);
+  border-radius: var(--r-1);
+  color: var(--text-secondary);
+  background: var(--bg-surface);
+  line-height: 14px;
+  display: inline-flex;
+  min-width: 16px;
+  justify-content: center;
+}
+
+/* Divider line */
+.div-v {
+  width: 1px;
+  background: var(--border);
+  align-self: stretch;
+  margin: 6px 4px;
+}
+.div-h {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 0;
+}
+
+/* Reusable text styles */
+.label-cap {
+  font-size: var(--fs-xs);
+  text-transform: uppercase;
+  letter-spacing: var(--tracked);
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+/* No-select for chrome */
+.no-select { user-select: none; -webkit-user-select: none; }

@@ -1,0 +1,629 @@
+{
+  "name": "canvas-low-level",
+  "pageCount": 2,
+  "unit": "millimeters",
+  "pages": [
+    {
+      "pageNumber": 1,
+      "size": {
+        "width": 210.007,
+        "height": 297.002
+      },
+      "primitives": [
+        {
+          "type": "rect",
+          "x": 19.99,
+          "y": 19.99,
+          "width": 170.028,
+          "height": 257.023,
+          "strokeColor": "#966C29",
+          "strokeThickness": 0.533
+        },
+        {
+          "type": "rect",
+          "x": 22.987,
+          "y": 22.987,
+          "width": 164.033,
+          "height": 251.028,
+          "strokeColor": "#966C29",
+          "strokeThickness": 0.178
+        },
+        {
+          "type": "text",
+          "x": 69.875,
+          "y": 50.013,
+          "width": 70.256,
+          "height": 11.354,
+          "text": "CERTIFICADO",
+          "style": {
+            "fontFamily": "Times New Roman",
+            "fontSize": 28,
+            "fontStyle": "Bold",
+            "color": "#000000",
+            "horizontalAlignment": "Center"
+          }
+        },
+        {
+          "type": "text",
+          "x": 19.99,
+          "y": 63.373,
+          "width": 170.028,
+          "height": 8.001,
+          "text": "Conclusão de Curso",
+          "style": {
+            "fontFamily": "Times New Roman",
+            "fontSize": 14,
+            "fontStyle": "Italic",
+            "color": "#808080",
+            "horizontalAlignment": "Center"
+          }
+        },
+        {
+          "type": "text",
+          "x": 35.001,
+          "y": 94.996,
+          "width": 140.03,
+          "height": 40.005,
+          "text": "Certificamos que ANDERSON FERNANDES concluiu com aproveitamento o curso de DESIGN DE RELATÓRIOS BANDADOS, com carga horária total de 40 horas, atendendo aos requisitos estabelecidos pelo regulamento da instituição.",
+          "style": {
+            "fontFamily": "Georgia",
+            "fontSize": 12,
+            "color": "#000000",
+            "horizontalAlignment": "Center"
+          }
+        },
+        {
+          "type": "line",
+          "x": 29.997,
+          "y": 164.998,
+          "width": 70.002,
+          "height": 0,
+          "from": {
+            "x": 29.997,
+            "y": 164.998
+          },
+          "to": {
+            "x": 100,
+            "y": 164.998
+          },
+          "color": "#000000",
+          "thickness": 0.178
+        },
+        {
+          "type": "line",
+          "x": 110.007,
+          "y": 164.998,
+          "width": 70.002,
+          "height": 0,
+          "from": {
+            "x": 110.007,
+            "y": 164.998
+          },
+          "to": {
+            "x": 180.01,
+            "y": 164.998
+          },
+          "color": "#000000",
+          "thickness": 0.178
+        },
+        {
+          "type": "text",
+          "x": 29.997,
+          "y": 167.005,
+          "width": 70.002,
+          "height": 5.004,
+          "text": "Maria Silva",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "fontStyle": "Bold",
+            "color": "#000000",
+            "horizontalAlignment": "Center"
+          }
+        },
+        {
+          "type": "text",
+          "x": 29.997,
+          "y": 172.009,
+          "width": 70.002,
+          "height": 5.004,
+          "text": "Coordenadora do Curso",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 9,
+            "color": "#808080",
+            "horizontalAlignment": "Center"
+          }
+        },
+        {
+          "type": "text",
+          "x": 110.007,
+          "y": 167.005,
+          "width": 70.002,
+          "height": 5.004,
+          "text": "João Pereira",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "fontStyle": "Bold",
+            "color": "#000000",
+            "horizontalAlignment": "Center"
+          }
+        },
+        {
+          "type": "text",
+          "x": 110.007,
+          "y": 172.009,
+          "width": 70.002,
+          "height": 5.004,
+          "text": "Diretor Geral",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 9,
+            "color": "#808080",
+            "horizontalAlignment": "Center"
+          }
+        }
+      ]
+    },
+    {
+      "pageNumber": 2,
+      "size": {
+        "width": 210.007,
+        "height": 297.002
+      },
+      "primitives": [
+        {
+          "type": "rect",
+          "x": 19.99,
+          "y": 19.99,
+          "width": 170.028,
+          "height": 15.011,
+          "fillColor": "#C2410C"
+        },
+        {
+          "type": "text",
+          "x": 23.978,
+          "y": 22.987,
+          "width": 162.027,
+          "height": 8.992,
+          "text": "FATURA Nº 2026/0042",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 16,
+            "fontStyle": "Bold",
+            "color": "#FFFFFF"
+          }
+        },
+        {
+          "type": "rect",
+          "x": 19.99,
+          "y": 44.983,
+          "width": 170.028,
+          "height": 8.001,
+          "fillColor": "#333333"
+        },
+        {
+          "type": "text",
+          "x": 21.996,
+          "y": 45.974,
+          "width": 88.036,
+          "height": 8.001,
+          "text": "Descrição",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "fontStyle": "Bold",
+            "color": "#FFFFFF"
+          }
+        },
+        {
+          "type": "text",
+          "x": 110.033,
+          "y": 45.974,
+          "width": 17.983,
+          "height": 8.001,
+          "text": "Qtd",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "fontStyle": "Bold",
+            "color": "#FFFFFF",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 130.023,
+          "y": 45.974,
+          "width": 25.984,
+          "height": 8.001,
+          "text": "Unitário",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "fontStyle": "Bold",
+            "color": "#FFFFFF",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 158.013,
+          "y": 45.974,
+          "width": 29.997,
+          "height": 8.001,
+          "text": "Total",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "fontStyle": "Bold",
+            "color": "#FFFFFF",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "line",
+          "x": 19.99,
+          "y": 60.985,
+          "width": 170.028,
+          "height": 0,
+          "from": {
+            "x": 19.99,
+            "y": 60.985
+          },
+          "to": {
+            "x": 190.017,
+            "y": 60.985
+          },
+          "color": "#D3D3D3",
+          "thickness": 0.102
+        },
+        {
+          "type": "text",
+          "x": 21.996,
+          "y": 54.991,
+          "width": 88.036,
+          "height": 8.001,
+          "text": "Farinha de Trigo 25kg",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 110.033,
+          "y": 54.991,
+          "width": 17.983,
+          "height": 8.001,
+          "text": "12",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 130.023,
+          "y": 54.991,
+          "width": 25.984,
+          "height": 8.001,
+          "text": "R$ 148,90",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 158.013,
+          "y": 54.991,
+          "width": 29.997,
+          "height": 8.001,
+          "text": "R$ 1.786,80",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "line",
+          "x": 19.99,
+          "y": 68.986,
+          "width": 170.028,
+          "height": 0,
+          "from": {
+            "x": 19.99,
+            "y": 68.986
+          },
+          "to": {
+            "x": 190.017,
+            "y": 68.986
+          },
+          "color": "#D3D3D3",
+          "thickness": 0.102
+        },
+        {
+          "type": "text",
+          "x": 21.996,
+          "y": 62.992,
+          "width": 88.036,
+          "height": 8.001,
+          "text": "Açúcar Refinado 1kg",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 110.033,
+          "y": 62.992,
+          "width": 17.983,
+          "height": 8.001,
+          "text": "48",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 130.023,
+          "y": 62.992,
+          "width": 25.984,
+          "height": 8.001,
+          "text": "R$ 4,20",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 158.013,
+          "y": 62.992,
+          "width": 29.997,
+          "height": 8.001,
+          "text": "R$ 201,60",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "line",
+          "x": 19.99,
+          "y": 76.987,
+          "width": 170.028,
+          "height": 0,
+          "from": {
+            "x": 19.99,
+            "y": 76.987
+          },
+          "to": {
+            "x": 190.017,
+            "y": 76.987
+          },
+          "color": "#D3D3D3",
+          "thickness": 0.102
+        },
+        {
+          "type": "text",
+          "x": 21.996,
+          "y": 70.993,
+          "width": 88.036,
+          "height": 8.001,
+          "text": "Fermento Biológico 100g",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 110.033,
+          "y": 70.993,
+          "width": 17.983,
+          "height": 8.001,
+          "text": "6",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 130.023,
+          "y": 70.993,
+          "width": 25.984,
+          "height": 8.001,
+          "text": "R$ 11,75",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 158.013,
+          "y": 70.993,
+          "width": 29.997,
+          "height": 8.001,
+          "text": "R$ 70,50",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "line",
+          "x": 19.99,
+          "y": 84.988,
+          "width": 170.028,
+          "height": 0,
+          "from": {
+            "x": 19.99,
+            "y": 84.988
+          },
+          "to": {
+            "x": 190.017,
+            "y": 84.988
+          },
+          "color": "#D3D3D3",
+          "thickness": 0.102
+        },
+        {
+          "type": "text",
+          "x": 21.996,
+          "y": 78.994,
+          "width": 88.036,
+          "height": 8.001,
+          "text": "Embalagem PE 5kg",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 110.033,
+          "y": 78.994,
+          "width": 17.983,
+          "height": 8.001,
+          "text": "30",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 130.023,
+          "y": 78.994,
+          "width": 25.984,
+          "height": 8.001,
+          "text": "R$ 0,95",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 158.013,
+          "y": 78.994,
+          "width": 29.997,
+          "height": 8.001,
+          "text": "R$ 28,50",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "line",
+          "x": 130.023,
+          "y": 85.979,
+          "width": 59.995,
+          "height": 0,
+          "from": {
+            "x": 130.023,
+            "y": 85.979
+          },
+          "to": {
+            "x": 190.017,
+            "y": 85.979
+          },
+          "color": "#000000",
+          "thickness": 0.254
+        },
+        {
+          "type": "text",
+          "x": 130.023,
+          "y": 87.986,
+          "width": 25.984,
+          "height": 8.001,
+          "text": "TOTAL",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 11,
+            "fontStyle": "Bold",
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 158.013,
+          "y": 87.986,
+          "width": 29.997,
+          "height": 8.001,
+          "text": "R$ 2.087,40",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 11,
+            "fontStyle": "Bold",
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 19.99,
+          "y": 277.012,
+          "width": 59.995,
+          "height": 5.004,
+          "text": "Emitido em 25/05/2026",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 9,
+            "color": "#808080"
+          }
+        },
+        {
+          "type": "text",
+          "x": 170.434,
+          "y": 277.012,
+          "width": 19.583,
+          "height": 5.004,
+          "text": "Página 2 de 2",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 9,
+            "color": "#808080"
+          }
+        }
+      ]
+    }
+  ]
+}

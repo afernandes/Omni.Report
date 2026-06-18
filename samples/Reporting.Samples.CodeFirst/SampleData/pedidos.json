@@ -1,0 +1,21 @@
+{
+  "metadata": {
+    "exportedAt": "2026-05-26T08:00:00Z",
+    "source": "ERP-PROD",
+    "version": "2.1"
+  },
+  "data": {
+    "results": [
+      { "id": 1001, "cliente": "Ana Souza",       "produto": "Notebook Dell XPS 13", "quantidade": 1, "precoUnitario": 9500.00, "total": 9500.00, "data": "2026-05-15", "status": "Pago" },
+      { "id": 1002, "cliente": "Ana Souza",       "produto": "Mouse Logitech MX",    "quantidade": 2, "precoUnitario": 350.00,  "total": 700.00,  "data": "2026-05-15", "status": "Pago" },
+      { "id": 1003, "cliente": "Beto Lima",       "produto": "Teclado Mecânico",     "quantidade": 1, "precoUnitario": 890.00,  "total": 890.00,  "data": "2026-05-18", "status": "Pago" },
+      { "id": 1004, "cliente": "Beto Lima",       "produto": "Monitor 27 4K",        "quantidade": 1, "precoUnitario": 3200.00, "total": 3200.00, "data": "2026-05-18", "status": "Pendente" },
+      { "id": 1005, "cliente": "Carla Mendes",    "produto": "Webcam Full HD",       "quantidade": 1, "precoUnitario": 480.00,  "total": 480.00,  "data": "2026-05-20", "status": "Pago" },
+      { "id": 1006, "cliente": "Carla Mendes",    "produto": "Headset Bluetooth",    "quantidade": 1, "precoUnitario": 690.00,  "total": 690.00,  "data": "2026-05-21", "status": "Pago" },
+      { "id": 1007, "cliente": "Diego Costa",     "produto": "SSD NVMe 1TB",         "quantidade": 2, "precoUnitario": 750.00,  "total": 1500.00, "data": "2026-05-22", "status": "Pago" },
+      { "id": 1008, "cliente": "Diego Costa",     "produto": "Cabo USB-C 2m",        "quantidade": 5, "precoUnitario": 45.00,   "total": 225.00,  "data": "2026-05-22", "status": "Pago" },
+      { "id": 1009, "cliente": "Elisa Rocha",     "produto": "Hub USB 4 portas",     "quantidade": 1, "precoUnitario": 180.00,  "total": 180.00,  "data": "2026-05-24", "status": "Cancelado" },
+      { "id": 1010, "cliente": "Fábio Almeida",   "produto": "Roteador Wi-Fi 6",     "quantidade": 1, "precoUnitario": 1400.00, "total": 1400.00, "data": "2026-05-25", "status": "Pago" }
+    ]
+  }
+}

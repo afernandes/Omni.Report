@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Report SchemaVersion="1.0" Name="Dashboard de Vendas">
+  <PageSetup Orientation="Portrait" Margins="709,709,709,709" Columns="1" ColumnSpacing="0">
+    <Paper Name="A4" Width="8268" Height="11693" />
+  </PageSetup>
+  <DataSources>
+    <DataSource Name="Mensal">
+      <Fields>
+        <Field Name="Mes" Type="System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" />
+        <Field Name="Total" Type="System.Decimal, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" />
+        <Field Name="Meta" Type="System.Decimal, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" />
+      </Fields>
+    </DataSource>
+  </DataSources>
+  <ReportHeader Kind="ReportHeader" Height="7165" Visible="true" PrintOnFirstPage="true" PrintOnLastPage="true">
+    <Elements>
+      <TextBox Id="9fc04cb819a34b35aac354cae5256665" Bounds="0,0,6850,394" Visible="true">
+        <Style HorizontalAlignment="Center" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Arial" Size="15" Style="Bold" />
+        </Style>
+        <Expression>Dashboard de Vendas — 1º semestre</Expression>
+      </TextBox>
+      <Chart Id="bd219deee02e45029b175442975ed988" Bounds="0,551,3386,2205" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true" />
+        <Kind>Bar</Kind>
+        <ShowLegend>True</ShowLegend>
+        <Title>Faturamento por mês</Title>
+        <Series>
+          <Series Name="Total" CategoryExpression="Fields.Mes" ValueExpression="Fields.Total" />
+        </Series>
+      </Chart>
+      <Chart Id="b0a04bfe6fa743a982541b6e58dc997b" Bounds="3543,551,3307,2205" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true" />
+        <Kind>Pie</Kind>
+        <ShowLegend>True</ShowLegend>
+        <Title>Participação por mês</Title>
+        <Series>
+          <Series Name="Total" CategoryExpression="Fields.Mes" ValueExpression="Fields.Total" />
+        </Series>
+      </Chart>
+      <Chart Id="6445a86080da4dd980604c36499ef061" Bounds="0,2913,6850,2047" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true" />
+        <Kind>Line</Kind>
+        <ShowLegend>True</ShowLegend>
+        <Title>Realizado vs. Meta</Title>
+        <Series>
+          <Series Name="Realizado" CategoryExpression="Fields.Mes" ValueExpression="Fields.Total" />
+          <Series Name="Meta" CategoryExpression="Fields.Mes" ValueExpression="Fields.Meta" />
+        </Series>
+      </Chart>
+      <Gauge Id="a397f31b8d4045f4a9fd1ff5b77fc1ef" Bounds="0,5118,2362,1969" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true" />
+        <Kind>Radial</Kind>
+        <Minimum>0</Minimum>
+        <Maximum>300000</Maximum>
+        <Value>Sum(Fields.Total)</Value>
+        <Ranges>
+          <Range Start="0" End="150000" Color="#DC2626" />
+          <Range Start="150000" End="250000" Color="#F59E0B" />
+          <Range Start="250000" End="300000" Color="#16A34A" />
+        </Ranges>
+      </Gauge>
+      <Label Id="8af3d749bfaf469ca9fef831cad94589" Bounds="2598,5118,2362,197" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Arial" Size="9" Style="Bold" />
+        </Style>
+        <Text>Tendência (sparkline)</Text>
+      </Label>
+      <Sparkline Id="42f94ece9ced4ef5b0931103e1b78bca" Bounds="2598,5354,2362,1024" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true" />
+        <Kind>Area</Kind>
+        <Value>Fields.Total</Value>
+      </Sparkline>
+      <Label Id="d3a2e1955cdf4e8b8748ff9b1278ea06" Bounds="5197,5118,1654,197" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Arial" Size="9" Style="Bold" />
+        </Style>
+        <Text>Meta do semestre</Text>
+      </Label>
+      <Indicator Id="e3acbead56914a1a86376b6c34a2eb83" Bounds="5748,5433,630,630" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true" />
+        <Kind>DirectionalArrow</Kind>
+        <Value>Sum(Fields.Total)</Value>
+        <States>
+          <State Start="0" End="150000" Icon="" />
+          <State Start="150000" End="250000" Icon="" />
+          <State Start="250000" End="400000" Icon="" />
+        </States>
+      </Indicator>
+    </Elements>
+  </ReportHeader>
+  <PageHeader Kind="PageHeader" Height="276" Visible="true" PrintOnFirstPage="true" PrintOnLastPage="true">
+    <Elements>
+      <Label Id="db10c9b811d3429db0cbc2f1b706b993" Bounds="0,0,945,236" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Arial" Size="10" Style="Bold" />
+        </Style>
+        <Text>Mês</Text>
+      </Label>
+      <Label Id="b66f6d8efe134ba084d1b11b6f8cafe2" Bounds="945,0,1575,236" Visible="true">
+        <Style HorizontalAlignment="Right" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Arial" Size="10" Style="Bold" />
+        </Style>
+        <Text>Faturamento</Text>
+      </Label>
+      <Label Id="ab71b4a52d9e48c9a046a4595d0bb0c2" Bounds="2756,0,4094,236" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Arial" Size="10" Style="Bold" />
+        </Style>
+        <Text>Progresso (teto R$ 55.000)</Text>
+      </Label>
+      <Line Id="5f7fbd990c2048aea2cfbc2e41a588ec" Bounds="0,236,6850,0" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true" />
+        <Direction>Horizontal</Direction>
+        <Pen Style="Solid" Thickness="3" Color="#000000" />
+      </Line>
+    </Elements>
+  </PageHeader>
+  <Detail Height="276" Visible="true" CanGrow="false" CanShrink="false">
+    <Elements>
+      <TextBox Id="357b070a53f2450fb19402c9e09a5a4d" Bounds="0,0,945,236" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true" />
+        <Expression>{Fields.Mes}</Expression>
+      </TextBox>
+      <TextBox Id="34d199e2f481452bb5a5f41ef78980e1" Bounds="945,0,1575,236" Visible="true">
+        <Style HorizontalAlignment="Right" VerticalAlignment="Top" WordWrap="true" />
+        <Expression>{Fields.Total:C}</Expression>
+      </TextBox>
+      <DataBar Id="2232b43851114bfabc8fc573224468d7" Bounds="2756,39,4094,157" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true" />
+        <Value>Fields.Total</Value>
+        <Minimum>0</Minimum>
+        <Maximum>55000</Maximum>
+        <FillColor>#2563EB</FillColor>
+      </DataBar>
+    </Elements>
+  </Detail>
+  <ReportFooter Kind="ReportFooter" Height="394" Visible="true" PrintOnFirstPage="true" PrintOnLastPage="true">
+    <Elements>
+      <Line Id="64be54e62df341359c472887c7042349" Bounds="0,0,6850,0" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true" />
+        <Direction>Horizontal</Direction>
+        <Pen Style="Solid" Thickness="7" Color="#000000" />
+      </Line>
+      <TextBox Id="407a4733b8074befb6dfb043c17e6e14" Bounds="0,79,6850,276" Visible="true">
+        <Style HorizontalAlignment="Right" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Arial" Size="11" Style="Bold" />
+        </Style>
+        <Expression>Total do semestre: {Sum(Fields.Total):C}</Expression>
+      </TextBox>
+    </Elements>
+  </ReportFooter>
+</Report>

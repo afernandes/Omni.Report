@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Reporting.DataSources</RootNamespace>
+    <AssemblyName>Reporting.DataSources</AssemblyName>
+    <Description>OmniReport — abstractions over tabular data sources (IEnumerable&lt;T&gt;, DataTable, etc.) consumed by the layout engine.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Reporting.Core\Reporting.Core.csproj" />
+  </ItemGroup>
+
+</Project>

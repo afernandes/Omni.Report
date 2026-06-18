@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Reporting.Designer.Blazor.DataConnect</RootNamespace>
+    <AssemblyName>Reporting.Designer.Blazor.DataConnect</AssemblyName>
+    <Description>OmniReport — server-side designer data-connection service. Default IDesignerDataConnect implementation that talks to real databases via Npgsql/SqlClient/Sqlite/MySqlConnector. Opt-in: hosts that don't need live DB design simply don't register this.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Reporting.Core\Reporting.Core.csproj" />
+    <ProjectReference Include="..\Reporting.DataSources\Reporting.DataSources.csproj" />
+    <ProjectReference Include="..\Reporting.DataSources.AdoNet\Reporting.DataSources.AdoNet.csproj" />
+    <ProjectReference Include="..\Reporting.DataSources.Sqlite\Reporting.DataSources.Sqlite.csproj" />
+    <ProjectReference Include="..\Reporting.DataSources.PostgreSql\Reporting.DataSources.PostgreSql.csproj" />
+    <ProjectReference Include="..\Reporting.DataSources.SqlServer\Reporting.DataSources.SqlServer.csproj" />
+    <ProjectReference Include="..\Reporting.DataSources.MySql\Reporting.DataSources.MySql.csproj" />
+    <ProjectReference Include="..\Reporting.Designer.Blazor\Reporting.Designer.Blazor.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+  </ItemGroup>
+
+</Project>

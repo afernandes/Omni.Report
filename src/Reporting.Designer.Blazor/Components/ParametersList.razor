@@ -1,0 +1,45 @@
+@namespace Reporting.Designer.Blazor.Components
+
+<div style="padding:8px;">
+    @if (Parameters is null || Parameters.Count == 0)
+    {
+        <div class="param-row"><div class="p-name">Sem parâmetros</div><div></div></div>
+    }
+    else
+    {
+        @foreach (var p in Parameters)
+        {
+            <div class="param-row" style="grid-template-columns:1fr 70px 90px 24px;gap:4px;align-items:center;padding:4px 6px;">
+                <input type="text" value="@p.Name"
+                       @onchange="@(e => p.Name = e.Value?.ToString() ?? p.Name)"
+                       style="font-family:var(--font-mono);font-size:11px;background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--r-1);padding:2px 4px;" />
+                <select @onchange="@(e => p.Type = ParseType(e.Value?.ToString()))"
+                        style="font-size:11px;background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--r-1);">
+                    @foreach (var t in Enum.GetValues<DesignerFieldType>())
+                    {
+                        <option value="@t" selected="@(p.Type == t)">@t</option>
+                    }
+                </select>
+                <input type="text" placeholder="default" value="@p.DefaultValue"
+                       @onchange="@(e => p.DefaultValue = e.Value?.ToString())"
+                       style="font-family:var(--font-mono);font-size:11px;background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--r-1);padding:2px 4px;" />
+                <button class="icon-btn" type="button" title="Remover"
+                        @onclick="@(() => OnRemove.InvokeAsync(p))"
+                        style="width:18px;height:18px;color:var(--danger);cursor:pointer;">×</button>
+            </div>
+        }
+    }
+    <button class="btn" type="button" @onclick="@(() => OnAdd.InvokeAsync())"
+            style="margin-top:8px;width:100%;padding:5px;border:1px dashed var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:11px;border-radius:var(--r-2);">
+        + Adicionar parâmetro
+    </button>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<DesignerParameter> Parameters { get; set; } = default!;
+    [Parameter] public EventCallback OnAdd { get; set; }
+    [Parameter] public EventCallback<DesignerParameter> OnRemove { get; set; }
+
+    private static DesignerFieldType ParseType(string? v)
+        => Enum.TryParse<DesignerFieldType>(v, out var t) ? t : DesignerFieldType.Text;
+}

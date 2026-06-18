@@ -1,0 +1,123 @@
+@namespace Reporting.Designer.Blazor.Components
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+
+<section class="canvas-region" aria-label="Canvas">
+    @* 2×2 grid — [corner | régua-h] sobre [régua-v | canvas]. O grid garante que a célula do
+       canvas (1fr × 1fr) preencha TODO o espaço vertical/horizontal restante, sem depender do
+       "stretch" de flexbox (que era frágil com o <canvas> da régua-v ao lado). *@
+    <div class="standard-canvas" style="@(IsPreviewing ? "display:none;" : null)">
+        @* Corner cycles the ruler unit (cm → mm → pol), the classic top-left ruler control. *@
+        <button type="button" class="corner" title="Alternar unidade (cm / mm / pol)"
+                @onclick="CycleRulerUnit">@UnitAbbr</button>
+        @* Régua horizontal: canvas redesenhado pelo JS a cada scroll/zoom/resize/mouse, medindo
+           a página real (#designerPage) — "0" cai na borda do papel em qualquer zoom/scroll. *@
+        <canvas class="ruler-h-canvas" @ref="_hRuler" aria-hidden="true"></canvas>
+        @* Régua vertical — mesma lógica no eixo Y. *@
+        <canvas class="canvas-ruler-v" @ref="_vRuler" aria-hidden="true"></canvas>
+        <div class="canvas-scroll" id="canvasScroll" data-omni-zoom-host @ref="_scrollRef">
+            <div class="canvas-stage" style="@($"transform:scale({Zoom.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)});transform-origin:0 0;")">
+                <BandCanvas Report="Report"
+                            SelectedElement="Selected"
+                            SelectedElementChanged="SelectionChanged"
+                            ActiveBand="ActiveBand"
+                            ActiveBandChanged="ActiveBandChanged"
+                            GridVisible="GridVisible"
+                            DataSources="DataSources"
+                            Relations="Relations"
+                            Parameters="Parameters" />
+            </div>
+        </div>
+    </div>
+
+    @if (IsPreviewing)
+    {
+        <PreviewMode Pages="PreviewPages"
+                     CurrentPage="PreviewCurrentPage"
+                     PaperWidthMm="@Report.PageSetup.PageWidth.ToMm()"
+                     Zoom="PreviewZoom"
+                     ZoomChanged="PreviewZoomChanged"
+                     OnExit="OnExitPreview"
+                     OnPageChanged="OnPreviewPageChanged"
+                     Exporters="Exporters"
+                     OnExport="OnExport"
+                     OnPrint="OnPrint" />
+    }
+</section>
+
+@code {
+    [Parameter, EditorRequired] public ReportDefinitionViewModel Report { get; set; } = default!;
+    [Parameter] public ElementViewModel? Selected { get; set; }
+    [Parameter] public EventCallback<ElementViewModel?> SelectionChanged { get; set; }
+    [Parameter] public BandViewModel? ActiveBand { get; set; }
+    [Parameter] public EventCallback<BandViewModel?> ActiveBandChanged { get; set; }
+    [Parameter] public bool GridVisible { get; set; }
+    [Parameter] public double Zoom { get; set; } = 1.0;
+    [Parameter] public IReadOnlyList<DesignerDataSource> DataSources { get; set; } = Array.Empty<DesignerDataSource>();
+    [Parameter] public IReadOnlyList<DesignerParameter>  Parameters  { get; set; } = Array.Empty<DesignerParameter>();
+    /// <summary>Master-detail relations, passed straight through to the BandCanvas's
+    /// SubDetail DataMember picker. Nullable so blank-relation reports stay simple.</summary>
+    [Parameter] public System.Collections.ObjectModel.ObservableCollection<DesignerRelation>? Relations { get; set; }
+    [Parameter] public bool IsPreviewing { get; set; }
+    [Parameter] public IReadOnlyList<byte[]> PreviewPages { get; set; } = [];
+    [Parameter] public int PreviewCurrentPage { get; set; }
+    [Parameter] public EventCallback OnExitPreview { get; set; }
+    [Parameter] public EventCallback<int> OnPreviewPageChanged { get; set; }
+    /// <summary>Dynamic export buttons rendered in the preview toolbar. One per
+    /// registered <see cref="Reporting.Designer.Blazor.Services.ExporterDescriptor"/>.</summary>
+    [Parameter] public IReadOnlyList<Reporting.Designer.Blazor.Services.ExporterDescriptor>? Exporters { get; set; }
+    [Parameter] public EventCallback<Reporting.Designer.Blazor.Services.ExporterDescriptor> OnExport { get; set; }
+    [Parameter] public EventCallback OnPrint      { get; set; }
+    [Parameter] public int PreviewZoom            { get; set; } = 100;
+    [Parameter] public EventCallback<int> PreviewZoomChanged { get; set; }
+
+    private ElementReference _hRuler;
+    private ElementReference _vRuler;
+    private ElementReference _scrollRef;
+    private bool _rulersAttached;
+
+    /// <summary>Ruler display unit (cm / mm / in). Cycled via the corner button; pushed to the
+    /// JS ruler engine which redraws labels and the guide readout in the chosen unit.</summary>
+    private string _rulerUnit = "cm";
+    private string UnitAbbr => _rulerUnit == "in" ? "pol" : _rulerUnit;
+
+    private async Task CycleRulerUnit()
+    {
+        _rulerUnit = _rulerUnit switch { "cm" => "mm", "mm" => "in", _ => "cm" };
+        try { await JS.InvokeVoidAsync("omniDesigner.setRulerUnit", _rulerUnit); }
+        catch (JSException) { }
+        catch (InvalidOperationException) { }
+    }
+
+    /// <summary>Wires the JS ruler engine once (it then self-updates on scroll/zoom/resize/mouse),
+    /// and on every later render nudges a redraw so zoom/selection/page changes are reflected.</summary>
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        try
+        {
+            if (!_rulersAttached)
+            {
+                _rulersAttached = true;
+                await JS.InvokeVoidAsync("omniDesigner.attachRulers", _hRuler, _vRuler, _scrollRef);
+                await JS.InvokeVoidAsync("omniDesigner.setRulerUnit", _rulerUnit);
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("omniDesigner.refreshRulers");
+            }
+        }
+        catch (JSException) { /* test runtime / JS unavailable */ }
+        catch (InvalidOperationException) { /* pre-render: no JS yet */ }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("omniDesigner.detachRulers");
+        }
+        catch (JSException) { }
+        catch (JSDisconnectedException) { }
+        catch (InvalidOperationException) { }
+    }
+}

@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Reporting.Serialization</RootNamespace>
+    <AssemblyName>Reporting.Serialization</AssemblyName>
+    <Description>OmniReport — versioned serializers for the .repx (XML) and .repjson (JSON) formats with round-trip equality guarantee.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Reporting.Core\Reporting.Core.csproj" />
+  </ItemGroup>
+
+</Project>

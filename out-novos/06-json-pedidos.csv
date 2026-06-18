@@ -1,0 +1,24 @@
+﻿Relatório de Pedidos · Fonte JSON,,,,
+Origem: pedidos.json · Carregado via JsonDataSource (path: data.results),,,,
+Produto,Qtde,Preço,Total,Status
+Cliente: Ana Souza,,,,
+Notebook Dell XPS 13,1,9500,9500,Pago
+Mouse Logitech MX,2,350,700,Pago
+"Subtotal: R$ 10.200,00",,,,
+Cliente: Beto Lima,,,,
+Teclado Mecânico,1,890,890,Pago
+Monitor 27 4K,1,3200,3200,Pendente
+"Subtotal: R$ 4.090,00",,,,
+Cliente: Carla Mendes,,,,
+Webcam Full HD,1,480,480,Pago
+Headset Bluetooth,1,690,690,Pago
+"Subtotal: R$ 1.170,00",,,,
+Cliente: Diego Costa,,,,
+SSD NVMe 1TB,2,750,1500,Pago
+Cabo USB-C 2m,5,45,225,Pago
+"Subtotal: R$ 1.725,00",,,,
+Cliente: Fábio Almeida,,,,
+Roteador Wi-Fi 6,1,1400,1400,Pago
+"Subtotal: R$ 1.400,00",,,,
+"Total geral: R$ 18.585,00",,,,
+OmniReport · Página 1 de 1,,,,

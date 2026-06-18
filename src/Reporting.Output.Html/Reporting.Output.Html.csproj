@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Reporting.Output.Html</RootNamespace>
+    <AssemblyName>Reporting.Output.Html</AssemblyName>
+    <Description>OmniReport — HTML envelope around the vector SVG exporter. Each page is one selectable-text &lt;svg&gt;, with print rules sized to the report's page setup.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Reporting.Core\Reporting.Core.csproj" />
+    <ProjectReference Include="..\Reporting.Layout\Reporting.Layout.csproj" />
+    <ProjectReference Include="..\Reporting.Output.Pdf\Reporting.Output.Pdf.csproj" />
+    <ProjectReference Include="..\Reporting.Output.Svg\Reporting.Output.Svg.csproj" />
+  </ItemGroup>
+
+</Project>

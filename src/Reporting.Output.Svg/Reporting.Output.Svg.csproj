@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Reporting.Output.Svg</RootNamespace>
+    <AssemblyName>Reporting.Output.Svg</AssemblyName>
+    <Description>OmniReport — vector SVG exporter via SkiaSharp's SKSvgCanvas. Text remains selectable; multi-page documents are stacked into a single SVG with a configurable gap.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Reporting.Core\Reporting.Core.csproj" />
+    <ProjectReference Include="..\Reporting.Layout\Reporting.Layout.csproj" />
+    <ProjectReference Include="..\Reporting.Rendering\Reporting.Rendering.csproj" />
+    <ProjectReference Include="..\Reporting.Rendering.Skia\Reporting.Rendering.Skia.csproj" />
+    <ProjectReference Include="..\Reporting.Output.Pdf\Reporting.Output.Pdf.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SkiaSharp" />
+  </ItemGroup>
+
+</Project>

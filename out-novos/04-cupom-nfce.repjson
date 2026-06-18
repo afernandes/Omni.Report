@@ -1,0 +1,503 @@
+{
+  "schemaVersion": "1.0",
+  "name": "Cupom NFC-e (demo)",
+  "pageSetup": {
+    "paper": {
+      "name": "Thermal80",
+      "width": "3150",
+      "height": "0"
+    },
+    "orientation": "Portrait",
+    "margins": "79,79,79,79",
+    "columns": 1,
+    "columnSpacing": "0"
+  },
+  "dataSources": [
+    {
+      "name": "Itens",
+      "fields": [
+        {
+          "name": "Numero",
+          "type": "System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e"
+        },
+        {
+          "name": "Codigo",
+          "type": "System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e"
+        },
+        {
+          "name": "Descricao",
+          "type": "System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e"
+        },
+        {
+          "name": "Quantidade",
+          "type": "System.Decimal, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e"
+        },
+        {
+          "name": "Unidade",
+          "type": "System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e"
+        },
+        {
+          "name": "ValorUnitario",
+          "type": "System.Decimal, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e"
+        },
+        {
+          "name": "ValorTotal",
+          "type": "System.Decimal, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e"
+        }
+      ]
+    }
+  ],
+  "reportHeader": {
+    "kind": "ReportHeader",
+    "height": "1772",
+    "visible": true,
+    "printOnFirstPage": true,
+    "printOnLastPage": true,
+    "elements": [
+      {
+        "kind": "TextBox",
+        "id": "41bdb5ae546d41ea994733127ab74c6d",
+        "bounds": "0,0,2992,197",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Center",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "font": {
+            "family": "Consolas",
+            "size": 9,
+            "style": "Regular"
+          }
+        },
+        "expression": "PAPELARIA EXEMPLO LTDA",
+        "canGrow": false,
+        "canShrink": false
+      },
+      {
+        "kind": "TextBox",
+        "id": "f2632a08197947d09c8abd2aaa5766bb",
+        "bounds": "0,197,2992,157",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Center",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "font": {
+            "family": "Consolas",
+            "size": 8,
+            "style": "Regular"
+          }
+        },
+        "expression": "CNPJ: 12.345.678/0001-90",
+        "canGrow": false,
+        "canShrink": false
+      },
+      {
+        "kind": "TextBox",
+        "id": "87776ff937d042daa95bad58ee71c4ca",
+        "bounds": "0,354,2992,315",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Center",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "font": {
+            "family": "Consolas",
+            "size": 7,
+            "style": "Regular"
+          }
+        },
+        "expression": "Av. Brasil, 1.000 \u2014 Centro \u2014 S\u00E3o Paulo/SP",
+        "canGrow": false,
+        "canShrink": false
+      },
+      {
+        "kind": "Line",
+        "id": "a0d540145ded4d2da34bd28ba0ec6535",
+        "bounds": "0,709,2992,0",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Left",
+          "verticalAlignment": "Top",
+          "wordWrap": true
+        },
+        "direction": "Horizontal",
+        "pen": {
+          "style": "Solid",
+          "thickness": "7",
+          "color": "#000000"
+        }
+      },
+      {
+        "kind": "TextBox",
+        "id": "a6b8bb3f139b4d7cb3746be173c89c52",
+        "bounds": "0,787,2992,315",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Center",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "font": {
+            "family": "Consolas",
+            "size": 7,
+            "style": "Regular"
+          }
+        },
+        "expression": "Documento Auxiliar da Nota Fiscal de Consumidor Eletr\u00F4nica",
+        "canGrow": false,
+        "canShrink": false
+      },
+      {
+        "kind": "Line",
+        "id": "4d629161850d4980b5b0ffbadaf8619a",
+        "bounds": "0,1181,2992,0",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Left",
+          "verticalAlignment": "Top",
+          "wordWrap": true
+        },
+        "direction": "Horizontal",
+        "pen": {
+          "style": "Solid",
+          "thickness": "7",
+          "color": "#000000"
+        }
+      },
+      {
+        "kind": "TextBox",
+        "id": "0d4823f2bf04461798749449017ee4a0",
+        "bounds": "0,1260,2992,157",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Left",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "font": {
+            "family": "Consolas",
+            "size": 8,
+            "style": "Regular"
+          }
+        },
+        "expression": "# C\u00F3d  Descri\u00E7\u00E3o",
+        "canGrow": false,
+        "canShrink": false
+      },
+      {
+        "kind": "TextBox",
+        "id": "18b749a80df7436abdb8e4a409eb4cee",
+        "bounds": "0,1457,2992,157",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Left",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "font": {
+            "family": "Consolas",
+            "size": 8,
+            "style": "Regular"
+          }
+        },
+        "expression": "Qtd UN x  Vl.Unit    Total",
+        "canGrow": false,
+        "canShrink": false
+      },
+      {
+        "kind": "Line",
+        "id": "0c66abbcb8cf4f3ca991934fdebceb2e",
+        "bounds": "0,1654,2992,0",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Left",
+          "verticalAlignment": "Top",
+          "wordWrap": true
+        },
+        "direction": "Horizontal",
+        "pen": {
+          "style": "Solid",
+          "thickness": "3",
+          "color": "#000000"
+        }
+      }
+    ]
+  },
+  "detail": {
+    "height": "354",
+    "visible": true,
+    "canGrow": false,
+    "canShrink": false,
+    "elements": [
+      {
+        "kind": "TextBox",
+        "id": "312ea73d11a34c1bb6093a62ecd6afde",
+        "bounds": "0,0,2992,157",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Left",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "font": {
+            "family": "Consolas",
+            "size": 8,
+            "style": "Regular"
+          }
+        },
+        "expression": "{Fields.Numero:000} {Fields.Codigo} {Fields.Descricao}",
+        "canGrow": false,
+        "canShrink": false
+      },
+      {
+        "kind": "TextBox",
+        "id": "60c6d65ed3274970831e47974844ec00",
+        "bounds": "0,157,1890,157",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Left",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "font": {
+            "family": "Consolas",
+            "size": 8,
+            "style": "Regular"
+          }
+        },
+        "expression": "    {Fields.Quantidade:N3} {Fields.Unidade} x {Fields.ValorUnitario:N2}",
+        "canGrow": false,
+        "canShrink": false
+      },
+      {
+        "kind": "TextBox",
+        "id": "3536df8452ec4b0c84050d8e3e6358ed",
+        "bounds": "1890,157,1102,157",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Right",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "font": {
+            "family": "Consolas",
+            "size": 8,
+            "style": "Regular"
+          }
+        },
+        "expression": "{Fields.ValorTotal:N2}",
+        "canGrow": false,
+        "canShrink": false
+      }
+    ]
+  },
+  "reportFooter": {
+    "kind": "ReportFooter",
+    "height": "2362",
+    "visible": true,
+    "printOnFirstPage": true,
+    "printOnLastPage": true,
+    "elements": [
+      {
+        "kind": "Line",
+        "id": "d5321ab4886847968dabb18b1f22d960",
+        "bounds": "0,0,2992,0",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Left",
+          "verticalAlignment": "Top",
+          "wordWrap": true
+        },
+        "direction": "Horizontal",
+        "pen": {
+          "style": "Solid",
+          "thickness": "7",
+          "color": "#000000"
+        }
+      },
+      {
+        "kind": "TextBox",
+        "id": "7c5f3b4499df41fca794239a5e306fb1",
+        "bounds": "0,79,1575,236",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Left",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "font": {
+            "family": "Consolas",
+            "size": 10,
+            "style": "Regular"
+          }
+        },
+        "expression": "VALOR TOTAL R$",
+        "canGrow": false,
+        "canShrink": false
+      },
+      {
+        "kind": "TextBox",
+        "id": "8431564ecaff4067b267002995b93922",
+        "bounds": "1575,79,1417,236",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Right",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "font": {
+            "family": "Consolas",
+            "size": 10,
+            "style": "Regular"
+          }
+        },
+        "expression": "{Sum(Fields.ValorTotal):N2}",
+        "canGrow": false,
+        "canShrink": false
+      },
+      {
+        "kind": "TextBox",
+        "id": "eb9f27f17eab41638fbbbc45239f6367",
+        "bounds": "0,394,2992,157",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Left",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "font": {
+            "family": "Consolas",
+            "size": 8,
+            "style": "Regular"
+          }
+        },
+        "expression": "Forma de pagamento: Cart\u00E3o D\u00E9bito",
+        "canGrow": false,
+        "canShrink": false
+      },
+      {
+        "kind": "Line",
+        "id": "55641fa60a8d48cba30107186af27333",
+        "bounds": "0,630,2992,0",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Left",
+          "verticalAlignment": "Top",
+          "wordWrap": true
+        },
+        "direction": "Horizontal",
+        "pen": {
+          "style": "Solid",
+          "thickness": "3",
+          "color": "#000000"
+        }
+      },
+      {
+        "kind": "TextBox",
+        "id": "fc1b3c4676284104b00b025fee5be786",
+        "bounds": "0,709,2992,157",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Center",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "font": {
+            "family": "Consolas",
+            "size": 7,
+            "style": "Regular"
+          }
+        },
+        "expression": "Consulte pela chave de acesso:",
+        "canGrow": false,
+        "canShrink": false
+      },
+      {
+        "kind": "TextBox",
+        "id": "0257ccf38587428f9efea07994bd1594",
+        "bounds": "0,866,2992,315",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Center",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "font": {
+            "family": "Consolas",
+            "size": 8,
+            "style": "Bold"
+          }
+        },
+        "expression": "3526 0512 3456 7800 0190 6500 1000 0123 4510 0000 0017",
+        "canGrow": false,
+        "canShrink": false
+      },
+      {
+        "kind": "TextBox",
+        "id": "9cd37be427a34fb79915d1453aedb111",
+        "bounds": "0,1260,2992,157",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Center",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "font": {
+            "family": "Consolas",
+            "size": 7,
+            "style": "Regular"
+          }
+        },
+        "expression": "Protocolo: 135260000000123 \u2014 23/05/2026 14:32",
+        "canGrow": false,
+        "canShrink": false
+      },
+      {
+        "kind": "TextBox",
+        "id": "b4a4b7d989a4463a9a679fc696f6e866",
+        "bounds": "0,1496,2992,157",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Center",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "font": {
+            "family": "Consolas",
+            "size": 7,
+            "style": "Regular"
+          },
+          "foreColor": "#808080"
+        },
+        "expression": "Tributos totais (Lei 12.741/12): R$ {Sum(Fields.ValorTotal) * 0.18:N2}",
+        "canGrow": false,
+        "canShrink": false
+      },
+      {
+        "kind": "Line",
+        "id": "eb0e3bab27194feea962ce88c98161a6",
+        "bounds": "0,1732,2992,0",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Left",
+          "verticalAlignment": "Top",
+          "wordWrap": true
+        },
+        "direction": "Horizontal",
+        "pen": {
+          "style": "Solid",
+          "thickness": "3",
+          "color": "#000000"
+        }
+      },
+      {
+        "kind": "TextBox",
+        "id": "a10bafbefc824c0384aa70a9a6abc96b",
+        "bounds": "0,1811,2992,157",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Center",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "font": {
+            "family": "Consolas",
+            "size": 7,
+            "style": "Regular"
+          },
+          "foreColor": "#808080"
+        },
+        "expression": "Emitido por OmniReport \u00B7 17/06/2026 18:15",
+        "canGrow": false,
+        "canShrink": false
+      }
+    ]
+  }
+}

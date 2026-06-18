@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Reporting.Samples.BlazorServer</RootNamespace>
+    <AssemblyName>Reporting.Samples.BlazorServer</AssemblyName>
+    <IsPackable>false</IsPackable>
+    <InvariantGlobalization>false</InvariantGlobalization>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Reporting.CodeFirst\Reporting.CodeFirst.csproj" />
+    <ProjectReference Include="..\..\src\Reporting.Viewer.Blazor\Reporting.Viewer.Blazor.csproj" />
+    <ProjectReference Include="..\..\src\Reporting.Designer.Blazor\Reporting.Designer.Blazor.csproj" />
+    <ProjectReference Include="..\..\src\Reporting.Designer.Blazor.DataConnect\Reporting.Designer.Blazor.DataConnect.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" />
+    <ProjectReference Include="..\Reporting.Samples.CodeFirst\Reporting.Samples.CodeFirst.csproj" />
+    <!-- New My-FyiReporting-style providers — registered via DI in Program.cs so the
+         Designer's data source editor can offer them as configurable provider kinds. -->
+    <ProjectReference Include="..\..\src\Reporting.DataSources.Json\Reporting.DataSources.Json.csproj" />
+    <ProjectReference Include="..\..\src\Reporting.DataSources.Xml\Reporting.DataSources.Xml.csproj" />
+    <ProjectReference Include="..\..\src\Reporting.DataSources.WebService\Reporting.DataSources.WebService.csproj" />
+    <ProjectReference Include="..\..\src\Reporting.DataSources.FileSystem\Reporting.DataSources.FileSystem.csproj" />
+  </ItemGroup>
+
+</Project>

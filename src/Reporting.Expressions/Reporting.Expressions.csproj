@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Reporting.Expressions</RootNamespace>
+    <AssemblyName>Reporting.Expressions</AssemblyName>
+    <Description>OmniReport — expression evaluation engine (NCalc-based) with aggregates, templates, and a context bound to fields/parameters/variables.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Reporting.Core\Reporting.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="NCalcSync" />
+  </ItemGroup>
+
+</Project>

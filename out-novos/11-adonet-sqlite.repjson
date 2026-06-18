@@ -1,0 +1,410 @@
+{
+  "schemaVersion": "1.0",
+  "name": "Vendas SQLite (ADO.NET)",
+  "pageSetup": {
+    "paper": {
+      "name": "A4",
+      "width": "8268",
+      "height": "11693"
+    },
+    "orientation": "Portrait",
+    "margins": "709,709,709,709",
+    "columns": 1,
+    "columnSpacing": "0"
+  },
+  "parameters": [
+    {
+      "name": "DataInicio",
+      "type": "System.DateTime, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e",
+      "required": true,
+      "allowMultiple": false,
+      "prompt": "Data inicial",
+      "defaultValue": "05/01/2026 00:00:00"
+    },
+    {
+      "name": "DataFim",
+      "type": "System.DateTime, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e",
+      "required": true,
+      "allowMultiple": false,
+      "prompt": "Data final",
+      "defaultValue": "05/31/2026 00:00:00"
+    }
+  ],
+  "dataSources": [
+    {
+      "name": "Pedidos"
+    }
+  ],
+  "reportHeader": {
+    "kind": "ReportHeader",
+    "height": "1102",
+    "visible": true,
+    "printOnFirstPage": true,
+    "printOnLastPage": true,
+    "elements": [
+      {
+        "kind": "TextBox",
+        "id": "3404f47921ba49278a33a8eb9484c594",
+        "bounds": "0,0,6850,472",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Center",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "font": {
+            "family": "Arial",
+            "size": 16,
+            "style": "Bold"
+          }
+        },
+        "expression": "Vendas \u00B7 Fonte SQLite (ADO.NET)",
+        "canGrow": false,
+        "canShrink": false
+      },
+      {
+        "kind": "TextBox",
+        "id": "bac37831700e48faa087a470cc62bf75",
+        "bounds": "0,551,6850,236",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Center",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "foreColor": "#808080"
+        },
+        "expression": "Per\u00EDodo: {Parameters.DataInicio:dd/MM/yyyy} a {Parameters.DataFim:dd/MM/yyyy}",
+        "canGrow": false,
+        "canShrink": false
+      },
+      {
+        "kind": "Line",
+        "id": "69be7274c2af4781a69162a20d2a489c",
+        "bounds": "0,866,6850,0",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Left",
+          "verticalAlignment": "Top",
+          "wordWrap": true
+        },
+        "direction": "Horizontal",
+        "pen": {
+          "style": "Solid",
+          "thickness": "7",
+          "color": "#000000"
+        }
+      }
+    ]
+  },
+  "pageHeader": {
+    "kind": "PageHeader",
+    "height": "315",
+    "visible": true,
+    "printOnFirstPage": true,
+    "printOnLastPage": true,
+    "elements": [
+      {
+        "kind": "Label",
+        "id": "7ceacb59cb8c41069ccb6b2ded22cc29",
+        "bounds": "0,0,3228,236",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Left",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "font": {
+            "family": "Arial",
+            "size": 10,
+            "style": "Bold"
+          }
+        },
+        "text": "Produto"
+      },
+      {
+        "kind": "Label",
+        "id": "8bba87f7264846d6b8f18b4e885dd5b7",
+        "bounds": "3228,0,787,236",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Right",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "font": {
+            "family": "Arial",
+            "size": 10,
+            "style": "Bold"
+          }
+        },
+        "text": "Qtde"
+      },
+      {
+        "kind": "Label",
+        "id": "a3129cc5472c4414b22c10b6125f80e6",
+        "bounds": "4094,0,1181,236",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Right",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "font": {
+            "family": "Arial",
+            "size": 10,
+            "style": "Bold"
+          }
+        },
+        "text": "Pre\u00E7o Unit\u00E1rio"
+      },
+      {
+        "kind": "Label",
+        "id": "7f271d4b8f4f4e09813e15de8066ec06",
+        "bounds": "5354,0,1339,236",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Right",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "font": {
+            "family": "Arial",
+            "size": 10,
+            "style": "Bold"
+          }
+        },
+        "text": "Total"
+      },
+      {
+        "kind": "Line",
+        "id": "082931f4359a42688944b913fb1e6a90",
+        "bounds": "0,236,6850,0",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Left",
+          "verticalAlignment": "Top",
+          "wordWrap": true
+        },
+        "direction": "Horizontal",
+        "pen": {
+          "style": "Solid",
+          "thickness": "3",
+          "color": "#000000"
+        }
+      }
+    ]
+  },
+  "groups": [
+    {
+      "name": "PorCliente",
+      "groupExpression": "Fields.cliente",
+      "keepTogether": false,
+      "newPageBefore": false,
+      "newPageAfter": false,
+      "repeatHeaderOnNewPage": false,
+      "visible": true,
+      "header": {
+        "kind": "GroupHeader",
+        "height": "394",
+        "visible": true,
+        "printOnFirstPage": true,
+        "printOnLastPage": true,
+        "elements": [
+          {
+            "kind": "TextBox",
+            "id": "9cd21c92f5d849a28688d59c601fce39",
+            "bounds": "0,79,6850,236",
+            "visible": true,
+            "style": {
+              "horizontalAlignment": "Left",
+              "verticalAlignment": "Top",
+              "wordWrap": true,
+              "font": {
+                "family": "Arial",
+                "size": 11,
+                "style": "Bold"
+              },
+              "foreColor": "#C2410C"
+            },
+            "expression": "Cliente: {Fields.cliente}",
+            "canGrow": false,
+            "canShrink": false
+          }
+        ]
+      },
+      "footer": {
+        "kind": "GroupFooter",
+        "height": "315",
+        "visible": true,
+        "printOnFirstPage": true,
+        "printOnLastPage": true,
+        "elements": [
+          {
+            "kind": "Line",
+            "id": "f88f6f5793de4fa1a76215ee22c3d396",
+            "bounds": "0,0,6850,0",
+            "visible": true,
+            "style": {
+              "horizontalAlignment": "Left",
+              "verticalAlignment": "Top",
+              "wordWrap": true
+            },
+            "direction": "Horizontal",
+            "pen": {
+              "style": "Solid",
+              "thickness": "3",
+              "color": "#000000"
+            }
+          },
+          {
+            "kind": "TextBox",
+            "id": "89d73d9e8f184f9093aca7d76821b1f3",
+            "bounds": "0,39,6850,236",
+            "visible": true,
+            "style": {
+              "horizontalAlignment": "Right",
+              "verticalAlignment": "Top",
+              "wordWrap": true,
+              "font": {
+                "family": "Arial",
+                "size": 10,
+                "style": "Bold"
+              }
+            },
+            "expression": "Subtotal {Fields.cliente}: {Sum(Fields.total, \u0027Group\u0027):C}",
+            "canGrow": false,
+            "canShrink": false
+          }
+        ]
+      }
+    }
+  ],
+  "detail": {
+    "height": "236",
+    "visible": true,
+    "canGrow": false,
+    "canShrink": false,
+    "elements": [
+      {
+        "kind": "TextBox",
+        "id": "88b4046ca7914a8fb0a72e89591c1267",
+        "bounds": "0,0,3150,236",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Left",
+          "verticalAlignment": "Top",
+          "wordWrap": true
+        },
+        "expression": "{Fields.produto}",
+        "canGrow": false,
+        "canShrink": false
+      },
+      {
+        "kind": "TextBox",
+        "id": "30fb34bb178d4e279cc37d8637976abe",
+        "bounds": "3228,0,787,236",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Right",
+          "verticalAlignment": "Top",
+          "wordWrap": true
+        },
+        "expression": "{Fields.quantidade:N2}",
+        "canGrow": false,
+        "canShrink": false
+      },
+      {
+        "kind": "TextBox",
+        "id": "9aacf2228193418991b456266851a859",
+        "bounds": "4094,0,1181,236",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Right",
+          "verticalAlignment": "Top",
+          "wordWrap": true
+        },
+        "expression": "{Fields.preco_unitario:C}",
+        "canGrow": false,
+        "canShrink": false
+      },
+      {
+        "kind": "TextBox",
+        "id": "91c20ff046694df0b417c9da19909dce",
+        "bounds": "5354,0,1339,236",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Right",
+          "verticalAlignment": "Top",
+          "wordWrap": true
+        },
+        "expression": "{Fields.total:C}",
+        "canGrow": false,
+        "canShrink": false
+      }
+    ]
+  },
+  "pageFooter": {
+    "kind": "PageFooter",
+    "height": "315",
+    "visible": true,
+    "printOnFirstPage": true,
+    "printOnLastPage": true,
+    "elements": [
+      {
+        "kind": "TextBox",
+        "id": "7ac58899ff45481b957835967a2048bf",
+        "bounds": "0,39,6850,236",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Right",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "foreColor": "#808080"
+        },
+        "expression": "OmniReport \u00B7 P\u00E1gina {Page.Number} de {Page.Total}",
+        "canGrow": false,
+        "canShrink": false
+      }
+    ]
+  },
+  "reportFooter": {
+    "kind": "ReportFooter",
+    "height": "591",
+    "visible": true,
+    "printOnFirstPage": true,
+    "printOnLastPage": true,
+    "elements": [
+      {
+        "kind": "Line",
+        "id": "b5b19d80947745a58ab8968a73855ecc",
+        "bounds": "0,0,6850,0",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Left",
+          "verticalAlignment": "Top",
+          "wordWrap": true
+        },
+        "direction": "Horizontal",
+        "pen": {
+          "style": "Solid",
+          "thickness": "7",
+          "color": "#000000"
+        }
+      },
+      {
+        "kind": "TextBox",
+        "id": "0f6d5c6ac82347d6a186a9f53bdc7814",
+        "bounds": "0,79,6850,394",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Right",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "font": {
+            "family": "Arial",
+            "size": 11,
+            "style": "Bold"
+          }
+        },
+        "expression": "Total geral: {Sum(Fields.total):C}",
+        "canGrow": false,
+        "canShrink": false
+      }
+    ]
+  }
+}

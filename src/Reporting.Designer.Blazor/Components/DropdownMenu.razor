@@ -1,0 +1,120 @@
+@namespace Reporting.Designer.Blazor.Components
+@implements IDisposable
+@inject IJSRuntime Js
+
+<div class="dropdown-host" style="position:relative;display:inline-block;"
+     @onmouseenter="OnHostMouseEnter">
+    <button class="menu-item @(_open ? "is-open" : null)" type="button" @onclick="Toggle">
+        @Label
+    </button>
+    @if (_open)
+    {
+        <div class="dropdown-panel"
+             style="position:absolute;top:100%;left:0;min-width:240px;background:var(--bg-surface,#fff);border:1px solid var(--border,#E5E2D9);border-radius:6px;box-shadow:0 8px 28px rgba(20,18,14,0.14);padding:4px;z-index:1000;margin-top:2px;"
+             @onclick="OnPanelClicked">
+            @ChildContent
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string Label { get; set; } = default!;
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    private bool _open;
+    private DotNetObjectReference<DropdownMenu>? _selfRef;
+
+    // ─── Mutual-exclusion coordination ──────────────────────────────────────────
+    // Industry pattern (Radzen, MudBlazor, FluentUI, Office Ribbon): only ONE menu
+    // can be open at a time. Opening any menu fires a static event that closes the
+    // others. While at least one is open, hovering a sibling menu auto-switches —
+    // matches Word/Photoshop behaviour for fluent menu navigation.
+    private static event Action? _closeAllRequested;
+    private static int _openCount;
+    private static bool AnyOpen => _openCount > 0;
+
+    protected override void OnInitialized()
+    {
+        _closeAllRequested += OnCloseRequested;
+    }
+
+    private void OnCloseRequested()
+    {
+        if (_open)
+        {
+            _open = false;
+            _ = InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private void Toggle()
+    {
+        if (_open)
+        {
+            ClosePrivate();
+            return;
+        }
+        Open();
+    }
+
+    private void Open()
+    {
+        // Close every other menu first.
+        _closeAllRequested?.Invoke();
+        _open = true;
+        _openCount++;
+        _ = RegisterOutsideClickAsync();
+    }
+
+    private void ClosePrivate()
+    {
+        if (!_open) return;
+        _open = false;
+        _openCount = Math.Max(0, _openCount - 1);
+    }
+
+    private void OnHostMouseEnter()
+    {
+        // If a sibling is already open, switch to this one on hover (no click needed).
+        if (!_open && AnyOpen)
+        {
+            Open();
+        }
+    }
+
+    private async Task RegisterOutsideClickAsync()
+    {
+        try
+        {
+            _selfRef ??= DotNetObjectReference.Create(this);
+            await Js.InvokeVoidAsync("omniDesigner.registerOutsideClick", _selfRef);
+        }
+        catch (JSException) { }
+        catch (InvalidOperationException) { }
+        catch (Exception) { /* defensive */ }
+    }
+
+    private void OnPanelClicked()
+    {
+        // Clicking an item bubbles up; close after the item handler ran.
+        ClosePrivate();
+    }
+
+    [JSInvokable]
+    public Task CloseFromOutside()
+    {
+        if (_open)
+        {
+            ClosePrivate();
+            return InvokeAsync(StateHasChanged);
+        }
+        return Task.CompletedTask;
+    }
+
+    public void Dispose()
+    {
+        _closeAllRequested -= OnCloseRequested;
+        if (_open) _openCount = Math.Max(0, _openCount - 1);
+        _selfRef?.Dispose();
+    }
+}

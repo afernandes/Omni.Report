@@ -1,0 +1,379 @@
+@namespace Reporting.Designer.Blazor.Components
+@using System.Globalization
+@using Reporting.Designer.Blazor.Services
+@using Reporting.Geometry
+@using Reporting.Paper
+@inject IServiceProvider Services
+
+@*
+    Professional print dialog — same job as the print pop-up you see in Adobe Acrobat,
+    Foxit, Crystal Reports Viewer: pick destination + paper + range + copies, see a
+    preview of what gets printed, hit Imprimir.
+
+    The dialog is HOST-AGNOSTIC: works in Blazor Server, Blazor WebAssembly, and MAUI
+    Blazor Hybrid. The "destination" section adapts at runtime — when an
+    `IDesignerPrintService` with `SupportsDirectPrint == true` is registered, we show
+    the OS printer list; otherwise we collapse it to "Sistema padrão (browser)" and
+    rely on the browser/OS print sheet that opens after Imprimir.
+*@
+
+<DesignerModal Visible="Visible"
+               Title="Imprimir"
+               HeadIcon="printer"
+               OnClose="HandleCancel">
+    <ChildContent>
+        @if (Visible)
+        {
+            <div class="print-dialog">
+
+                @* ─── LEFT: configuration ───────────────────────────────────────── *@
+                <div class="print-config">
+
+                    @* ── Destination ──────────────────────────────────────────── *@
+                    <section class="print-section">
+                        <h4>Destino</h4>
+                        @if (_hasNativeService && _printers.Count > 0)
+                        {
+                            <div class="form-row">
+                                <label>Impressora</label>
+                                <select value="@_request.PrinterName"
+                                        @onchange="@(e => OnPrinterChanged(e.Value?.ToString()))">
+                                    @foreach (var p in _printers)
+                                    {
+                                        <option value="@p.Name">@p.DisplayName@(p.IsDefault ? " (padrão)" : string.Empty)</option>
+                                    }
+                                </select>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="print-hint">
+                                <strong>Sistema padrão.</strong> A janela de impressão do navegador/sistema operacional
+                                será aberta após "Imprimir" — selecione a impressora, duplex e outras opções lá.
+                            </div>
+                        }
+
+                        <div class="form-row">
+                            <label>Saída</label>
+                            <div class="form-group" role="radiogroup">
+                                <button class="btn @(_request.OutputMode == PrintOutputMode.BrowserDialog ? "primary" : null)"
+                                        type="button" title="Abrir diálogo do navegador / sistema operacional"
+                                        @onclick="@(() => Mutate(r => r with { OutputMode = PrintOutputMode.BrowserDialog }))">
+                                    🖨 Diálogo
+                                </button>
+                                @if (_hasNativeService)
+                                {
+                                    <button class="btn @(_request.OutputMode == PrintOutputMode.SystemSpooler ? "primary" : null)"
+                                            type="button" title="Enviar direto ao spooler — sem diálogo"
+                                            disabled="@(_printers.Count == 0)"
+                                            @onclick="@(() => Mutate(r => r with { OutputMode = PrintOutputMode.SystemSpooler }))">
+                                        ⚡ Direto
+                                    </button>
+                                }
+                                <button class="btn @(_request.OutputMode == PrintOutputMode.SaveAsPdf ? "primary" : null)"
+                                        type="button" title="Gerar PDF e baixar"
+                                        @onclick="@(() => Mutate(r => r with { OutputMode = PrintOutputMode.SaveAsPdf }))">
+                                    💾 PDF
+                                </button>
+                            </div>
+                        </div>
+                    </section>
+
+                    @* ── Pages ────────────────────────────────────────────────── *@
+                    <section class="print-section">
+                        <h4>Páginas</h4>
+                        <div class="form-row">
+                            <label>Intervalo</label>
+                            <div class="form-group" role="radiogroup">
+                                <label class="print-radio">
+                                    <input type="radio" name="range"
+                                           checked="@(_request.RangeMode == PrintPageRangeMode.All)"
+                                           @onchange="@(() => Mutate(r => r with { RangeMode = PrintPageRangeMode.All }))" />
+                                    Todas (@TotalPages)
+                                </label>
+                                <label class="print-radio">
+                                    <input type="radio" name="range"
+                                           checked="@(_request.RangeMode == PrintPageRangeMode.Current)"
+                                           @onchange="@(() => Mutate(r => r with { RangeMode = PrintPageRangeMode.Current }))" />
+                                    Atual (pág. @(CurrentPage + 1))
+                                </label>
+                                <label class="print-radio">
+                                    <input type="radio" name="range"
+                                           checked="@(_request.RangeMode == PrintPageRangeMode.Range)"
+                                           @onchange="@(() => Mutate(r => r with { RangeMode = PrintPageRangeMode.Range }))" />
+                                    Personalizado
+                                </label>
+                            </div>
+                        </div>
+                        @if (_request.RangeMode == PrintPageRangeMode.Range)
+                        {
+                            <div class="form-row">
+                                <label>Páginas</label>
+                                <input type="text" placeholder="ex.: 1-3, 5, 7-9"
+                                       value="@_request.RangeText"
+                                       @onchange="@(e => Mutate(r => r with { RangeText = e.Value?.ToString() }))" />
+                            </div>
+                        }
+                    </section>
+
+                    @* ── Paper / orientation / margins ────────────────────────── *@
+                    <section class="print-section">
+                        <h4>Papel</h4>
+                        <div class="form-row">
+                            <label>Tamanho</label>
+                            <select @onchange="@(e => OnPaperChanged(e.Value?.ToString()))">
+                                <option value="" selected="@(_request.PaperSize is null)">Manter do relatório (@DocumentPaper)</option>
+                                <option value="A4"        selected="@(_request.PaperSize?.Name == "A4")">A4 (210 × 297 mm)</option>
+                                <option value="A5"        selected="@(_request.PaperSize?.Name == "A5")">A5 (148 × 210 mm)</option>
+                                <option value="Letter"    selected="@(_request.PaperSize?.Name == "Letter")">Letter (8,5 × 11 in)</option>
+                                <option value="Legal"     selected="@(_request.PaperSize?.Name == "Legal")">Legal (8,5 × 14 in)</option>
+                                <option value="Thermal80" selected="@(_request.PaperSize?.Name == "Thermal80")">Térmica 80 mm (contínua)</option>
+                                <option value="Thermal58" selected="@(_request.PaperSize?.Name == "Thermal58")">Térmica 58 mm (contínua)</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <label>Orientação</label>
+                            <div class="form-group" role="radiogroup">
+                                <button class="btn @(EffectiveOrientation == Orientation.Portrait ? "primary" : null)"
+                                        type="button"
+                                        @onclick="@(() => Mutate(r => r with { Orientation = Orientation.Portrait }))">Retrato</button>
+                                <button class="btn @(EffectiveOrientation == Orientation.Landscape ? "primary" : null)"
+                                        type="button"
+                                        @onclick="@(() => Mutate(r => r with { Orientation = Orientation.Landscape }))">Paisagem</button>
+                            </div>
+                        </div>
+                    </section>
+
+                    @* ── Copies + color ───────────────────────────────────────── *@
+                    <section class="print-section">
+                        <h4>Opções</h4>
+                        <div class="form-row">
+                            <label>Cópias</label>
+                            <div class="form-group">
+                                <input type="number" min="1" max="999" style="width:80px"
+                                       value="@_request.Copies"
+                                       @onchange="@(e => Mutate(r => r with { Copies = ParseCopies(e.Value?.ToString()) }))" />
+                                @if (_request.Copies > 1)
+                                {
+                                    <label class="print-checkbox">
+                                        <input type="checkbox" checked="@_request.Collate"
+                                               @onchange="@(e => Mutate(r => r with { Collate = (bool)(e.Value ?? false) }))" />
+                                        Intercalar
+                                    </label>
+                                }
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <label>Cor</label>
+                            <div class="form-group" role="radiogroup">
+                                <button class="btn @(_request.ColorMode == PrintColorMode.Color ? "primary" : null)"
+                                        type="button"
+                                        @onclick="@(() => Mutate(r => r with { ColorMode = PrintColorMode.Color }))">Colorido</button>
+                                <button class="btn @(_request.ColorMode == PrintColorMode.Grayscale ? "primary" : null)"
+                                        type="button"
+                                        @onclick="@(() => Mutate(r => r with { ColorMode = PrintColorMode.Grayscale }))">Escala de cinza</button>
+                                <button class="btn @(_request.ColorMode == PrintColorMode.Monochrome ? "primary" : null)"
+                                        type="button" title="Preto/branco 1-bit — recomendado para impressoras térmicas"
+                                        @onclick="@(() => Mutate(r => r with { ColorMode = PrintColorMode.Monochrome }))">P&amp;B</button>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+
+                @* ─── RIGHT: preview thumbnail ───────────────────────────────── *@
+                <div class="print-preview-pane">
+                    <h4>Pré-visualização</h4>
+                    @if (PreviewPages is { Count: > 0 })
+                    {
+                        var idx = Math.Clamp(_previewPageIndex, 0, PreviewPages.Count - 1);
+                        <div class="print-preview-frame">
+                            <img alt="Pré-visualização página @(idx + 1)"
+                                 src="data:image/png;base64,@(Convert.ToBase64String(PreviewPages[idx]))" />
+                        </div>
+                        @if (PreviewPages.Count > 1)
+                        {
+                            <div class="print-preview-nav">
+                                <button class="btn" type="button"
+                                        disabled="@(idx == 0)"
+                                        @onclick="@(() => _previewPageIndex = Math.Max(0, _previewPageIndex - 1))">‹</button>
+                                <span>Página @(idx + 1) de @PreviewPages.Count</span>
+                                <button class="btn" type="button"
+                                        disabled="@(idx == PreviewPages.Count - 1)"
+                                        @onclick="@(() => _previewPageIndex = Math.Min(PreviewPages.Count - 1, _previewPageIndex + 1))">›</button>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="print-hint">Nenhuma página renderizada para pré-visualizar.</div>
+                    }
+                </div>
+            </div>
+        }
+    </ChildContent>
+    <Footer>
+        @if (_busy)
+        {
+            <span class="print-busy">Enviando para impressão…</span>
+        }
+        else if (_errorMessage is not null)
+        {
+            <span class="print-error" title="@_errorMessage">⚠ @_errorMessage</span>
+        }
+        <span style="flex:1"></span>
+        <button class="btn" type="button" @onclick="HandleCancel" disabled="@_busy">Cancelar</button>
+        <button class="btn primary" type="button" @onclick="HandlePrint" disabled="@(_busy || PreviewPages is null or { Count: 0 })">
+            Imprimir
+        </button>
+    </Footer>
+</DesignerModal>
+
+@code {
+    [Parameter] public bool Visible { get; set; }
+    [Parameter] public EventCallback OnClosed { get; set; }
+    /// <summary>The actually-pre-rendered preview pages — same byte[] PNGs the PreviewMode
+    /// uses. Drives the thumbnail panel; "Imprimir" disabled when this is empty because
+    /// we have nothing to print.</summary>
+    [Parameter] public IReadOnlyList<byte[]>? PreviewPages { get; set; }
+    /// <summary>0-based index of the page the preview is currently showing — used as the
+    /// "current page" target when the user picks <see cref="PrintPageRangeMode.Current"/>.</summary>
+    [Parameter] public int CurrentPage { get; set; }
+    /// <summary>Total page count, used in the "Todas (N)" label.</summary>
+    [Parameter] public int TotalPages { get; set; }
+    /// <summary>The report's own paper name — shown in the "Manter do relatório" option
+    /// so the user knows what they'd be using by default.</summary>
+    [Parameter] public string DocumentPaper { get; set; } = "A4";
+    /// <summary>Default orientation of the report. Used when the user hasn't overridden
+    /// the orientation in this dialog (we don't auto-flip on paper change).</summary>
+    [Parameter] public Orientation DocumentOrientation { get; set; } = Orientation.Portrait;
+
+    /// <summary>Invoked when the user clicks Imprimir — receives the final
+    /// <see cref="PrintRequest"/>. The owner is responsible for calling
+    /// <see cref="IDesignerPrintService.PrintAsync"/> and closing the dialog.</summary>
+    [Parameter] public EventCallback<PrintRequest> OnPrint { get; set; }
+
+    private PrintRequest _request = PrintRequest.Default;
+    private List<DesignerPrinter> _printers = new();
+    private bool _hasNativeService;
+    private int _previewPageIndex;
+    private bool _busy;
+    private string? _errorMessage;
+    private bool _initialized;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        // Reset state every time the dialog opens — we want fresh defaults, no leakage
+        // from a previous print job's stale errors or page index.
+        if (Visible && !_initialized)
+        {
+            _initialized = true;
+            _request = PrintRequest.Default;
+            _previewPageIndex = CurrentPage;
+            _errorMessage = null;
+            _busy = false;
+            await LoadPrintersAsync();
+        }
+        else if (!Visible)
+        {
+            _initialized = false;
+        }
+    }
+
+    /// <summary>Resolves the print service from DI and asks for the printer list. The
+    /// service is OPTIONAL — when nobody registered one, we keep defaults: browser mode,
+    /// no printer list (the dialog hides the dropdown via _hasNativeService=false).</summary>
+    private async Task LoadPrintersAsync()
+    {
+        if (Services.GetService(typeof(IDesignerPrintService)) is not IDesignerPrintService service)
+        {
+            _hasNativeService = false;
+            return;
+        }
+        _hasNativeService = service.SupportsDirectPrint;
+        if (!_hasNativeService) return;
+
+        try
+        {
+            var list = await service.ListPrintersAsync();
+            _printers = list.ToList();
+            // Pre-select the OS default printer if present.
+            var def = _printers.FirstOrDefault(p => p.IsDefault) ?? _printers.FirstOrDefault();
+            if (def is not null)
+            {
+                _request = _request with { PrinterName = def.Name, OutputMode = PrintOutputMode.SystemSpooler };
+            }
+        }
+        catch
+        {
+            // Printer enumeration failure is non-fatal — the dialog still works for
+            // PDF/browser modes. The user just won't see a list.
+            _printers.Clear();
+        }
+    }
+
+    private void Mutate(Func<PrintRequest, PrintRequest> change)
+    {
+        _request = change(_request);
+        _errorMessage = null;
+    }
+
+    private void OnPrinterChanged(string? name)
+    {
+        if (string.IsNullOrEmpty(name)) return;
+        _request = _request with { PrinterName = name };
+    }
+
+    private void OnPaperChanged(string? key)
+    {
+        _request = key switch
+        {
+            null or ""   => _request with { PaperSize = null },
+            "A4"         => _request with { PaperSize = PaperSize.A4 },
+            "A5"         => _request with { PaperSize = PaperSize.A5 },
+            "Letter"     => _request with { PaperSize = PaperSize.Letter },
+            "Legal"      => _request with { PaperSize = PaperSize.Legal },
+            "Thermal80"  => _request with { PaperSize = PaperSize.Thermal80, Orientation = Orientation.Portrait },
+            "Thermal58"  => _request with { PaperSize = PaperSize.Thermal58, Orientation = Orientation.Portrait },
+            _ => _request,
+        };
+    }
+
+    /// <summary>Picks the orientation actively in use for highlight state in the
+    /// retrato/paisagem button group: explicit override wins, else the document default.</summary>
+    private Orientation EffectiveOrientation =>
+        _request.Orientation ?? DocumentOrientation;
+
+    private static int ParseCopies(string? raw)
+        => int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var n)
+            ? Math.Clamp(n, 1, 999)
+            : 1;
+
+    private async Task HandlePrint()
+    {
+        if (_busy) return;
+        // Encode the "current page" choice as a range — keeps the request DTO clean.
+        var finalRequest = _request;
+        if (finalRequest.RangeMode == PrintPageRangeMode.Current)
+        {
+            finalRequest = finalRequest with
+            {
+                RangeMode = PrintPageRangeMode.Range,
+                RangeText = (CurrentPage + 1).ToString(CultureInfo.InvariantCulture),
+            };
+        }
+        _busy = true;
+        _errorMessage = null;
+        try
+        {
+            await OnPrint.InvokeAsync(finalRequest);
+            await OnClosed.InvokeAsync();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = ex.Message;
+            _busy = false;
+        }
+    }
+
+    private async Task HandleCancel() => await OnClosed.InvokeAsync();
+}

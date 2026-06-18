@@ -1,0 +1,83 @@
+@namespace Reporting.Viewer.Blazor
+
+<div class="omni-viewer" data-testid="omni-viewer">
+
+    @if (ResolvedOptions.ShowToolbar)
+    {
+        <div class="omni-viewer-toolbar" role="toolbar" aria-label="Report toolbar">
+            <div class="tb-group nav">
+                <button class="tb-btn" type="button" @onclick="FirstPageAsync"
+                        disabled="@(_currentPageIndex == 0)" title="Primeira página">⏮</button>
+                <button class="tb-btn" type="button" @onclick="PreviousPageAsync"
+                        disabled="@(_currentPageIndex == 0)" title="Página anterior">◀</button>
+
+                @if (ResolvedOptions.ShowPageSelector)
+                {
+                    <span class="page-indicator">
+                        <input type="number" min="1" max="@PageCount" value="@(_currentPageIndex + 1)"
+                               @onchange="OnPageNumberChanged" class="page-input" aria-label="Página atual" />
+                        <span class="page-of">/ @PageCount</span>
+                    </span>
+                }
+
+                <button class="tb-btn" type="button" @onclick="NextPageAsync"
+                        disabled="@(_currentPageIndex >= PageCount - 1)" title="Próxima página">▶</button>
+                <button class="tb-btn" type="button" @onclick="LastPageAsync"
+                        disabled="@(_currentPageIndex >= PageCount - 1)" title="Última página">⏭</button>
+            </div>
+
+            <div class="tb-sep"></div>
+
+            <div class="tb-group zoom">
+                <button class="tb-btn" type="button" @onclick="ZoomOut" title="Diminuir zoom">−</button>
+                <select class="zoom-select" @bind="ZoomBinding" @bind:after="StateHasChanged" aria-label="Zoom">
+                    @foreach (var preset in ResolvedOptions.ZoomPresets)
+                    {
+                        <option value="@preset">@preset%</option>
+                    }
+                </select>
+                <button class="tb-btn" type="button" @onclick="ZoomIn" title="Aumentar zoom">+</button>
+            </div>
+
+            @if (ResolvedOptions.ShowExport || ResolvedOptions.ShowPrint)
+            {
+                <div class="tb-sep"></div>
+                <div class="tb-group export">
+                    @if (ResolvedOptions.ShowExport)
+                    {
+                        <button class="tb-btn primary" type="button" @onclick="ExportPdfAsync"
+                                disabled="@_busy" title="Exportar PDF">PDF</button>
+                        <button class="tb-btn" type="button" @onclick="ExportXlsxAsync"
+                                disabled="@_busy" title="Exportar XLSX">XLSX</button>
+                    }
+                    @if (ResolvedOptions.ShowPrint)
+                    {
+                        <button class="tb-btn" type="button" @onclick="PrintAsync"
+                                disabled="@_busy" title="Imprimir">Imprimir</button>
+                    }
+                </div>
+            }
+        </div>
+    }
+
+    <div class="omni-viewer-stage" tabindex="0" @onkeydown="OnKeyDown">
+        @if (_pageImages.Count == 0)
+        {
+            <div class="omni-viewer-empty">Nenhum relatório carregado.</div>
+        }
+        else
+        {
+            var scale = (_zoomPercent / 100.0)
+                .ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
+            <div class="page-wrap" style="transform: scale(@scale); transform-origin: top center;">
+                <img class="page-image" src="@_pageImages[_currentPageIndex]"
+                     alt="@($"Página {_currentPageIndex + 1} de {PageCount}")" />
+            </div>
+        }
+    </div>
+
+    @if (_lastError is not null)
+    {
+        <div class="omni-viewer-error" role="alert">@_lastError</div>
+    }
+</div>

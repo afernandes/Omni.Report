@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Report SchemaVersion="1.0" Name="Espelho de Produtos">
+  <PageSetup Orientation="Portrait" Margins="591,591,591,591" Columns="1" ColumnSpacing="0">
+    <Paper Name="A4" Width="8268" Height="11693" />
+  </PageSetup>
+  <DataSources>
+    <DataSource Name="Produtos">
+      <Fields>
+        <Field Name="Codigo" Type="System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" />
+        <Field Name="Descricao" Type="System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" />
+        <Field Name="Ean13" Type="System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" />
+        <Field Name="PrecoVarejo" Type="System.Decimal, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" />
+        <Field Name="PrecoAtacado" Type="System.Decimal, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" />
+      </Fields>
+    </DataSource>
+  </DataSources>
+  <ReportHeader Kind="ReportHeader" Height="787" Visible="true" PrintOnFirstPage="true" PrintOnLastPage="true">
+    <Elements>
+      <TextBox Id="4c3b750813304991bbcbac457bb099ec" Bounds="0,0,7087,472" Visible="true">
+        <Style HorizontalAlignment="Center" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Arial" Size="18" Style="Bold" />
+        </Style>
+        <Expression>Espelho de Produtos</Expression>
+      </TextBox>
+      <TextBox Id="f68e433237434f2c805d757393be7138" Bounds="0,512,7087,236" Visible="true">
+        <Style HorizontalAlignment="Center" VerticalAlignment="Top" WordWrap="true">
+          <ForeColor>#808080</ForeColor>
+        </Style>
+        <Expression>Atualizado em {Today:dd/MM/yyyy}</Expression>
+      </TextBox>
+    </Elements>
+  </ReportHeader>
+  <PageHeader Kind="PageHeader" Height="315" Visible="true" PrintOnFirstPage="true" PrintOnLastPage="true">
+    <Elements>
+      <Rectangle Id="2c97495e08de4c9ba7a5bececa84bc04" Bounds="0,0,7087,236" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true" />
+        <FillColor>#F4F2EC</FillColor>
+        <CornerRadius>0</CornerRadius>
+      </Rectangle>
+      <Label Id="86b35b67cdd546b9ab7dc480b6f1293c" Bounds="79,0,591,236" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Middle" WordWrap="true">
+          <Font Family="Arial" Size="10" Style="Bold" />
+        </Style>
+        <Text>Código</Text>
+      </Label>
+      <Label Id="e310b66dd2924d46884bad708d2e95bb" Bounds="787,0,3346,236" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Middle" WordWrap="true">
+          <Font Family="Arial" Size="10" Style="Bold" />
+        </Style>
+        <Text>Descrição</Text>
+      </Label>
+      <Label Id="6af022a6624540118c212823eb6dd67e" Bounds="4252,0,1102,236" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Middle" WordWrap="true">
+          <Font Family="Arial" Size="10" Style="Bold" />
+        </Style>
+        <Text>EAN-13</Text>
+      </Label>
+      <Label Id="4150972d2dc54636b5695fbc3605e80e" Bounds="5433,0,787,236" Visible="true">
+        <Style HorizontalAlignment="Right" VerticalAlignment="Middle" WordWrap="true">
+          <Font Family="Arial" Size="10" Style="Bold" />
+        </Style>
+        <Text>Atacado</Text>
+      </Label>
+      <Label Id="814f4ada0775476cbb5455cd2ec166f8" Bounds="6299,0,787,236" Visible="true">
+        <Style HorizontalAlignment="Right" VerticalAlignment="Middle" WordWrap="true">
+          <Font Family="Arial" Size="10" Style="Bold" />
+        </Style>
+        <Text>Varejo</Text>
+      </Label>
+    </Elements>
+  </PageHeader>
+  <Detail Height="276" Visible="true" CanGrow="false" CanShrink="false">
+    <Elements>
+      <TextBox Id="46148df68edd48d39980739649ce7262" Bounds="79,0,591,276" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Middle" WordWrap="true" />
+        <Expression>{Fields.Codigo}</Expression>
+      </TextBox>
+      <TextBox Id="5741fa0b3b7745d3a3198d50049e08b6" Bounds="787,0,3346,276" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Middle" WordWrap="true" />
+        <Expression>{Fields.Descricao}</Expression>
+      </TextBox>
+      <TextBox Id="be49f97661b548989cc4775f2d498a17" Bounds="4252,0,1102,276" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Middle" WordWrap="true">
+          <Font Family="Consolas" Size="9" Style="Regular" />
+        </Style>
+        <Expression>{Fields.Ean13}</Expression>
+      </TextBox>
+      <TextBox Id="0c6b9b3902d74b5cafe4c77b6662e186" Bounds="5433,0,787,276" Visible="true">
+        <Style HorizontalAlignment="Right" VerticalAlignment="Middle" WordWrap="true" />
+        <Expression>{Fields.PrecoAtacado:C}</Expression>
+      </TextBox>
+      <TextBox Id="019bfbfc446545229a1144e6b48dc353" Bounds="6299,0,787,276" Visible="true">
+        <Style HorizontalAlignment="Right" VerticalAlignment="Middle" WordWrap="true" />
+        <ConditionalFormats>
+          <ConditionalFormat Condition="Fields.PrecoVarejo &gt; 100">
+            <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true">
+              <Font Family="Arial" Size="10" Style="Bold" />
+              <ForeColor>#C2410C</ForeColor>
+            </Style>
+          </ConditionalFormat>
+        </ConditionalFormats>
+        <Expression>{Fields.PrecoVarejo:C}</Expression>
+      </TextBox>
+    </Elements>
+  </Detail>
+  <PageFooter Kind="PageFooter" Height="236" Visible="true" PrintOnFirstPage="true" PrintOnLastPage="true">
+    <Elements>
+      <TextBox Id="249c7a89c4a24854976ecb770b7f4844" Bounds="0,0,7087,236" Visible="true">
+        <Style HorizontalAlignment="Center" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Arial" Size="8" Style="Regular" />
+          <ForeColor>#808080</ForeColor>
+        </Style>
+        <Expression>OmniReport — Espelho de Produtos · Página {Page.Number}/{Page.Total}</Expression>
+      </TextBox>
+    </Elements>
+  </PageFooter>
+  <ReportFooter Kind="ReportFooter" Height="394" Visible="true" PrintOnFirstPage="true" PrintOnLastPage="true">
+    <Elements>
+      <Line Id="fd6f0ad78b8948d78f57c1c18ba695fa" Bounds="0,0,7087,0" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true" />
+        <Direction>Horizontal</Direction>
+        <Pen Style="Solid" Thickness="3" Color="#000000" />
+      </Line>
+      <TextBox Id="c6e1b4fe1a65447486288795c8c12869" Bounds="0,79,7087,236" Visible="true">
+        <Style HorizontalAlignment="Right" VerticalAlignment="Top" WordWrap="true">
+          <ForeColor>#808080</ForeColor>
+        </Style>
+        <Expression>Total de itens: {Count(Fields.Codigo)} · Maior preço: {Max(Fields.PrecoVarejo):C}</Expression>
+      </TextBox>
+    </Elements>
+  </ReportFooter>
+</Report>

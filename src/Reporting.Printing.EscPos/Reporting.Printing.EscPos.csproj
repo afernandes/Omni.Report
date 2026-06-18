@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Reporting.Printing.EscPos</RootNamespace>
+    <AssemblyName>Reporting.Printing.EscPos</AssemblyName>
+    <Description>OmniReport — IReportPrinter for ESC/POS thermal printers (Bematech, Daruma, Epson TM-T*, Elgin, etc.). Rasterizes pages via SkiaSharp and sends GS v 0 commands over TCP, serial, or arbitrary stream transports.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Reporting.Core\Reporting.Core.csproj" />
+    <ProjectReference Include="..\Reporting.Layout\Reporting.Layout.csproj" />
+    <ProjectReference Include="..\Reporting.Rendering\Reporting.Rendering.csproj" />
+    <ProjectReference Include="..\Reporting.Rendering.Skia\Reporting.Rendering.Skia.csproj" />
+    <ProjectReference Include="..\Reporting.Printing\Reporting.Printing.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SkiaSharp" />
+    <PackageReference Include="System.IO.Ports" />
+  </ItemGroup>
+
+</Project>

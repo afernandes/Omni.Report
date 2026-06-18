@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Reporting</RootNamespace>
+    <AssemblyName>Reporting.Core</AssemblyName>
+    <Description>OmniReport — pure domain model for banded report definitions.</Description>
+  </PropertyGroup>
+
+</Project>

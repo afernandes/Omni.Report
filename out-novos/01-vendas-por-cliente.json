@@ -1,0 +1,918 @@
+{
+  "name": "Vendas por Cliente",
+  "pageCount": 1,
+  "unit": "millimeters",
+  "pages": [
+    {
+      "pageNumber": 1,
+      "size": {
+        "width": 210.007,
+        "height": 297.002
+      },
+      "primitives": [
+        {
+          "type": "text",
+          "x": 19.99,
+          "y": 19.99,
+          "width": 170.002,
+          "height": 11.989,
+          "text": "Relatório de Vendas",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 16,
+            "fontStyle": "Bold",
+            "color": "#000000",
+            "horizontalAlignment": "Center"
+          }
+        },
+        {
+          "type": "text",
+          "x": 19.99,
+          "y": 33.985,
+          "width": 170.002,
+          "height": 8.001,
+          "text": "Período: 01/05/2026 a 31/05/2026",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Center"
+          }
+        },
+        {
+          "type": "line",
+          "x": 19.99,
+          "y": 41.986,
+          "width": 170.002,
+          "height": 0,
+          "from": {
+            "x": 19.99,
+            "y": 41.986
+          },
+          "to": {
+            "x": 189.992,
+            "y": 41.986
+          },
+          "color": "#000000",
+          "thickness": 0.178
+        },
+        {
+          "type": "text",
+          "x": 19.99,
+          "y": 59.995,
+          "width": 81.991,
+          "height": 5.994,
+          "text": "Produto",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "fontStyle": "Bold",
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 101.981,
+          "y": 59.995,
+          "width": 19.99,
+          "height": 5.994,
+          "text": "Qtde",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "fontStyle": "Bold",
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 123.977,
+          "y": 59.995,
+          "width": 29.997,
+          "height": 5.994,
+          "text": "Preço Unitário",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "fontStyle": "Bold",
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 155.981,
+          "y": 59.995,
+          "width": 34.011,
+          "height": 5.994,
+          "text": "Total",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "fontStyle": "Bold",
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "line",
+          "x": 19.99,
+          "y": 65.989,
+          "width": 170.002,
+          "height": 0,
+          "from": {
+            "x": 19.99,
+            "y": 65.989
+          },
+          "to": {
+            "x": 189.992,
+            "y": 65.989
+          },
+          "color": "#000000",
+          "thickness": 0.076
+        },
+        {
+          "type": "text",
+          "x": 19.99,
+          "y": 70.002,
+          "width": 170.002,
+          "height": 5.994,
+          "text": "Cliente: Ana Beatriz",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 11,
+            "fontStyle": "Bold",
+            "color": "#C2410C"
+          }
+        },
+        {
+          "type": "text",
+          "x": 19.99,
+          "y": 78.003,
+          "width": 80.01,
+          "height": 5.994,
+          "text": "Caneta Bic Azul",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 101.981,
+          "y": 78.003,
+          "width": 19.99,
+          "height": 5.994,
+          "text": "10,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 123.977,
+          "y": 78.003,
+          "width": 29.997,
+          "height": 5.994,
+          "text": "R$ 2,50",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 155.981,
+          "y": 78.003,
+          "width": 34.011,
+          "height": 5.994,
+          "text": "R$ 25,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 19.99,
+          "y": 83.998,
+          "width": 80.01,
+          "height": 5.994,
+          "text": "Caderno Brochura",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 101.981,
+          "y": 83.998,
+          "width": 19.99,
+          "height": 5.994,
+          "text": "1,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 123.977,
+          "y": 83.998,
+          "width": 29.997,
+          "height": 5.994,
+          "text": "R$ 27,40",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 155.981,
+          "y": 83.998,
+          "width": 34.011,
+          "height": 5.994,
+          "text": "R$ 27,40",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 19.99,
+          "y": 89.992,
+          "width": 80.01,
+          "height": 5.994,
+          "text": "Marcador de Texto",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 101.981,
+          "y": 89.992,
+          "width": 19.99,
+          "height": 5.994,
+          "text": "3,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 123.977,
+          "y": 89.992,
+          "width": 29.997,
+          "height": 5.994,
+          "text": "R$ 11,90",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 155.981,
+          "y": 89.992,
+          "width": 34.011,
+          "height": 5.994,
+          "text": "R$ 35,70",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "line",
+          "x": 19.99,
+          "y": 95.987,
+          "width": 170.002,
+          "height": 0,
+          "from": {
+            "x": 19.99,
+            "y": 95.987
+          },
+          "to": {
+            "x": 189.992,
+            "y": 95.987
+          },
+          "color": "#000000",
+          "thickness": 0.076
+        },
+        {
+          "type": "text",
+          "x": 19.99,
+          "y": 96.977,
+          "width": 170.002,
+          "height": 5.994,
+          "text": "Subtotal Ana Beatriz: R$ 88,10",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "fontStyle": "Bold",
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 19.99,
+          "y": 105.994,
+          "width": 170.002,
+          "height": 5.994,
+          "text": "Cliente: Beto Silva",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 11,
+            "fontStyle": "Bold",
+            "color": "#C2410C"
+          }
+        },
+        {
+          "type": "text",
+          "x": 19.99,
+          "y": 113.995,
+          "width": 80.01,
+          "height": 5.994,
+          "text": "Caneta Bic Vermelha",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 101.981,
+          "y": 113.995,
+          "width": 19.99,
+          "height": 5.994,
+          "text": "5,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 123.977,
+          "y": 113.995,
+          "width": 29.997,
+          "height": 5.994,
+          "text": "R$ 2,50",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 155.981,
+          "y": 113.995,
+          "width": 34.011,
+          "height": 5.994,
+          "text": "R$ 12,50",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 19.99,
+          "y": 119.99,
+          "width": 80.01,
+          "height": 5.994,
+          "text": "Borracha",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 101.981,
+          "y": 119.99,
+          "width": 19.99,
+          "height": 5.994,
+          "text": "8,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 123.977,
+          "y": 119.99,
+          "width": 29.997,
+          "height": 5.994,
+          "text": "R$ 1,20",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 155.981,
+          "y": 119.99,
+          "width": 34.011,
+          "height": 5.994,
+          "text": "R$ 9,60",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "line",
+          "x": 19.99,
+          "y": 125.984,
+          "width": 170.002,
+          "height": 0,
+          "from": {
+            "x": 19.99,
+            "y": 125.984
+          },
+          "to": {
+            "x": 189.992,
+            "y": 125.984
+          },
+          "color": "#000000",
+          "thickness": 0.076
+        },
+        {
+          "type": "text",
+          "x": 19.99,
+          "y": 126.975,
+          "width": 170.002,
+          "height": 5.994,
+          "text": "Subtotal Beto Silva: R$ 22,10",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "fontStyle": "Bold",
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 19.99,
+          "y": 135.992,
+          "width": 170.002,
+          "height": 5.994,
+          "text": "Cliente: Carla Andrade",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 11,
+            "fontStyle": "Bold",
+            "color": "#C2410C"
+          }
+        },
+        {
+          "type": "text",
+          "x": 19.99,
+          "y": 143.993,
+          "width": 80.01,
+          "height": 5.994,
+          "text": "Lápis HB",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 101.981,
+          "y": 143.993,
+          "width": 19.99,
+          "height": 5.994,
+          "text": "12,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 123.977,
+          "y": 143.993,
+          "width": 29.997,
+          "height": 5.994,
+          "text": "R$ 0,90",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 155.981,
+          "y": 143.993,
+          "width": 34.011,
+          "height": 5.994,
+          "text": "R$ 10,80",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 19.99,
+          "y": 149.987,
+          "width": 80.01,
+          "height": 5.994,
+          "text": "Apontador",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 101.981,
+          "y": 149.987,
+          "width": 19.99,
+          "height": 5.994,
+          "text": "2,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 123.977,
+          "y": 149.987,
+          "width": 29.997,
+          "height": 5.994,
+          "text": "R$ 3,40",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 155.981,
+          "y": 149.987,
+          "width": 34.011,
+          "height": 5.994,
+          "text": "R$ 6,80",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 19.99,
+          "y": 155.981,
+          "width": 80.01,
+          "height": 5.994,
+          "text": "Régua 30cm",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 101.981,
+          "y": 155.981,
+          "width": 19.99,
+          "height": 5.994,
+          "text": "4,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 123.977,
+          "y": 155.981,
+          "width": 29.997,
+          "height": 5.994,
+          "text": "R$ 5,50",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 155.981,
+          "y": 155.981,
+          "width": 34.011,
+          "height": 5.994,
+          "text": "R$ 22,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "line",
+          "x": 19.99,
+          "y": 161.976,
+          "width": 170.002,
+          "height": 0,
+          "from": {
+            "x": 19.99,
+            "y": 161.976
+          },
+          "to": {
+            "x": 189.992,
+            "y": 161.976
+          },
+          "color": "#000000",
+          "thickness": 0.076
+        },
+        {
+          "type": "text",
+          "x": 19.99,
+          "y": 162.966,
+          "width": 170.002,
+          "height": 5.994,
+          "text": "Subtotal Carla Andrade: R$ 39,60",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "fontStyle": "Bold",
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 19.99,
+          "y": 171.983,
+          "width": 170.002,
+          "height": 5.994,
+          "text": "Cliente: Daniel Pereira",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 11,
+            "fontStyle": "Bold",
+            "color": "#C2410C"
+          }
+        },
+        {
+          "type": "text",
+          "x": 19.99,
+          "y": 179.984,
+          "width": 80.01,
+          "height": 5.994,
+          "text": "Mochila Escolar",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 101.981,
+          "y": 179.984,
+          "width": 19.99,
+          "height": 5.994,
+          "text": "1,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 123.977,
+          "y": 179.984,
+          "width": 29.997,
+          "height": 5.994,
+          "text": "R$ 148,90",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 155.981,
+          "y": 179.984,
+          "width": 34.011,
+          "height": 5.994,
+          "text": "R$ 148,90",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 19.99,
+          "y": 185.979,
+          "width": 80.01,
+          "height": 5.994,
+          "text": "Estojo de Lápis",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 101.981,
+          "y": 185.979,
+          "width": 19.99,
+          "height": 5.994,
+          "text": "1,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 123.977,
+          "y": 185.979,
+          "width": 29.997,
+          "height": 5.994,
+          "text": "R$ 39,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 155.981,
+          "y": 185.979,
+          "width": 34.011,
+          "height": 5.994,
+          "text": "R$ 39,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "line",
+          "x": 19.99,
+          "y": 191.973,
+          "width": 170.002,
+          "height": 0,
+          "from": {
+            "x": 19.99,
+            "y": 191.973
+          },
+          "to": {
+            "x": 189.992,
+            "y": 191.973
+          },
+          "color": "#000000",
+          "thickness": 0.076
+        },
+        {
+          "type": "text",
+          "x": 19.99,
+          "y": 192.964,
+          "width": 170.002,
+          "height": 5.994,
+          "text": "Subtotal Daniel Pereira: R$ 187,90",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "fontStyle": "Bold",
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "line",
+          "x": 19.99,
+          "y": 199.974,
+          "width": 170.002,
+          "height": 0,
+          "from": {
+            "x": 19.99,
+            "y": 199.974
+          },
+          "to": {
+            "x": 189.992,
+            "y": 199.974
+          },
+          "color": "#000000",
+          "thickness": 0.178
+        },
+        {
+          "type": "text",
+          "x": 19.99,
+          "y": 201.981,
+          "width": 170.002,
+          "height": 10.008,
+          "text": "Total geral: R$ 337,70",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 11,
+            "fontStyle": "Bold",
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 19.99,
+          "y": 270.002,
+          "width": 170.002,
+          "height": 5.994,
+          "text": "Página 1 de 1",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#808080",
+            "horizontalAlignment": "Right"
+          }
+        }
+      ]
+    }
+  ]
+}

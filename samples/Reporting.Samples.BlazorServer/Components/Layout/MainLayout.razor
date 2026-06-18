@@ -1,0 +1,31 @@
+@inherits LayoutComponentBase
+
+<div class="app-shell">
+    <nav class="sidebar">
+        <div class="brand">
+            <span class="brand-mark">R</span>
+            <span>OmniReport · Samples</span>
+        </div>
+        <ul class="nav-list">
+            <li><NavLink href="" Match="NavLinkMatch.All">🏠 Home</NavLink></li>
+            <li><NavLink href="report/vendas">📊 01 · Vendas por Cliente</NavLink></li>
+            <li><NavLink href="report/espelho">📋 02 · Espelho de Produtos</NavLink></li>
+            <li><NavLink href="report/caixa">💰 03 · Relatório de Caixa</NavLink></li>
+            <li><NavLink href="report/nfce">🧾 04 · Cupom NFC-e</NavLink></li>
+            <li class="sidebar-divider"></li>
+            <li class="sidebar-section">Data Providers (My-FyiReporting)</li>
+            <li><NavLink href="report/json">🟨 06 · JSON (data.results)</NavLink></li>
+            <li><NavLink href="report/xml">🟦 07 · XML / RSS feed</NavLink></li>
+            <li><NavLink href="report/webservice">🌐 08 · REST WebService</NavLink></li>
+            <li><NavLink href="report/filesystem">📁 09 · FileSystem (logs)</NavLink></li>
+            <li><NavLink href="report/sqlite">🗄️ 11 · SQLite (ADO.NET)</NavLink></li>
+            <li class="sidebar-divider"></li>
+            <li><NavLink href="designer">🎨 Designer (MVP)</NavLink></li>
+            <li><NavLink href="samples-repx">📚 Galeria de .repx</NavLink></li>
+        </ul>
+    </nav>
+
+    <main class="content">
+        @Body
+    </main>
+</div>

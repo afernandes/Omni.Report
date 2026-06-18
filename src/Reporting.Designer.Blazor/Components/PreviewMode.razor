@@ -1,0 +1,146 @@
+@namespace Reporting.Designer.Blazor.Components
+@using System.Globalization
+
+<div class="preview-region" style="display:flex;flex-direction:column;flex:1;min-height:0;">
+    <div class="preview-toolbar no-select" style="display:flex;">
+        <button class="tb-btn" type="button" title="Voltar ao designer (Esc)" @onclick="OnExitClicked">
+            <Icon Name="arrow-left" Size="16" CssClass="icon icon-16" /> Designer
+        </button>
+        <div class="tb-sep"></div>
+        <div class="pg-nav">
+            <button class="nav-btn" type="button" title="Primeira página"
+                    disabled="@(CurrentPage <= 0 || PageCount == 0)"
+                    @onclick="@(() => GoTo(0))">
+                <Icon Name="chevrons-left" Size="12" CssClass="icon icon-12" />
+            </button>
+            <button class="nav-btn" type="button" title="Página anterior"
+                    disabled="@(CurrentPage <= 0 || PageCount == 0)"
+                    @onclick="@(() => GoTo(CurrentPage - 1))">
+                <Icon Name="chevron-left"  Size="12" CssClass="icon icon-12" />
+            </button>
+            <span class="pg-input">@(PageCount == 0 ? "0" : (CurrentPage + 1).ToString()) / @PageCount</span>
+            <button class="nav-btn" type="button" title="Próxima página"
+                    disabled="@(CurrentPage >= PageCount - 1)"
+                    @onclick="@(() => GoTo(CurrentPage + 1))">
+                <Icon Name="chevron-right" Size="12" CssClass="icon icon-12" />
+            </button>
+            <button class="nav-btn" type="button" title="Última página"
+                    disabled="@(CurrentPage >= PageCount - 1)"
+                    @onclick="@(() => GoTo(PageCount - 1))">
+                <Icon Name="chevrons-right" Size="12" CssClass="icon icon-12" />
+            </button>
+        </div>
+        <div class="tb-zoom" style="margin-left:8px;">
+            <button class="zoom-btn" type="button" @onclick="@(() => SetZoom(Math.Max(25, _zoom - 10)))">
+                <Icon Name="minus" Size="12" CssClass="icon icon-12" />
+            </button>
+            <span class="zoom-val">@(_zoom)%</span>
+            <button class="zoom-btn" type="button" @onclick="@(() => SetZoom(Math.Min(400, _zoom + 10)))">
+                <Icon Name="plus" Size="12" CssClass="icon icon-12" />
+            </button>
+        </div>
+        <div class="tb-spacer"></div>
+        @* Export buttons are dynamically rendered from the IExporterRegistry — one button
+           per registered ExporterDescriptor. No hardcoded list: register a new exporter
+           in DI and a button appears automatically. The host controls label/icon/order
+           via ExporterDescriptor; auto-wrapping covers the seven first-party formats. *@
+        <div class="tb-group">
+            @if (Exporters is { Count: > 0 })
+            {
+                @foreach (var exp in Exporters)
+                {
+                    var captured = exp;
+                    <button class="tb-btn @(captured.IsPrimary ? "primary" : null)" type="button"
+                            title="@captured.Description"
+                            disabled="@(PageCount == 0)"
+                            @onclick="@(() => OnExport.InvokeAsync(captured))">
+                        <Icon Name="@captured.IconName" Size="16" CssClass="icon icon-16" /> @captured.Label
+                    </button>
+                }
+            }
+        </div>
+        <button class="tb-btn primary" type="button" style="margin-left:6px;"
+                disabled="@(PageCount == 0)" @onclick="OnPrintClicked">
+            <Icon Name="printer" Size="16" CssClass="icon icon-16" /> Imprimir
+        </button>
+    </div>
+
+    <div class="preview-scroll" data-omni-zoom-host>
+        @* The preview "paper" rectangle mirrors the physical paper size (Crystal Reports /
+           SSRS / FastReport / Stimulsoft all behave the same way: a thermal 80mm receipt
+           shows as a narrow strip, A4 as the full sheet). The width comes from PageSetup
+           and falls back to the canonical A4 (210mm) when not supplied. The wrapper carries
+           data-omni-zoom-host so the JS wheel listener routes Ctrl+wheel here too. *@
+        <div class="preview-page"
+             style="@PreviewPageStyle">
+            @if (PageCount > 0 && CurrentPage >= 0 && CurrentPage < PageCount)
+            {
+                <img alt="@($"Página {CurrentPage + 1} de {PageCount}")"
+                     style="width:100%;height:auto;display:block;"
+                     src="@($"data:image/png;base64,{Convert.ToBase64String(Pages[CurrentPage])}")" />
+            }
+            else
+            {
+                <div style="color:var(--text-tertiary);text-align:center;padding:80px 0;">
+                    Aguardando renderização…
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public IReadOnlyList<byte[]> Pages { get; set; } = [];
+    [Parameter] public int CurrentPage { get; set; }
+    [Parameter] public EventCallback OnExit { get; set; }
+    [Parameter] public EventCallback<int> OnPageChanged { get; set; }
+    /// <summary>Registered exporters — one toolbar button per descriptor. Hosts populate
+    /// this from <see cref="Services.IExporterRegistry.Descriptors"/>; if the registry is
+    /// empty the export group simply doesn't render and only the Imprimir button shows.</summary>
+    [Parameter] public IReadOnlyList<Reporting.Designer.Blazor.Services.ExporterDescriptor>? Exporters { get; set; }
+    /// <summary>Fires when the user clicks one of the dynamic export buttons. The owner
+    /// resolves the exporter, paginates if needed, and triggers the download.</summary>
+    [Parameter] public EventCallback<Reporting.Designer.Blazor.Services.ExporterDescriptor> OnExport { get; set; }
+    [Parameter] public EventCallback OnPrint { get; set; }
+    /// <summary>Physical paper width in mm — drives the preview-page rectangle. Defaults to
+    /// A4 (210mm) so existing call sites that don't pass a PageSetup still get a sane result.</summary>
+    [Parameter] public double PaperWidthMm { get; set; } = 210.0;
+    /// <summary>Zoom percentage (25–400). Optional — falls back to internal state when no
+    /// parent provides one, so existing callers keep working without changes.</summary>
+    [Parameter] public int Zoom { get; set; } = 100;
+    [Parameter] public EventCallback<int> ZoomChanged { get; set; }
+
+    // Local backing fields used only when the parent doesn't control Zoom.
+    private int _zoom => Zoom > 0 ? Zoom : 100;
+
+    private int PageCount => Pages?.Count ?? 0;
+
+    /// <summary>Pixels per mm to keep the preview consistent with the design canvas
+    /// (A4 = 210mm = 720px).</summary>
+    private const double PxPerMm = 720.0 / 210.0;
+
+    private string PreviewPageStyle
+    {
+        get
+        {
+            var widthPx = (PaperWidthMm * PxPerMm).ToString("F2", CultureInfo.InvariantCulture);
+            var scale   = (_zoom / 100.0).ToString("F2", CultureInfo.InvariantCulture);
+            // padding:0 removes the design CSS's default 15mm internal padding — the rendered
+            // PNG already includes the report's own margins, so any extra padding here would
+            // double the visual margin and make Thermal previews look extra-padded.
+            return $"width:{widthPx}px;padding:0;transform:scale({scale});transform-origin:top center;";
+        }
+    }
+
+    private Task OnExitClicked()  => OnExit.InvokeAsync();
+    private Task OnPrintClicked() => OnPrint.InvokeAsync();
+
+    private Task GoTo(int index)
+    {
+        if (PageCount == 0) return Task.CompletedTask;
+        var clamped = Math.Clamp(index, 0, PageCount - 1);
+        return OnPageChanged.InvokeAsync(clamped);
+    }
+
+    private Task SetZoom(int z) => ZoomChanged.InvokeAsync(Math.Clamp(z, 25, 400));
+}

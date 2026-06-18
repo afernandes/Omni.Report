@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Reporting.Output.Json</RootNamespace>
+    <AssemblyName>Reporting.Output.Json</AssemblyName>
+    <Description>OmniReport — structured JSON exporter. Dumps each rendered page as positioned primitives (texts, lines, rects, ellipses, images) — ideal for snapshot tests, automation pipelines, and LLM ingestion.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Reporting.Core\Reporting.Core.csproj" />
+    <ProjectReference Include="..\Reporting.Layout\Reporting.Layout.csproj" />
+    <ProjectReference Include="..\Reporting.Output.Pdf\Reporting.Output.Pdf.csproj" />
+  </ItemGroup>
+
+</Project>

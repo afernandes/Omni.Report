@@ -1,0 +1,17 @@
+@namespace Reporting.Samples.MauiHybrid.Layout
+@inherits LayoutComponentBase
+
+<div class="fullscreen-layout">
+    @Body
+</div>
+
+<style>
+    .fullscreen-layout {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        background: var(--bg-panel, #F4F2EC);
+    }
+</style>

@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Report SchemaVersion="1.0" Name="Auditoria de Arquivos (FileSystem)">
+  <PageSetup Orientation="Landscape" Margins="591,591,591,591" Columns="1" ColumnSpacing="0">
+    <Paper Name="A4" Width="8268" Height="11693" />
+  </PageSetup>
+  <Parameters>
+    <Parameter Name="Root" Type="System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" Required="true" AllowMultiple="false" Prompt="Diretório raiz">
+      <DefaultValue Value="C:\Users\ander\source\repos\afernandes\OmniReport\samples\Reporting.Samples.CodeFirst\bin\Release\net10.0\" />
+    </Parameter>
+  </Parameters>
+  <DataSources>
+    <DataSource Name="Files" FilterExpression="Fields.Extension != '.pdb' &amp;&amp; Fields.Extension != '.cache'">
+      <Fields>
+        <Field Name="Id" Type="System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" />
+        <Field Name="ParentId" Type="System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" />
+        <Field Name="Name" Type="System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" />
+        <Field Name="FullName" Type="System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" />
+        <Field Name="Extension" Type="System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" />
+        <Field Name="IsDirectory" Type="System.Boolean, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" />
+        <Field Name="Size" Type="System.Int64, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" />
+        <Field Name="CreationTime" Type="System.DateTime, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" />
+        <Field Name="LastAccessTime" Type="System.DateTime, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" />
+        <Field Name="LastWriteTime" Type="System.DateTime, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" />
+      </Fields>
+      <SortExpressions>
+        <Sort Expression="Fields.Size" Direction="Descending" />
+      </SortExpressions>
+    </DataSource>
+  </DataSources>
+  <ReportHeader Kind="ReportHeader" Height="945" Visible="true" PrintOnFirstPage="true" PrintOnLastPage="true">
+    <Elements>
+      <TextBox Id="f3f35f4d955d4306bbf2421e03b79f03" Bounds="0,0,10512,472" Visible="true">
+        <Style HorizontalAlignment="Center" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Arial" Size="16" Style="Bold" />
+        </Style>
+        <Expression>Auditoria de Arquivos · Fonte FileSystem</Expression>
+      </TextBox>
+      <TextBox Id="ca48ad825c5047998e91ea44d7283e29" Bounds="0,551,10512,236" Visible="true">
+        <Style HorizontalAlignment="Center" VerticalAlignment="Top" WordWrap="true">
+          <ForeColor>#808080</ForeColor>
+        </Style>
+        <Expression>Diretório: {Parameters.Root}</Expression>
+      </TextBox>
+      <Line Id="9d993e36acbf49109ca2b69de399adef" Bounds="0,866,10512,0" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true" />
+        <Direction>Horizontal</Direction>
+        <Pen Style="Solid" Thickness="7" Color="#000000" />
+      </Line>
+    </Elements>
+  </ReportHeader>
+  <PageHeader Kind="PageHeader" Height="315" Visible="true" PrintOnFirstPage="true" PrintOnLastPage="true">
+    <Elements>
+      <Label Id="cd4a76705c674cfc9d330c22d3344541" Bounds="0,0,5512,236" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Arial" Size="10" Style="Bold" />
+        </Style>
+        <Text>Arquivo</Text>
+      </Label>
+      <Label Id="0bf066f851ea45d198ef571824e92c0a" Bounds="5591,0,787,236" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Arial" Size="10" Style="Bold" />
+        </Style>
+        <Text>Extensão</Text>
+      </Label>
+      <Label Id="e282836ee69145239d85590a0fef98f6" Bounds="6457,0,1181,236" Visible="true">
+        <Style HorizontalAlignment="Right" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Arial" Size="10" Style="Bold" />
+        </Style>
+        <Text>Tamanho (B)</Text>
+      </Label>
+      <Label Id="c9db02793a524238bc31ea63441fa701" Bounds="7717,0,1575,236" Visible="true">
+        <Style HorizontalAlignment="Right" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Arial" Size="10" Style="Bold" />
+        </Style>
+        <Text>Modificado em</Text>
+      </Label>
+      <Label Id="e18fa2c7a1fb4bbd9411414c2f008618" Bounds="9370,0,1142,236" Visible="true">
+        <Style HorizontalAlignment="Right" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Arial" Size="10" Style="Bold" />
+        </Style>
+        <Text>Criado em</Text>
+      </Label>
+      <Line Id="5cde66e85bdd4e638cfbd488a5301a3b" Bounds="0,236,10512,0" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true" />
+        <Direction>Horizontal</Direction>
+        <Pen Style="Solid" Thickness="3" Color="#000000" />
+      </Line>
+    </Elements>
+  </PageHeader>
+  <Groups>
+    <Group Name="PorExtensao" GroupExpression="Fields.Extension" KeepTogether="false" NewPageBefore="false" NewPageAfter="false" RepeatHeaderOnNewPage="false" Visible="true">
+      <Header Kind="GroupHeader" Height="315" Visible="true" PrintOnFirstPage="true" PrintOnLastPage="true">
+        <Elements>
+          <TextBox Id="a396b071f50241528194f4d4936f2906" Bounds="0,39,10512,236" Visible="true">
+            <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true">
+              <Font Family="Arial" Size="10" Style="Bold" />
+              <ForeColor>#C2410C</ForeColor>
+            </Style>
+            <Expression>Extensão: {Fields.Extension}</Expression>
+          </TextBox>
+        </Elements>
+      </Header>
+    </Group>
+  </Groups>
+  <Detail Height="197" Visible="true" CanGrow="false" CanShrink="false" NoRowsMessage="Nenhum arquivo encontrado no diretório.">
+    <Elements>
+      <TextBox Id="fa95f69a151d45eab0f0d7fd899cd63b" Bounds="0,0,5512,197" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Arial" Size="8" Style="Regular" />
+        </Style>
+        <Expression>{Fields.Name}</Expression>
+      </TextBox>
+      <TextBox Id="98d7c5ebef0c4c07b06f71af7aa35716" Bounds="5591,0,787,197" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Arial" Size="8" Style="Regular" />
+        </Style>
+        <Expression>{Fields.Extension}</Expression>
+      </TextBox>
+      <TextBox Id="b12832716510431d956b9d67b9333c7d" Bounds="6457,0,1181,197" Visible="true">
+        <Style HorizontalAlignment="Right" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Arial" Size="8" Style="Regular" />
+        </Style>
+        <Expression>{Fields.Size:N0}</Expression>
+      </TextBox>
+      <TextBox Id="7991581586c241ef987b01e7309f7d13" Bounds="7717,0,1575,197" Visible="true">
+        <Style HorizontalAlignment="Right" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Arial" Size="8" Style="Regular" />
+        </Style>
+        <Expression>{Fields.LastWriteTime:dd/MM/yyyy HH:mm}</Expression>
+      </TextBox>
+      <TextBox Id="0bd83f77f89c40bdb317426bc6de8941" Bounds="9370,0,1142,197" Visible="true">
+        <Style HorizontalAlignment="Right" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Arial" Size="8" Style="Regular" />
+        </Style>
+        <Expression>{Fields.CreationTime:dd/MM/yyyy HH:mm}</Expression>
+      </TextBox>
+    </Elements>
+  </Detail>
+  <PageFooter Kind="PageFooter" Height="236" Visible="true" PrintOnFirstPage="true" PrintOnLastPage="true">
+    <Elements>
+      <TextBox Id="99351641af2646deb9a4079b94fc8204" Bounds="0,0,10512,236" Visible="true">
+        <Style HorizontalAlignment="Right" VerticalAlignment="Top" WordWrap="true">
+          <ForeColor>#808080</ForeColor>
+        </Style>
+        <Expression>OmniReport · Página {Page.Number} de {Page.Total}</Expression>
+      </TextBox>
+    </Elements>
+  </PageFooter>
+  <ReportFooter Kind="ReportFooter" Height="472" Visible="true" PrintOnFirstPage="true" PrintOnLastPage="true">
+    <Elements>
+      <Line Id="2c018fba33c54e06a390b2d5b8a77ec4" Bounds="0,0,10512,0" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true" />
+        <Direction>Horizontal</Direction>
+        <Pen Style="Solid" Thickness="7" Color="#000000" />
+      </Line>
+      <TextBox Id="f523f44caeb04e80a9cf870e6bc84f0e" Bounds="0,79,10512,236" Visible="true">
+        <Style HorizontalAlignment="Right" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Arial" Size="10" Style="Bold" />
+        </Style>
+        <Expression>Arquivos: {Count(Fields.Name)} · Tamanho total: {Sum(Fields.Size):N0} bytes</Expression>
+      </TextBox>
+    </Elements>
+  </ReportFooter>
+</Report>

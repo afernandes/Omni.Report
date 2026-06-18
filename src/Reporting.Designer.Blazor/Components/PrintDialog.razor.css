@@ -1,0 +1,200 @@
+/* Print dialog — two-column layout: config on the left, preview thumbnail on the right.
+   Mirrors Adobe Acrobat's print dialog footprint so it feels immediately familiar to
+   users who've printed PDFs before. */
+
+.print-dialog {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: 16px;
+    min-width: 720px;
+    max-width: 920px;
+}
+
+@media (max-width: 760px) {
+    /* Compact mobile-ish layout — stack preview below config rather than side-by-side. */
+    .print-dialog {
+        grid-template-columns: 1fr;
+        min-width: 320px;
+    }
+}
+
+.print-config {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.print-section {
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 10px 12px;
+    background: var(--bg-surface, white);
+}
+
+.print-section h4 {
+    margin: 0 0 8px 0;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+}
+
+.print-section .form-row {
+    display: grid;
+    grid-template-columns: 110px 1fr;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.print-section .form-row:last-child { margin-bottom: 0; }
+
+.print-section .form-row label {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.print-section .form-row select,
+.print-section .form-row input[type="text"],
+.print-section .form-row input[type="number"] {
+    padding: 5px 8px;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    background: var(--surface, white);
+    color: var(--text-primary);
+    font-size: 12px;
+    width: 100%;
+}
+
+.print-section .form-group {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.print-section .form-group .btn {
+    padding: 4px 10px;
+    font-size: 11.5px;
+    border: 1px solid var(--border);
+    background: var(--surface, white);
+    color: var(--text-secondary);
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+.print-section .form-group .btn.primary {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+}
+
+.print-section .form-group .btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.print-radio,
+.print-checkbox {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-primary);
+    cursor: pointer;
+    user-select: none;
+}
+
+.print-radio input,
+.print-checkbox input {
+    cursor: pointer;
+    margin: 0;
+}
+
+.print-hint {
+    padding: 8px 10px;
+    background: var(--surface-2, rgba(0,0,0,0.04));
+    border: 1px dashed var(--border);
+    border-radius: 3px;
+    color: var(--text-secondary);
+    font-size: 11.5px;
+    line-height: 1.45;
+}
+
+.print-hint strong {
+    color: var(--text-primary);
+}
+
+/* ── Preview pane ───────────────────────────────────────────────────────── */
+.print-preview-pane {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 10px;
+    background: var(--bg-canvas, #f7f4ee);
+}
+
+.print-preview-pane h4 {
+    margin: 0;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+}
+
+.print-preview-frame {
+    flex: 1;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    padding: 6px;
+    min-height: 280px;
+    max-height: 380px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(20, 18, 14, 0.04);
+}
+
+.print-preview-frame img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.print-preview-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    font-size: 11px;
+    color: var(--text-tertiary);
+}
+
+.print-preview-nav .btn {
+    padding: 2px 10px;
+    font-size: 12px;
+    line-height: 1;
+}
+
+/* ── Footer feedback ─────────────────────────────────────────────────────── */
+.print-busy {
+    font-size: 11px;
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+.print-error {
+    font-size: 11px;
+    color: var(--danger, #b91c1c);
+    font-weight: 600;
+    max-width: 360px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}

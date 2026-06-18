@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Report SchemaVersion="1.0" Name="Catálogo de Produtos (REST)">
+  <PageSetup Orientation="Portrait" Margins="709,709,709,709" Columns="1" ColumnSpacing="0">
+    <Paper Name="A4" Width="8268" Height="11693" />
+  </PageSetup>
+  <DataSources>
+    <DataSource Name="Produtos">
+      <SortExpressions>
+        <Sort Expression="Fields.category" Direction="Ascending" />
+        <Sort Expression="Fields.name" Direction="Ascending" />
+      </SortExpressions>
+    </DataSource>
+  </DataSources>
+  <ReportHeader Kind="ReportHeader" Height="1102" Visible="true" PrintOnFirstPage="true" PrintOnLastPage="true">
+    <Elements>
+      <TextBox Id="4b18cfd29e4947b192b10cc6070cf938" Bounds="0,0,6850,472" Visible="true">
+        <Style HorizontalAlignment="Center" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Arial" Size="16" Style="Bold" />
+        </Style>
+        <Expression>Catálogo de Produtos · Fonte REST</Expression>
+      </TextBox>
+      <TextBox Id="001f42ee4fb643b7a510ab19a15b1491" Bounds="0,551,6850,236" Visible="true">
+        <Style HorizontalAlignment="Center" VerticalAlignment="Top" WordWrap="true">
+          <ForeColor>#808080</ForeColor>
+        </Style>
+        <Expression>Origem: GET https://api.demo/produtos · Bearer demo-token · path: items</Expression>
+      </TextBox>
+      <Line Id="196aad8929344f59b6f66f3db855b290" Bounds="0,866,6850,0" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true" />
+        <Direction>Horizontal</Direction>
+        <Pen Style="Solid" Thickness="7" Color="#000000" />
+      </Line>
+    </Elements>
+  </ReportHeader>
+  <PageHeader Kind="PageHeader" Height="315" Visible="true" PrintOnFirstPage="true" PrintOnLastPage="true">
+    <Elements>
+      <Label Id="cde0991cdb85454f973e445a32e5f122" Bounds="0,0,866,236" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Arial" Size="10" Style="Bold" />
+        </Style>
+        <Text>SKU</Text>
+      </Label>
+      <Label Id="9c39289cad38441795a249889860739f" Bounds="945,0,3071,236" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Arial" Size="10" Style="Bold" />
+        </Style>
+        <Text>Produto</Text>
+      </Label>
+      <Label Id="61f04baa5a1648059fe4b55dd0dedf41" Bounds="4094,0,1024,236" Visible="true">
+        <Style HorizontalAlignment="Right" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Arial" Size="10" Style="Bold" />
+        </Style>
+        <Text>Preço</Text>
+      </Label>
+      <Label Id="1a82fb59989d4f1a99a428222f691053" Bounds="5197,0,787,236" Visible="true">
+        <Style HorizontalAlignment="Right" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Arial" Size="10" Style="Bold" />
+        </Style>
+        <Text>Estoque</Text>
+      </Label>
+      <Label Id="06eebf2d283147938984b409863263da" Bounds="6063,0,787,236" Visible="true">
+        <Style HorizontalAlignment="Right" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Arial" Size="10" Style="Bold" />
+        </Style>
+        <Text>★</Text>
+      </Label>
+      <Line Id="862892f5c7b740e48925e246828463a9" Bounds="0,236,6850,0" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true" />
+        <Direction>Horizontal</Direction>
+        <Pen Style="Solid" Thickness="3" Color="#000000" />
+      </Line>
+    </Elements>
+  </PageHeader>
+  <Groups>
+    <Group Name="PorCategoria" GroupExpression="Fields.category" KeepTogether="false" NewPageBefore="false" NewPageAfter="false" RepeatHeaderOnNewPage="false" Visible="true">
+      <Header Kind="GroupHeader" Height="315" Visible="true" PrintOnFirstPage="true" PrintOnLastPage="true">
+        <Elements>
+          <TextBox Id="d44de576312041da9a1cb8ea6ce534ff" Bounds="0,39,6850,236" Visible="true">
+            <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true">
+              <Font Family="Arial" Size="11" Style="Bold" />
+              <ForeColor>#C2410C</ForeColor>
+            </Style>
+            <Expression>{Fields.category}</Expression>
+          </TextBox>
+        </Elements>
+      </Header>
+    </Group>
+  </Groups>
+  <Detail Height="236" Visible="true" CanGrow="false" CanShrink="false" NoRowsMessage="API não retornou resultados.">
+    <Elements>
+      <TextBox Id="fdeda8d74e144329baf26ebc368ccddc" Bounds="0,0,866,236" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Arial" Size="9" Style="Regular" />
+        </Style>
+        <Expression>{Fields.sku}</Expression>
+      </TextBox>
+      <TextBox Id="1cfd8d134d1b4affb8ed3cab23b9e240" Bounds="945,0,3071,236" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true" />
+        <Expression>{Fields.name}</Expression>
+      </TextBox>
+      <TextBox Id="4d0cd1baa100479682eb75414e4b919b" Bounds="4094,0,1024,236" Visible="true">
+        <Style HorizontalAlignment="Right" VerticalAlignment="Top" WordWrap="true" />
+        <Expression>{Fields.price:C}</Expression>
+      </TextBox>
+      <TextBox Id="d8cd4da7d8e043f5889627cf4663582b" Bounds="5197,0,787,236" Visible="true">
+        <Style HorizontalAlignment="Right" VerticalAlignment="Top" WordWrap="true" />
+        <Expression>{Fields.stock:N0}</Expression>
+      </TextBox>
+      <TextBox Id="38a8bf006048442180d9606a97399c99" Bounds="6063,0,787,236" Visible="true">
+        <Style HorizontalAlignment="Right" VerticalAlignment="Top" WordWrap="true" />
+        <Expression>{Fields.rating:N1}</Expression>
+      </TextBox>
+    </Elements>
+  </Detail>
+  <PageFooter Kind="PageFooter" Height="236" Visible="true" PrintOnFirstPage="true" PrintOnLastPage="true">
+    <Elements>
+      <TextBox Id="2af8f6fea32540c48a42ed592904c099" Bounds="0,0,6850,236" Visible="true">
+        <Style HorizontalAlignment="Right" VerticalAlignment="Top" WordWrap="true">
+          <ForeColor>#808080</ForeColor>
+        </Style>
+        <Expression>OmniReport · Página {Page.Number} de {Page.Total}</Expression>
+      </TextBox>
+    </Elements>
+  </PageFooter>
+  <ReportFooter Kind="ReportFooter" Height="472" Visible="true" PrintOnFirstPage="true" PrintOnLastPage="true">
+    <Elements>
+      <Line Id="e6f5172084cd4e78acf6a45cfc34df39" Bounds="0,0,6850,0" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true" />
+        <Direction>Horizontal</Direction>
+        <Pen Style="Solid" Thickness="7" Color="#000000" />
+      </Line>
+      <TextBox Id="fd69023f17ce4ffca2d5b11b87305279" Bounds="0,79,6850,236" Visible="true">
+        <Style HorizontalAlignment="Right" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Arial" Size="10" Style="Bold" />
+        </Style>
+        <Expression>Itens: {Count(Fields.sku)} · Estoque total: {Sum(Fields.stock):N0}</Expression>
+      </TextBox>
+    </Elements>
+  </ReportFooter>
+</Report>

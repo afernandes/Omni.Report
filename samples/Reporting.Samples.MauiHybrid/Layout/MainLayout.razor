@@ -1,0 +1,40 @@
+@namespace Reporting.Samples.MauiHybrid.Layout
+@inherits LayoutComponentBase
+
+<div class="hybrid-shell">
+    <nav class="hybrid-sidebar">
+        <div class="hybrid-brand">
+            <span class="brand-mark">R</span>
+            <span>OmniReport · Hybrid</span>
+        </div>
+        <ul class="hybrid-nav">
+            <li><NavLink href="" Match="NavLinkMatch.All">🏠 Home</NavLink></li>
+            <li><NavLink href="designer">🎨 Designer</NavLink></li>
+            <li><NavLink href="viewer">👁 Viewer</NavLink></li>
+        </ul>
+        <div class="hybrid-platform">
+            Plataforma: <strong>@PlatformLabel</strong>
+        </div>
+    </nav>
+    <main class="hybrid-content">
+        @Body
+    </main>
+</div>
+
+@code {
+    private string PlatformLabel
+    {
+        get
+        {
+#if WINDOWS
+            return "Windows (MAUI Hybrid)";
+#elif ANDROID
+            return "Android (MAUI Hybrid)";
+#elif IOS
+            return "iOS";
+#else
+            return "Desconhecida";
+#endif
+        }
+    }
+}

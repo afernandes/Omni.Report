@@ -1,0 +1,229 @@
+{
+  "schemaVersion": "1.0",
+  "name": "Blog Digest (RSS)",
+  "pageSetup": {
+    "paper": {
+      "name": "A4",
+      "width": "8268",
+      "height": "11693"
+    },
+    "orientation": "Portrait",
+    "margins": "709,709,709,709",
+    "columns": 1,
+    "columnSpacing": "0"
+  },
+  "dataSources": [
+    {
+      "name": "Posts"
+    }
+  ],
+  "reportHeader": {
+    "kind": "ReportHeader",
+    "height": "1260",
+    "visible": true,
+    "printOnFirstPage": true,
+    "printOnLastPage": true,
+    "elements": [
+      {
+        "kind": "TextBox",
+        "id": "97e684048e964098a7fbb14bde764e36",
+        "bounds": "0,0,6850,551",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Center",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "font": {
+            "family": "Arial",
+            "size": 18,
+            "style": "Bold"
+          }
+        },
+        "expression": "OmniReport Blog \u00B7 Resumo",
+        "canGrow": false,
+        "canShrink": false
+      },
+      {
+        "kind": "TextBox",
+        "id": "59213af11150459e8f103dae8a33dbe6",
+        "bounds": "0,630,6850,236",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Center",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "foreColor": "#808080"
+        },
+        "expression": "5 \u00FAltimos posts \u00B7 Fonte: feed RSS XML",
+        "canGrow": false,
+        "canShrink": false
+      },
+      {
+        "kind": "Line",
+        "id": "af1539ad4ab64b7f8c25245ed69b5484",
+        "bounds": "0,1024,6850,0",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Left",
+          "verticalAlignment": "Top",
+          "wordWrap": true
+        },
+        "direction": "Horizontal",
+        "pen": {
+          "style": "Solid",
+          "thickness": "7",
+          "color": "#000000"
+        }
+      }
+    ]
+  },
+  "groups": [
+    {
+      "name": "PorAutor",
+      "groupExpression": "Fields.author",
+      "keepTogether": false,
+      "newPageBefore": false,
+      "newPageAfter": false,
+      "repeatHeaderOnNewPage": false,
+      "visible": true,
+      "header": {
+        "kind": "GroupHeader",
+        "height": "315",
+        "visible": true,
+        "printOnFirstPage": true,
+        "printOnLastPage": true,
+        "elements": [
+          {
+            "kind": "TextBox",
+            "id": "990ebd01d58e4acb9adb874d27affdbe",
+            "bounds": "0,39,6850,236",
+            "visible": true,
+            "style": {
+              "horizontalAlignment": "Left",
+              "verticalAlignment": "Top",
+              "wordWrap": true,
+              "font": {
+                "family": "Arial",
+                "size": 11,
+                "style": "Bold"
+              },
+              "foreColor": "#C2410C"
+            },
+            "expression": "{Fields.author}",
+            "canGrow": false,
+            "canShrink": false
+          }
+        ]
+      }
+    }
+  ],
+  "detail": {
+    "height": "551",
+    "visible": true,
+    "canGrow": false,
+    "canShrink": false,
+    "elements": [
+      {
+        "kind": "TextBox",
+        "id": "0598a789be3449c6a2fd962933d62dd6",
+        "bounds": "157,0,6693,236",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Left",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "font": {
+            "family": "Arial",
+            "size": 10,
+            "style": "Bold"
+          }
+        },
+        "expression": "{Fields.title}",
+        "canGrow": false,
+        "canShrink": false
+      },
+      {
+        "kind": "TextBox",
+        "id": "da0bfe1ced3c4ed6bf76d5a01ed6e666",
+        "bounds": "157,236,4724,197",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Left",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "font": {
+            "family": "Arial",
+            "size": 8,
+            "style": "Italic"
+          },
+          "foreColor": "#808080"
+        },
+        "expression": "{Fields.category} \u00B7 {Fields.pubDate:dd/MM/yyyy}",
+        "canGrow": false,
+        "canShrink": false
+      },
+      {
+        "kind": "TextBox",
+        "id": "a5d2575463144275896a55110c2f74fa",
+        "bounds": "157,236,6693,197",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Right",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "font": {
+            "family": "Arial",
+            "size": 7,
+            "style": "Regular"
+          },
+          "foreColor": "#2563EB"
+        },
+        "expression": "{Fields.link}",
+        "canGrow": false,
+        "canShrink": false
+      },
+      {
+        "kind": "Line",
+        "id": "4d76b603898a4e9db489d94b90861554",
+        "bounds": "157,472,6536,0",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Left",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "foreColor": "#E5E5E5"
+        },
+        "direction": "Horizontal",
+        "pen": {
+          "style": "Solid",
+          "thickness": "2",
+          "color": "#000000"
+        }
+      }
+    ]
+  },
+  "pageFooter": {
+    "kind": "PageFooter",
+    "height": "236",
+    "visible": true,
+    "printOnFirstPage": true,
+    "printOnLastPage": true,
+    "elements": [
+      {
+        "kind": "TextBox",
+        "id": "23e27416d15a4ac9a8c8aa0fea1525cf",
+        "bounds": "0,0,6850,236",
+        "visible": true,
+        "style": {
+          "horizontalAlignment": "Right",
+          "verticalAlignment": "Top",
+          "wordWrap": true,
+          "foreColor": "#808080"
+        },
+        "expression": "OmniReport \u00B7 P\u00E1gina {Page.Number} de {Page.Total}",
+        "canGrow": false,
+        "canShrink": false
+      }
+    ]
+  }
+}

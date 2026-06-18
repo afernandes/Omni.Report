@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Reporting.Viewer.Blazor</RootNamespace>
+    <AssemblyName>Reporting.Viewer.Blazor</AssemblyName>
+    <Description>OmniReport — Razor Class Library exposing the ReportViewer component for Blazor Server, Blazor Web App, and MAUI Blazor Hybrid hosts.</Description>
+    <IsPackable>true</IsPackable>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Reporting.Core\Reporting.Core.csproj" />
+    <ProjectReference Include="..\Reporting.Layout\Reporting.Layout.csproj" />
+    <ProjectReference Include="..\Reporting.Rendering\Reporting.Rendering.csproj" />
+    <ProjectReference Include="..\Reporting.Rendering.Skia\Reporting.Rendering.Skia.csproj" />
+    <ProjectReference Include="..\Reporting.Output.Pdf\Reporting.Output.Pdf.csproj" />
+    <ProjectReference Include="..\Reporting.Output.Excel\Reporting.Output.Excel.csproj" />
+    <ProjectReference Include="..\Reporting.Output.Html\Reporting.Output.Html.csproj" />
+    <ProjectReference Include="..\Reporting.Output.Svg\Reporting.Output.Svg.csproj" />
+    <ProjectReference Include="..\Reporting.Output.Csv\Reporting.Output.Csv.csproj" />
+    <ProjectReference Include="..\Reporting.Output.Json\Reporting.Output.Json.csproj" />
+    <ProjectReference Include="..\Reporting.Output.Markdown\Reporting.Output.Markdown.csproj" />
+    <ProjectReference Include="..\Reporting.Printing\Reporting.Printing.csproj" />
+  </ItemGroup>
+
+</Project>

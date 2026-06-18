@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Reporting.Printing</RootNamespace>
+    <AssemblyName>Reporting.Printing</AssemblyName>
+    <Description>OmniReport — platform-agnostic printing abstractions consumed by Windows spooler, ESC/POS, Android Print, etc.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Reporting.Core\Reporting.Core.csproj" />
+    <ProjectReference Include="..\Reporting.Layout\Reporting.Layout.csproj" />
+  </ItemGroup>
+
+</Project>

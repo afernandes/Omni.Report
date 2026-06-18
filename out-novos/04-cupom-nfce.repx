@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Report SchemaVersion="1.0" Name="Cupom NFC-e (demo)">
+  <PageSetup Orientation="Portrait" Margins="79,79,79,79" Columns="1" ColumnSpacing="0">
+    <Paper Name="Thermal80" Width="3150" Height="0" />
+  </PageSetup>
+  <DataSources>
+    <DataSource Name="Itens">
+      <Fields>
+        <Field Name="Numero" Type="System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" />
+        <Field Name="Codigo" Type="System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" />
+        <Field Name="Descricao" Type="System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" />
+        <Field Name="Quantidade" Type="System.Decimal, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" />
+        <Field Name="Unidade" Type="System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" />
+        <Field Name="ValorUnitario" Type="System.Decimal, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" />
+        <Field Name="ValorTotal" Type="System.Decimal, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" />
+      </Fields>
+    </DataSource>
+  </DataSources>
+  <ReportHeader Kind="ReportHeader" Height="1772" Visible="true" PrintOnFirstPage="true" PrintOnLastPage="true">
+    <Elements>
+      <TextBox Id="41bdb5ae546d41ea994733127ab74c6d" Bounds="0,0,2992,197" Visible="true">
+        <Style HorizontalAlignment="Center" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Consolas" Size="9" Style="Regular" />
+        </Style>
+        <Expression>PAPELARIA EXEMPLO LTDA</Expression>
+      </TextBox>
+      <TextBox Id="f2632a08197947d09c8abd2aaa5766bb" Bounds="0,197,2992,157" Visible="true">
+        <Style HorizontalAlignment="Center" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Consolas" Size="8" Style="Regular" />
+        </Style>
+        <Expression>CNPJ: 12.345.678/0001-90</Expression>
+      </TextBox>
+      <TextBox Id="87776ff937d042daa95bad58ee71c4ca" Bounds="0,354,2992,315" Visible="true">
+        <Style HorizontalAlignment="Center" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Consolas" Size="7" Style="Regular" />
+        </Style>
+        <Expression>Av. Brasil, 1.000 — Centro — São Paulo/SP</Expression>
+      </TextBox>
+      <Line Id="a0d540145ded4d2da34bd28ba0ec6535" Bounds="0,709,2992,0" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true" />
+        <Direction>Horizontal</Direction>
+        <Pen Style="Solid" Thickness="7" Color="#000000" />
+      </Line>
+      <TextBox Id="a6b8bb3f139b4d7cb3746be173c89c52" Bounds="0,787,2992,315" Visible="true">
+        <Style HorizontalAlignment="Center" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Consolas" Size="7" Style="Regular" />
+        </Style>
+        <Expression>Documento Auxiliar da Nota Fiscal de Consumidor Eletrônica</Expression>
+      </TextBox>
+      <Line Id="4d629161850d4980b5b0ffbadaf8619a" Bounds="0,1181,2992,0" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true" />
+        <Direction>Horizontal</Direction>
+        <Pen Style="Solid" Thickness="7" Color="#000000" />
+      </Line>
+      <TextBox Id="0d4823f2bf04461798749449017ee4a0" Bounds="0,1260,2992,157" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Consolas" Size="8" Style="Regular" />
+        </Style>
+        <Expression># Cód  Descrição</Expression>
+      </TextBox>
+      <TextBox Id="18b749a80df7436abdb8e4a409eb4cee" Bounds="0,1457,2992,157" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Consolas" Size="8" Style="Regular" />
+        </Style>
+        <Expression>Qtd UN x  Vl.Unit    Total</Expression>
+      </TextBox>
+      <Line Id="0c66abbcb8cf4f3ca991934fdebceb2e" Bounds="0,1654,2992,0" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true" />
+        <Direction>Horizontal</Direction>
+        <Pen Style="Solid" Thickness="3" Color="#000000" />
+      </Line>
+    </Elements>
+  </ReportHeader>
+  <Detail Height="354" Visible="true" CanGrow="false" CanShrink="false">
+    <Elements>
+      <TextBox Id="312ea73d11a34c1bb6093a62ecd6afde" Bounds="0,0,2992,157" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Consolas" Size="8" Style="Regular" />
+        </Style>
+        <Expression>{Fields.Numero:000} {Fields.Codigo} {Fields.Descricao}</Expression>
+      </TextBox>
+      <TextBox Id="60c6d65ed3274970831e47974844ec00" Bounds="0,157,1890,157" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Consolas" Size="8" Style="Regular" />
+        </Style>
+        <Expression>    {Fields.Quantidade:N3} {Fields.Unidade} x {Fields.ValorUnitario:N2}</Expression>
+      </TextBox>
+      <TextBox Id="3536df8452ec4b0c84050d8e3e6358ed" Bounds="1890,157,1102,157" Visible="true">
+        <Style HorizontalAlignment="Right" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Consolas" Size="8" Style="Regular" />
+        </Style>
+        <Expression>{Fields.ValorTotal:N2}</Expression>
+      </TextBox>
+    </Elements>
+  </Detail>
+  <ReportFooter Kind="ReportFooter" Height="2362" Visible="true" PrintOnFirstPage="true" PrintOnLastPage="true">
+    <Elements>
+      <Line Id="d5321ab4886847968dabb18b1f22d960" Bounds="0,0,2992,0" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true" />
+        <Direction>Horizontal</Direction>
+        <Pen Style="Solid" Thickness="7" Color="#000000" />
+      </Line>
+      <TextBox Id="7c5f3b4499df41fca794239a5e306fb1" Bounds="0,79,1575,236" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Consolas" Size="10" Style="Regular" />
+        </Style>
+        <Expression>VALOR TOTAL R$</Expression>
+      </TextBox>
+      <TextBox Id="8431564ecaff4067b267002995b93922" Bounds="1575,79,1417,236" Visible="true">
+        <Style HorizontalAlignment="Right" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Consolas" Size="10" Style="Regular" />
+        </Style>
+        <Expression>{Sum(Fields.ValorTotal):N2}</Expression>
+      </TextBox>
+      <TextBox Id="eb9f27f17eab41638fbbbc45239f6367" Bounds="0,394,2992,157" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Consolas" Size="8" Style="Regular" />
+        </Style>
+        <Expression>Forma de pagamento: Cartão Débito</Expression>
+      </TextBox>
+      <Line Id="55641fa60a8d48cba30107186af27333" Bounds="0,630,2992,0" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true" />
+        <Direction>Horizontal</Direction>
+        <Pen Style="Solid" Thickness="3" Color="#000000" />
+      </Line>
+      <TextBox Id="fc1b3c4676284104b00b025fee5be786" Bounds="0,709,2992,157" Visible="true">
+        <Style HorizontalAlignment="Center" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Consolas" Size="7" Style="Regular" />
+        </Style>
+        <Expression>Consulte pela chave de acesso:</Expression>
+      </TextBox>
+      <TextBox Id="0257ccf38587428f9efea07994bd1594" Bounds="0,866,2992,315" Visible="true">
+        <Style HorizontalAlignment="Center" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Consolas" Size="8" Style="Bold" />
+        </Style>
+        <Expression>3526 0512 3456 7800 0190 6500 1000 0123 4510 0000 0017</Expression>
+      </TextBox>
+      <TextBox Id="9cd37be427a34fb79915d1453aedb111" Bounds="0,1260,2992,157" Visible="true">
+        <Style HorizontalAlignment="Center" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Consolas" Size="7" Style="Regular" />
+        </Style>
+        <Expression>Protocolo: 135260000000123 — 23/05/2026 14:32</Expression>
+      </TextBox>
+      <TextBox Id="b4a4b7d989a4463a9a679fc696f6e866" Bounds="0,1496,2992,157" Visible="true">
+        <Style HorizontalAlignment="Center" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Consolas" Size="7" Style="Regular" />
+          <ForeColor>#808080</ForeColor>
+        </Style>
+        <Expression>Tributos totais (Lei 12.741/12): R$ {Sum(Fields.ValorTotal) * 0.18:N2}</Expression>
+      </TextBox>
+      <Line Id="eb0e3bab27194feea962ce88c98161a6" Bounds="0,1732,2992,0" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true" />
+        <Direction>Horizontal</Direction>
+        <Pen Style="Solid" Thickness="3" Color="#000000" />
+      </Line>
+      <TextBox Id="a10bafbefc824c0384aa70a9a6abc96b" Bounds="0,1811,2992,157" Visible="true">
+        <Style HorizontalAlignment="Center" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Consolas" Size="7" Style="Regular" />
+          <ForeColor>#808080</ForeColor>
+        </Style>
+        <Expression>Emitido por OmniReport · 17/06/2026 18:15</Expression>
+      </TextBox>
+    </Elements>
+  </ReportFooter>
+</Report>

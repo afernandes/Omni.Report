@@ -1,0 +1,31 @@
+@page "/"
+@namespace Reporting.Samples.MauiHybrid.Pages
+
+<PageTitle>OmniReport · MAUI Hybrid</PageTitle>
+
+<h1>OmniReport &mdash; MAUI Blazor Hybrid</h1>
+<p class="lead">
+    Este sample empacota o <code>ReportDesigner</code> e o <code>ReportViewer</code>
+    dentro de um host <strong>MAUI Blazor Hybrid</strong>. O mesmo binário roda como
+    aplicativo desktop no Windows e como app nativo Android, reaproveitando 100% dos
+    componentes Razor compartilhados.
+</p>
+
+<ul class="feature-grid">
+    <li>
+        <h2>🎨 Designer</h2>
+        Editor visual de relatórios com canvas SVG, property grid, undo/redo e save/load .repx.
+        <NavLink href="designer" class="cta">Abrir designer →</NavLink>
+    </li>
+    <li>
+        <h2>👁 Viewer</h2>
+        Visualizador paginado com zoom, navegação, export PDF/XLSX e impressão via driver da plataforma.
+        <NavLink href="viewer" class="cta">Abrir viewer →</NavLink>
+    </li>
+</ul>
+
+<p class="footnote">
+    <strong>Driver de impressão</strong>: no Windows, registramos <code>WindowsSpoolerPrinter</code>;
+    no Android, <code>AndroidPrintFrameworkPrinter</code>. O viewer / designer descobrem o driver
+    via DI e o botão "Imprimir" usa o caminho nativo de cada plataforma.
+</p>

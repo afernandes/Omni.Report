@@ -1,0 +1,63 @@
+<Project>
+
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Expressions -->
+    <PackageVersion Include="NCalcSync" Version="5.12.0" />
+    <!-- Opt-in Roslyn code evaluation (Reporting.Expressions.Roslyn only) -->
+    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="4.12.0" />
+
+    <!-- Rendering -->
+    <PackageVersion Include="SkiaSharp" Version="3.119.2" />
+    <PackageVersion Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="3.119.2" />
+    <PackageVersion Include="HarfBuzzSharp" Version="8.3.1.1" />
+    <PackageVersion Include="SkiaSharp.HarfBuzz" Version="3.119.2" />
+
+    <!-- Excel output -->
+    <PackageVersion Include="ClosedXML" Version="0.105.0" />
+
+    <!-- PDF inspection (test-side) -->
+    <PackageVersion Include="PdfPig" Version="0.1.10" />
+
+    <!-- Snapshot testing -->
+    <PackageVersion Include="Verify.Xunit" Version="28.10.0" />
+
+    <!-- Blazor component testing -->
+    <PackageVersion Include="bunit" Version="2.7.2" />
+
+    <!-- Test stack -->
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageVersion Include="xunit" Version="2.9.3" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="2.8.2" />
+    <PackageVersion Include="xunit.extensibility.core" Version="2.9.3" />
+    <PackageVersion Include="xunit.extensibility.execution" Version="2.9.3" />
+    <PackageVersion Include="FluentAssertions" Version="6.12.2" />
+    <PackageVersion Include="coverlet.collector" Version="6.0.2" />
+    <PackageVersion Include="coverlet.msbuild" Version="6.0.2" />
+
+    <!-- Windows GDI (System.Drawing.Common no longer included by default in net*-windows TFMs) -->
+    <PackageVersion Include="System.Drawing.Common" Version="9.0.0" />
+
+    <!-- Serial port for ESC/POS thermal printers (cross-platform via the ports package) -->
+    <PackageVersion Include="System.IO.Ports" Version="9.0.0" />
+
+    <!-- MAUI Blazor Hybrid (sample only). MAUI workload targets net11.0; OmniReport libs target net10.0. -->
+    <PackageVersion Include="Microsoft.Maui.Controls" Version="10.0.20" />
+    <PackageVersion Include="Microsoft.AspNetCore.Components.WebView.Maui" Version="10.0.20" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Debug" Version="10.0.0" />
+
+    <!-- DI abstractions (used by libraries that ship Add* extensions) -->
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.2" />
+
+    <!-- Database providers (ADO.NET) -->
+    <PackageVersion Include="Microsoft.Data.Sqlite" Version="9.0.0" />
+    <PackageVersion Include="Npgsql" Version="9.0.2" />
+    <PackageVersion Include="Microsoft.Data.SqlClient" Version="6.0.1" />
+    <PackageVersion Include="MySqlConnector" Version="2.4.0" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,3102 @@
+{
+  "name": "Dashboard de Vendas",
+  "pageCount": 1,
+  "unit": "millimeters",
+  "pages": [
+    {
+      "pageNumber": 1,
+      "size": {
+        "width": 210.007,
+        "height": 297.002
+      },
+      "primitives": [
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 18.009,
+          "width": 173.99,
+          "height": 10.008,
+          "text": "Dashboard de Vendas — 1º semestre",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 15,
+            "fontStyle": "Bold",
+            "color": "#000000",
+            "horizontalAlignment": "Center"
+          }
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 32.004,
+          "width": 86.004,
+          "height": 7.01,
+          "text": "Faturamento por mês",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 9,
+            "fontStyle": "Bold",
+            "color": "#374151",
+            "horizontalAlignment": "Center",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "line",
+          "x": 29.997,
+          "y": 76.022,
+          "width": 72.009,
+          "height": 0,
+          "from": {
+            "x": 29.997,
+            "y": 76.022
+          },
+          "to": {
+            "x": 102.006,
+            "y": 76.022
+          },
+          "color": "#E5E7EB",
+          "thickness": 0.178
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 73.508,
+          "width": 10.49,
+          "height": 5.004,
+          "text": "0",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 6,
+            "color": "#374151",
+            "horizontalAlignment": "Right",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "line",
+          "x": 29.997,
+          "y": 66.751,
+          "width": 72.009,
+          "height": 0,
+          "from": {
+            "x": 29.997,
+            "y": 66.751
+          },
+          "to": {
+            "x": 102.006,
+            "y": 66.751
+          },
+          "color": "#E5E7EB",
+          "thickness": 0.178
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 64.262,
+          "width": 10.49,
+          "height": 5.004,
+          "text": "25.000",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 6,
+            "color": "#374151",
+            "horizontalAlignment": "Right",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "line",
+          "x": 29.997,
+          "y": 57.506,
+          "width": 72.009,
+          "height": 0,
+          "from": {
+            "x": 29.997,
+            "y": 57.506
+          },
+          "to": {
+            "x": 102.006,
+            "y": 57.506
+          },
+          "color": "#E5E7EB",
+          "thickness": 0.178
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 55.016,
+          "width": 10.49,
+          "height": 5.004,
+          "text": "50.000",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 6,
+            "color": "#374151",
+            "horizontalAlignment": "Right",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "line",
+          "x": 29.997,
+          "y": 48.26,
+          "width": 72.009,
+          "height": 0,
+          "from": {
+            "x": 29.997,
+            "y": 48.26
+          },
+          "to": {
+            "x": 102.006,
+            "y": 48.26
+          },
+          "color": "#E5E7EB",
+          "thickness": 0.178
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 45.745,
+          "width": 10.49,
+          "height": 5.004,
+          "text": "75.000",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 6,
+            "color": "#374151",
+            "horizontalAlignment": "Right",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "line",
+          "x": 29.997,
+          "y": 39.014,
+          "width": 72.009,
+          "height": 0,
+          "from": {
+            "x": 29.997,
+            "y": 39.014
+          },
+          "to": {
+            "x": 102.006,
+            "y": 39.014
+          },
+          "color": "#E5E7EB",
+          "thickness": 0.178
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 36.5,
+          "width": 10.49,
+          "height": 5.004,
+          "text": "100.000",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 6,
+            "color": "#374151",
+            "horizontalAlignment": "Right",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "line",
+          "x": 29.997,
+          "y": 39.014,
+          "width": 0,
+          "height": 37.008,
+          "from": {
+            "x": 29.997,
+            "y": 39.014
+          },
+          "to": {
+            "x": 29.997,
+            "y": 76.022
+          },
+          "color": "#9CA3AF",
+          "thickness": 0.254
+        },
+        {
+          "type": "line",
+          "x": 29.997,
+          "y": 76.022,
+          "width": 72.009,
+          "height": 0,
+          "from": {
+            "x": 29.997,
+            "y": 76.022
+          },
+          "to": {
+            "x": 102.006,
+            "y": 76.022
+          },
+          "color": "#9CA3AF",
+          "thickness": 0.254
+        },
+        {
+          "type": "rect",
+          "x": 31.801,
+          "y": 64.16,
+          "width": 7.722,
+          "height": 11.836,
+          "fillColor": "#C2410C"
+        },
+        {
+          "type": "rect",
+          "x": 43.815,
+          "y": 60.833,
+          "width": 7.722,
+          "height": 15.164,
+          "fillColor": "#C2410C"
+        },
+        {
+          "type": "rect",
+          "x": 55.804,
+          "y": 61.773,
+          "width": 7.722,
+          "height": 14.249,
+          "fillColor": "#C2410C"
+        },
+        {
+          "type": "rect",
+          "x": 67.818,
+          "y": 59.284,
+          "width": 7.722,
+          "height": 16.739,
+          "fillColor": "#C2410C"
+        },
+        {
+          "type": "rect",
+          "x": 79.807,
+          "y": 57.15,
+          "width": 7.722,
+          "height": 18.872,
+          "fillColor": "#C2410C"
+        },
+        {
+          "type": "rect",
+          "x": 91.821,
+          "y": 58.318,
+          "width": 7.722,
+          "height": 17.678,
+          "fillColor": "#C2410C"
+        },
+        {
+          "type": "text",
+          "x": 29.997,
+          "y": 76.505,
+          "width": 11.989,
+          "height": 5.512,
+          "text": "Jan",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 6,
+            "color": "#374151",
+            "horizontalAlignment": "Center",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 42.012,
+          "y": 76.505,
+          "width": 11.989,
+          "height": 5.512,
+          "text": "Fev",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 6,
+            "color": "#374151",
+            "horizontalAlignment": "Center",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 54,
+          "y": 76.505,
+          "width": 11.989,
+          "height": 5.512,
+          "text": "Mar",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 6,
+            "color": "#374151",
+            "horizontalAlignment": "Center",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 66.015,
+          "y": 76.505,
+          "width": 11.989,
+          "height": 5.512,
+          "text": "Abr",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 6,
+            "color": "#374151",
+            "horizontalAlignment": "Center",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 78.003,
+          "y": 76.505,
+          "width": 11.989,
+          "height": 5.512,
+          "text": "Mai",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 6,
+            "color": "#374151",
+            "horizontalAlignment": "Center",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 90.018,
+          "y": 76.505,
+          "width": 11.989,
+          "height": 5.512,
+          "text": "Jun",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 6,
+            "color": "#374151",
+            "horizontalAlignment": "Center",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "rect",
+          "x": 18.009,
+          "y": 83.261,
+          "width": 3.505,
+          "height": 3.505,
+          "fillColor": "#C2410C"
+        },
+        {
+          "type": "text",
+          "x": 23.012,
+          "y": 82.017,
+          "width": 81.001,
+          "height": 5.994,
+          "text": "Total",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 6,
+            "color": "#374151",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 108.001,
+          "y": 32.004,
+          "width": 83.998,
+          "height": 7.01,
+          "text": "Participação por mês",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 9,
+            "fontStyle": "Bold",
+            "color": "#374151",
+            "horizontalAlignment": "Center",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "polygon",
+          "x": 130.226,
+          "y": 40.716,
+          "width": 39.573,
+          "height": 39.573,
+          "closed": true,
+          "strokeColor": "#FFFFFF",
+          "strokeThickness": 0.254,
+          "fillColor": "#C2410C",
+          "points": [
+            {
+              "x": 149.987,
+              "y": 60.503
+            },
+            {
+              "x": 149.987,
+              "y": 40.716
+            },
+            {
+              "x": 150.673,
+              "y": 40.742
+            },
+            {
+              "x": 151.359,
+              "y": 40.767
+            },
+            {
+              "x": 152.019,
+              "y": 40.818
+            },
+            {
+              "x": 152.705,
+              "y": 40.919
+            },
+            {
+              "x": 153.365,
+              "y": 41.021
+            },
+            {
+              "x": 154.026,
+              "y": 41.148
+            },
+            {
+              "x": 154.686,
+              "y": 41.3
+            },
+            {
+              "x": 155.346,
+              "y": 41.453
+            },
+            {
+              "x": 156.007,
+              "y": 41.656
+            },
+            {
+              "x": 156.642,
+              "y": 41.859
+            },
+            {
+              "x": 157.277,
+              "y": 42.113
+            },
+            {
+              "x": 157.886,
+              "y": 42.367
+            },
+            {
+              "x": 158.521,
+              "y": 42.647
+            },
+            {
+              "x": 159.106,
+              "y": 42.951
+            },
+            {
+              "x": 159.715,
+              "y": 43.282
+            },
+            {
+              "x": 160.299,
+              "y": 43.612
+            },
+            {
+              "x": 160.858,
+              "y": 43.967
+            },
+            {
+              "x": 161.417,
+              "y": 44.348
+            },
+            {
+              "x": 161.976,
+              "y": 44.755
+            },
+            {
+              "x": 162.509,
+              "y": 45.187
+            },
+            {
+              "x": 163.017,
+              "y": 45.618
+            },
+            {
+              "x": 163.525,
+              "y": 46.076
+            },
+            {
+              "x": 164.008,
+              "y": 46.533
+            }
+          ]
+        },
+        {
+          "type": "polygon",
+          "x": 130.226,
+          "y": 40.716,
+          "width": 39.573,
+          "height": 39.573,
+          "closed": true,
+          "strokeColor": "#FFFFFF",
+          "strokeThickness": 0.254,
+          "fillColor": "#1D4ED8",
+          "points": [
+            {
+              "x": 149.987,
+              "y": 60.503
+            },
+            {
+              "x": 164.008,
+              "y": 46.533
+            },
+            {
+              "x": 164.49,
+              "y": 47.041
+            },
+            {
+              "x": 164.948,
+              "y": 47.549
+            },
+            {
+              "x": 165.379,
+              "y": 48.082
+            },
+            {
+              "x": 165.811,
+              "y": 48.616
+            },
+            {
+              "x": 166.218,
+              "y": 49.174
+            },
+            {
+              "x": 166.599,
+              "y": 49.733
+            },
+            {
+              "x": 166.954,
+              "y": 50.317
+            },
+            {
+              "x": 167.31,
+              "y": 50.927
+            },
+            {
+              "x": 167.64,
+              "y": 51.537
+            },
+            {
+              "x": 167.919,
+              "y": 52.146
+            },
+            {
+              "x": 168.199,
+              "y": 52.781
+            },
+            {
+              "x": 168.478,
+              "y": 53.416
+            },
+            {
+              "x": 168.707,
+              "y": 54.051
+            },
+            {
+              "x": 168.91,
+              "y": 54.712
+            },
+            {
+              "x": 169.113,
+              "y": 55.372
+            },
+            {
+              "x": 169.266,
+              "y": 56.032
+            },
+            {
+              "x": 169.418,
+              "y": 56.718
+            },
+            {
+              "x": 169.545,
+              "y": 57.404
+            },
+            {
+              "x": 169.621,
+              "y": 58.064
+            },
+            {
+              "x": 169.697,
+              "y": 58.75
+            },
+            {
+              "x": 169.748,
+              "y": 59.436
+            },
+            {
+              "x": 169.774,
+              "y": 60.122
+            },
+            {
+              "x": 169.774,
+              "y": 60.808
+            },
+            {
+              "x": 169.748,
+              "y": 61.519
+            },
+            {
+              "x": 169.723,
+              "y": 62.205
+            },
+            {
+              "x": 169.647,
+              "y": 62.865
+            },
+            {
+              "x": 169.545,
+              "y": 63.551
+            },
+            {
+              "x": 169.418,
+              "y": 64.237
+            },
+            {
+              "x": 169.291,
+              "y": 64.897
+            }
+          ]
+        },
+        {
+          "type": "polygon",
+          "x": 130.226,
+          "y": 40.716,
+          "width": 39.573,
+          "height": 39.573,
+          "closed": true,
+          "strokeColor": "#FFFFFF",
+          "strokeThickness": 0.254,
+          "fillColor": "#15803D",
+          "points": [
+            {
+              "x": 149.987,
+              "y": 60.503
+            },
+            {
+              "x": 169.291,
+              "y": 64.897
+            },
+            {
+              "x": 169.139,
+              "y": 65.557
+            },
+            {
+              "x": 168.935,
+              "y": 66.192
+            },
+            {
+              "x": 168.732,
+              "y": 66.853
+            },
+            {
+              "x": 168.529,
+              "y": 67.462
+            },
+            {
+              "x": 168.275,
+              "y": 68.097
+            },
+            {
+              "x": 167.996,
+              "y": 68.707
+            },
+            {
+              "x": 167.716,
+              "y": 69.317
+            },
+            {
+              "x": 167.411,
+              "y": 69.901
+            },
+            {
+              "x": 167.081,
+              "y": 70.485
+            },
+            {
+              "x": 166.726,
+              "y": 71.069
+            },
+            {
+              "x": 166.37,
+              "y": 71.628
+            },
+            {
+              "x": 165.989,
+              "y": 72.161
+            },
+            {
+              "x": 165.583,
+              "y": 72.695
+            },
+            {
+              "x": 165.151,
+              "y": 73.228
+            },
+            {
+              "x": 164.719,
+              "y": 73.736
+            },
+            {
+              "x": 164.262,
+              "y": 74.219
+            },
+            {
+              "x": 163.805,
+              "y": 74.676
+            },
+            {
+              "x": 163.297,
+              "y": 75.159
+            },
+            {
+              "x": 162.814,
+              "y": 75.59
+            },
+            {
+              "x": 162.281,
+              "y": 76.022
+            },
+            {
+              "x": 161.747,
+              "y": 76.429
+            },
+            {
+              "x": 161.214,
+              "y": 76.81
+            },
+            {
+              "x": 160.655,
+              "y": 77.165
+            },
+            {
+              "x": 160.096,
+              "y": 77.521
+            },
+            {
+              "x": 159.512,
+              "y": 77.851
+            },
+            {
+              "x": 158.902,
+              "y": 78.181
+            },
+            {
+              "x": 158.318,
+              "y": 78.461
+            },
+            {
+              "x": 157.709,
+              "y": 78.74
+            }
+          ]
+        },
+        {
+          "type": "polygon",
+          "x": 130.226,
+          "y": 40.716,
+          "width": 39.573,
+          "height": 39.573,
+          "closed": true,
+          "strokeColor": "#FFFFFF",
+          "strokeThickness": 0.254,
+          "fillColor": "#B45309",
+          "points": [
+            {
+              "x": 149.987,
+              "y": 60.503
+            },
+            {
+              "x": 157.709,
+              "y": 78.74
+            },
+            {
+              "x": 157.048,
+              "y": 78.994
+            },
+            {
+              "x": 156.413,
+              "y": 79.223
+            },
+            {
+              "x": 155.753,
+              "y": 79.426
+            },
+            {
+              "x": 155.092,
+              "y": 79.629
+            },
+            {
+              "x": 154.432,
+              "y": 79.781
+            },
+            {
+              "x": 153.772,
+              "y": 79.934
+            },
+            {
+              "x": 153.086,
+              "y": 80.061
+            },
+            {
+              "x": 152.4,
+              "y": 80.137
+            },
+            {
+              "x": 151.714,
+              "y": 80.213
+            },
+            {
+              "x": 151.028,
+              "y": 80.264
+            },
+            {
+              "x": 150.343,
+              "y": 80.289
+            },
+            {
+              "x": 149.657,
+              "y": 80.289
+            },
+            {
+              "x": 148.971,
+              "y": 80.264
+            },
+            {
+              "x": 148.285,
+              "y": 80.213
+            },
+            {
+              "x": 147.599,
+              "y": 80.137
+            },
+            {
+              "x": 146.914,
+              "y": 80.061
+            },
+            {
+              "x": 146.253,
+              "y": 79.934
+            },
+            {
+              "x": 145.567,
+              "y": 79.781
+            },
+            {
+              "x": 144.907,
+              "y": 79.629
+            },
+            {
+              "x": 144.247,
+              "y": 79.426
+            },
+            {
+              "x": 143.586,
+              "y": 79.223
+            },
+            {
+              "x": 142.951,
+              "y": 78.994
+            },
+            {
+              "x": 142.316,
+              "y": 78.74
+            },
+            {
+              "x": 141.681,
+              "y": 78.461
+            },
+            {
+              "x": 141.072,
+              "y": 78.156
+            },
+            {
+              "x": 140.462,
+              "y": 77.826
+            },
+            {
+              "x": 139.852,
+              "y": 77.495
+            },
+            {
+              "x": 139.268,
+              "y": 77.14
+            },
+            {
+              "x": 138.709,
+              "y": 76.759
+            },
+            {
+              "x": 138.151,
+              "y": 76.352
+            },
+            {
+              "x": 137.592,
+              "y": 75.921
+            },
+            {
+              "x": 137.084,
+              "y": 75.489
+            }
+          ]
+        },
+        {
+          "type": "polygon",
+          "x": 130.226,
+          "y": 40.716,
+          "width": 39.573,
+          "height": 39.573,
+          "closed": true,
+          "strokeColor": "#FFFFFF",
+          "strokeThickness": 0.254,
+          "fillColor": "#7C3AED",
+          "points": [
+            {
+              "x": 149.987,
+              "y": 60.503
+            },
+            {
+              "x": 137.084,
+              "y": 75.489
+            },
+            {
+              "x": 136.55,
+              "y": 75.032
+            },
+            {
+              "x": 136.068,
+              "y": 74.549
+            },
+            {
+              "x": 135.585,
+              "y": 74.066
+            },
+            {
+              "x": 135.128,
+              "y": 73.533
+            },
+            {
+              "x": 134.671,
+              "y": 73.025
+            },
+            {
+              "x": 134.239,
+              "y": 72.466
+            },
+            {
+              "x": 133.833,
+              "y": 71.933
+            },
+            {
+              "x": 133.452,
+              "y": 71.349
+            },
+            {
+              "x": 133.096,
+              "y": 70.764
+            },
+            {
+              "x": 132.74,
+              "y": 70.18
+            },
+            {
+              "x": 132.41,
+              "y": 69.571
+            },
+            {
+              "x": 132.105,
+              "y": 68.961
+            },
+            {
+              "x": 131.826,
+              "y": 68.326
+            },
+            {
+              "x": 131.572,
+              "y": 67.691
+            },
+            {
+              "x": 131.318,
+              "y": 67.031
+            },
+            {
+              "x": 131.115,
+              "y": 66.37
+            },
+            {
+              "x": 130.912,
+              "y": 65.71
+            },
+            {
+              "x": 130.734,
+              "y": 65.049
+            },
+            {
+              "x": 130.607,
+              "y": 64.389
+            },
+            {
+              "x": 130.48,
+              "y": 63.703
+            },
+            {
+              "x": 130.378,
+              "y": 63.017
+            },
+            {
+              "x": 130.302,
+              "y": 62.332
+            },
+            {
+              "x": 130.251,
+              "y": 61.646
+            },
+            {
+              "x": 130.226,
+              "y": 60.96
+            },
+            {
+              "x": 130.226,
+              "y": 60.274
+            },
+            {
+              "x": 130.226,
+              "y": 59.588
+            },
+            {
+              "x": 130.277,
+              "y": 58.903
+            },
+            {
+              "x": 130.353,
+              "y": 58.217
+            },
+            {
+              "x": 130.454,
+              "y": 57.531
+            },
+            {
+              "x": 130.556,
+              "y": 56.845
+            },
+            {
+              "x": 130.708,
+              "y": 56.159
+            },
+            {
+              "x": 130.861,
+              "y": 55.499
+            },
+            {
+              "x": 131.039,
+              "y": 54.839
+            },
+            {
+              "x": 131.267,
+              "y": 54.178
+            },
+            {
+              "x": 131.496,
+              "y": 53.518
+            },
+            {
+              "x": 131.75,
+              "y": 52.883
+            }
+          ]
+        },
+        {
+          "type": "polygon",
+          "x": 130.226,
+          "y": 40.716,
+          "width": 39.573,
+          "height": 39.573,
+          "closed": true,
+          "strokeColor": "#FFFFFF",
+          "strokeThickness": 0.254,
+          "fillColor": "#0E7490",
+          "points": [
+            {
+              "x": 149.987,
+              "y": 60.503
+            },
+            {
+              "x": 131.75,
+              "y": 52.883
+            },
+            {
+              "x": 132.004,
+              "y": 52.273
+            },
+            {
+              "x": 132.309,
+              "y": 51.638
+            },
+            {
+              "x": 132.639,
+              "y": 51.029
+            },
+            {
+              "x": 132.969,
+              "y": 50.444
+            },
+            {
+              "x": 133.325,
+              "y": 49.86
+            },
+            {
+              "x": 133.706,
+              "y": 49.301
+            },
+            {
+              "x": 134.112,
+              "y": 48.743
+            },
+            {
+              "x": 134.518,
+              "y": 48.184
+            },
+            {
+              "x": 134.95,
+              "y": 47.676
+            },
+            {
+              "x": 135.407,
+              "y": 47.142
+            },
+            {
+              "x": 135.865,
+              "y": 46.66
+            },
+            {
+              "x": 136.373,
+              "y": 46.177
+            },
+            {
+              "x": 136.855,
+              "y": 45.72
+            },
+            {
+              "x": 137.389,
+              "y": 45.263
+            },
+            {
+              "x": 137.922,
+              "y": 44.831
+            },
+            {
+              "x": 138.455,
+              "y": 44.425
+            },
+            {
+              "x": 139.04,
+              "y": 44.044
+            },
+            {
+              "x": 139.598,
+              "y": 43.663
+            },
+            {
+              "x": 140.183,
+              "y": 43.332
+            },
+            {
+              "x": 140.792,
+              "y": 43.002
+            },
+            {
+              "x": 141.402,
+              "y": 42.697
+            },
+            {
+              "x": 142.037,
+              "y": 42.393
+            },
+            {
+              "x": 142.646,
+              "y": 42.139
+            },
+            {
+              "x": 143.307,
+              "y": 41.885
+            },
+            {
+              "x": 143.942,
+              "y": 41.681
+            },
+            {
+              "x": 144.602,
+              "y": 41.478
+            },
+            {
+              "x": 145.263,
+              "y": 41.3
+            },
+            {
+              "x": 145.923,
+              "y": 41.148
+            },
+            {
+              "x": 146.609,
+              "y": 41.021
+            },
+            {
+              "x": 147.269,
+              "y": 40.919
+            },
+            {
+              "x": 147.955,
+              "y": 40.843
+            },
+            {
+              "x": 148.641,
+              "y": 40.767
+            },
+            {
+              "x": 149.327,
+              "y": 40.742
+            },
+            {
+              "x": 149.987,
+              "y": 40.716
+            }
+          ]
+        },
+        {
+          "type": "rect",
+          "x": 108.001,
+          "y": 83.261,
+          "width": 3.505,
+          "height": 3.505,
+          "fillColor": "#C2410C"
+        },
+        {
+          "type": "text",
+          "x": 113.005,
+          "y": 82.017,
+          "width": 8.992,
+          "height": 5.994,
+          "text": "Jan",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 6,
+            "color": "#374151",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "rect",
+          "x": 121.996,
+          "y": 83.261,
+          "width": 3.505,
+          "height": 3.505,
+          "fillColor": "#1D4ED8"
+        },
+        {
+          "type": "text",
+          "x": 127,
+          "y": 82.017,
+          "width": 8.992,
+          "height": 5.994,
+          "text": "Fev",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 6,
+            "color": "#374151",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "rect",
+          "x": 135.992,
+          "y": 83.261,
+          "width": 3.505,
+          "height": 3.505,
+          "fillColor": "#15803D"
+        },
+        {
+          "type": "text",
+          "x": 140.995,
+          "y": 82.017,
+          "width": 8.992,
+          "height": 5.994,
+          "text": "Mar",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 6,
+            "color": "#374151",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "rect",
+          "x": 149.987,
+          "y": 83.261,
+          "width": 3.505,
+          "height": 3.505,
+          "fillColor": "#B45309"
+        },
+        {
+          "type": "text",
+          "x": 154.991,
+          "y": 82.017,
+          "width": 8.992,
+          "height": 5.994,
+          "text": "Abr",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 6,
+            "color": "#374151",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "rect",
+          "x": 164.008,
+          "y": 83.261,
+          "width": 3.505,
+          "height": 3.505,
+          "fillColor": "#7C3AED"
+        },
+        {
+          "type": "text",
+          "x": 169.012,
+          "y": 82.017,
+          "width": 8.992,
+          "height": 5.994,
+          "text": "Mai",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 6,
+            "color": "#374151",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "rect",
+          "x": 178.003,
+          "y": 83.261,
+          "width": 3.505,
+          "height": 3.505,
+          "fillColor": "#0E7490"
+        },
+        {
+          "type": "text",
+          "x": 183.007,
+          "y": 82.017,
+          "width": 8.992,
+          "height": 5.994,
+          "text": "Jun",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 6,
+            "color": "#374151",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 91.999,
+          "width": 173.99,
+          "height": 7.01,
+          "text": "Realizado vs. Meta",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 9,
+            "fontStyle": "Bold",
+            "color": "#374151",
+            "horizontalAlignment": "Center",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "line",
+          "x": 29.997,
+          "y": 132.004,
+          "width": 159.995,
+          "height": 0,
+          "from": {
+            "x": 29.997,
+            "y": 132.004
+          },
+          "to": {
+            "x": 189.992,
+            "y": 132.004
+          },
+          "color": "#E5E7EB",
+          "thickness": 0.178
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 129.489,
+          "width": 10.49,
+          "height": 5.004,
+          "text": "0",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 6,
+            "color": "#374151",
+            "horizontalAlignment": "Right",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "line",
+          "x": 29.997,
+          "y": 123.749,
+          "width": 159.995,
+          "height": 0,
+          "from": {
+            "x": 29.997,
+            "y": 123.749
+          },
+          "to": {
+            "x": 189.992,
+            "y": 123.749
+          },
+          "color": "#E5E7EB",
+          "thickness": 0.178
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 121.234,
+          "width": 10.49,
+          "height": 5.004,
+          "text": "25.000",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 6,
+            "color": "#374151",
+            "horizontalAlignment": "Right",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "line",
+          "x": 29.997,
+          "y": 115.494,
+          "width": 159.995,
+          "height": 0,
+          "from": {
+            "x": 29.997,
+            "y": 115.494
+          },
+          "to": {
+            "x": 189.992,
+            "y": 115.494
+          },
+          "color": "#E5E7EB",
+          "thickness": 0.178
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 113.005,
+          "width": 10.49,
+          "height": 5.004,
+          "text": "50.000",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 6,
+            "color": "#374151",
+            "horizontalAlignment": "Right",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "line",
+          "x": 29.997,
+          "y": 107.239,
+          "width": 159.995,
+          "height": 0,
+          "from": {
+            "x": 29.997,
+            "y": 107.239
+          },
+          "to": {
+            "x": 189.992,
+            "y": 107.239
+          },
+          "color": "#E5E7EB",
+          "thickness": 0.178
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 104.75,
+          "width": 10.49,
+          "height": 5.004,
+          "text": "75.000",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 6,
+            "color": "#374151",
+            "horizontalAlignment": "Right",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "line",
+          "x": 29.997,
+          "y": 99.009,
+          "width": 159.995,
+          "height": 0,
+          "from": {
+            "x": 29.997,
+            "y": 99.009
+          },
+          "to": {
+            "x": 189.992,
+            "y": 99.009
+          },
+          "color": "#E5E7EB",
+          "thickness": 0.178
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 96.495,
+          "width": 10.49,
+          "height": 5.004,
+          "text": "100.000",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 6,
+            "color": "#374151",
+            "horizontalAlignment": "Right",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "line",
+          "x": 29.997,
+          "y": 99.009,
+          "width": 0,
+          "height": 32.995,
+          "from": {
+            "x": 29.997,
+            "y": 99.009
+          },
+          "to": {
+            "x": 29.997,
+            "y": 132.004
+          },
+          "color": "#9CA3AF",
+          "thickness": 0.254
+        },
+        {
+          "type": "line",
+          "x": 29.997,
+          "y": 132.004,
+          "width": 159.995,
+          "height": 0,
+          "from": {
+            "x": 29.997,
+            "y": 132.004
+          },
+          "to": {
+            "x": 189.992,
+            "y": 132.004
+          },
+          "color": "#9CA3AF",
+          "thickness": 0.254
+        },
+        {
+          "type": "polygon",
+          "x": 29.997,
+          "y": 99.009,
+          "width": 159.995,
+          "height": 32.995,
+          "closed": false,
+          "strokeColor": "#C2410C",
+          "strokeThickness": 0.533,
+          "points": [
+            {
+              "x": 43.332,
+              "y": 121.437
+            },
+            {
+              "x": 70.002,
+              "y": 118.466
+            },
+            {
+              "x": 96.672,
+              "y": 119.278
+            },
+            {
+              "x": 123.342,
+              "y": 117.069
+            },
+            {
+              "x": 150.012,
+              "y": 115.164
+            },
+            {
+              "x": 176.657,
+              "y": 116.23
+            }
+          ]
+        },
+        {
+          "type": "polygon",
+          "x": 29.997,
+          "y": 99.009,
+          "width": 159.995,
+          "height": 32.995,
+          "closed": false,
+          "strokeColor": "#1D4ED8",
+          "strokeThickness": 0.533,
+          "points": [
+            {
+              "x": 43.332,
+              "y": 122.098
+            },
+            {
+              "x": 70.002,
+              "y": 120.447
+            },
+            {
+              "x": 96.672,
+              "y": 120.117
+            },
+            {
+              "x": 123.342,
+              "y": 118.796
+            },
+            {
+              "x": 150.012,
+              "y": 117.145
+            },
+            {
+              "x": 176.657,
+              "y": 116.154
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "x": 29.997,
+          "y": 132.486,
+          "width": 26.67,
+          "height": 5.512,
+          "text": "Jan",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 6,
+            "color": "#374151",
+            "horizontalAlignment": "Center",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 56.667,
+          "y": 132.486,
+          "width": 26.67,
+          "height": 5.512,
+          "text": "Fev",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 6,
+            "color": "#374151",
+            "horizontalAlignment": "Center",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 83.337,
+          "y": 132.486,
+          "width": 26.67,
+          "height": 5.512,
+          "text": "Mar",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 6,
+            "color": "#374151",
+            "horizontalAlignment": "Center",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 110.007,
+          "y": 132.486,
+          "width": 26.67,
+          "height": 5.512,
+          "text": "Abr",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 6,
+            "color": "#374151",
+            "horizontalAlignment": "Center",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 136.677,
+          "y": 132.486,
+          "width": 26.67,
+          "height": 5.512,
+          "text": "Mai",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 6,
+            "color": "#374151",
+            "horizontalAlignment": "Center",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 163.322,
+          "y": 132.486,
+          "width": 26.67,
+          "height": 5.512,
+          "text": "Jun",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 6,
+            "color": "#374151",
+            "horizontalAlignment": "Center",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "rect",
+          "x": 18.009,
+          "y": 139.243,
+          "width": 3.505,
+          "height": 3.505,
+          "fillColor": "#C2410C"
+        },
+        {
+          "type": "text",
+          "x": 23.012,
+          "y": 137.998,
+          "width": 81.991,
+          "height": 5.994,
+          "text": "Realizado",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 6,
+            "color": "#374151",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "rect",
+          "x": 105.004,
+          "y": 139.243,
+          "width": 3.505,
+          "height": 3.505,
+          "fillColor": "#1D4ED8"
+        },
+        {
+          "type": "text",
+          "x": 110.007,
+          "y": 137.998,
+          "width": 81.991,
+          "height": 5.994,
+          "text": "Meta",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 6,
+            "color": "#374151",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "polygon",
+          "x": 19.507,
+          "y": 148.006,
+          "width": 56.998,
+          "height": 56.998,
+          "closed": true,
+          "fillColor": "#E5E7EB",
+          "points": [
+            {
+              "x": 19.507,
+              "y": 176.505
+            },
+            {
+              "x": 19.583,
+              "y": 174.523
+            },
+            {
+              "x": 19.787,
+              "y": 172.542
+            },
+            {
+              "x": 20.142,
+              "y": 170.586
+            },
+            {
+              "x": 20.625,
+              "y": 168.656
+            },
+            {
+              "x": 21.234,
+              "y": 166.751
+            },
+            {
+              "x": 21.971,
+              "y": 164.922
+            },
+            {
+              "x": 22.835,
+              "y": 163.119
+            },
+            {
+              "x": 23.851,
+              "y": 161.392
+            },
+            {
+              "x": 24.943,
+              "y": 159.741
+            },
+            {
+              "x": 26.187,
+              "y": 158.191
+            },
+            {
+              "x": 27.508,
+              "y": 156.718
+            },
+            {
+              "x": 28.931,
+              "y": 155.321
+            },
+            {
+              "x": 30.455,
+              "y": 154.051
+            },
+            {
+              "x": 32.08,
+              "y": 152.883
+            },
+            {
+              "x": 33.757,
+              "y": 151.816
+            },
+            {
+              "x": 35.509,
+              "y": 150.901
+            },
+            {
+              "x": 37.338,
+              "y": 150.089
+            },
+            {
+              "x": 39.192,
+              "y": 149.403
+            },
+            {
+              "x": 41.123,
+              "y": 148.844
+            },
+            {
+              "x": 43.053,
+              "y": 148.438
+            },
+            {
+              "x": 45.034,
+              "y": 148.158
+            },
+            {
+              "x": 47.015,
+              "y": 148.031
+            },
+            {
+              "x": 48.997,
+              "y": 148.031
+            },
+            {
+              "x": 50.978,
+              "y": 148.158
+            },
+            {
+              "x": 52.959,
+              "y": 148.438
+            },
+            {
+              "x": 54.889,
+              "y": 148.844
+            },
+            {
+              "x": 56.82,
+              "y": 149.403
+            },
+            {
+              "x": 58.674,
+              "y": 150.089
+            },
+            {
+              "x": 60.503,
+              "y": 150.901
+            },
+            {
+              "x": 62.255,
+              "y": 151.816
+            },
+            {
+              "x": 63.932,
+              "y": 152.883
+            },
+            {
+              "x": 65.557,
+              "y": 154.051
+            },
+            {
+              "x": 67.081,
+              "y": 155.321
+            },
+            {
+              "x": 68.504,
+              "y": 156.718
+            },
+            {
+              "x": 69.825,
+              "y": 158.191
+            },
+            {
+              "x": 71.069,
+              "y": 159.741
+            },
+            {
+              "x": 72.161,
+              "y": 161.392
+            },
+            {
+              "x": 73.177,
+              "y": 163.119
+            },
+            {
+              "x": 74.041,
+              "y": 164.922
+            },
+            {
+              "x": 74.778,
+              "y": 166.751
+            },
+            {
+              "x": 75.387,
+              "y": 168.656
+            },
+            {
+              "x": 75.87,
+              "y": 170.586
+            },
+            {
+              "x": 76.225,
+              "y": 172.542
+            },
+            {
+              "x": 76.429,
+              "y": 174.523
+            },
+            {
+              "x": 76.505,
+              "y": 176.505
+            },
+            {
+              "x": 65.1,
+              "y": 176.505
+            },
+            {
+              "x": 65.075,
+              "y": 175.311
+            },
+            {
+              "x": 64.948,
+              "y": 174.117
+            },
+            {
+              "x": 64.719,
+              "y": 172.949
+            },
+            {
+              "x": 64.44,
+              "y": 171.78
+            },
+            {
+              "x": 64.084,
+              "y": 170.663
+            },
+            {
+              "x": 63.627,
+              "y": 169.545
+            },
+            {
+              "x": 63.094,
+              "y": 168.478
+            },
+            {
+              "x": 62.509,
+              "y": 167.437
+            },
+            {
+              "x": 61.849,
+              "y": 166.446
+            },
+            {
+              "x": 61.112,
+              "y": 165.506
+            },
+            {
+              "x": 60.3,
+              "y": 164.617
+            },
+            {
+              "x": 59.436,
+              "y": 163.805
+            },
+            {
+              "x": 58.522,
+              "y": 163.017
+            },
+            {
+              "x": 57.556,
+              "y": 162.331
+            },
+            {
+              "x": 56.566,
+              "y": 161.696
+            },
+            {
+              "x": 55.499,
+              "y": 161.138
+            },
+            {
+              "x": 54.407,
+              "y": 160.655
+            },
+            {
+              "x": 53.289,
+              "y": 160.249
+            },
+            {
+              "x": 52.146,
+              "y": 159.918
+            },
+            {
+              "x": 50.978,
+              "y": 159.664
+            },
+            {
+              "x": 49.784,
+              "y": 159.487
+            },
+            {
+              "x": 48.59,
+              "y": 159.41
+            },
+            {
+              "x": 47.422,
+              "y": 159.41
+            },
+            {
+              "x": 46.228,
+              "y": 159.487
+            },
+            {
+              "x": 45.034,
+              "y": 159.664
+            },
+            {
+              "x": 43.866,
+              "y": 159.918
+            },
+            {
+              "x": 42.723,
+              "y": 160.249
+            },
+            {
+              "x": 41.605,
+              "y": 160.655
+            },
+            {
+              "x": 40.513,
+              "y": 161.138
+            },
+            {
+              "x": 39.446,
+              "y": 161.696
+            },
+            {
+              "x": 38.456,
+              "y": 162.331
+            },
+            {
+              "x": 37.49,
+              "y": 163.017
+            },
+            {
+              "x": 36.576,
+              "y": 163.805
+            },
+            {
+              "x": 35.712,
+              "y": 164.617
+            },
+            {
+              "x": 34.9,
+              "y": 165.506
+            },
+            {
+              "x": 34.163,
+              "y": 166.446
+            },
+            {
+              "x": 33.503,
+              "y": 167.437
+            },
+            {
+              "x": 32.918,
+              "y": 168.478
+            },
+            {
+              "x": 32.385,
+              "y": 169.545
+            },
+            {
+              "x": 31.928,
+              "y": 170.663
+            },
+            {
+              "x": 31.572,
+              "y": 171.78
+            },
+            {
+              "x": 31.293,
+              "y": 172.949
+            },
+            {
+              "x": 31.064,
+              "y": 174.117
+            },
+            {
+              "x": 30.937,
+              "y": 175.311
+            },
+            {
+              "x": 30.912,
+              "y": 176.505
+            }
+          ]
+        },
+        {
+          "type": "polygon",
+          "x": 19.507,
+          "y": 148.006,
+          "width": 56.998,
+          "height": 56.998,
+          "closed": true,
+          "fillColor": "#DC2626",
+          "points": [
+            {
+              "x": 19.507,
+              "y": 176.505
+            },
+            {
+              "x": 19.583,
+              "y": 174.549
+            },
+            {
+              "x": 19.761,
+              "y": 172.618
+            },
+            {
+              "x": 20.117,
+              "y": 170.713
+            },
+            {
+              "x": 20.574,
+              "y": 168.808
+            },
+            {
+              "x": 21.158,
+              "y": 166.954
+            },
+            {
+              "x": 21.869,
+              "y": 165.151
+            },
+            {
+              "x": 22.708,
+              "y": 163.398
+            },
+            {
+              "x": 23.647,
+              "y": 161.696
+            },
+            {
+              "x": 24.714,
+              "y": 160.071
+            },
+            {
+              "x": 25.908,
+              "y": 158.521
+            },
+            {
+              "x": 27.178,
+              "y": 157.048
+            },
+            {
+              "x": 28.55,
+              "y": 155.677
+            },
+            {
+              "x": 30.023,
+              "y": 154.407
+            },
+            {
+              "x": 31.572,
+              "y": 153.213
+            },
+            {
+              "x": 33.198,
+              "y": 152.146
+            },
+            {
+              "x": 34.9,
+              "y": 151.206
+            },
+            {
+              "x": 36.652,
+              "y": 150.368
+            },
+            {
+              "x": 38.456,
+              "y": 149.657
+            },
+            {
+              "x": 40.31,
+              "y": 149.073
+            },
+            {
+              "x": 42.215,
+              "y": 148.59
+            },
+            {
+              "x": 44.12,
+              "y": 148.26
+            },
+            {
+              "x": 46.05,
+              "y": 148.082
+            },
+            {
+              "x": 48.006,
+              "y": 148.006
+            },
+            {
+              "x": 48.006,
+              "y": 159.41
+            },
+            {
+              "x": 46.838,
+              "y": 159.436
+            },
+            {
+              "x": 45.669,
+              "y": 159.563
+            },
+            {
+              "x": 44.526,
+              "y": 159.766
+            },
+            {
+              "x": 43.383,
+              "y": 160.045
+            },
+            {
+              "x": 42.291,
+              "y": 160.401
+            },
+            {
+              "x": 41.199,
+              "y": 160.833
+            },
+            {
+              "x": 40.132,
+              "y": 161.315
+            },
+            {
+              "x": 39.116,
+              "y": 161.9
+            },
+            {
+              "x": 38.151,
+              "y": 162.535
+            },
+            {
+              "x": 37.211,
+              "y": 163.246
+            },
+            {
+              "x": 36.347,
+              "y": 164.008
+            },
+            {
+              "x": 35.509,
+              "y": 164.821
+            },
+            {
+              "x": 34.747,
+              "y": 165.71
+            },
+            {
+              "x": 34.036,
+              "y": 166.649
+            },
+            {
+              "x": 33.401,
+              "y": 167.615
+            },
+            {
+              "x": 32.817,
+              "y": 168.631
+            },
+            {
+              "x": 32.334,
+              "y": 169.697
+            },
+            {
+              "x": 31.902,
+              "y": 170.79
+            },
+            {
+              "x": 31.547,
+              "y": 171.882
+            },
+            {
+              "x": 31.267,
+              "y": 173.025
+            },
+            {
+              "x": 31.064,
+              "y": 174.168
+            },
+            {
+              "x": 30.937,
+              "y": 175.336
+            },
+            {
+              "x": 30.912,
+              "y": 176.505
+            }
+          ]
+        },
+        {
+          "type": "polygon",
+          "x": 19.507,
+          "y": 148.006,
+          "width": 56.998,
+          "height": 56.998,
+          "closed": true,
+          "fillColor": "#F59E0B",
+          "points": [
+            {
+              "x": 48.006,
+              "y": 148.006
+            },
+            {
+              "x": 49.987,
+              "y": 148.082
+            },
+            {
+              "x": 51.968,
+              "y": 148.285
+            },
+            {
+              "x": 53.924,
+              "y": 148.641
+            },
+            {
+              "x": 55.855,
+              "y": 149.098
+            },
+            {
+              "x": 57.76,
+              "y": 149.733
+            },
+            {
+              "x": 59.588,
+              "y": 150.47
+            },
+            {
+              "x": 61.392,
+              "y": 151.333
+            },
+            {
+              "x": 63.119,
+              "y": 152.324
+            },
+            {
+              "x": 64.745,
+              "y": 153.441
+            },
+            {
+              "x": 66.319,
+              "y": 154.661
+            },
+            {
+              "x": 67.793,
+              "y": 156.007
+            },
+            {
+              "x": 69.19,
+              "y": 157.429
+            },
+            {
+              "x": 70.46,
+              "y": 158.953
+            },
+            {
+              "x": 71.628,
+              "y": 160.579
+            },
+            {
+              "x": 72.695,
+              "y": 162.255
+            },
+            {
+              "x": 62.814,
+              "y": 167.945
+            },
+            {
+              "x": 62.179,
+              "y": 166.954
+            },
+            {
+              "x": 61.468,
+              "y": 165.989
+            },
+            {
+              "x": 60.706,
+              "y": 165.075
+            },
+            {
+              "x": 59.893,
+              "y": 164.211
+            },
+            {
+              "x": 59.004,
+              "y": 163.398
+            },
+            {
+              "x": 58.064,
+              "y": 162.662
+            },
+            {
+              "x": 57.074,
+              "y": 162.001
+            },
+            {
+              "x": 56.032,
+              "y": 161.417
+            },
+            {
+              "x": 54.966,
+              "y": 160.884
+            },
+            {
+              "x": 53.848,
+              "y": 160.426
+            },
+            {
+              "x": 52.73,
+              "y": 160.071
+            },
+            {
+              "x": 51.562,
+              "y": 159.766
+            },
+            {
+              "x": 50.394,
+              "y": 159.563
+            },
+            {
+              "x": 49.2,
+              "y": 159.436
+            },
+            {
+              "x": 48.006,
+              "y": 159.41
+            }
+          ]
+        },
+        {
+          "type": "polygon",
+          "x": 19.507,
+          "y": 148.006,
+          "width": 56.998,
+          "height": 56.998,
+          "closed": true,
+          "fillColor": "#16A34A",
+          "points": [
+            {
+              "x": 72.695,
+              "y": 162.255
+            },
+            {
+              "x": 73.558,
+              "y": 163.906
+            },
+            {
+              "x": 74.346,
+              "y": 165.608
+            },
+            {
+              "x": 74.981,
+              "y": 167.335
+            },
+            {
+              "x": 75.54,
+              "y": 169.139
+            },
+            {
+              "x": 75.946,
+              "y": 170.942
+            },
+            {
+              "x": 76.251,
+              "y": 172.796
+            },
+            {
+              "x": 76.454,
+              "y": 174.65
+            },
+            {
+              "x": 76.505,
+              "y": 176.505
+            },
+            {
+              "x": 65.1,
+              "y": 176.505
+            },
+            {
+              "x": 65.075,
+              "y": 175.387
+            },
+            {
+              "x": 64.948,
+              "y": 174.269
+            },
+            {
+              "x": 64.77,
+              "y": 173.177
+            },
+            {
+              "x": 64.516,
+              "y": 172.085
+            },
+            {
+              "x": 64.186,
+              "y": 171.018
+            },
+            {
+              "x": 63.805,
+              "y": 169.951
+            },
+            {
+              "x": 63.348,
+              "y": 168.935
+            },
+            {
+              "x": 62.814,
+              "y": 167.945
+            }
+          ]
+        },
+        {
+          "type": "line",
+          "x": 48.006,
+          "y": 164.211,
+          "width": 24.435,
+          "height": 12.294,
+          "from": {
+            "x": 48.006,
+            "y": 176.505
+          },
+          "to": {
+            "x": 72.441,
+            "y": 164.211
+          },
+          "color": "#111827",
+          "thickness": 0.533
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 192.024,
+          "width": 59.995,
+          "height": 5.994,
+          "text": "255.500",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8,
+            "fontStyle": "Bold",
+            "color": "#374151",
+            "horizontalAlignment": "Center",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 83.998,
+          "y": 148.006,
+          "width": 59.995,
+          "height": 5.004,
+          "text": "Tendência (sparkline)",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 9,
+            "fontStyle": "Bold",
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "polygon",
+          "x": 83.998,
+          "y": 154,
+          "width": 59.995,
+          "height": 26.01,
+          "closed": true,
+          "strokeColor": "#2563EB",
+          "strokeThickness": 0.356,
+          "fillColor": "#402563EB",
+          "points": [
+            {
+              "x": 83.998,
+              "y": 176.886
+            },
+            {
+              "x": 95.987,
+              "y": 167.513
+            },
+            {
+              "x": 108.001,
+              "y": 170.129
+            },
+            {
+              "x": 119.99,
+              "y": 163.144
+            },
+            {
+              "x": 132.004,
+              "y": 157.124
+            },
+            {
+              "x": 143.993,
+              "y": 160.452
+            },
+            {
+              "x": 143.993,
+              "y": 176.886
+            },
+            {
+              "x": 83.998,
+              "y": 176.886
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "x": 150.012,
+          "y": 148.006,
+          "width": 42.012,
+          "height": 5.004,
+          "text": "Meta do semestre",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 9,
+            "fontStyle": "Bold",
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "polygon",
+          "x": 165.608,
+          "y": 157.607,
+          "width": 12.802,
+          "height": 12.802,
+          "closed": true,
+          "fillColor": "#16A34A",
+          "points": [
+            {
+              "x": 172.009,
+              "y": 157.607
+            },
+            {
+              "x": 178.41,
+              "y": 170.409
+            },
+            {
+              "x": 165.608,
+              "y": 170.409
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 200,
+          "width": 24.003,
+          "height": 5.994,
+          "text": "Mês",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "fontStyle": "Bold",
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 42.012,
+          "y": 200,
+          "width": 40.005,
+          "height": 5.994,
+          "text": "Faturamento",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "fontStyle": "Bold",
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 88.011,
+          "y": 200,
+          "width": 103.988,
+          "height": 5.994,
+          "text": "Progresso (teto R$ 55.000)",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "fontStyle": "Bold",
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "line",
+          "x": 18.009,
+          "y": 205.994,
+          "width": 173.99,
+          "height": 0,
+          "from": {
+            "x": 18.009,
+            "y": 205.994
+          },
+          "to": {
+            "x": 191.999,
+            "y": 205.994
+          },
+          "color": "#000000",
+          "thickness": 0.076
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 207.01,
+          "width": 24.003,
+          "height": 5.994,
+          "text": "Jan",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 42.012,
+          "y": 207.01,
+          "width": 40.005,
+          "height": 5.994,
+          "text": "R$ 32.000,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "rect",
+          "x": 88.011,
+          "y": 208.001,
+          "width": 103.988,
+          "height": 3.988,
+          "fillColor": "#E5E7EB"
+        },
+        {
+          "type": "rect",
+          "x": 88.011,
+          "y": 208.001,
+          "width": 60.503,
+          "height": 3.988,
+          "fillColor": "#2563EB"
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 214.02,
+          "width": 24.003,
+          "height": 5.994,
+          "text": "Fev",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 42.012,
+          "y": 214.02,
+          "width": 40.005,
+          "height": 5.994,
+          "text": "R$ 41.000,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "rect",
+          "x": 88.011,
+          "y": 215.011,
+          "width": 103.988,
+          "height": 3.988,
+          "fillColor": "#E5E7EB"
+        },
+        {
+          "type": "rect",
+          "x": 88.011,
+          "y": 215.011,
+          "width": 77.521,
+          "height": 3.988,
+          "fillColor": "#2563EB"
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 221.031,
+          "width": 24.003,
+          "height": 5.994,
+          "text": "Mar",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 42.012,
+          "y": 221.031,
+          "width": 40.005,
+          "height": 5.994,
+          "text": "R$ 38.500,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "rect",
+          "x": 88.011,
+          "y": 222.021,
+          "width": 103.988,
+          "height": 3.988,
+          "fillColor": "#E5E7EB"
+        },
+        {
+          "type": "rect",
+          "x": 88.011,
+          "y": 222.021,
+          "width": 72.796,
+          "height": 3.988,
+          "fillColor": "#2563EB"
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 228.041,
+          "width": 24.003,
+          "height": 5.994,
+          "text": "Abr",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 42.012,
+          "y": 228.041,
+          "width": 40.005,
+          "height": 5.994,
+          "text": "R$ 45.200,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "rect",
+          "x": 88.011,
+          "y": 229.032,
+          "width": 103.988,
+          "height": 3.988,
+          "fillColor": "#E5E7EB"
+        },
+        {
+          "type": "rect",
+          "x": 88.011,
+          "y": 229.032,
+          "width": 85.471,
+          "height": 3.988,
+          "fillColor": "#2563EB"
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 235.052,
+          "width": 24.003,
+          "height": 5.994,
+          "text": "Mai",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 42.012,
+          "y": 235.052,
+          "width": 40.005,
+          "height": 5.994,
+          "text": "R$ 51.000,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "rect",
+          "x": 88.011,
+          "y": 236.042,
+          "width": 103.988,
+          "height": 3.988,
+          "fillColor": "#E5E7EB"
+        },
+        {
+          "type": "rect",
+          "x": 88.011,
+          "y": 236.042,
+          "width": 96.418,
+          "height": 3.988,
+          "fillColor": "#2563EB"
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 242.062,
+          "width": 24.003,
+          "height": 5.994,
+          "text": "Jun",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 42.012,
+          "y": 242.062,
+          "width": 40.005,
+          "height": 5.994,
+          "text": "R$ 47.800,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "rect",
+          "x": 88.011,
+          "y": 243.053,
+          "width": 103.988,
+          "height": 3.988,
+          "fillColor": "#E5E7EB"
+        },
+        {
+          "type": "rect",
+          "x": 88.011,
+          "y": 243.053,
+          "width": 90.373,
+          "height": 3.988,
+          "fillColor": "#2563EB"
+        },
+        {
+          "type": "line",
+          "x": 18.009,
+          "y": 249.072,
+          "width": 173.99,
+          "height": 0,
+          "from": {
+            "x": 18.009,
+            "y": 249.072
+          },
+          "to": {
+            "x": 191.999,
+            "y": 249.072
+          },
+          "color": "#000000",
+          "thickness": 0.178
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 251.079,
+          "width": 173.99,
+          "height": 7.01,
+          "text": "Total do semestre: R$ 255.500,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 11,
+            "fontStyle": "Bold",
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        }
+      ]
+    }
+  ]
+}

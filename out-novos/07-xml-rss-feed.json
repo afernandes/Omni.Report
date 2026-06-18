@@ -1,0 +1,427 @@
+{
+  "name": "Blog Digest (RSS)",
+  "pageCount": 1,
+  "unit": "millimeters",
+  "pages": [
+    {
+      "pageNumber": 1,
+      "size": {
+        "width": 210.007,
+        "height": 297.002
+      },
+      "primitives": [
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 18.009,
+          "width": 173.99,
+          "height": 13.995,
+          "text": "OmniReport Blog · Resumo",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 18,
+            "fontStyle": "Bold",
+            "color": "#000000",
+            "horizontalAlignment": "Center"
+          }
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 34.011,
+          "width": 173.99,
+          "height": 5.994,
+          "text": "5 últimos posts · Fonte: feed RSS XML",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#808080",
+            "horizontalAlignment": "Center"
+          }
+        },
+        {
+          "type": "line",
+          "x": 18.009,
+          "y": 44.018,
+          "width": 173.99,
+          "height": 0,
+          "from": {
+            "x": 18.009,
+            "y": 44.018
+          },
+          "to": {
+            "x": 191.999,
+            "y": 44.018
+          },
+          "color": "#000000",
+          "thickness": 0.178
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 51.003,
+          "width": 173.99,
+          "height": 5.994,
+          "text": "Equipe OmniReport",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 11,
+            "fontStyle": "Bold",
+            "color": "#C2410C"
+          }
+        },
+        {
+          "type": "text",
+          "x": 21.996,
+          "y": 58.014,
+          "width": 170.002,
+          "height": 5.994,
+          "text": "Designer UI: PropertyGrid completo para Actions/Bookmarks",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "fontStyle": "Bold",
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 21.996,
+          "y": 64.008,
+          "width": 119.99,
+          "height": 5.004,
+          "text": "UX · 26/05/2026",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8,
+            "fontStyle": "Italic",
+            "color": "#808080"
+          }
+        },
+        {
+          "type": "text",
+          "x": 21.996,
+          "y": 64.008,
+          "width": 170.002,
+          "height": 5.004,
+          "text": "https://omnireport.example.com/blog/designer-rdl-ui",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 7,
+            "color": "#2563EB",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "line",
+          "x": 21.996,
+          "y": 70.002,
+          "width": 166.014,
+          "height": 0,
+          "from": {
+            "x": 21.996,
+            "y": 70.002
+          },
+          "to": {
+            "x": 188.011,
+            "y": 70.002
+          },
+          "color": "#000000",
+          "thickness": 0.051
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 73,
+          "width": 173.99,
+          "height": 5.994,
+          "text": "Anderson Fernandes",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 11,
+            "fontStyle": "Bold",
+            "color": "#C2410C"
+          }
+        },
+        {
+          "type": "text",
+          "x": 21.996,
+          "y": 80.01,
+          "width": 170.002,
+          "height": 5.994,
+          "text": "4 novos data providers (JSON, XML, REST, FS)",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "fontStyle": "Bold",
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 21.996,
+          "y": 86.004,
+          "width": 119.99,
+          "height": 5.004,
+          "text": "Release · 26/05/2026",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8,
+            "fontStyle": "Italic",
+            "color": "#808080"
+          }
+        },
+        {
+          "type": "text",
+          "x": 21.996,
+          "y": 86.004,
+          "width": 170.002,
+          "height": 5.004,
+          "text": "https://omnireport.example.com/blog/providers",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 7,
+            "color": "#2563EB",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "line",
+          "x": 21.996,
+          "y": 91.999,
+          "width": 166.014,
+          "height": 0,
+          "from": {
+            "x": 21.996,
+            "y": 91.999
+          },
+          "to": {
+            "x": 188.011,
+            "y": 91.999
+          },
+          "color": "#000000",
+          "thickness": 0.051
+        },
+        {
+          "type": "text",
+          "x": 21.996,
+          "y": 94.005,
+          "width": 170.002,
+          "height": 5.994,
+          "text": "RDL Phase 1 lançada",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "fontStyle": "Bold",
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 21.996,
+          "y": 100,
+          "width": 119.99,
+          "height": 5.004,
+          "text": "Release · 25/05/2026",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8,
+            "fontStyle": "Italic",
+            "color": "#808080"
+          }
+        },
+        {
+          "type": "text",
+          "x": 21.996,
+          "y": 100,
+          "width": 170.002,
+          "height": 5.004,
+          "text": "https://omnireport.example.com/blog/rdl-phase-1",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 7,
+            "color": "#2563EB",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "line",
+          "x": 21.996,
+          "y": 105.994,
+          "width": 166.014,
+          "height": 0,
+          "from": {
+            "x": 21.996,
+            "y": 105.994
+          },
+          "to": {
+            "x": 188.011,
+            "y": 105.994
+          },
+          "color": "#000000",
+          "thickness": 0.051
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 108.991,
+          "width": 173.99,
+          "height": 5.994,
+          "text": "Equipe OmniReport",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 11,
+            "fontStyle": "Bold",
+            "color": "#C2410C"
+          }
+        },
+        {
+          "type": "text",
+          "x": 21.996,
+          "y": 116.002,
+          "width": 170.002,
+          "height": 5.994,
+          "text": "Print profissional cross-platform",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "fontStyle": "Bold",
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 21.996,
+          "y": 121.996,
+          "width": 119.99,
+          "height": 5.004,
+          "text": "Print · 20/05/2026",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8,
+            "fontStyle": "Italic",
+            "color": "#808080"
+          }
+        },
+        {
+          "type": "text",
+          "x": 21.996,
+          "y": 121.996,
+          "width": 170.002,
+          "height": 5.004,
+          "text": "https://omnireport.example.com/blog/printing",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 7,
+            "color": "#2563EB",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "line",
+          "x": 21.996,
+          "y": 127.991,
+          "width": 166.014,
+          "height": 0,
+          "from": {
+            "x": 21.996,
+            "y": 127.991
+          },
+          "to": {
+            "x": 188.011,
+            "y": 127.991
+          },
+          "color": "#000000",
+          "thickness": 0.051
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 130.988,
+          "width": 173.99,
+          "height": 5.994,
+          "text": "Anderson Fernandes",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 11,
+            "fontStyle": "Bold",
+            "color": "#C2410C"
+          }
+        },
+        {
+          "type": "text",
+          "x": 21.996,
+          "y": 137.998,
+          "width": 170.002,
+          "height": 5.994,
+          "text": "Tutorial: usando o Expression Editor com Monaco",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "fontStyle": "Bold",
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 21.996,
+          "y": 143.993,
+          "width": 119.99,
+          "height": 5.004,
+          "text": "Tutorial · 18/05/2026",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8,
+            "fontStyle": "Italic",
+            "color": "#808080"
+          }
+        },
+        {
+          "type": "text",
+          "x": 21.996,
+          "y": 143.993,
+          "width": 170.002,
+          "height": 5.004,
+          "text": "https://omnireport.example.com/blog/expression-editor",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 7,
+            "color": "#2563EB",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "line",
+          "x": 21.996,
+          "y": 149.987,
+          "width": 166.014,
+          "height": 0,
+          "from": {
+            "x": 21.996,
+            "y": 149.987
+          },
+          "to": {
+            "x": 188.011,
+            "y": 149.987
+          },
+          "color": "#000000",
+          "thickness": 0.051
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 272.999,
+          "width": 173.99,
+          "height": 5.994,
+          "text": "OmniReport · Página 1 de 1",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#808080",
+            "horizontalAlignment": "Right"
+          }
+        }
+      ]
+    }
+  ]
+}

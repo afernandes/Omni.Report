@@ -1,0 +1,1134 @@
+{
+  "name": "Catálogo de Produtos (Tablix)",
+  "pageCount": 1,
+  "unit": "millimeters",
+  "pages": [
+    {
+      "pageNumber": 1,
+      "size": {
+        "width": 210.007,
+        "height": 297.002
+      },
+      "primitives": [
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 18.009,
+          "width": 173.99,
+          "height": 10.008,
+          "text": "Catálogo de Produtos",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 15,
+            "fontStyle": "Bold",
+            "color": "#000000",
+            "horizontalAlignment": "Center"
+          }
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 29.007,
+          "width": 173.99,
+          "height": 5.994,
+          "text": "Tablix — cabeçalho + uma linha por registro, com gridlines",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#808080",
+            "horizontalAlignment": "Center"
+          }
+        },
+        {
+          "type": "rect",
+          "x": 18.009,
+          "y": 37.998,
+          "width": 173.99,
+          "height": 6.502,
+          "fillColor": "#F1F5F9"
+        },
+        {
+          "type": "text",
+          "x": 18.999,
+          "y": 37.998,
+          "width": 21.844,
+          "height": 6.502,
+          "text": "Código",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8.5,
+            "fontStyle": "Bold",
+            "color": "#0F172A",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 42.85,
+          "y": 37.998,
+          "width": 59.969,
+          "height": 6.502,
+          "text": "Descrição",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8.5,
+            "fontStyle": "Bold",
+            "color": "#0F172A",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 104.8,
+          "y": 37.998,
+          "width": 33.757,
+          "height": 6.502,
+          "text": "EAN-13",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8.5,
+            "fontStyle": "Bold",
+            "color": "#0F172A",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 140.564,
+          "y": 37.998,
+          "width": 24.206,
+          "height": 6.502,
+          "text": "Varejo",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8.5,
+            "fontStyle": "Bold",
+            "color": "#0F172A",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 166.776,
+          "y": 37.998,
+          "width": 24.206,
+          "height": 6.502,
+          "text": "Atacado",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8.5,
+            "fontStyle": "Bold",
+            "color": "#0F172A",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 18.999,
+          "y": 44.501,
+          "width": 21.844,
+          "height": 6.502,
+          "text": "0001",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8.5,
+            "color": "#1F2937",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 42.85,
+          "y": 44.501,
+          "width": 59.969,
+          "height": 6.502,
+          "text": "Caneta Bic Azul",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8.5,
+            "color": "#1F2937",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 104.8,
+          "y": 44.501,
+          "width": 33.757,
+          "height": 6.502,
+          "text": "7891234567890",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8.5,
+            "color": "#1F2937",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 140.564,
+          "y": 44.501,
+          "width": 24.206,
+          "height": 6.502,
+          "text": "R$ 3,20",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8.5,
+            "color": "#1F2937",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 166.776,
+          "y": 44.501,
+          "width": 24.206,
+          "height": 6.502,
+          "text": "R$ 2,50",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8.5,
+            "color": "#1F2937",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 18.999,
+          "y": 51.003,
+          "width": 21.844,
+          "height": 6.502,
+          "text": "0002",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8.5,
+            "color": "#1F2937",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 42.85,
+          "y": 51.003,
+          "width": 59.969,
+          "height": 6.502,
+          "text": "Caneta Bic Vermelha",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8.5,
+            "color": "#1F2937",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 104.8,
+          "y": 51.003,
+          "width": 33.757,
+          "height": 6.502,
+          "text": "7891234567891",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8.5,
+            "color": "#1F2937",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 140.564,
+          "y": 51.003,
+          "width": 24.206,
+          "height": 6.502,
+          "text": "R$ 3,20",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8.5,
+            "color": "#1F2937",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 166.776,
+          "y": 51.003,
+          "width": 24.206,
+          "height": 6.502,
+          "text": "R$ 2,50",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8.5,
+            "color": "#1F2937",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 18.999,
+          "y": 57.506,
+          "width": 21.844,
+          "height": 6.502,
+          "text": "0003",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8.5,
+            "color": "#1F2937",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 42.85,
+          "y": 57.506,
+          "width": 59.969,
+          "height": 6.502,
+          "text": "Caderno Brochura 96 folhas",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8.5,
+            "color": "#1F2937",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 104.8,
+          "y": 57.506,
+          "width": 33.757,
+          "height": 6.502,
+          "text": "7891234567892",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8.5,
+            "color": "#1F2937",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 140.564,
+          "y": 57.506,
+          "width": 24.206,
+          "height": 6.502,
+          "text": "R$ 34,90",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8.5,
+            "color": "#1F2937",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 166.776,
+          "y": 57.506,
+          "width": 24.206,
+          "height": 6.502,
+          "text": "R$ 27,40",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8.5,
+            "color": "#1F2937",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 18.999,
+          "y": 64.008,
+          "width": 21.844,
+          "height": 6.502,
+          "text": "0004",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8.5,
+            "color": "#1F2937",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 42.85,
+          "y": 64.008,
+          "width": 59.969,
+          "height": 6.502,
+          "text": "Marcador de Texto Amarelo",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8.5,
+            "color": "#1F2937",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 104.8,
+          "y": 64.008,
+          "width": 33.757,
+          "height": 6.502,
+          "text": "7891234567893",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8.5,
+            "color": "#1F2937",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 140.564,
+          "y": 64.008,
+          "width": 24.206,
+          "height": 6.502,
+          "text": "R$ 14,90",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8.5,
+            "color": "#1F2937",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 166.776,
+          "y": 64.008,
+          "width": 24.206,
+          "height": 6.502,
+          "text": "R$ 11,90",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8.5,
+            "color": "#1F2937",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 18.999,
+          "y": 70.51,
+          "width": 21.844,
+          "height": 6.502,
+          "text": "0005",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8.5,
+            "color": "#1F2937",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 42.85,
+          "y": 70.51,
+          "width": 59.969,
+          "height": 6.502,
+          "text": "Borracha Branca",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8.5,
+            "color": "#1F2937",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 104.8,
+          "y": 70.51,
+          "width": 33.757,
+          "height": 6.502,
+          "text": "7891234567894",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8.5,
+            "color": "#1F2937",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 140.564,
+          "y": 70.51,
+          "width": 24.206,
+          "height": 6.502,
+          "text": "R$ 1,50",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8.5,
+            "color": "#1F2937",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 166.776,
+          "y": 70.51,
+          "width": 24.206,
+          "height": 6.502,
+          "text": "R$ 1,20",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8.5,
+            "color": "#1F2937",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 18.999,
+          "y": 76.987,
+          "width": 21.844,
+          "height": 6.502,
+          "text": "0006",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8.5,
+            "color": "#1F2937",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 42.85,
+          "y": 76.987,
+          "width": 59.969,
+          "height": 6.502,
+          "text": "Lápis HB Faber-Castell",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8.5,
+            "color": "#1F2937",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 104.8,
+          "y": 76.987,
+          "width": 33.757,
+          "height": 6.502,
+          "text": "7891234567895",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8.5,
+            "color": "#1F2937",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 140.564,
+          "y": 76.987,
+          "width": 24.206,
+          "height": 6.502,
+          "text": "R$ 1,20",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8.5,
+            "color": "#1F2937",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 166.776,
+          "y": 76.987,
+          "width": 24.206,
+          "height": 6.502,
+          "text": "R$ 0,90",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8.5,
+            "color": "#1F2937",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 18.999,
+          "y": 83.49,
+          "width": 21.844,
+          "height": 6.502,
+          "text": "0007",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8.5,
+            "color": "#1F2937",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 42.85,
+          "y": 83.49,
+          "width": 59.969,
+          "height": 6.502,
+          "text": "Apontador com Depósito",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8.5,
+            "color": "#1F2937",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 104.8,
+          "y": 83.49,
+          "width": 33.757,
+          "height": 6.502,
+          "text": "7891234567896",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8.5,
+            "color": "#1F2937",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 140.564,
+          "y": 83.49,
+          "width": 24.206,
+          "height": 6.502,
+          "text": "R$ 4,20",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8.5,
+            "color": "#1F2937",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 166.776,
+          "y": 83.49,
+          "width": 24.206,
+          "height": 6.502,
+          "text": "R$ 3,40",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8.5,
+            "color": "#1F2937",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 18.999,
+          "y": 89.992,
+          "width": 21.844,
+          "height": 6.502,
+          "text": "0008",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8.5,
+            "color": "#1F2937",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 42.85,
+          "y": 89.992,
+          "width": 59.969,
+          "height": 6.502,
+          "text": "Régua 30cm Acrílica",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8.5,
+            "color": "#1F2937",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 104.8,
+          "y": 89.992,
+          "width": 33.757,
+          "height": 6.502,
+          "text": "7891234567897",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8.5,
+            "color": "#1F2937",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 140.564,
+          "y": 89.992,
+          "width": 24.206,
+          "height": 6.502,
+          "text": "R$ 6,90",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8.5,
+            "color": "#1F2937",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 166.776,
+          "y": 89.992,
+          "width": 24.206,
+          "height": 6.502,
+          "text": "R$ 5,50",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8.5,
+            "color": "#1F2937",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 18.999,
+          "y": 96.495,
+          "width": 21.844,
+          "height": 6.502,
+          "text": "0009",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8.5,
+            "color": "#1F2937",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 42.85,
+          "y": 96.495,
+          "width": 59.969,
+          "height": 6.502,
+          "text": "Mochila Escolar Reforçada",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8.5,
+            "color": "#1F2937",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 104.8,
+          "y": 96.495,
+          "width": 33.757,
+          "height": 6.502,
+          "text": "7891234567898",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8.5,
+            "color": "#1F2937",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 140.564,
+          "y": 96.495,
+          "width": 24.206,
+          "height": 6.502,
+          "text": "R$ 189,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8.5,
+            "color": "#1F2937",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 166.776,
+          "y": 96.495,
+          "width": 24.206,
+          "height": 6.502,
+          "text": "R$ 148,90",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8.5,
+            "color": "#1F2937",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 18.999,
+          "y": 102.997,
+          "width": 21.844,
+          "height": 6.502,
+          "text": "0010",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8.5,
+            "color": "#1F2937",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 42.85,
+          "y": 102.997,
+          "width": 59.969,
+          "height": 6.502,
+          "text": "Estojo de Lápis Premium",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8.5,
+            "color": "#1F2937",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 104.8,
+          "y": 102.997,
+          "width": 33.757,
+          "height": 6.502,
+          "text": "7891234567899",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8.5,
+            "color": "#1F2937",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 140.564,
+          "y": 102.997,
+          "width": 24.206,
+          "height": 6.502,
+          "text": "R$ 49,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8.5,
+            "color": "#1F2937",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "text",
+          "x": 166.776,
+          "y": 102.997,
+          "width": 24.206,
+          "height": 6.502,
+          "text": "R$ 39,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8.5,
+            "color": "#1F2937",
+            "verticalAlignment": "Middle"
+          }
+        },
+        {
+          "type": "line",
+          "x": 18.009,
+          "y": 37.998,
+          "width": 173.99,
+          "height": 0,
+          "from": {
+            "x": 18.009,
+            "y": 37.998
+          },
+          "to": {
+            "x": 191.999,
+            "y": 37.998
+          },
+          "color": "#CBD5E1",
+          "thickness": 0.178
+        },
+        {
+          "type": "line",
+          "x": 18.009,
+          "y": 44.501,
+          "width": 173.99,
+          "height": 0,
+          "from": {
+            "x": 18.009,
+            "y": 44.501
+          },
+          "to": {
+            "x": 191.999,
+            "y": 44.501
+          },
+          "color": "#CBD5E1",
+          "thickness": 0.178
+        },
+        {
+          "type": "line",
+          "x": 18.009,
+          "y": 51.003,
+          "width": 173.99,
+          "height": 0,
+          "from": {
+            "x": 18.009,
+            "y": 51.003
+          },
+          "to": {
+            "x": 191.999,
+            "y": 51.003
+          },
+          "color": "#CBD5E1",
+          "thickness": 0.178
+        },
+        {
+          "type": "line",
+          "x": 18.009,
+          "y": 57.506,
+          "width": 173.99,
+          "height": 0,
+          "from": {
+            "x": 18.009,
+            "y": 57.506
+          },
+          "to": {
+            "x": 191.999,
+            "y": 57.506
+          },
+          "color": "#CBD5E1",
+          "thickness": 0.178
+        },
+        {
+          "type": "line",
+          "x": 18.009,
+          "y": 64.008,
+          "width": 173.99,
+          "height": 0,
+          "from": {
+            "x": 18.009,
+            "y": 64.008
+          },
+          "to": {
+            "x": 191.999,
+            "y": 64.008
+          },
+          "color": "#CBD5E1",
+          "thickness": 0.178
+        },
+        {
+          "type": "line",
+          "x": 18.009,
+          "y": 70.51,
+          "width": 173.99,
+          "height": 0,
+          "from": {
+            "x": 18.009,
+            "y": 70.51
+          },
+          "to": {
+            "x": 191.999,
+            "y": 70.51
+          },
+          "color": "#CBD5E1",
+          "thickness": 0.178
+        },
+        {
+          "type": "line",
+          "x": 18.009,
+          "y": 76.987,
+          "width": 173.99,
+          "height": 0,
+          "from": {
+            "x": 18.009,
+            "y": 76.987
+          },
+          "to": {
+            "x": 191.999,
+            "y": 76.987
+          },
+          "color": "#CBD5E1",
+          "thickness": 0.178
+        },
+        {
+          "type": "line",
+          "x": 18.009,
+          "y": 83.49,
+          "width": 173.99,
+          "height": 0,
+          "from": {
+            "x": 18.009,
+            "y": 83.49
+          },
+          "to": {
+            "x": 191.999,
+            "y": 83.49
+          },
+          "color": "#CBD5E1",
+          "thickness": 0.178
+        },
+        {
+          "type": "line",
+          "x": 18.009,
+          "y": 89.992,
+          "width": 173.99,
+          "height": 0,
+          "from": {
+            "x": 18.009,
+            "y": 89.992
+          },
+          "to": {
+            "x": 191.999,
+            "y": 89.992
+          },
+          "color": "#CBD5E1",
+          "thickness": 0.178
+        },
+        {
+          "type": "line",
+          "x": 18.009,
+          "y": 96.495,
+          "width": 173.99,
+          "height": 0,
+          "from": {
+            "x": 18.009,
+            "y": 96.495
+          },
+          "to": {
+            "x": 191.999,
+            "y": 96.495
+          },
+          "color": "#CBD5E1",
+          "thickness": 0.178
+        },
+        {
+          "type": "line",
+          "x": 18.009,
+          "y": 102.997,
+          "width": 173.99,
+          "height": 0,
+          "from": {
+            "x": 18.009,
+            "y": 102.997
+          },
+          "to": {
+            "x": 191.999,
+            "y": 102.997
+          },
+          "color": "#CBD5E1",
+          "thickness": 0.178
+        },
+        {
+          "type": "line",
+          "x": 18.009,
+          "y": 109.499,
+          "width": 173.99,
+          "height": 0,
+          "from": {
+            "x": 18.009,
+            "y": 109.499
+          },
+          "to": {
+            "x": 191.999,
+            "y": 109.499
+          },
+          "color": "#CBD5E1",
+          "thickness": 0.178
+        },
+        {
+          "type": "line",
+          "x": 18.009,
+          "y": 37.998,
+          "width": 0,
+          "height": 71.501,
+          "from": {
+            "x": 18.009,
+            "y": 37.998
+          },
+          "to": {
+            "x": 18.009,
+            "y": 109.499
+          },
+          "color": "#CBD5E1",
+          "thickness": 0.178
+        },
+        {
+          "type": "line",
+          "x": 41.834,
+          "y": 37.998,
+          "width": 0,
+          "height": 71.501,
+          "from": {
+            "x": 41.834,
+            "y": 37.998
+          },
+          "to": {
+            "x": 41.834,
+            "y": 109.499
+          },
+          "color": "#CBD5E1",
+          "thickness": 0.178
+        },
+        {
+          "type": "line",
+          "x": 103.81,
+          "y": 37.998,
+          "width": 0,
+          "height": 71.501,
+          "from": {
+            "x": 103.81,
+            "y": 37.998
+          },
+          "to": {
+            "x": 103.81,
+            "y": 109.499
+          },
+          "color": "#CBD5E1",
+          "thickness": 0.178
+        },
+        {
+          "type": "line",
+          "x": 139.573,
+          "y": 37.998,
+          "width": 0,
+          "height": 71.501,
+          "from": {
+            "x": 139.573,
+            "y": 37.998
+          },
+          "to": {
+            "x": 139.573,
+            "y": 109.499
+          },
+          "color": "#CBD5E1",
+          "thickness": 0.178
+        },
+        {
+          "type": "line",
+          "x": 165.786,
+          "y": 37.998,
+          "width": 0,
+          "height": 71.501,
+          "from": {
+            "x": 165.786,
+            "y": 37.998
+          },
+          "to": {
+            "x": 165.786,
+            "y": 109.499
+          },
+          "color": "#CBD5E1",
+          "thickness": 0.178
+        },
+        {
+          "type": "line",
+          "x": 191.999,
+          "y": 37.998,
+          "width": 0,
+          "height": 71.501,
+          "from": {
+            "x": 191.999,
+            "y": 37.998
+          },
+          "to": {
+            "x": 191.999,
+            "y": 109.499
+          },
+          "color": "#CBD5E1",
+          "thickness": 0.178
+        }
+      ]
+    }
+  ]
+}

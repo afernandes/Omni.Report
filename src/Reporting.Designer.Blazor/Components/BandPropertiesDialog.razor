@@ -1,0 +1,223 @@
+@namespace Reporting.Designer.Blazor.Components
+@using Reporting.Bands
+@using Reporting.Designer.Blazor.ViewModels
+
+@*
+    RDL-style band properties dialog. Surfaces the Phase-1 fields that belong to a data
+    region or a grouping band — fields that ARE NOT applicable per-element:
+      · PageBreak (every band kind)
+      · NoRowsMessage    — only when the band is a data region (Detail / SubDetail)
+      · FilterExpression — Detail / SubDetail / Group
+      · SortExpressions  — Detail / SubDetail / Group
+      · Variables        — Group only
+    The dialog is reused for all three band kinds — sections are hidden based on
+    `Band.Kind` so the user only sees the inputs that apply.
+*@
+
+<DesignerModal Visible="@(Visible && Band is not null)"
+               Title="@DialogTitle"
+               HeadIcon="layers"
+               OnClose="OnClosed">
+    <ChildContent>
+        @if (Band is null)
+        {
+            <text></text>
+        }
+        else
+        {
+            <div class="bp-section">
+                <div class="bp-section-head">
+                    <Icon Name="separator-horizontal" Size="14" CssClass="icon icon-14" />
+                    <span>Page break</span>
+                </div>
+                <div class="bp-row">
+                    <label>Regra</label>
+                    <select value="@Band.PageBreak"
+                            @onchange="@(e => Band.PageBreak = ParsePageBreak(e.Value?.ToString()))">
+                        <option value="@PageBreak.None">Nenhum (padrão)</option>
+                        <option value="@PageBreak.Start">Quebra antes</option>
+                        <option value="@PageBreak.End">Quebra depois</option>
+                        <option value="@PageBreak.StartAndEnd">Quebra antes E depois</option>
+                        @if (IsGroup)
+                        {
+                            <option value="@PageBreak.Between">Entre instâncias (Between)</option>
+                        }
+                    </select>
+                    <span class="bp-hint">@PageBreakHint</span>
+                </div>
+            </div>
+
+            @if (IsDataRegion)
+            {
+                <div class="bp-section">
+                    <div class="bp-section-head">
+                        <Icon Name="message-square" Size="14" CssClass="icon icon-14" />
+                        <span>Quando sem dados</span>
+                    </div>
+                    <div class="bp-row">
+                        <label title="RDL <NoRows>: mensagem centralizada quando a fonte produz zero linhas.">No-rows message</label>
+                        <input type="text" value="@(Band.NoRowsMessage ?? "")"
+                               @onchange="@(e => Band.NoRowsMessage = AsNullable(e.Value?.ToString()))"
+                               placeholder="ex: Nenhum registro encontrado para os filtros." />
+                    </div>
+                </div>
+            }
+
+            @if (IsDataRegion || IsGroup)
+            {
+                <div class="bp-section">
+                    <div class="bp-section-head">
+                        <Icon Name="filter" Size="14" CssClass="icon icon-14" />
+                        <span>Filtro</span>
+                    </div>
+                    <div class="bp-row">
+                        <label title="RDL <Filters>: expressão booleana. Linhas/grupos onde resulta falso são pulados.">Filter expression</label>
+                        <input type="text" value="@(Band.FilterExpression ?? "")"
+                               @onchange="@(e => Band.FilterExpression = AsNullable(e.Value?.ToString()))"
+                               placeholder="ex: Fields.Total > 100"
+                               style="font-family:var(--font-mono);" />
+                    </div>
+                </div>
+
+                <div class="bp-section">
+                    <div class="bp-section-head">
+                        <Icon Name="arrow-up-down" Size="14" CssClass="icon icon-14" />
+                        <span>Ordenação</span>
+                        <span class="bp-count">@Band.SortExpressions.Count</span>
+                        <button class="bp-add" type="button" @onclick="AddSort">+ Adicionar chave</button>
+                    </div>
+                    @foreach (var (rule, i) in Band.SortExpressions.Select((r, i) => (r, i)).ToArray())
+                    {
+                        <div class="bp-list-row">
+                            <span class="bp-list-idx">@(i + 1)</span>
+                            <input type="text" value="@rule.Expression"
+                                   @onchange="@(e => rule.Expression = e.Value?.ToString() ?? string.Empty)"
+                                   placeholder="ex: Fields.Cliente"
+                                   style="flex:1;font-family:var(--font-mono);" />
+                            <select value="@rule.Direction"
+                                    @onchange="@(e => rule.Direction = Enum.Parse<Reporting.Data.SortDirection>(e.Value!.ToString()!))">
+                                <option value="@Reporting.Data.SortDirection.Ascending">↑ Asc</option>
+                                <option value="@Reporting.Data.SortDirection.Descending">↓ Desc</option>
+                            </select>
+                            <button class="icon-btn" type="button" title="Remover" @onclick="@(() => Band.SortExpressions.Remove(rule))"
+                                    style="color:var(--danger);">×</button>
+                        </div>
+                    }
+                    @if (Band.SortExpressions.Count == 0)
+                    {
+                        <div class="bp-empty">Nenhuma ordenação. Clique em "+ Adicionar chave" para começar.</div>
+                    }
+                </div>
+            }
+
+            @if (IsGroup)
+            {
+                <div class="bp-section">
+                    <div class="bp-section-head">
+                        <Icon Name="variable" Size="14" CssClass="icon icon-14" />
+                        <span>Variáveis do grupo</span>
+                        <span class="bp-count">@Band.Variables.Count</span>
+                        <button class="bp-add" type="button" @onclick="AddVariable">+ Adicionar</button>
+                    </div>
+                    @foreach (var v in Band.Variables.ToArray())
+                    {
+                        <div class="bp-list-row">
+                            <input type="text" value="@v.Name"
+                                   @onchange="@(e => v.Name = e.Value?.ToString() ?? string.Empty)"
+                                   placeholder="Nome (ex: Subtotal)"
+                                   style="width:120px;font-family:var(--font-mono);" />
+                            <span style="color:var(--text-tertiary);">=</span>
+                            <input type="text" value="@v.Expression"
+                                   @onchange="@(e => v.Expression = e.Value?.ToString() ?? string.Empty)"
+                                   placeholder="ex: Sum(Fields.Total)"
+                                   style="flex:1;font-family:var(--font-mono);" />
+                            <button class="icon-btn" type="button" title="Remover" @onclick="@(() => Band.Variables.Remove(v))"
+                                    style="color:var(--danger);">×</button>
+                        </div>
+                    }
+                    @if (Band.Variables.Count == 0)
+                    {
+                        <div class="bp-empty">Sem variáveis. Variáveis de grupo são re-avaliadas a cada instância e acessíveis como Variables.Nome.</div>
+                    }
+                </div>
+            }
+        }
+    </ChildContent>
+    <Footer>
+        <button type="button" class="btn btn-primary" @onclick="OnClosed">OK</button>
+    </Footer>
+</DesignerModal>
+
+<style>
+    .bp-section { border-bottom: 1px solid var(--border-soft); padding: 10px 14px; }
+    .bp-section:last-child { border-bottom: none; }
+    .bp-section-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+        font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.04em; }
+    .bp-count { font-family: var(--font-mono); font-size: 10px; color: var(--text-tertiary);
+        background: var(--bg-surface); border: 1px solid var(--border-soft); padding: 1px 5px; border-radius: 8px; }
+    .bp-add { margin-left: auto; font-size: 11px; padding: 2px 8px; cursor: pointer;
+        border: 1px solid var(--border); background: var(--bg-surface); color: var(--text-secondary); border-radius: 3px; }
+    .bp-add:hover { background: var(--accent-soft); color: var(--accent); border-color: var(--accent-border); }
+    .bp-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+    .bp-row label { width: 130px; font-size: 11.5px; color: var(--text-secondary); }
+    .bp-row input, .bp-row select { flex: 1; font-size: 11.5px; padding: 3px 6px;
+        border: 1px solid var(--border); background: var(--bg-surface); color: var(--text-primary); border-radius: 3px; }
+    .bp-hint { font-size: 10.5px; color: var(--text-tertiary); font-style: italic; max-width: 260px; }
+    .bp-list-row { display: flex; align-items: center; gap: 6px; margin: 3px 0; }
+    .bp-list-row input, .bp-list-row select { font-size: 11.5px; padding: 3px 6px;
+        border: 1px solid var(--border); background: var(--bg-surface); color: var(--text-primary); border-radius: 3px; }
+    .bp-list-idx { width: 18px; font-family: var(--font-mono); font-size: 10.5px; color: var(--text-tertiary); text-align: center; }
+    .bp-empty { font-size: 11px; color: var(--text-tertiary); font-style: italic; padding: 4px 24px; }
+</style>
+
+@code {
+    [Parameter] public bool Visible { get; set; }
+    [Parameter] public BandViewModel? Band { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    /// <summary>True when the band is a region that consumes rows — Detail and SubDetail.
+    /// Drives visibility of NoRowsMessage / Filter / Sort. Group bands also see Filter / Sort
+    /// but NOT NoRowsMessage (RDL ties the "no rows" message to a data region, not a group).</summary>
+    private bool IsDataRegion => Band?.Kind is DesignerBandKind.Detail or DesignerBandKind.SubDetail;
+
+    private bool IsGroup => Band?.Kind is DesignerBandKind.GroupHeader;
+
+    private string DialogTitle => Band?.Kind switch
+    {
+        DesignerBandKind.Detail       => "Propriedades · Detail",
+        DesignerBandKind.SubDetail    => $"Propriedades · Sub-Detail · {Band.DataMember ?? "?"}",
+        DesignerBandKind.GroupHeader  => $"Propriedades · Grupo · {Band.GroupName ?? "?"}",
+        DesignerBandKind.GroupFooter  => "Propriedades · Group Footer",
+        DesignerBandKind.ReportHeader => "Propriedades · Report Header",
+        DesignerBandKind.PageHeader   => "Propriedades · Page Header",
+        DesignerBandKind.PageFooter   => "Propriedades · Page Footer",
+        DesignerBandKind.ReportFooter => "Propriedades · Report Footer",
+        _ => "Propriedades da banda",
+    };
+
+    private string PageBreakHint => Band?.PageBreak switch
+    {
+        PageBreak.Start       => "Força quebra de página ANTES desta banda emitir.",
+        PageBreak.End         => "Força quebra de página DEPOIS desta banda emitir.",
+        PageBreak.StartAndEnd => "Banda sempre renderiza em página própria.",
+        PageBreak.Between     => "Quebra entre cada instância do grupo (group only).",
+        _                     => "Banda flui normalmente com o restante do relatório.",
+    };
+
+    private static PageBreak ParsePageBreak(string? raw)
+        => string.IsNullOrEmpty(raw) ? PageBreak.None : Enum.Parse<PageBreak>(raw);
+
+    private static string? AsNullable(string? v) => string.IsNullOrWhiteSpace(v) ? null : v;
+
+    private void AddSort()
+    {
+        Band?.SortExpressions.Add(new SortDescriptorRule { Expression = "Fields." });
+    }
+
+    private void AddVariable()
+    {
+        Band?.Variables.Add(new GroupVariableRule { Name = "Var", Expression = "" });
+    }
+
+    private Task OnClosed() => OnClose.InvokeAsync();
+}

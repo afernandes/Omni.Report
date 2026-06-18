@@ -1,0 +1,223 @@
+@namespace Reporting.Designer.Blazor.Components
+@implements IDisposable
+
+<div class="outline-root" style="padding: 6px 4px;">
+
+    <!-- Band management toolbar -->
+    <div style="display:flex;align-items:center;gap:4px;padding:4px 6px;margin-bottom:4px;border-bottom:1px solid var(--border);">
+        <span style="font-size:var(--fs-xs);color:var(--text-tertiary);letter-spacing:var(--tracked);text-transform:uppercase;flex:1;">Bandas</span>
+        @foreach (var kind in _optional)
+        {
+            var present = Report.FindBand(kind) is not null;
+            <button class="tb-btn" type="button"
+                    title="@(present ? $"Remover {Label(kind)}" : $"Adicionar {Label(kind)}")"
+                    style="height:20px;min-width:auto;padding:0 6px;font-size:10px;@((present ? "color:var(--accent);" : null))"
+                    @onclick="@(() => ToggleBand(kind))">
+                @(present ? "−" : "+") @Short(kind)
+            </button>
+        }
+    </div>
+
+    @foreach (var band in Report.Bands)
+    {
+        var capturedBand = band;
+        <div class="outline-row is-band @(band == ActiveBand ? "is-active" : null)"
+             @onclick="@(() => OnBandActivated.InvokeAsync(capturedBand))">
+            <Icon Name="chevron-down" Size="12" CssClass="chev icon icon-12" />
+            <Icon Name="layout-list" Size="12" CssClass="type-i icon icon-12" />
+            <span class="outline-label">@band.DisplayLabel</span>
+            <span class="outline-tail">
+                @($"{band.Height.ToMm():F0}mm · {band.Elements.Count}")
+            </span>
+        </div>
+
+        @* SubDetail-only sub-row: DataMember picker. Surfaced in the outline (in
+           addition to the band-strip select) so the binding is obvious at a glance
+           and reachable from the right panel without scrolling the canvas. *@
+        @if (band.Kind == DesignerBandKind.SubDetail)
+        {
+            <div class="outline-row depth-1 is-datamember"
+                 title="@DataMemberTitle(capturedBand)">
+                <span></span>
+                <Icon Name="link" Size="12" CssClass="type-i icon icon-12" />
+                <span class="outline-label" style="font-size:10.5px;color:var(--text-tertiary);">DataMember</span>
+                <select class="outline-datamember"
+                        value="@capturedBand.DataMember"
+                        @onchange="@(e => capturedBand.DataMember = e.Value?.ToString() ?? string.Empty)"
+                        @onclick:stopPropagation="true">
+                    <option value="">— selecione —</option>
+                    @if (Relations is not null && Relations.Count > 0)
+                    {
+                        <optgroup label="Relações (master-detail)">
+                            @foreach (var r in Relations)
+                            {
+                                <option value="@r.Name">@r.Name (@r.ParentSource → @r.ChildSource)</option>
+                            }
+                        </optgroup>
+                    }
+                    @if (DataSources.Count > 0)
+                    {
+                        <optgroup label="Fontes (iteração solta)">
+                            @foreach (var ds in DataSources)
+                            {
+                                <option value="@ds.Name">@ds.Name</option>
+                            }
+                        </optgroup>
+                    }
+                    @if (!string.IsNullOrEmpty(capturedBand.DataMember)
+                         && (Relations is null || !Relations.Any(r => r.Name == capturedBand.DataMember))
+                         && !DataSources.Any(d => d.Name == capturedBand.DataMember))
+                    {
+                        <option value="@capturedBand.DataMember">⚠ @capturedBand.DataMember (não encontrado)</option>
+                    }
+                </select>
+            </div>
+        }
+
+        @foreach (var el in band.Elements)
+        {
+            var captured = el;
+            var hasError = !string.IsNullOrEmpty(el.Expression)
+                && ExpressionValidator.Validate(el.Expression, DataSources, Parameters) is not null;
+            <div class="outline-row depth-1 @(ReferenceEquals(el, SelectedElement) ? "is-selected" : null)"
+                 @onclick="@(() => OnSelect.InvokeAsync(captured))">
+                <span></span>
+                <Icon Name="@KindIcon(el)" Size="12" CssClass="type-i icon icon-12" />
+                <span class="outline-label">@(string.IsNullOrEmpty(el.Name) ? el.Kind.ToString() : el.Name)</span>
+                @if (hasError)
+                {
+                    <span class="outline-err" title="Expressão inválida">⚠</span>
+                }
+                <button class="outline-btn @(el.IsVisible ? null : "is-off")"
+                        type="button"
+                        title="@(el.IsVisible ? "Ocultar" : "Mostrar")"
+                        @onclick="@(() => captured.IsVisible = !captured.IsVisible)"
+                        @onclick:stopPropagation="true">
+                    <Icon Name="@(el.IsVisible ? "eye" : "eye-off")" Size="11" CssClass="icon icon-12" />
+                </button>
+                <button class="outline-btn @(el.IsLocked ? "is-on" : null)"
+                        type="button"
+                        title="@(el.IsLocked ? "Desbloquear" : "Bloquear")"
+                        @onclick="@(() => captured.IsLocked = !captured.IsLocked)"
+                        @onclick:stopPropagation="true">
+                    @(el.IsLocked ? "🔒" : "🔓")
+                </button>
+                <button class="outline-btn outline-del"
+                        type="button"
+                        title="Excluir elemento"
+                        @onclick="@(() => RemoveElement(capturedBand, captured))"
+                        @onclick:stopPropagation="true">×</button>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public ReportDefinitionViewModel Report { get; set; } = default!;
+    [Parameter] public ElementViewModel? SelectedElement { get; set; }
+    [Parameter] public BandViewModel? ActiveBand { get; set; }
+    [Parameter] public EventCallback<ElementViewModel?> OnSelect { get; set; }
+    [Parameter] public EventCallback<BandViewModel> OnBandActivated { get; set; }
+    [Parameter] public IReadOnlyList<DesignerDataSource> DataSources { get; set; } = Array.Empty<DesignerDataSource>();
+    [Parameter] public IReadOnlyList<DesignerParameter>  Parameters  { get; set; } = Array.Empty<DesignerParameter>();
+    /// <summary>Master-detail relations. Drives the DataMember picker shown beneath every
+    /// SubDetail band row — same options as the band-strip select in the canvas, exposed
+    /// here so users can wire bindings without scrolling.</summary>
+    [Parameter] public System.Collections.ObjectModel.ObservableCollection<DesignerRelation>? Relations { get; set; }
+
+    private string DataMemberTitle(BandViewModel band)
+    {
+        if (string.IsNullOrEmpty(band.DataMember))
+            return "Escolha uma relação (master-detail) ou uma fonte para esta sub-banda iterar.";
+        var rel = Relations?.FirstOrDefault(r => r.Name == band.DataMember);
+        if (rel is not null)
+            return $"Relação '{rel.Name}': filtra {rel.ChildSource} pelo campo {rel.ChildField} = {rel.ParentSource}.{rel.ParentField}.";
+        if (DataSources.Any(d => d.Name == band.DataMember))
+            return $"Fonte '{band.DataMember}': itera todas as linhas (sem filtro).";
+        return $"⚠ '{band.DataMember}' não encontrado nas relações nem nas fontes.";
+    }
+
+    private ReportDefinitionViewModel? _subscribed;
+
+    protected override void OnParametersSet()
+    {
+        if (!ReferenceEquals(_subscribed, Report))
+        {
+            if (_subscribed is not null) _subscribed.Changed -= StateHasChanged;
+            _subscribed = Report;
+            if (_subscribed is not null) _subscribed.Changed += StateHasChanged;
+        }
+    }
+
+    public void Dispose()
+    {
+        if (_subscribed is not null) _subscribed.Changed -= StateHasChanged;
+    }
+
+    private void RemoveElement(BandViewModel band, ElementViewModel el)
+    {
+        band.RemoveElement(el);
+        if (ReferenceEquals(SelectedElement, el)) OnSelect.InvokeAsync(null);
+    }
+
+    private readonly DesignerBandKind[] _optional =
+    [
+        DesignerBandKind.ReportHeader,
+        DesignerBandKind.GroupHeader,
+        DesignerBandKind.SubDetail,
+        DesignerBandKind.GroupFooter,
+        DesignerBandKind.ReportFooter,
+    ];
+
+    private static string KindIcon(ElementViewModel e) => e.Kind switch
+    {
+        DesignerElementKind.Label     => "hash",
+        DesignerElementKind.TextBox   => "type",
+        DesignerElementKind.Line      => "minus",
+        DesignerElementKind.Rectangle => "square",
+        DesignerElementKind.Ellipse   => "circle",
+        DesignerElementKind.Image     => "image",
+        DesignerElementKind.Barcode   => "barcode",
+        DesignerElementKind.QrCode    => "qr-code",
+        _ => "type",
+    };
+
+    private static string Short(DesignerBandKind k) => k switch
+    {
+        DesignerBandKind.ReportHeader => "RH",
+        DesignerBandKind.GroupHeader  => "GH",
+        DesignerBandKind.SubDetail    => "SD",
+        DesignerBandKind.GroupFooter  => "GF",
+        DesignerBandKind.ReportFooter => "RF",
+        _ => k.ToString(),
+    };
+
+    private static string Label(DesignerBandKind k) => k switch
+    {
+        DesignerBandKind.ReportHeader => "Report Header",
+        DesignerBandKind.GroupHeader  => "Group Header",
+        DesignerBandKind.SubDetail    => "Sub-Detail (master-detail)",
+        DesignerBandKind.GroupFooter  => "Group Footer",
+        DesignerBandKind.ReportFooter => "Report Footer",
+        _ => k.ToString(),
+    };
+
+    private void ToggleBand(DesignerBandKind kind)
+    {
+        // Sub-details aren't singletons — every toggle adds a new one (a report may
+        // declare multiple nested loops). For the other singleton bands the existing
+        // toggle-off / toggle-on semantics still apply.
+        if (kind == DesignerBandKind.SubDetail)
+        {
+            Report.AddBand(new BandViewModel(kind, Unit.FromMm(8)) { DataMember = "" });
+            return;
+        }
+        var existing = Report.FindBand(kind);
+        if (existing is not null) Report.RemoveBand(existing);
+        else
+        {
+            var newBand = new BandViewModel(kind, Unit.FromMm(8));
+            Report.AddBand(newBand);
+        }
+    }
+}

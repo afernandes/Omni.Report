@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>OmniReport — MAUI Hybrid</title>
+    <base href="/" />
+
+    <!-- IBM Plex fonts (Print Studio). Falls back to system fonts when offline. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+    <!-- Bootstrap 5 — used by the designer chrome for token compatibility only. -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+
+    <!-- Print Studio design system — entire bundle from the Razor Class Library. -->
+    <link href="_content/Reporting.Designer.Blazor/css/tokens.css"     rel="stylesheet" />
+    <link href="_content/Reporting.Designer.Blazor/css/base.css"       rel="stylesheet" />
+    <link href="_content/Reporting.Designer.Blazor/css/layout.css"     rel="stylesheet" />
+    <link href="_content/Reporting.Designer.Blazor/css/components.css" rel="stylesheet" />
+    <link href="_content/Reporting.Designer.Blazor/css/overlays.css"   rel="stylesheet" />
+
+    <link href="app.css" rel="stylesheet" />
+    <link href="Reporting.Samples.MauiHybrid.styles.css" rel="stylesheet" />
+</head>
+<body>
+    <div id="app">Carregando…</div>
+    <div id="blazor-error-ui" data-nosnippet>
+        Erro: <a href="" class="reload">recarregar</a>
+        <a class="dismiss">🗙</a>
+    </div>
+    <script src="_framework/blazor.webview.js" autostart="false"></script>
+    <script src="_content/Reporting.Viewer.Blazor/reporting-viewer.js"></script>
+    <script src="_content/Reporting.Designer.Blazor/js/designer.js"></script>
+    <script src="_content/Reporting.Designer.Blazor/js/monaco-host.js"></script>
+</body>
+</html>

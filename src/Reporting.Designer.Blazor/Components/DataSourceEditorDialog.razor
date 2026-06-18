@@ -1,0 +1,1025 @@
+@namespace Reporting.Designer.Blazor.Components
+@using Reporting.Designer.Blazor.ViewModels
+@inject IServiceProvider Services
+
+<DesignerModal Visible="@(Visible && Source is not null)"
+               Title="@($"Data Source · {_name}")"
+               HeadIcon="database"
+               OnClose="OnClosed">
+    <ChildContent>
+        @* ── Header row: name + global Kind picker ───────────────────────────── *@
+        <div class="ds-head-row">
+            <div class="ds-head-cell ds-head-name">
+                <label>Nome</label>
+                <input type="text" value="@_name"
+                       @oninput="@(e => _name = e.Value?.ToString() ?? string.Empty)"
+                       placeholder="Vendas, Clientes, Pedidos…" />
+            </div>
+            <div class="ds-head-cell ds-head-kind">
+                <label>Provedor</label>
+                <select value="@_kind" @onchange="@(e => OnKindChanged(Enum.Parse<DataConnectionKind>(e.Value!.ToString()!)))">
+                    <option value="@DataConnectionKind.InMemory">In-memory (host fornece dados)</option>
+                    <option value="@DataConnectionKind.Sqlite">SQLite</option>
+                    <option value="@DataConnectionKind.PostgreSql">PostgreSQL</option>
+                    <option value="@DataConnectionKind.SqlServer">SQL Server</option>
+                    <option value="@DataConnectionKind.MySql">MySQL / MariaDB</option>
+                </select>
+            </div>
+        </div>
+
+        @* ── Tab strip ───────────────────────────────────────────────────────── *@
+        <nav class="ds-tabs" role="tablist">
+            <button type="button" role="tab" class="@TabCss(DsTab.Connection)"
+                    @onclick="() => _tab = DsTab.Connection">Conexão</button>
+            <button type="button" role="tab" class="@TabCss(DsTab.Schema)"
+                    @onclick="() => OnSchemaTabOpened()"
+                    disabled="@(_kind == DataConnectionKind.InMemory)">Schema</button>
+            <button type="button" role="tab" class="@TabCss(DsTab.Query)"
+                    @onclick="() => _tab = DsTab.Query"
+                    disabled="@(_kind == DataConnectionKind.InMemory)">Query SQL</button>
+            <button type="button" role="tab" class="@TabCss(DsTab.Fields)"
+                    @onclick="() => _tab = DsTab.Fields">Campos (@_fields.Count)</button>
+            <button type="button" role="tab" class="@TabCss(DsTab.Preview)"
+                    @onclick="() => _tab = DsTab.Preview"
+                    disabled="@(_kind == DataConnectionKind.InMemory)">Preview</button>
+            <button type="button" role="tab" class="@TabCss(DsTab.Relations)"
+                    @onclick="() => _tab = DsTab.Relations"
+                    disabled="@(Relations is null || AvailableParents().Count == 0)"
+                    title="@(Relations is null
+                              ? "Relações não disponíveis neste contexto"
+                              : AvailableParents().Count == 0
+                                ? "Crie ao menos uma outra fonte para definir uma relação master-detail"
+                                : "Editar relações master-detail (esta fonte como filha)")">
+                Relações@(MyAsChildCount() > 0 ? $" ({MyAsChildCount()})" : string.Empty)
+            </button>
+            @* RDL-style data source extensions. Calculated fields are virtual columns
+               computed per row; FilterSort applies a global filter + sort BEFORE any
+               region consumes the data. *@
+            <button type="button" role="tab" class="@TabCss(DsTab.Calculated)"
+                    @onclick="() => _tab = DsTab.Calculated"
+                    title="RDL <CalculatedField>: campos virtuais calculados por linha (Fields.Nome).">
+                Calculadas@(Source is { CalculatedFields.Count: > 0 } cs ? $" ({cs.CalculatedFields.Count})" : string.Empty)
+            </button>
+            <button type="button" role="tab" class="@TabCss(DsTab.FilterSort)"
+                    @onclick="() => _tab = DsTab.FilterSort"
+                    title="RDL <Filters> + <SortExpressions>: filtra e ordena globalmente antes de qualquer região consumir.">
+                Filtro &amp; Ordem
+            </button>
+        </nav>
+
+        @* ── Tab body ─────────────────────────────────────────────────────────── *@
+        <div class="ds-tab-body">
+            @if (_tab == DsTab.Connection)
+            {
+                @if (_kind == DataConnectionKind.InMemory)
+                {
+                    <div class="ds-hint">
+                        <strong>Modo in-memory.</strong> Os campos são definidos manualmente ou via JSON.
+                        Em runtime, o host registra a fonte de dados pelo nome <em>"@_name"</em>.
+                    </div>
+                }
+                else
+                {
+                    <div class="form-row form-row-stacked">
+                        <label>Connection string</label>
+                        <textarea rows="3" placeholder="@PlaceholderFor(_kind)"
+                                  value="@_connectionString"
+                                  @oninput="@(e => _connectionString = e.Value?.ToString() ?? string.Empty)"></textarea>
+                        <span class="ds-hint-sm">Senhas são persistidas no <code>.repx</code>. Para produção use referências de segredo resolvidas no boot do host.</span>
+                    </div>
+                    <div class="ds-actions-row">
+                        <button type="button" class="btn"
+                                disabled="@(_busy || _dataConnect is null)"
+                                @onclick="OnTestConnection">
+                            @(_busy ? "Testando…" : "Testar conexão")
+                        </button>
+                        @if (_dataConnect is null)
+                        {
+                            <span class="ds-warn-inline">
+                                <strong>IDesignerDataConnect</strong> não registrado — registre no DI para Test/Discover/Preview.
+                            </span>
+                        }
+                        @if (_testResult is not null)
+                        {
+                            <span class="@(_testResult.Success ? "ds-ok-inline" : "ds-err-inline")">
+                                @(_testResult.Success ? "✓" : "✕") @_testResult.Message
+                            </span>
+                        }
+                    </div>
+                }
+            }
+            else if (_tab == DsTab.Schema)
+            {
+                <div style="height:360px;display:flex;flex-direction:column;">
+                    <SchemaExplorerTree Tables="_schemaTables"
+                                        Busy="_busy"
+                                        Error="@_schemaError"
+                                        OnRefresh="OnLoadSchema"
+                                        OnInsertTable="OnInsertTableIntoSql"
+                                        OnInsertColumn="OnInsertColumnIntoSql" />
+                </div>
+                @if (!string.IsNullOrEmpty(_schemaInsertHint))
+                {
+                    <div class="ds-ok-inline" style="margin-top:6px;">@_schemaInsertHint</div>
+                }
+            }
+            else if (_tab == DsTab.Query)
+            {
+                <div class="form-row form-row-stacked">
+                    <div class="ds-query-toolbar">
+                        <label class="ds-checkbox">
+                            <input type="checkbox" checked="@_isStoredProcedure"
+                                   @onchange="@(e => OnStoredProcedureToggled((bool)e.Value!))" />
+                            Stored procedure
+                        </label>
+                        @if (_isStoredProcedure)
+                        {
+                            <button type="button" class="btn"
+                                    disabled="@(_busy || _dataConnect is null || string.IsNullOrWhiteSpace(_sql))"
+                                    @onclick="OnDiscoverProcSignature">
+                                ↻ Detectar parâmetros do procedure
+                            </button>
+                        }
+                        <label class="ds-inline-field">
+                            Timeout (s)
+                            <input type="number" min="1" max="3600" style="width:80px;"
+                                   value="@(_commandTimeoutSeconds?.ToString() ?? string.Empty)"
+                                   @onchange="@(e => _commandTimeoutSeconds = int.TryParse(e.Value?.ToString(), out var v) ? v : null)" />
+                        </label>
+                        <span style="flex:1"></span>
+                        <button type="button" class="btn"
+                                disabled="@(_busy || _dataConnect is null || string.IsNullOrWhiteSpace(_sql))"
+                                @onclick="OnDiscoverFields">
+                            @(_busy ? "Buscando…" : "↻ Buscar campos da query")
+                        </button>
+                    </div>
+                    @if (Visible)
+                    {
+                        <MonacoEditor @ref="_sqlEditor"
+                                      DomId="@_sqlEditorId"
+                                      InitialValue="@_sql"
+                                      Language="sql"
+                                      Height="220px"
+                                      Theme="@Theme"
+                                      OnValueChanged="@(v => _sql = v)" />
+                    }
+                </div>
+
+                <div class="ds-params-section">
+                    <div class="ds-fields-head">
+                        <span>Parâmetros SQL (@_sqlParameters.Count)</span>
+                        <button type="button" class="ds-link" @onclick="AddSqlParameter">+ Parâmetro</button>
+                    </div>
+                    <div class="ds-params-grid">
+                        <div class="ds-params-row ds-params-head">
+                            <span>SQL</span>
+                            <span>Vincular ao parâmetro do relatório</span>
+                            <span>Valor literal (preview / fallback)</span>
+                            <span></span>
+                        </div>
+                        @foreach (var p in _sqlParameters)
+                        {
+                            var captured = p;
+                            <div class="ds-params-row">
+                                <input type="text" value="@captured.SqlName"
+                                       placeholder="@SqlParamPlaceholder()"
+                                       @onchange="@(e => captured.SqlName = e.Value?.ToString() ?? string.Empty)" />
+                                <select value="@(captured.ReportParameter ?? string.Empty)"
+                                        @onchange="@(e => captured.ReportParameter = string.IsNullOrEmpty(e.Value?.ToString()) ? null : e.Value!.ToString())">
+                                    <option value="">— (literal)</option>
+                                    @foreach (var rp in Parameters)
+                                    {
+                                        <option value="@rp.Name">@rp.Name</option>
+                                    }
+                                </select>
+                                <input type="text" value="@captured.Literal"
+                                       placeholder="ex.: 2026-01-01"
+                                       @onchange="@(e => captured.Literal = e.Value?.ToString())" />
+                                <button type="button" class="ds-field-remove" title="Remover"
+                                        @onclick="() => _sqlParameters.Remove(captured)">×</button>
+                            </div>
+                        }
+                        @if (_sqlParameters.Count == 0)
+                        {
+                            <div class="ds-field-empty">Nenhum parâmetro. Use <code>@SqlParamPlaceholder()</code> no SQL.</div>
+                        }
+                    </div>
+                </div>
+            }
+            else if (_tab == DsTab.Fields)
+            {
+                <div class="ds-fields-head">
+                    <span>Campos (@_fields.Count)</span>
+                    <button type="button" class="ds-link" @onclick="AddBlankField">+ Campo</button>
+                    @if (_kind == DataConnectionKind.InMemory)
+                    {
+                        <button type="button" class="ds-link" @onclick="() => _showJsonImport = !_showJsonImport">
+                            @(_showJsonImport ? "× Cancelar JSON" : "↓ Importar JSON")
+                        </button>
+                    }
+                    else
+                    {
+                        <button type="button" class="ds-link"
+                                disabled="@(_busy || _dataConnect is null || string.IsNullOrWhiteSpace(_sql))"
+                                @onclick="OnDiscoverFields">↻ Sincronizar com query</button>
+                    }
+                </div>
+
+                @if (_showJsonImport)
+                {
+                    <div class="ds-json-import">
+                        <textarea rows="6" placeholder='Cole um JSON: { "Nome": "Padaria", "Total": 148.90 } ou [{...}, ...]'
+                                  value="@_jsonSample"
+                                  @oninput="@(e => _jsonSample = e.Value?.ToString() ?? string.Empty)"></textarea>
+                        <div class="ds-json-actions">
+                            @if (!string.IsNullOrEmpty(_jsonError))
+                            {
+                                <span class="ds-json-error">@_jsonError</span>
+                            }
+                            else
+                            {
+                                <span class="ds-json-hint">Os campos atuais serão substituídos pelos inferidos da primeira linha.</span>
+                            }
+                            <button type="button" class="btn" @onclick="ImportJson">Substituir campos</button>
+                        </div>
+                    </div>
+                }
+
+                @if (!string.IsNullOrEmpty(_discoveryMessage))
+                {
+                    <div class="@(_discoveryError ? "ds-err-inline" : "ds-ok-inline")" style="margin:6px 0;">
+                        @_discoveryMessage
+                    </div>
+                }
+
+                <div class="ds-fields-list">
+                    <div class="ds-field-row ds-field-head">
+                        <span></span>
+                        <span>Nome</span>
+                        <span>Tipo</span>
+                        <span>Sample</span>
+                        <span></span>
+                    </div>
+                    @foreach (var f in _fields)
+                    {
+                        var captured = f;
+                        <div class="ds-field-row">
+                            <span class="type-icon @captured.TypeCssClass" title="@captured.Type">@captured.TypeIndicator</span>
+                            <input type="text" value="@captured.Name"
+                                   @onchange="@(e => captured.Name = (e.Value?.ToString() ?? string.Empty).Trim())"
+                                   placeholder="Nome do campo" />
+                            <select value="@captured.Type"
+                                    @onchange="@(e => captured.Type = Enum.Parse<DesignerFieldType>(e.Value!.ToString()!))">
+                                <option value="@DesignerFieldType.Text">Text</option>
+                                <option value="@DesignerFieldType.Number">Number</option>
+                                <option value="@DesignerFieldType.Date">Date</option>
+                                <option value="@DesignerFieldType.Bool">Bool</option>
+                                <option value="@DesignerFieldType.Money">Money</option>
+                            </select>
+                            <input type="text" value="@captured.Sample"
+                                   @onchange="@(e => captured.Sample = e.Value?.ToString())"
+                                   placeholder="Valor de exemplo" />
+                            <button type="button" class="ds-field-remove" title="Remover campo"
+                                    @onclick="() => _fields.Remove(captured)">×</button>
+                        </div>
+                    }
+                    @if (_fields.Count == 0)
+                    {
+                        <div class="ds-field-empty">
+                            @if (_kind == DataConnectionKind.InMemory)
+                            { <span>Nenhum campo. Adicione manualmente ou importe um JSON.</span> }
+                            else
+                            { <span>Nenhum campo. Vá em Query SQL e clique "Buscar campos da query".</span> }
+                        </div>
+                    }
+                </div>
+            }
+            else if (_tab == DsTab.Preview)
+            {
+                <div class="ds-actions-row">
+                    <button type="button" class="btn"
+                            disabled="@(_busy || _dataConnect is null || string.IsNullOrWhiteSpace(_sql))"
+                            @onclick="OnPreview">
+                        @(_busy ? "Executando…" : "▶ Executar (50 linhas)")
+                    </button>
+                    @if (_previewResult is not null && !string.IsNullOrEmpty(_previewResult.Error))
+                    {
+                        <span class="ds-err-inline">✕ @_previewResult.Error</span>
+                    }
+                    else if (_previewResult is not null)
+                    {
+                        <span class="ds-ok-inline">✓ @_previewResult.Rows.Count linha(s) · @_previewResult.Elapsed.TotalMilliseconds.ToString("0") ms</span>
+                    }
+                </div>
+
+                @if (_previewResult is { Rows.Count: > 0 })
+                {
+                    <div class="ds-preview-wrap">
+                        <table class="ds-preview-table">
+                            <thead>
+                                <tr>
+                                    @foreach (var f in _previewResult.Fields)
+                                    {
+                                        <th title="@(f.ProviderType ?? f.ClrType.Name)">@f.Name</th>
+                                    }
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var row in _previewResult.Rows)
+                                {
+                                    <tr>
+                                        @foreach (var f in _previewResult.Fields)
+                                        {
+                                            <td>@FormatCell(row.TryGetValue(f.Name, out var v) ? v : null)</td>
+                                        }
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="ds-hint">Clique "Executar" para ver as primeiras 50 linhas do banco.</div>
+                }
+            }
+            else if (_tab == DsTab.Relations)
+            {
+                @* ── Master-detail editor (this source as child) ─────────────────
+                   Crystal/SSRS/FastReport pattern: each detail source can declare
+                   itself a child of another source via a foreign-key pair. We list
+                   every relation where ChildSource == _name and let the user add new
+                   ones with a single inline row (parent ▼ + parent field ▼ + my field ▼).
+                   The "name" of the relation is auto-derived from the parent source so
+                   the user never has to invent identifiers. *@
+                <div class="ds-hint">
+                    Defina <strong>quais fontes-pai</strong> alimentam esta fonte filha.
+                    Em runtime, para cada linha do pai o relatório filtra esta fonte por
+                    <code>@_name.&lt;campo&gt; = pai.&lt;campo&gt;</code>.
+                    <br/>
+                    O <strong>Nome</strong> da relação é o identificador que a sub-banda
+                    consome em <code>DataMember</code> — escolha algo legível
+                    (ex.: <code>PedidosDeCliente</code>).
+                </div>
+
+                <div class="ds-fields-head" style="margin-top:8px;">
+                    <span>Relações em que <strong>@_name</strong> é filha (@MyAsChildCount())</span>
+                    <button type="button" class="ds-link"
+                            disabled="@(AvailableParents().Count == 0)"
+                            @onclick="AddRelationAsChild">+ Adicionar pai</button>
+                </div>
+
+                <div class="ds-rel-grid">
+                    <div class="ds-rel-row ds-rel-head">
+                        <span>Nome da relação</span>
+                        <span>Fonte pai</span>
+                        <span>Campo do pai</span>
+                        <span>Campo desta fonte</span>
+                        <span></span>
+                    </div>
+                    @if (Relations is not null)
+                    {
+                        foreach (var r in Relations.Where(x => string.Equals(x.ChildSource, _name, StringComparison.Ordinal)).ToList())
+                        {
+                            var captured = r;
+                            <div class="ds-rel-row">
+                                <input type="text" class="ds-rel-name"
+                                       value="@captured.Name"
+                                       placeholder="ex.: PedidosDeCliente"
+                                       title="Nome da relação — usado em SubDetail.DataMember"
+                                       @onchange="@(e => captured.Name = (e.Value?.ToString() ?? string.Empty).Trim())" />
+                                <select value="@captured.ParentSource"
+                                        @onchange="@(e => OnParentSourceChanged(captured, e.Value?.ToString()))">
+                                    @foreach (var p in AvailableParents())
+                                    {
+                                        <option value="@p.Name">@p.Name</option>
+                                    }
+                                </select>
+                                <select value="@captured.ParentField"
+                                        @onchange="@(e => captured.ParentField = e.Value?.ToString() ?? string.Empty)">
+                                    @foreach (var fn in FieldsOfSource(captured.ParentSource))
+                                    {
+                                        <option value="@fn">@fn</option>
+                                    }
+                                </select>
+                                <select value="@captured.ChildField"
+                                        @onchange="@(e => captured.ChildField = e.Value?.ToString() ?? string.Empty)">
+                                    @foreach (var f in _fields)
+                                    {
+                                        <option value="@f.Name">@f.Name</option>
+                                    }
+                                </select>
+                                <button type="button" class="ds-field-remove" title="Remover relação"
+                                        @onclick="() => Relations!.Remove(captured)">×</button>
+                            </div>
+                        }
+                    }
+                    @if (MyAsChildCount() == 0)
+                    {
+                        <div class="ds-field-empty">
+                            Sem relações. Use <strong>+ Adicionar pai</strong> para vincular esta fonte a um master.
+                        </div>
+                    }
+                </div>
+            }
+            else if (_tab == DsTab.Calculated && Source is not null)
+            {
+                @* RDL Calculated Fields editor: name + expression + result-type. Operates
+                   directly on Source.CalculatedFields (no working-buffer snapshot — matches
+                   the Relations tab pattern). *@
+                <div class="ds-section-head">
+                    <strong>Campos calculados</strong>
+                    <span class="ds-hint-sm">
+                        Cada calculada vira <code>Fields.Nome</code>, avaliada por linha. Pode
+                        referenciar outros campos, parâmetros e calculadas declaradas antes.
+                    </span>
+                    <button type="button" class="btn" style="margin-left:auto;"
+                            @onclick="AddCalculatedField">+ Adicionar</button>
+                </div>
+                <div class="ds-field-list">
+                    @foreach (var calc in Source.CalculatedFields.ToArray())
+                    {
+                        var captured = calc;
+                        <div class="ds-field-row">
+                            <input type="text" value="@captured.Name"
+                                   @onchange="@(e => captured.Name = e.Value?.ToString() ?? string.Empty)"
+                                   placeholder="Nome (ex: Imposto)"
+                                   style="width:140px;" />
+                            <input type="text" value="@captured.Expression"
+                                   @onchange="@(e => captured.Expression = e.Value?.ToString() ?? string.Empty)"
+                                   placeholder="Expressão (ex: Fields.Total * 0.18)"
+                                   style="flex:1;font-family:var(--font-mono);" />
+                            <select value="@captured.ResultType"
+                                    @onchange="@(e => captured.ResultType = Enum.Parse<DesignerFieldType>(e.Value!.ToString()!))">
+                                <option value="@DesignerFieldType.Text">Texto</option>
+                                <option value="@DesignerFieldType.Number">Número</option>
+                                <option value="@DesignerFieldType.Money">Moeda</option>
+                                <option value="@DesignerFieldType.Date">Data</option>
+                                <option value="@DesignerFieldType.Bool">Booleano</option>
+                            </select>
+                            <button type="button" class="ds-field-remove" title="Remover"
+                                    @onclick="() => Source.CalculatedFields.Remove(captured)">×</button>
+                        </div>
+                    }
+                    @if (Source.CalculatedFields.Count == 0)
+                    {
+                        <div class="ds-field-empty">
+                            Sem campos calculados. Use <strong>+ Adicionar</strong> para criar
+                            colunas virtuais que aparecem como <code>Fields.Nome</code> nas expressões.
+                        </div>
+                    }
+                </div>
+            }
+            else if (_tab == DsTab.FilterSort && Source is not null)
+            {
+                @* RDL Filter + Sort at the DataSet level. Applied BEFORE any region (Detail,
+                   Group, Tablix) consumes rows — equivalent to a WHERE + ORDER BY at the SQL
+                   level but expressed in the report expression language. *@
+                <div class="ds-section-head">
+                    <strong>Filtro global</strong>
+                    <span class="ds-hint-sm">
+                        Expressão booleana avaliada por linha. Linhas onde resulta falso
+                        são DROPADAS antes de qualquer banda iterar.
+                    </span>
+                </div>
+                <div class="form-row form-row-stacked" style="padding:0 14px 12px;">
+                    <input type="text" value="@(Source.FilterExpression ?? "")"
+                           @onchange="@(e => Source.FilterExpression = AsNullableTrim(e.Value?.ToString()))"
+                           placeholder="ex: Fields.Status == 'Pago'"
+                           style="font-family:var(--font-mono);" />
+                </div>
+
+                <div class="ds-section-head">
+                    <strong>Ordenação global</strong>
+                    <span class="ds-hint-sm">
+                        Aplicada antes de qualquer ordenação de banda/grupo. Múltiplas chaves
+                        formam ordenação composta (desempate na ordem).
+                    </span>
+                    <button type="button" class="btn" style="margin-left:auto;"
+                            @onclick="AddSortKey">+ Adicionar chave</button>
+                </div>
+                <div class="ds-field-list">
+                    @foreach (var (rule, i) in Source.SortExpressions.Select((r, i) => (r, i)).ToArray())
+                    {
+                        var captured = rule;
+                        <div class="ds-field-row">
+                            <span style="width:24px;font-family:var(--font-mono);color:var(--text-tertiary);">@(i + 1)</span>
+                            <input type="text" value="@captured.Expression"
+                                   @onchange="@(e => captured.Expression = e.Value?.ToString() ?? string.Empty)"
+                                   placeholder="ex: Fields.Data"
+                                   style="flex:1;font-family:var(--font-mono);" />
+                            <select value="@captured.Direction"
+                                    @onchange="@(e => captured.Direction = Enum.Parse<Reporting.Data.SortDirection>(e.Value!.ToString()!))">
+                                <option value="@Reporting.Data.SortDirection.Ascending">↑ Ascendente</option>
+                                <option value="@Reporting.Data.SortDirection.Descending">↓ Descendente</option>
+                            </select>
+                            <button type="button" class="ds-field-remove" title="Remover"
+                                    @onclick="() => Source.SortExpressions.Remove(captured)">×</button>
+                        </div>
+                    }
+                    @if (Source.SortExpressions.Count == 0)
+                    {
+                        <div class="ds-field-empty">Sem ordenação global. As linhas vêm na ordem natural da fonte.</div>
+                    }
+                </div>
+            }
+        </div>
+    </ChildContent>
+    <Footer>
+        <button class="btn ds-danger" type="button" @onclick="HandleDelete">Excluir data source</button>
+        <span style="flex:1"></span>
+        <button class="btn" type="button" @onclick="OnClosed">Cancelar</button>
+        <button class="btn primary" type="button" @onclick="HandleApply"
+                disabled="@(string.IsNullOrWhiteSpace(_name))">Aplicar</button>
+    </Footer>
+</DesignerModal>
+
+@code {
+    private enum DsTab { Connection, Schema, Query, Fields, Preview, Relations, Calculated, FilterSort }
+
+    [Parameter] public bool Visible { get; set; }
+    [Parameter] public DesignerDataSource? Source { get; set; }
+    [Parameter] public IReadOnlyList<DesignerParameter> Parameters { get; set; } = Array.Empty<DesignerParameter>();
+    /// <summary>All data sources in the catalog — used by the Relations tab to populate
+    /// the parent-source dropdown. Excludes the source being edited.</summary>
+    [Parameter] public IReadOnlyList<DesignerDataSource> AllDataSources { get; set; } = Array.Empty<DesignerDataSource>();
+    /// <summary>Live collection of master-detail relations. The dialog mutates this directly
+    /// (no apply/cancel snapshot) because relations are catalog-scoped, not per-source —
+    /// canceling the dialog shouldn't roll back a relation deletion any more than canceling
+    /// it should roll back another source's edits.</summary>
+    [Parameter] public System.Collections.ObjectModel.ObservableCollection<DesignerRelation>? Relations { get; set; }
+    [Parameter] public string Theme { get; set; } = "vs";
+    [Parameter] public EventCallback<DesignerDataSource> OnApplied { get; set; }
+    [Parameter] public EventCallback<DesignerDataSource> OnDelete { get; set; }
+    [Parameter] public EventCallback OnClosed { get; set; }
+
+    // Working buffers — the dialog operates on a copy and only commits on Apply.
+    private string _name = string.Empty;
+    private DataConnectionKind _kind = DataConnectionKind.InMemory;
+    private string? _connectionString;
+    private string? _sql;
+    private bool _isStoredProcedure;
+    private int? _commandTimeoutSeconds;
+    private readonly List<DesignerField> _fields = new();
+    private readonly System.Collections.ObjectModel.ObservableCollection<DesignerSqlParameter> _sqlParameters = new();
+
+    private bool _showJsonImport;
+    private string _jsonSample = string.Empty;
+    private string? _jsonError;
+    private DesignerDataSource? _trackedSource;
+
+    private DsTab _tab = DsTab.Connection;
+    private bool _busy;
+    private TestConnectionResult? _testResult;
+    private DataPreviewResult? _previewResult;
+    private string? _discoveryMessage;
+    private bool _discoveryError;
+
+    private MonacoEditor? _sqlEditor;
+    private readonly string _sqlEditorId = "sql-monaco-" + Guid.NewGuid().ToString("n")[..8];
+
+    // Schema explorer + procedure discovery state
+    private IReadOnlyList<DatabaseTable> _schemaTables = Array.Empty<DatabaseTable>();
+    private string? _schemaError;
+    private string? _schemaInsertHint;
+
+    /// <summary>Optional service — when null the dialog still works but Test/Discover/Preview
+    /// buttons are disabled with an inline hint.</summary>
+    private IDesignerDataConnect? _dataConnect;
+
+    protected override void OnInitialized()
+    {
+        _dataConnect = Services.GetService(typeof(IDesignerDataConnect)) as IDesignerDataConnect;
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (Visible && !ReferenceEquals(_trackedSource, Source))
+        {
+            _trackedSource = Source;
+            if (Source is not null)
+            {
+                _name = Source.Name;
+                _kind = Source.Kind;
+                _connectionString = Source.ConnectionString;
+                _sql = Source.Sql;
+                _isStoredProcedure = Source.IsStoredProcedure;
+                _commandTimeoutSeconds = Source.CommandTimeoutSeconds;
+                _fields.Clear();
+                foreach (var f in Source.Fields) _fields.Add(f.Clone());
+                _sqlParameters.Clear();
+                foreach (var p in Source.SqlParameters) _sqlParameters.Add(p.Clone());
+            }
+            else
+            {
+                _name = string.Empty;
+                _kind = DataConnectionKind.InMemory;
+                _connectionString = null;
+                _sql = null;
+                _isStoredProcedure = false;
+                _commandTimeoutSeconds = null;
+                _fields.Clear();
+                _sqlParameters.Clear();
+            }
+            _tab = DsTab.Connection;
+            _busy = false;
+            _testResult = null;
+            _previewResult = null;
+            _discoveryMessage = null;
+            _showJsonImport = false;
+            _jsonSample = string.Empty;
+            _jsonError = null;
+        }
+        else if (!Visible)
+        {
+            _trackedSource = null;
+        }
+    }
+
+    private string TabCss(DsTab tab) => tab == _tab ? "ds-tab ds-tab-active" : "ds-tab";
+
+    private string PlaceholderFor(DataConnectionKind kind) => kind switch
+    {
+        DataConnectionKind.Sqlite     => "Data Source=app.db",
+        DataConnectionKind.PostgreSql => "Host=localhost;Username=postgres;Password=secret;Database=erp",
+        DataConnectionKind.SqlServer  => "Server=.\\SQLEXPRESS;Database=erp;Integrated Security=true;TrustServerCertificate=true",
+        DataConnectionKind.MySql      => "Server=localhost;Database=erp;User=app;Password=secret",
+        _ => string.Empty,
+    };
+
+    private string SqlParamPlaceholder() => _kind switch
+    {
+        DataConnectionKind.Sqlite     => "$dataInicio",
+        DataConnectionKind.PostgreSql => "@dataInicio",
+        DataConnectionKind.SqlServer  => "@dataInicio",
+        DataConnectionKind.MySql      => "@dataInicio",
+        _ => "@nome",
+    };
+
+    private void OnKindChanged(DataConnectionKind kind)
+    {
+        _kind = kind;
+        _testResult = null;
+        _previewResult = null;
+        _discoveryMessage = null;
+        // Auto-navigate to Connection tab when switching to a live provider; back to Fields
+        // when switching to in-memory.
+        _tab = kind == DataConnectionKind.InMemory ? DsTab.Fields : DsTab.Connection;
+    }
+
+    private void AddBlankField()
+    {
+        var n = $"Campo{_fields.Count + 1}";
+        _fields.Add(new DesignerField(n, DesignerFieldType.Text));
+    }
+
+    private void AddSqlParameter()
+    {
+        _sqlParameters.Add(new DesignerSqlParameter(SqlParamPlaceholder()));
+    }
+
+    private void ImportJson()
+    {
+        _jsonError = null;
+        var inferred = DesignerDataSource.InferFromJson(_jsonSample);
+        if (inferred.Count == 0)
+        {
+            _jsonError = "JSON inválido ou sem campos no primeiro registro.";
+            return;
+        }
+        _fields.Clear();
+        foreach (var f in inferred) _fields.Add(f);
+        _showJsonImport = false;
+        _jsonSample = string.Empty;
+    }
+
+    /// <summary>Pulls the latest SQL from Monaco — but only when the Query tab is currently
+    /// active. On other tabs the editor is unmounted by Blazor and reading from a stale
+    /// <c>@ref</c> returns an empty string, which would wipe <c>_sql</c>. <c>OnValueChanged</c>
+    /// keeps <c>_sql</c> in sync continuously while Query is open, so the cached value is
+    /// fresh once we leave the tab.</summary>
+    private async Task SyncSqlFromEditorIfActiveAsync()
+    {
+        if (_tab == DsTab.Query && _sqlEditor is not null)
+        {
+            _sql = await _sqlEditor.GetValueAsync();
+        }
+    }
+
+    private async Task OnTestConnection()
+    {
+        if (_dataConnect is null) return;
+        _busy = true;
+        _testResult = null;
+        try
+        {
+            await SyncSqlFromEditorIfActiveAsync();
+            _testResult = await _dataConnect.TestConnectionAsync(_kind, _connectionString ?? string.Empty);
+        }
+        finally { _busy = false; }
+    }
+
+    private async Task OnDiscoverFields()
+    {
+        if (_dataConnect is null) return;
+        _busy = true;
+        _discoveryMessage = null;
+        _discoveryError = false;
+        try
+        {
+            await SyncSqlFromEditorIfActiveAsync();
+            var paramsDict = BuildPreviewParameters();
+            var result = await _dataConnect.DiscoverSchemaAsync(
+                _kind, _connectionString ?? string.Empty, _sql ?? string.Empty, paramsDict);
+
+            if (!string.IsNullOrEmpty(result.Error))
+            {
+                _discoveryMessage = result.Error;
+                _discoveryError = true;
+            }
+            else
+            {
+                ReplaceFieldsFromDiscovery(result.Fields);
+                _discoveryMessage = $"✓ {result.Fields.Count} campo(s) sincronizado(s) em {result.Elapsed.TotalMilliseconds:0} ms.";
+                _tab = DsTab.Fields;
+            }
+        }
+        finally { _busy = false; }
+    }
+
+    private void OnSchemaTabOpened()
+    {
+        _tab = DsTab.Schema;
+        // Auto-load the schema the first time the tab is opened so the user doesn't have
+        // to click Refresh. Subsequent navigations preserve the cached list.
+        if (_schemaTables.Count == 0 && _dataConnect is not null) _ = OnLoadSchema();
+    }
+
+    private async Task OnLoadSchema()
+    {
+        if (_dataConnect is null) return;
+        _busy = true;
+        _schemaError = null;
+        try
+        {
+            var result = await _dataConnect.ListSchemaAsync(_kind, _connectionString ?? string.Empty);
+            if (!string.IsNullOrEmpty(result.Error))
+            {
+                _schemaError = result.Error;
+                _schemaTables = Array.Empty<DatabaseTable>();
+            }
+            else
+            {
+                _schemaTables = result.Tables;
+                _schemaError = null;
+            }
+        }
+        finally { _busy = false; }
+    }
+
+    private async Task OnInsertTableIntoSql(DatabaseTable table)
+    {
+        var columns = table.Columns.Count > 0
+            ? string.Join(", ", table.Columns.Take(20).Select(c => c.Name))
+            : "*";
+        var snippet = $"SELECT {columns} FROM {table.QualifiedName}";
+        // Always update the cached buffer first — Monaco's InitialValue picks this up when
+        // the Query tab mounts. If Monaco is already mounted, also push live via SetValueAsync.
+        _sql = snippet;
+        if (_tab == DsTab.Query && _sqlEditor is not null)
+        {
+            await _sqlEditor.SetValueAsync(snippet);
+        }
+        _schemaInsertHint = $"✓ Query gerada para {table.QualifiedName}";
+        _tab = DsTab.Query;
+    }
+
+    private async Task OnInsertColumnIntoSql((DatabaseTable Table, DatabaseColumn Column) item)
+    {
+        // Same guarding as OnInsertTableIntoSql — only talk to Monaco when it's mounted.
+        if (_tab == DsTab.Query && _sqlEditor is not null)
+        {
+            await _sqlEditor.InsertAsync(item.Column.Name);
+            _sql = await _sqlEditor.GetValueAsync();
+        }
+        else
+        {
+            // Append to the cached buffer so it surfaces when the user goes back to Query.
+            _sql = (_sql ?? string.Empty) + item.Column.Name;
+        }
+        _schemaInsertHint = $"✓ Coluna {item.Column.Name} inserida";
+    }
+
+    private void OnStoredProcedureToggled(bool value)
+    {
+        _isStoredProcedure = value;
+        // Clear preview/discovery error trail — the SQL meaning changed.
+        _discoveryMessage = null;
+        _previewResult = null;
+    }
+
+    private async Task OnDiscoverProcSignature()
+    {
+        if (_dataConnect is null || string.IsNullOrWhiteSpace(_sql)) return;
+        _busy = true;
+        _discoveryMessage = null;
+        _discoveryError = false;
+        try
+        {
+            await SyncSqlFromEditorIfActiveAsync();
+            var result = await _dataConnect.DiscoverProcedureSignatureAsync(
+                _kind, _connectionString ?? string.Empty, _sql!.Trim());
+
+            if (!string.IsNullOrEmpty(result.Error))
+            {
+                _discoveryMessage = result.Error;
+                _discoveryError = true;
+            }
+            else
+            {
+                // Merge: keep existing bindings when the SQL name matches, add new ones.
+                var existing = _sqlParameters.ToDictionary(p => p.SqlName, StringComparer.OrdinalIgnoreCase);
+                _sqlParameters.Clear();
+                foreach (var p in result.Parameters)
+                {
+                    if (p.IsOutput) continue; // output params aren't supplied by the caller
+                    if (existing.TryGetValue(p.Name, out var prior))
+                    {
+                        _sqlParameters.Add(prior);
+                    }
+                    else
+                    {
+                        _sqlParameters.Add(new DesignerSqlParameter(p.Name));
+                    }
+                }
+                _discoveryMessage = $"✓ {_sqlParameters.Count} parâmetro(s) detectado(s) em {result.Elapsed.TotalMilliseconds:0} ms.";
+            }
+        }
+        finally { _busy = false; }
+    }
+
+    private async Task OnPreview()
+    {
+        if (_dataConnect is null) return;
+        _busy = true;
+        _previewResult = null;
+        try
+        {
+            await SyncSqlFromEditorIfActiveAsync();
+            var paramsDict = BuildPreviewParameters();
+            _previewResult = await _dataConnect.PreviewAsync(
+                _kind, _connectionString ?? string.Empty, _sql ?? string.Empty, paramsDict, maxRows: 50);
+        }
+        finally { _busy = false; }
+    }
+
+    /// <summary>Builds a parameter dictionary for design-time preview: each entry uses the
+    /// literal (when set) or the report-parameter default value (when bound). Runtime
+    /// resolution at paginate time follows a similar path but with the actual parameter
+    /// values supplied by the host.</summary>
+    private IReadOnlyDictionary<string, object?> BuildPreviewParameters()
+    {
+        var dict = new Dictionary<string, object?>(StringComparer.Ordinal);
+        foreach (var p in _sqlParameters)
+        {
+            if (string.IsNullOrWhiteSpace(p.SqlName)) continue;
+            object? value = null;
+            if (!string.IsNullOrEmpty(p.ReportParameter))
+            {
+                var rp = Parameters.FirstOrDefault(x => x.Name == p.ReportParameter);
+                value = rp?.DefaultValue ?? p.Literal;
+            }
+            else
+            {
+                value = p.Literal;
+            }
+            dict[p.SqlName] = value;
+        }
+        return dict;
+    }
+
+    private void ReplaceFieldsFromDiscovery(IReadOnlyList<DiscoveredField> discovered)
+    {
+        _fields.Clear();
+        foreach (var d in discovered)
+        {
+            _fields.Add(new DesignerField(d.Name, ClassifyClrType(d.ClrType)));
+        }
+    }
+
+    private static DesignerFieldType ClassifyClrType(Type clr)
+    {
+        clr = Nullable.GetUnderlyingType(clr) ?? clr;
+        if (clr == typeof(bool)) return DesignerFieldType.Bool;
+        if (clr == typeof(DateTime) || clr == typeof(DateTimeOffset) || clr == typeof(TimeSpan))
+            return DesignerFieldType.Date;
+        if (clr == typeof(byte) || clr == typeof(sbyte) ||
+            clr == typeof(short) || clr == typeof(ushort) ||
+            clr == typeof(int) || clr == typeof(uint) ||
+            clr == typeof(long) || clr == typeof(ulong) ||
+            clr == typeof(float) || clr == typeof(double) ||
+            clr == typeof(decimal))
+        {
+            return DesignerFieldType.Number;
+        }
+        return DesignerFieldType.Text;
+    }
+
+    private static string FormatCell(object? value)
+    {
+        if (value is null) return "—";
+        if (value is DateTime dt) return dt.ToString("yyyy-MM-dd HH:mm");
+        if (value is double d) return d.ToString("G", System.Globalization.CultureInfo.InvariantCulture);
+        if (value is decimal m) return m.ToString("G", System.Globalization.CultureInfo.InvariantCulture);
+        var s = value.ToString() ?? string.Empty;
+        return s.Length > 80 ? s[..80] + "…" : s;
+    }
+
+    private async Task HandleApply()
+    {
+        if (Source is null) return;
+        if (_sqlEditor is not null) _sql = await _sqlEditor.GetValueAsync();
+        Source.Name = _name.Trim();
+        Source.Kind = _kind;
+        Source.ConnectionString = string.IsNullOrWhiteSpace(_connectionString) ? null : _connectionString;
+        Source.Sql = string.IsNullOrWhiteSpace(_sql) ? null : _sql;
+        Source.IsStoredProcedure = _isStoredProcedure;
+        Source.CommandTimeoutSeconds = _commandTimeoutSeconds;
+        Source.ReplaceFields(_fields);
+        // Replace SQL parameters wholesale (clone again to keep dialog buffer independent).
+        Source.SqlParameters.Clear();
+        foreach (var p in _sqlParameters) Source.SqlParameters.Add(p.Clone());
+        await OnApplied.InvokeAsync(Source);
+        await OnClosed.InvokeAsync();
+    }
+
+    private async Task HandleDelete()
+    {
+        if (Source is null) return;
+        await OnDelete.InvokeAsync(Source);
+        await OnClosed.InvokeAsync();
+    }
+
+    // ── Relations tab helpers ────────────────────────────────────────────────
+    /// <summary>Other data sources that could legitimately be parents of this one
+    /// (i.e. every source except the one being edited). Used to populate the parent
+    /// dropdown and to gate "+ Adicionar pai" availability.</summary>
+    private IReadOnlyList<DesignerDataSource> AvailableParents()
+        => AllDataSources.Where(d => !string.Equals(d.Name, _name, StringComparison.Ordinal)).ToList();
+
+    /// <summary>How many relations currently have this source on the child side.
+    /// Drives the tab's badge count and the empty-state message.</summary>
+    private int MyAsChildCount()
+        => Relations?.Count(r => string.Equals(r.ChildSource, _name, StringComparison.Ordinal)) ?? 0;
+
+    /// <summary>Field names of <paramref name="sourceName"/> as currently in the catalog.
+    /// Returns empty when the source has been deleted (stale relation) — the dropdown
+    /// will then surface only the chosen-but-missing value so the user can repair it.</summary>
+    private IEnumerable<string> FieldsOfSource(string sourceName)
+        => AllDataSources.FirstOrDefault(d => string.Equals(d.Name, sourceName, StringComparison.Ordinal))
+                         ?.Fields.Select(f => f.Name)
+           ?? Enumerable.Empty<string>();
+
+    private void AddRelationAsChild()
+    {
+        if (Relations is null) return;
+        var parent = AvailableParents().FirstOrDefault();
+        if (parent is null) return;
+        var pf = parent.Fields.FirstOrDefault()?.Name ?? string.Empty;
+        var cf = _fields.FirstOrDefault()?.Name ?? string.Empty;
+        var n = $"Rel_{parent.Name}_{_name}";
+        Relations.Add(new DesignerRelation(n, parent.Name, pf, _name, cf));
+    }
+
+    // ── RDL Calculated / Filter / Sort helpers ──────────────────────────────────
+
+    /// <summary>Appends a blank calculated field to the source. The user fills in name
+    /// + expression + result type inline in the tab body.</summary>
+    private void AddCalculatedField()
+    {
+        if (Source is null) return;
+        var n = $"Calculada{Source.CalculatedFields.Count + 1}";
+        Source.CalculatedFields.Add(new DesignerCalculatedField(n, "Fields.", DesignerFieldType.Text));
+    }
+
+    /// <summary>Appends a new sort key (ascending by default) to the source's global sort.</summary>
+    private void AddSortKey()
+    {
+        Source?.SortExpressions.Add(new SortDescriptorRule { Expression = "Fields." });
+    }
+
+    /// <summary>Coerces empty / whitespace strings to null — the serializer treats them as
+    /// equivalent and storing whitespace would break round-trip equality.</summary>
+    private static string? AsNullableTrim(string? v) => string.IsNullOrWhiteSpace(v) ? null : v.Trim();
+
+    /// <summary>When the parent source changes, auto-reset the parent field to the first
+    /// available column — otherwise the old field name would point at a column that
+    /// doesn't exist in the new parent.</summary>
+    private void OnParentSourceChanged(DesignerRelation r, string? newParent)
+    {
+        if (string.IsNullOrEmpty(newParent)) return;
+        r.ParentSource = newParent;
+        var first = FieldsOfSource(newParent).FirstOrDefault();
+        if (first is not null) r.ParentField = first;
+    }
+}

@@ -1,0 +1,95 @@
+@page "/samples-repx"
+
+<PageTitle>OmniReport — Galeria de .repx</PageTitle>
+
+<h1>Galeria de relatórios .repx</h1>
+
+<p class="lead">
+    Os arquivos abaixo foram gerados pelos samples code-first
+    (<code>samples/Reporting.Samples.CodeFirst</code>) e copiados para
+    <code>wwwroot/reports/</code>. Eles servem três propósitos:
+</p>
+<ol>
+    <li><strong>Download:</strong> clique no link para baixar o <code>.repx</code>.</li>
+    <li><strong>Designer:</strong> abra o Designer e use <em>Arquivo → Abrir .repx…</em>
+        apontando para o arquivo baixado — todos os campos RDL Phase 1 (Bookmark, Action,
+        PageBreak, NoRowsMessage, Filter, Sort, CalculatedField) round-trippam
+        sem perda.</li>
+    <li><strong>Sample data:</strong> as fontes JSON/XML usadas pelos relatórios estão
+        em <code>wwwroot/sample-data/</code>. Quando carregadas pelo Designer, os
+        providers resolvem o caminho relativo ao binário rodando — para um teste end-to-end
+        completo, mantenha as duas pastas juntas.</li>
+</ol>
+
+<table class="repx-table">
+    <thead>
+        <tr>
+            <th>Relatório</th>
+            <th>Data Provider</th>
+            <th>Source File</th>
+            <th>Download</th>
+            <th>Preview</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><strong>Pedidos</strong></td>
+            <td><code>JsonDataSource</code> · RootPath = <code>data.results</code></td>
+            <td><a href="sample-data/pedidos.json" download>pedidos.json</a></td>
+            <td><a href="reports/06-json-pedidos.repx" download>06-json-pedidos.repx</a></td>
+            <td><NavLink href="report/json">Abrir →</NavLink></td>
+        </tr>
+        <tr>
+            <td><strong>Blog Digest</strong></td>
+            <td><code>XmlDataSource</code> · RowsXPath = <code>/rss/channel/item</code></td>
+            <td><a href="sample-data/rss-feed.xml" download>rss-feed.xml</a></td>
+            <td><a href="reports/07-xml-rss-feed.repx" download>07-xml-rss-feed.repx</a></td>
+            <td><NavLink href="report/xml">Abrir →</NavLink></td>
+        </tr>
+        <tr>
+            <td><strong>Catálogo (REST)</strong></td>
+            <td><code>WebServiceDataSource</code> · stub offline + Bearer auth</td>
+            <td><em>(inline no .repx)</em></td>
+            <td><a href="reports/08-webservice-api.repx" download>08-webservice-api.repx</a></td>
+            <td><NavLink href="report/webservice">Abrir →</NavLink></td>
+        </tr>
+        <tr>
+            <td><strong>Auditoria FS</strong></td>
+            <td><code>FileSystemDataSource</code> · <code>AppContext.BaseDirectory</code></td>
+            <td><em>(filesystem live)</em></td>
+            <td><a href="reports/09-filesystem-logs.repx" download>09-filesystem-logs.repx</a></td>
+            <td><NavLink href="report/filesystem">Abrir →</NavLink></td>
+        </tr>
+        <tr>
+            <td><strong>Vendas SQLite</strong></td>
+            <td><code>SqliteDataSource</code> · <code>file:Sample11Db?mode=memory&amp;cache=shared</code></td>
+            <td><em>(in-memory seeded)</em></td>
+            <td><a href="reports/11-adonet-sqlite.repx" download>11-adonet-sqlite.repx</a></td>
+            <td><NavLink href="report/sqlite">Abrir →</NavLink></td>
+        </tr>
+    </tbody>
+</table>
+
+<h2 style="margin-top:32px;">Bônus · sample data exposta como REST</h2>
+<p>
+    Os arquivos abaixo são servidos como recursos estáticos pelo Blazor — você pode
+    apontar o <code>WebServiceDataSource</code> diretamente para eles via URL local:
+</p>
+<ul>
+    <li><a href="sample-data/pedidos.json" target="_blank">/sample-data/pedidos.json</a> — JSON com envelope <code>{data:{results:[…]}}</code></li>
+    <li><a href="sample-data/rss-feed.xml" target="_blank">/sample-data/rss-feed.xml</a> — RSS 2.0 feed</li>
+    <li><a href="sample-data/produtos.xml" target="_blank">/sample-data/produtos.xml</a> — catálogo com atributos + elementos</li>
+</ul>
+
+<p style="font-size:13px;color:#777;margin-top:24px;">
+    <em>Para regerar os .repx, execute <code>dotnet run --project samples/Reporting.Samples.CodeFirst -c Release</code>
+    e copie <code>out/06..09.repx</code> para <code>wwwroot/reports/</code>.</em>
+</p>
+
+<style>
+    .repx-table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+    .repx-table th, .repx-table td { padding: 8px 12px; border-bottom: 1px solid #e5e5e5; text-align: left; vertical-align: top; }
+    .repx-table th { background: #f9f9f9; font-weight: 600; font-size: 13px; color: #555; }
+    .repx-table code { font-size: 12px; background: #f3f3f3; padding: 1px 5px; border-radius: 3px; }
+    .repx-table a { color: #c2410c; }
+</style>

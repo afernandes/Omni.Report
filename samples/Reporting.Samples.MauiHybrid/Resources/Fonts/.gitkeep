@@ -1,0 +1,3 @@
+# Optional: drop OpenSans-Regular.ttf and OpenSans-Semibold.ttf here for the
+# default fonts referenced in MauiProgram.cs. MAUI will warn (not fail) when
+# missing; system fonts kick in as fallback.

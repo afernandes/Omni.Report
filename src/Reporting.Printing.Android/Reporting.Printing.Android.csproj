@@ -1,0 +1,43 @@
+<!--
+  Conditional Android-only project. Only compiled when the .NET Android workload
+  ('android' workload) is installed AND the environment variable OMNIREPORT_BUILD_ANDROID
+  is set to 'true'. CI Linux/Windows by default skip this project.
+
+  To enable locally:
+    dotnet workload install android
+    $env:OMNIREPORT_BUILD_ANDROID = 'true'
+    dotnet build src/Reporting.Printing.Android
+-->
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup Condition="'$(OMNIREPORT_BUILD_ANDROID)' == 'true'">
+    <TargetFramework>net10.0-android</TargetFramework>
+    <SupportedOSPlatformVersion>26.0</SupportedOSPlatformVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(OMNIREPORT_BUILD_ANDROID)' != 'true'">
+    <!-- When the Android workload is not desired, compile as a regular net10.0 library
+         with the Android API surface stubbed out. This keeps the source tree green on
+         CI agents that lack the workload. -->
+    <TargetFramework>net10.0</TargetFramework>
+    <DefineConstants>$(DefineConstants);OMNIREPORT_ANDROID_STUB</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <RootNamespace>Reporting.Printing.Android</RootNamespace>
+    <AssemblyName>Reporting.Printing.Android</AssemblyName>
+    <Description>OmniReport — IReportPrinter for the Android Print Framework (PrintManager + PrintDocumentAdapter). Pages are PDF-rendered via SkiaSharp.</Description>
+    <Nullable>enable</Nullable>
+    <LangVersion>13</LangVersion>
+    <!-- This is a stub for non-Android targets. -->
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Reporting.Core\Reporting.Core.csproj" />
+    <ProjectReference Include="..\Reporting.Layout\Reporting.Layout.csproj" />
+    <ProjectReference Include="..\Reporting.Printing\Reporting.Printing.csproj" />
+    <ProjectReference Include="..\Reporting.Output.Pdf\Reporting.Output.Pdf.csproj" />
+  </ItemGroup>
+
+</Project>

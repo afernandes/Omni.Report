@@ -1,0 +1,185 @@
+@page "/designer"
+@rendermode InteractiveServer
+@using Reporting.Designer.Blazor
+@using Reporting.Designer.Blazor.ViewModels
+@using Reporting.Samples.CodeFirst.Reports
+@using ReportDef = Reporting.ReportDefinition
+
+<PageTitle>Designer · OmniReport</PageTitle>
+
+<HeadContent>
+    @* The sandbox occupies the full viewport to the right of the sidebar.
+       Override the global .content padding/overflow which would otherwise
+       squeeze the designer and force a horizontal scrollbar. *@
+    <style>
+        body .app-shell > .content {
+            padding: 0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+    </style>
+</HeadContent>
+
+<div class="sandbox-bar" data-testid="sandbox-bar">
+    <span class="sandbox-label">Sandbox</span>
+    <button type="button" class="sandbox-btn" data-testid="load-blank"
+            @onclick="LoadBlank">Novo (em branco)</button>
+    <span class="sandbox-divider"></span>
+    <button type="button" class="sandbox-btn" data-testid="load-sample-vendas"
+            @onclick='() => LoadSample("vendas")'>01 · Vendas</button>
+    <button type="button" class="sandbox-btn" data-testid="load-sample-espelho"
+            @onclick='() => LoadSample("espelho")'>02 · Espelho</button>
+    <button type="button" class="sandbox-btn" data-testid="load-sample-caixa"
+            @onclick='() => LoadSample("caixa")'>03 · Caixa</button>
+    <button type="button" class="sandbox-btn" data-testid="load-sample-nfce"
+            @onclick='() => LoadSample("nfce")'>04 · NFC-e</button>
+    <span class="sandbox-divider"></span>
+    <button type="button" class="sandbox-btn" data-testid="load-sample-dashboard"
+            @onclick='() => LoadSample("dashboard")'
+            title="Gráficos (barras/linhas/pizza) + Gauge + Sparkline + Indicator + DataBar.">12 · Dashboard</button>
+    <button type="button" class="sandbox-btn" data-testid="load-sample-tablix"
+            @onclick='() => LoadSample("tablix")'
+            title="Tablix — tabela bandada com colunas proporcionais.">13 · Tablix</button>
+    <button type="button" class="sandbox-btn" data-testid="load-sample-mapa"
+            @onclick='() => LoadSample("mapa")'
+            title="Map — projeção Web Mercator, contorno do Brasil + graticule.">14 · Mapa</button>
+    <span class="sandbox-divider"></span>
+    <button type="button" class="sandbox-btn" data-testid="load-sample-sqlite"
+            @onclick="LoadSqliteSample"
+            title="Carrega 2 fontes SQLite (Clientes + Pedidos) com master-detail e parâmetros.">
+        🗄 DB · SQLite
+    </button>
+    <span class="sandbox-status" data-testid="sandbox-status">@_status</span>
+</div>
+
+<div class="designer-host" data-testid="designer-host">
+    <ReportDesigner @ref="_designer" InitialState="_state" OnSaved="OnReportSaved" />
+</div>
+
+<style>
+    .sandbox-bar {
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 10px;
+        background: #0f172a;
+        color: #e2e8f0;
+        font: 12px/1.2 'IBM Plex Sans', system-ui, sans-serif;
+        border-bottom: 1px solid #1e293b;
+        white-space: nowrap;
+        overflow-x: auto;
+    }
+    .sandbox-label {
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        font-size: 11px;
+        color: #94a3b8;
+        margin-right: 4px;
+        white-space: nowrap;
+    }
+    .sandbox-btn {
+        background: #1e293b;
+        color: #e2e8f0;
+        border: 1px solid #334155;
+        border-radius: 4px;
+        padding: 4px 10px;
+        font: inherit;
+        cursor: pointer;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+    .sandbox-btn:hover { background: #334155; border-color: #475569; }
+    .sandbox-btn:active { background: #0f172a; }
+    .sandbox-divider {
+        width: 1px;
+        height: 18px;
+        background: #334155;
+        margin: 0 4px;
+        flex-shrink: 0;
+    }
+    .sandbox-status {
+        margin-left: auto;
+        color: #94a3b8;
+        font-style: italic;
+        min-width: 220px;
+        text-align: right;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .designer-host {
+        flex: 1;
+        min-height: 0;
+        min-width: 0;
+        display: flex;
+    }
+    .designer-host > * {
+        flex: 1;
+        min-width: 0;
+    }
+</style>
+
+@code {
+    private readonly DesignerState _state = new();
+    private ReportDesigner? _designer;
+    private string _status = "Pronto. Escolha um sample acima ou comece em branco.";
+
+    private void LoadBlank()
+    {
+        _state.ReplaceActiveReport(new ReportDefinitionViewModel("Sem título"));
+        _status = "Novo relatório em branco carregado.";
+    }
+
+    private void LoadSample(string name)
+    {
+        try
+        {
+            // Build the full Report (layout + its in-memory data registry), not just the
+            // Definition — so the preview can render data-bound elements (charts/map/tablix)
+            // populated, via DesignerState.PreviewDataRegistry.
+            Reporting.CodeFirst.Report report = name switch
+            {
+                "vendas"    => Sample01_VendasPorCliente.Build(),
+                "espelho"   => Sample02_EspelhoProdutos.Build(),
+                "caixa"     => Sample03_RelatorioCaixa.Build(),
+                "nfce"      => Sample04_CupomNfce.Build(),
+                "dashboard" => Sample12_Dashboard.Build(),
+                "tablix"    => Sample13_TabelaProdutos.Build(),
+                "mapa"      => Sample14_MapaFiliais.Build(),
+                _           => Sample01_VendasPorCliente.Build(),
+            };
+            var vm = ReportDefinitionViewModel.FromDefinition(report.Definition);
+            _state.ReplaceActiveReport(vm);          // clears any stale preview data
+            _state.PreviewDataRegistry = report.DataSources; // feed the sample's data to the preview
+            var elementCount = vm.Bands.Sum(b => b.Elements.Count);
+            _status = $"Sample '{name}' carregado — {vm.Bands.Count} banda(s), {elementCount} elemento(s). " +
+                      "Clique em Pré-visualizar para ver com dados.";
+        }
+        catch (Exception ex)
+        {
+            _status = $"Erro ao carregar '{name}': {ex.Message}";
+        }
+    }
+
+    private void LoadSqliteSample()
+    {
+        try
+        {
+            DemoSqliteReport.SeedInto(_state);
+            _status = $"DB SQLite carregado · 2 fontes (Clientes + Pedidos) · 1 relação · 2 parâmetros · arquivo: {DemoSqliteDatabase.Path}";
+        }
+        catch (Exception ex)
+        {
+            _status = $"Erro ao montar sample SQLite: {ex.Message}";
+        }
+    }
+
+    private void OnReportSaved(byte[] bytes)
+    {
+        _status = $"Relatório salvo ({bytes.Length} bytes .repx).";
+    }
+}

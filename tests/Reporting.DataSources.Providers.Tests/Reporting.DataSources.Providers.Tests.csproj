@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Reporting.DataSources\Reporting.DataSources.csproj" />
+    <ProjectReference Include="..\..\src\Reporting.DataSources.Json\Reporting.DataSources.Json.csproj" />
+    <ProjectReference Include="..\..\src\Reporting.DataSources.Xml\Reporting.DataSources.Xml.csproj" />
+    <ProjectReference Include="..\..\src\Reporting.DataSources.WebService\Reporting.DataSources.WebService.csproj" />
+    <ProjectReference Include="..\..\src\Reporting.DataSources.FileSystem\Reporting.DataSources.FileSystem.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="FluentAssertions" />
+    <PackageReference Include="coverlet.collector" />
+  </ItemGroup>
+
+</Project>

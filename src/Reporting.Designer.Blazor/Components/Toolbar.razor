@@ -1,0 +1,221 @@
+@namespace Reporting.Designer.Blazor.Components
+@using System.Globalization
+
+<div class="toolbar no-select">
+    <div class="tb-group">
+        <button class="tb-btn" type="button" title="Desfazer (Ctrl+Z)"
+                disabled="@(!CanUndo)" @onclick="OnUndoClicked">
+            <Icon Name="undo-2" Size="16" CssClass="icon icon-16" />
+        </button>
+        <button class="tb-btn" type="button" title="Refazer (Ctrl+Y)"
+                disabled="@(!CanRedo)" @onclick="OnRedoClicked">
+            <Icon Name="redo-2" Size="16" CssClass="icon icon-16" />
+        </button>
+    </div>
+    <div class="tb-sep"></div>
+
+    <div class="tb-group">
+        <button class="tb-btn" type="button" title="Recortar (Ctrl+X)"
+                disabled="@(!HasSelection)" @onclick="OnCutClicked">
+            <Icon Name="scissors" Size="16" CssClass="icon icon-16" />
+        </button>
+        <button class="tb-btn" type="button" title="Copiar (Ctrl+C)"
+                disabled="@(!HasSelection)" @onclick="OnCopyClicked">
+            <Icon Name="copy" Size="16" CssClass="icon icon-16" />
+        </button>
+        <button class="tb-btn" type="button" title="Colar (Ctrl+V)"
+                disabled="@(!HasClipboard)" @onclick="OnPasteClicked">
+            <Icon Name="clipboard-paste" Size="16" CssClass="icon icon-16" />
+        </button>
+    </div>
+    <div class="tb-sep"></div>
+
+    <div class="tb-group" aria-label="Inserir">
+        <button class="tb-btn" type="button" title="Texto"
+                @onclick="@(() => OnInsert.InvokeAsync(DesignerElementKind.TextBox))">
+            <Icon Name="type" Size="16" CssClass="icon icon-16" />
+        </button>
+        <button class="tb-btn" type="button" title="Retângulo"
+                @onclick="@(() => OnInsert.InvokeAsync(DesignerElementKind.Rectangle))">
+            <Icon Name="square" Size="16" CssClass="icon icon-16" />
+        </button>
+        <button class="tb-btn" type="button" title="Linha"
+                @onclick="@(() => OnInsert.InvokeAsync(DesignerElementKind.Line))">
+            <Icon Name="minus" Size="16" CssClass="icon icon-16" />
+        </button>
+        <button class="tb-btn" type="button" title="Imagem"
+                @onclick="@(() => OnInsert.InvokeAsync(DesignerElementKind.Image))">
+            <Icon Name="image" Size="16" CssClass="icon icon-16" />
+        </button>
+        <button class="tb-btn" type="button" title="Código de barras"
+                @onclick="@(() => OnInsert.InvokeAsync(DesignerElementKind.Barcode))">
+            <Icon Name="barcode" Size="16" CssClass="icon icon-16" />
+        </button>
+    </div>
+
+    <div class="tb-sep"></div>
+    <button class="tb-btn" type="button" title="Excluir (Del)"
+            disabled="@(!HasSelection)" @onclick="OnDeleteClicked">
+        <Icon Name="trash-2" Size="16" CssClass="icon icon-16" />
+    </button>
+
+    @* Alignment group — only enabled when multi-select *@
+    <div class="tb-sep"></div>
+    <div class="tb-group" aria-label="Alinhar">
+        <button class="tb-btn" type="button" title="Alinhar à esquerda"
+                disabled="@(!MultiSelected)" @onclick="@(() => OnAlignLeft.InvokeAsync())">
+            <Icon Name="align-start-vertical" Size="16" CssClass="icon icon-16" />
+        </button>
+        <button class="tb-btn" type="button" title="Centralizar horizontal"
+                disabled="@(!MultiSelected)" @onclick="@(() => OnAlignCenterH.InvokeAsync())">
+            <Icon Name="align-center-vertical" Size="16" CssClass="icon icon-16" />
+        </button>
+        <button class="tb-btn" type="button" title="Alinhar à direita"
+                disabled="@(!MultiSelected)" @onclick="@(() => OnAlignRight.InvokeAsync())">
+            <Icon Name="align-end-vertical" Size="16" CssClass="icon icon-16" />
+        </button>
+        <span class="tb-sep"></span>
+        <button class="tb-btn" type="button" title="Alinhar topo"
+                disabled="@(!MultiSelected)" @onclick="@(() => OnAlignTop.InvokeAsync())">
+            <Icon Name="align-start-horizontal" Size="16" CssClass="icon icon-16" />
+        </button>
+        <button class="tb-btn" type="button" title="Centralizar vertical"
+                disabled="@(!MultiSelected)" @onclick="@(() => OnAlignMiddleV.InvokeAsync())">
+            <Icon Name="align-center-horizontal" Size="16" CssClass="icon icon-16" />
+        </button>
+        <button class="tb-btn" type="button" title="Alinhar base"
+                disabled="@(!MultiSelected)" @onclick="@(() => OnAlignBottom.InvokeAsync())">
+            <Icon Name="align-end-horizontal" Size="16" CssClass="icon icon-16" />
+        </button>
+        <span class="tb-sep"></span>
+        <button class="tb-btn" type="button" title="Distribuir horizontalmente"
+                disabled="@(!MultiSelected)" @onclick="@(() => OnDistributeH.InvokeAsync())">
+            <Icon Name="columns-3" Size="16" CssClass="icon icon-16" />
+        </button>
+        <button class="tb-btn" type="button" title="Distribuir verticalmente"
+                disabled="@(!MultiSelected)" @onclick="@(() => OnDistributeV.InvokeAsync())">
+            <Icon Name="rows-3" Size="16" CssClass="icon icon-16" />
+        </button>
+    </div>
+
+    @* Same-size operations — Visual Studio / DevExpress style *@
+    <div class="tb-sep"></div>
+    <div class="tb-group" aria-label="Igualar tamanho">
+        <button class="tb-btn" type="button" title="Mesma largura (referência: 1º selecionado)"
+                disabled="@(!MultiSelected)" @onclick="@(() => OnSameWidth.InvokeAsync())">
+            <Icon Name="move-horizontal" Size="16" CssClass="icon icon-16" />
+        </button>
+        <button class="tb-btn" type="button" title="Mesma altura (referência: 1º selecionado)"
+                disabled="@(!MultiSelected)" @onclick="@(() => OnSameHeight.InvokeAsync())">
+            <Icon Name="move-vertical" Size="16" CssClass="icon icon-16" />
+        </button>
+        <button class="tb-btn" type="button" title="Mesmo tamanho (largura e altura)"
+                disabled="@(!MultiSelected)" @onclick="@(() => OnSameBoth.InvokeAsync())">
+            <Icon Name="square" Size="16" CssClass="icon icon-16" />
+        </button>
+    </div>
+
+    @* Z-order *@
+    <div class="tb-sep"></div>
+    <div class="tb-group" aria-label="Ordem">
+        <button class="tb-btn" type="button" title="Trazer para a frente (topo do Z-order)"
+                disabled="@(!HasSelection)" @onclick="@(() => OnBringToFront.InvokeAsync())">
+            <Icon Name="chevrons-up" Size="16" CssClass="icon icon-16" />
+        </button>
+        <button class="tb-btn" type="button" title="Avançar uma camada"
+                disabled="@(!HasSelection)" @onclick="@(() => OnBringForward.InvokeAsync())">
+            <Icon Name="chevron-up" Size="16" CssClass="icon icon-16" />
+        </button>
+        <button class="tb-btn" type="button" title="Recuar uma camada"
+                disabled="@(!HasSelection)" @onclick="@(() => OnSendBackward.InvokeAsync())">
+            <Icon Name="chevron-down" Size="16" CssClass="icon icon-16" />
+        </button>
+        <button class="tb-btn" type="button" title="Enviar para trás (fundo do Z-order)"
+                disabled="@(!HasSelection)" @onclick="@(() => OnSendToBack.InvokeAsync())">
+            <Icon Name="chevrons-down" Size="16" CssClass="icon icon-16" />
+        </button>
+    </div>
+
+    <div class="tb-spacer"></div>
+
+    <div class="tb-group">
+        <button class="tb-btn @(GridVisible ? "is-toggled" : null)" type="button" title="Grade"
+                @onclick="@(() => OnToggleGrid.InvokeAsync(!GridVisible))">
+            <Icon Name="grid-3x3" Size="16" CssClass="icon icon-16" />
+        </button>
+        <button class="tb-btn @(SnapEnabled ? "is-toggled" : null)" type="button" title="Snap"
+                @onclick="@(() => OnToggleSnap.InvokeAsync(!SnapEnabled))">
+            <Icon Name="magnet" Size="16" CssClass="icon icon-16" />
+        </button>
+        <button class="tb-btn" type="button" title="Régua">
+            <Icon Name="ruler" Size="16" CssClass="icon icon-16" />
+        </button>
+    </div>
+    <div class="tb-sep"></div>
+
+    <div class="tb-zoom">
+        <button class="zoom-btn" type="button" @onclick="@(() => OnZoomChange.InvokeAsync(Math.Max(0.25, Zoom - 0.1)))">
+            <Icon Name="minus" Size="12" CssClass="icon icon-12" />
+        </button>
+        <span class="zoom-val">@($"{Zoom * 100:F0}%")</span>
+        <button class="zoom-btn" type="button" @onclick="@(() => OnZoomChange.InvokeAsync(Math.Min(4.0, Zoom + 0.1)))">
+            <Icon Name="plus" Size="12" CssClass="icon icon-12" />
+        </button>
+    </div>
+
+    <button class="tb-btn" type="button" title="Configuração de página" style="margin-left:6px;"
+            @onclick="OnPageSetupClicked">
+        <Icon Name="file-cog" Size="16" CssClass="icon icon-16" />
+    </button>
+    <button class="tb-btn primary" type="button" title="Preview (F5)" @onclick="OnPreviewClicked">
+        <Icon Name="play" Size="16" CssClass="icon icon-16" /> Preview
+    </button>
+</div>
+
+@code {
+    [Parameter] public bool CanUndo     { get; set; }
+    [Parameter] public bool CanRedo     { get; set; }
+    [Parameter] public bool HasSelection{ get; set; }
+    [Parameter] public bool HasClipboard{ get; set; }
+    [Parameter] public bool GridVisible { get; set; } = true;
+    [Parameter] public bool SnapEnabled { get; set; } = true;
+    [Parameter] public double Zoom      { get; set; } = 1.0;
+
+    [Parameter] public EventCallback OnUndo    { get; set; }
+    [Parameter] public EventCallback OnRedo    { get; set; }
+    [Parameter] public EventCallback OnDelete  { get; set; }
+    [Parameter] public EventCallback OnPreview { get; set; }
+    [Parameter] public EventCallback OnCut     { get; set; }
+    [Parameter] public EventCallback OnCopy    { get; set; }
+    [Parameter] public EventCallback OnPaste   { get; set; }
+    [Parameter] public EventCallback OnPageSetup { get; set; }
+    [Parameter] public EventCallback OnAlignLeft   { get; set; }
+    [Parameter] public EventCallback OnAlignCenterH{ get; set; }
+    [Parameter] public EventCallback OnAlignRight  { get; set; }
+    [Parameter] public EventCallback OnAlignTop    { get; set; }
+    [Parameter] public EventCallback OnAlignMiddleV{ get; set; }
+    [Parameter] public EventCallback OnAlignBottom { get; set; }
+    [Parameter] public EventCallback OnDistributeH { get; set; }
+    [Parameter] public EventCallback OnDistributeV { get; set; }
+    [Parameter] public EventCallback OnSameWidth   { get; set; }
+    [Parameter] public EventCallback OnSameHeight  { get; set; }
+    [Parameter] public EventCallback OnSameBoth    { get; set; }
+    [Parameter] public EventCallback OnBringForward{ get; set; }
+    [Parameter] public EventCallback OnSendBackward{ get; set; }
+    [Parameter] public EventCallback OnBringToFront{ get; set; }
+    [Parameter] public EventCallback OnSendToBack  { get; set; }
+    [Parameter] public bool MultiSelected { get; set; }
+    [Parameter] public EventCallback<DesignerElementKind> OnInsert { get; set; }
+    [Parameter] public EventCallback<bool> OnToggleGrid { get; set; }
+    [Parameter] public EventCallback<bool> OnToggleSnap { get; set; }
+    [Parameter] public EventCallback<double> OnZoomChange { get; set; }
+
+    private Task OnUndoClicked()    => OnUndo.InvokeAsync();
+    private Task OnRedoClicked()    => OnRedo.InvokeAsync();
+    private Task OnDeleteClicked()  => OnDelete.InvokeAsync();
+    private Task OnPreviewClicked() => OnPreview.InvokeAsync();
+    private Task OnCutClicked()     => OnCut.InvokeAsync();
+    private Task OnCopyClicked()    => OnCopy.InvokeAsync();
+    private Task OnPasteClicked()   => OnPaste.InvokeAsync();
+    private Task OnPageSetupClicked() => OnPageSetup.InvokeAsync();
+}

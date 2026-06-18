@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Report SchemaVersion="1.0" Name="Tributos (Code / Roslyn)">
+  <PageSetup Orientation="Portrait" Margins="709,709,709,709" Columns="1" ColumnSpacing="0">
+    <Paper Name="A4" Width="8268" Height="11693" />
+  </PageSetup>
+  <DataSources>
+    <DataSource Name="Itens">
+      <Fields>
+        <Field Name="Produto" Type="System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" />
+        <Field Name="Valor" Type="System.Decimal, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" />
+      </Fields>
+    </DataSource>
+  </DataSources>
+  <ReportHeader Kind="ReportHeader" Height="866" Visible="true" PrintOnFirstPage="true" PrintOnLastPage="true">
+    <Elements>
+      <TextBox Id="c2c98807ab2b40cb9c41147ebe2c0f77" Bounds="0,0,6850,394" Visible="true">
+        <Style HorizontalAlignment="Center" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Arial" Size="14" Style="Bold" />
+        </Style>
+        <Expression>Cálculo de Tributos com Code customizado (C#)</Expression>
+      </TextBox>
+      <TextBox Id="7acdbd65d27640ca8ba3ab5a8610d1a4" Bounds="0,472,6850,236" Visible="true">
+        <Style HorizontalAlignment="Center" VerticalAlignment="Top" WordWrap="true">
+          <ForeColor>#808080</ForeColor>
+        </Style>
+        <Expression>As colunas chamam Code.Imposto / Code.Liquido / Code.Faixa — compilado via Roslyn (opt-in)</Expression>
+      </TextBox>
+    </Elements>
+  </ReportHeader>
+  <PageHeader Kind="PageHeader" Height="276" Visible="true" PrintOnFirstPage="true" PrintOnLastPage="true">
+    <Elements>
+      <Label Id="055c1c3d122444c7837b4b40dbdb5cde" Bounds="0,0,2283,236" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Arial" Size="10" Style="Bold" />
+        </Style>
+        <Text>Produto</Text>
+      </Label>
+      <Label Id="e56a7624638544609df54108e9402331" Bounds="2283,0,1102,236" Visible="true">
+        <Style HorizontalAlignment="Right" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Arial" Size="10" Style="Bold" />
+        </Style>
+        <Text>Valor</Text>
+      </Label>
+      <Label Id="d5b349fe5ab941539cb16111e46f61c8" Bounds="3465,0,1102,236" Visible="true">
+        <Style HorizontalAlignment="Right" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Arial" Size="10" Style="Bold" />
+        </Style>
+        <Text>Imposto 18%</Text>
+      </Label>
+      <Label Id="34b99887d8c84cdfbb647e4f8387a0de" Bounds="4646,0,1102,236" Visible="true">
+        <Style HorizontalAlignment="Right" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Arial" Size="10" Style="Bold" />
+        </Style>
+        <Text>Líquido</Text>
+      </Label>
+      <Label Id="63a2b876843a47d0b810b0c5c1581010" Bounds="5827,0,1024,236" Visible="true">
+        <Style HorizontalAlignment="Right" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Arial" Size="10" Style="Bold" />
+        </Style>
+        <Text>Faixa</Text>
+      </Label>
+      <Line Id="f21ad1101f43400e85a896b63acedc43" Bounds="0,236,6850,0" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true" />
+        <Direction>Horizontal</Direction>
+        <Pen Style="Solid" Thickness="3" Color="#000000" />
+      </Line>
+    </Elements>
+  </PageHeader>
+  <Detail Height="236" Visible="true" CanGrow="false" CanShrink="false">
+    <Elements>
+      <TextBox Id="677503269c7346549209da4a6edb7598" Bounds="0,0,2283,236" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true" />
+        <Expression>{Fields.Produto}</Expression>
+      </TextBox>
+      <TextBox Id="210fc0952c0e492b9b130da96ddd7919" Bounds="2283,0,1102,236" Visible="true">
+        <Style HorizontalAlignment="Right" VerticalAlignment="Top" WordWrap="true" />
+        <Expression>{Fields.Valor:C}</Expression>
+      </TextBox>
+      <TextBox Id="d26752ba5999480a9d52e0871ad38e85" Bounds="3465,0,1102,236" Visible="true">
+        <Style HorizontalAlignment="Right" VerticalAlignment="Top" WordWrap="true" />
+        <Expression>{Code.Imposto(Fields.Valor):C}</Expression>
+      </TextBox>
+      <TextBox Id="279166a2c44b478f8614979bcaabde60" Bounds="4646,0,1102,236" Visible="true">
+        <Style HorizontalAlignment="Right" VerticalAlignment="Top" WordWrap="true" />
+        <Expression>{Code.Liquido(Fields.Valor):C}</Expression>
+      </TextBox>
+      <TextBox Id="676ce88d484849cc8b4f5bca82cffd2d" Bounds="5827,0,1024,236" Visible="true">
+        <Style HorizontalAlignment="Right" VerticalAlignment="Top" WordWrap="true" />
+        <Expression>{Code.Faixa(Fields.Valor)}</Expression>
+      </TextBox>
+    </Elements>
+  </Detail>
+  <ReportFooter Kind="ReportFooter" Height="394" Visible="true" PrintOnFirstPage="true" PrintOnLastPage="true">
+    <Elements>
+      <Line Id="738495ce2804427e86db385ccf5d4216" Bounds="0,0,6850,0" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true" />
+        <Direction>Horizontal</Direction>
+        <Pen Style="Solid" Thickness="7" Color="#000000" />
+      </Line>
+      <TextBox Id="e6c9b11b18dd4f45abaf55de39c1f15d" Bounds="0,79,6850,276" Visible="true">
+        <Style HorizontalAlignment="Right" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Arial" Size="11" Style="Bold" />
+        </Style>
+        <Expression>Total dos valores: {Sum(Fields.Valor):C}</Expression>
+      </TextBox>
+    </Elements>
+  </ReportFooter>
+</Report>

@@ -1,0 +1,227 @@
+/* ============================================================
+   Layout — app shell, panes, split handles, states bar
+   ============================================================ */
+
+/* States demo bar (above the app) */
+.states-bar {
+  height: var(--h-statesbar);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  padding: 0 var(--sp-3);
+  background: var(--bg-panel-strong);
+  border-bottom: 1px solid var(--border);
+  font-size: var(--fs-xs);
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  white-space: nowrap;
+  overflow-x: auto;
+}
+.states-bar button { white-space: nowrap; }
+.states-bar .states-label {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  letter-spacing: var(--tracked);
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin-right: var(--sp-3);
+}
+.states-bar button {
+  height: 22px;
+  padding: 0 8px;
+  font-size: var(--fs-xs);
+  border-radius: var(--r-2);
+  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+  border: 1px solid transparent;
+  font-variant-numeric: tabular-nums;
+}
+.states-bar button:hover {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+}
+.states-bar button.is-active {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  border-color: var(--border);
+  box-shadow: 0 1px 0 rgba(20, 18, 14, 0.03);
+}
+.states-bar button .num {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-tertiary);
+  font-weight: 500;
+}
+.states-bar button.is-active .num { color: var(--accent); }
+.states-bar .spacer { flex: 1; }
+.states-bar .theme-toggle {
+  height: 22px;
+  padding: 0 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--fs-xs);
+  border-radius: var(--r-2);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  background: var(--bg-surface);
+}
+.states-bar .theme-toggle:hover { color: var(--text-primary); }
+
+/* ----- App shell grid ----- */
+.app {
+  flex: 1;
+  display: grid;
+  grid-template-rows: var(--h-topbar) var(--h-tabbar) var(--h-toolbar) 1fr var(--h-statusbar);
+  background: var(--bg-panel);
+  position: relative;
+  min-height: 0;
+}
+
+.workspace {
+  display: grid;
+  grid-template-columns: 240px 1fr 300px;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--bg-panel);
+  border-top: 1px solid var(--border);
+}
+
+.left-panel {
+  background: var(--bg-panel);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  position: relative;
+}
+.right-panel {
+  background: var(--bg-panel);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  position: relative;
+}
+.canvas-region {
+  background: var(--bg-canvas);
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Split handle — wider 6px hot zone (easier to grab) with a centered 1px visible bar */
+.split-handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  cursor: col-resize;
+  z-index: 30;
+  /* Disable native touch-action so pointer events drive the resize cleanly. */
+  touch-action: none;
+}
+.split-handle.right { right: -3px; }
+.split-handle.left  { left: -3px; }
+.split-handle::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  margin-left: -0.5px;          /* center the 1px line */
+  background: transparent;
+  transition: background var(--t-fast) var(--ease-out);
+}
+.split-handle:hover::after,
+.split-handle.is-dragging::after {
+  background: var(--selection, var(--accent));
+  width: 2px;
+  margin-left: -1px;
+}
+/* Body-level cursor + selection lock while the user drags the splitter — prevents
+   text selection flicker and keeps the cursor stable even when leaving the handle. */
+body.is-splitting,
+body.is-splitting * {
+  cursor: col-resize !important;
+  user-select: none !important;
+}
+
+/* Panel tabs (inside left/right panels) */
+.panel-tabs {
+  display: flex;
+  align-items: stretch;
+  height: 32px;
+  border-bottom: 1px solid var(--border);
+  padding: 0 var(--sp-1);
+  gap: 1px;
+  flex-shrink: 0;
+}
+.panel-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  color: var(--text-tertiary);
+  letter-spacing: var(--tracked);
+  text-transform: uppercase;
+  border-top: 1px solid transparent;
+  position: relative;
+}
+.panel-tab:hover { color: var(--text-secondary); }
+.panel-tab.is-active {
+  color: var(--text-primary);
+}
+.panel-tab.is-active::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  left: 8px;
+  right: 8px;
+  height: 1.5px;
+  background: var(--accent);
+}
+.panel-tab .badge-count {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  color: var(--text-tertiary);
+  padding: 1px 4px;
+  border-radius: var(--r-1);
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.panel-body {
+  flex: 1;
+  overflow: auto;
+  min-height: 0;
+}
+
+/* Empty state for small viewport */
+.too-small {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: var(--bg-canvas);
+  color: var(--text-secondary);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: var(--fs-md);
+  padding: var(--sp-8);
+}
+@media (max-width: 1023px) {
+  .too-small { display: flex; }
+  .app, .states-bar { display: none; }
+}

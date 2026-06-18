@@ -1,0 +1,881 @@
+{
+  "name": "Movimento de Caixa",
+  "pageCount": 1,
+  "unit": "millimeters",
+  "pages": [
+    {
+      "pageNumber": 1,
+      "size": {
+        "width": 210.007,
+        "height": 297.002
+      },
+      "primitives": [
+        {
+          "type": "text",
+          "x": 19.99,
+          "y": 19.99,
+          "width": 170.002,
+          "height": 11.989,
+          "text": "Movimento de Caixa",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 16,
+            "fontStyle": "Bold",
+            "color": "#000000",
+            "horizontalAlignment": "Center"
+          }
+        },
+        {
+          "type": "text",
+          "x": 19.99,
+          "y": 32.995,
+          "width": 170.002,
+          "height": 5.994,
+          "text": "Data: 23/05/2026",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Center"
+          }
+        },
+        {
+          "type": "line",
+          "x": 19.99,
+          "y": 41.986,
+          "width": 170.002,
+          "height": 0,
+          "from": {
+            "x": 19.99,
+            "y": 41.986
+          },
+          "to": {
+            "x": 189.992,
+            "y": 41.986
+          },
+          "color": "#000000",
+          "thickness": 0.178
+        },
+        {
+          "type": "rect",
+          "x": 19.99,
+          "y": 45.974,
+          "width": 170.002,
+          "height": 7.01,
+          "fillColor": "#F4F2EC"
+        },
+        {
+          "type": "text",
+          "x": 21.996,
+          "y": 46.99,
+          "width": 170.002,
+          "height": 5.004,
+          "text": "Forma de pagamento: Cartão Crédito",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "fontStyle": "Bold",
+            "color": "#C2410C"
+          }
+        },
+        {
+          "type": "text",
+          "x": 21.996,
+          "y": 54.991,
+          "width": 19.99,
+          "height": 5.994,
+          "text": "13:15",
+          "style": {
+            "fontFamily": "Consolas",
+            "fontSize": 9,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 43.993,
+          "y": 54.991,
+          "width": 59.995,
+          "height": 5.994,
+          "text": "NFC-e 001238",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 105.994,
+          "y": 54.991,
+          "width": 50.013,
+          "height": 5.994,
+          "text": "Cartão Crédito",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#808080"
+          }
+        },
+        {
+          "type": "text",
+          "x": 157.988,
+          "y": 54.991,
+          "width": 29.997,
+          "height": 5.994,
+          "text": "R$ 234,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 21.996,
+          "y": 60.985,
+          "width": 19.99,
+          "height": 5.994,
+          "text": "18:25",
+          "style": {
+            "fontFamily": "Consolas",
+            "fontSize": 9,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 43.993,
+          "y": 60.985,
+          "width": 59.995,
+          "height": 5.994,
+          "text": "NFC-e 001243",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 105.994,
+          "y": 60.985,
+          "width": 50.013,
+          "height": 5.994,
+          "text": "Cartão Crédito",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#808080"
+          }
+        },
+        {
+          "type": "text",
+          "x": 157.988,
+          "y": 60.985,
+          "width": 29.997,
+          "height": 5.994,
+          "text": "R$ 312,70",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "line",
+          "x": 19.99,
+          "y": 66.98,
+          "width": 170.002,
+          "height": 0,
+          "from": {
+            "x": 19.99,
+            "y": 66.98
+          },
+          "to": {
+            "x": 189.992,
+            "y": 66.98
+          },
+          "color": "#000000",
+          "thickness": 0.076
+        },
+        {
+          "type": "text",
+          "x": 19.99,
+          "y": 68.986,
+          "width": 170.002,
+          "height": 5.004,
+          "text": "Subtotal: R$ 546,70 · 2 movimento(s)",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "fontStyle": "Bold",
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "rect",
+          "x": 19.99,
+          "y": 75.971,
+          "width": 170.002,
+          "height": 7.01,
+          "fillColor": "#F4F2EC"
+        },
+        {
+          "type": "text",
+          "x": 21.996,
+          "y": 76.987,
+          "width": 170.002,
+          "height": 5.004,
+          "text": "Forma de pagamento: Cartão Débito",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "fontStyle": "Bold",
+            "color": "#C2410C"
+          }
+        },
+        {
+          "type": "text",
+          "x": 21.996,
+          "y": 84.988,
+          "width": 19.99,
+          "height": 5.994,
+          "text": "10:03",
+          "style": {
+            "fontFamily": "Consolas",
+            "fontSize": 9,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 43.993,
+          "y": 84.988,
+          "width": 59.995,
+          "height": 5.994,
+          "text": "NFC-e 001235",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 105.994,
+          "y": 84.988,
+          "width": 50.013,
+          "height": 5.994,
+          "text": "Cartão Débito",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#808080"
+          }
+        },
+        {
+          "type": "text",
+          "x": 157.988,
+          "y": 84.988,
+          "width": 29.997,
+          "height": 5.994,
+          "text": "R$ 128,50",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 21.996,
+          "y": 90.983,
+          "width": 19.99,
+          "height": 5.994,
+          "text": "15:30",
+          "style": {
+            "fontFamily": "Consolas",
+            "fontSize": 9,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 43.993,
+          "y": 90.983,
+          "width": 59.995,
+          "height": 5.994,
+          "text": "NFC-e 001240",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 105.994,
+          "y": 90.983,
+          "width": 50.013,
+          "height": 5.994,
+          "text": "Cartão Débito",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#808080"
+          }
+        },
+        {
+          "type": "text",
+          "x": 157.988,
+          "y": 90.983,
+          "width": 29.997,
+          "height": 5.994,
+          "text": "R$ 55,40",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "line",
+          "x": 19.99,
+          "y": 96.977,
+          "width": 170.002,
+          "height": 0,
+          "from": {
+            "x": 19.99,
+            "y": 96.977
+          },
+          "to": {
+            "x": 189.992,
+            "y": 96.977
+          },
+          "color": "#000000",
+          "thickness": 0.076
+        },
+        {
+          "type": "text",
+          "x": 19.99,
+          "y": 98.984,
+          "width": 170.002,
+          "height": 5.004,
+          "text": "Subtotal: R$ 183,90 · 2 movimento(s)",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "fontStyle": "Bold",
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "rect",
+          "x": 19.99,
+          "y": 105.969,
+          "width": 170.002,
+          "height": 7.01,
+          "fillColor": "#F4F2EC"
+        },
+        {
+          "type": "text",
+          "x": 21.996,
+          "y": 106.985,
+          "width": 170.002,
+          "height": 5.004,
+          "text": "Forma de pagamento: Dinheiro",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "fontStyle": "Bold",
+            "color": "#C2410C"
+          }
+        },
+        {
+          "type": "text",
+          "x": 21.996,
+          "y": 114.986,
+          "width": 19.99,
+          "height": 5.994,
+          "text": "09:12",
+          "style": {
+            "fontFamily": "Consolas",
+            "fontSize": 9,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 43.993,
+          "y": 114.986,
+          "width": 59.995,
+          "height": 5.994,
+          "text": "NFC-e 001234",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 105.994,
+          "y": 114.986,
+          "width": 50.013,
+          "height": 5.994,
+          "text": "Dinheiro",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#808080"
+          }
+        },
+        {
+          "type": "text",
+          "x": 157.988,
+          "y": 114.986,
+          "width": 29.997,
+          "height": 5.994,
+          "text": "R$ 45,20",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 21.996,
+          "y": 120.98,
+          "width": 19.99,
+          "height": 5.994,
+          "text": "12:21",
+          "style": {
+            "fontFamily": "Consolas",
+            "fontSize": 9,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 43.993,
+          "y": 120.98,
+          "width": 59.995,
+          "height": 5.994,
+          "text": "NFC-e 001237",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 105.994,
+          "y": 120.98,
+          "width": 50.013,
+          "height": 5.994,
+          "text": "Dinheiro",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#808080"
+          }
+        },
+        {
+          "type": "text",
+          "x": 157.988,
+          "y": 120.98,
+          "width": 29.997,
+          "height": 5.994,
+          "text": "R$ 18,90",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 21.996,
+          "y": 126.975,
+          "width": 19.99,
+          "height": 5.994,
+          "text": "16:11",
+          "style": {
+            "fontFamily": "Consolas",
+            "fontSize": 9,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 43.993,
+          "y": 126.975,
+          "width": 59.995,
+          "height": 5.994,
+          "text": "NFC-e 001241",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 105.994,
+          "y": 126.975,
+          "width": 50.013,
+          "height": 5.994,
+          "text": "Dinheiro",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#808080"
+          }
+        },
+        {
+          "type": "text",
+          "x": 157.988,
+          "y": 126.975,
+          "width": 29.997,
+          "height": 5.994,
+          "text": "R$ 12,50",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "line",
+          "x": 19.99,
+          "y": 132.969,
+          "width": 170.002,
+          "height": 0,
+          "from": {
+            "x": 19.99,
+            "y": 132.969
+          },
+          "to": {
+            "x": 189.992,
+            "y": 132.969
+          },
+          "color": "#000000",
+          "thickness": 0.076
+        },
+        {
+          "type": "text",
+          "x": 19.99,
+          "y": 134.976,
+          "width": 170.002,
+          "height": 5.004,
+          "text": "Subtotal: R$ 76,60 · 3 movimento(s)",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "fontStyle": "Bold",
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "rect",
+          "x": 19.99,
+          "y": 141.961,
+          "width": 170.002,
+          "height": 7.01,
+          "fillColor": "#F4F2EC"
+        },
+        {
+          "type": "text",
+          "x": 21.996,
+          "y": 142.977,
+          "width": 170.002,
+          "height": 5.004,
+          "text": "Forma de pagamento: PIX",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "fontStyle": "Bold",
+            "color": "#C2410C"
+          }
+        },
+        {
+          "type": "text",
+          "x": 21.996,
+          "y": 150.978,
+          "width": 19.99,
+          "height": 5.994,
+          "text": "11:47",
+          "style": {
+            "fontFamily": "Consolas",
+            "fontSize": 9,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 43.993,
+          "y": 150.978,
+          "width": 59.995,
+          "height": 5.994,
+          "text": "NFC-e 001236",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 105.994,
+          "y": 150.978,
+          "width": 50.013,
+          "height": 5.994,
+          "text": "PIX",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#808080"
+          }
+        },
+        {
+          "type": "text",
+          "x": 157.988,
+          "y": 150.978,
+          "width": 29.997,
+          "height": 5.994,
+          "text": "R$ 67,80",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 21.996,
+          "y": 156.972,
+          "width": 19.99,
+          "height": 5.994,
+          "text": "14:42",
+          "style": {
+            "fontFamily": "Consolas",
+            "fontSize": 9,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 43.993,
+          "y": 156.972,
+          "width": 59.995,
+          "height": 5.994,
+          "text": "NFC-e 001239",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 105.994,
+          "y": 156.972,
+          "width": 50.013,
+          "height": 5.994,
+          "text": "PIX",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#808080"
+          }
+        },
+        {
+          "type": "text",
+          "x": 157.988,
+          "y": 156.972,
+          "width": 29.997,
+          "height": 5.994,
+          "text": "R$ 89,30",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 21.996,
+          "y": 162.966,
+          "width": 19.99,
+          "height": 5.994,
+          "text": "17:03",
+          "style": {
+            "fontFamily": "Consolas",
+            "fontSize": 9,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 43.993,
+          "y": 162.966,
+          "width": 59.995,
+          "height": 5.994,
+          "text": "NFC-e 001242",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 105.994,
+          "y": 162.966,
+          "width": 50.013,
+          "height": 5.994,
+          "text": "PIX",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#808080"
+          }
+        },
+        {
+          "type": "text",
+          "x": 157.988,
+          "y": 162.966,
+          "width": 29.997,
+          "height": 5.994,
+          "text": "R$ 145,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "line",
+          "x": 19.99,
+          "y": 168.961,
+          "width": 170.002,
+          "height": 0,
+          "from": {
+            "x": 19.99,
+            "y": 168.961
+          },
+          "to": {
+            "x": 189.992,
+            "y": 168.961
+          },
+          "color": "#000000",
+          "thickness": 0.076
+        },
+        {
+          "type": "text",
+          "x": 19.99,
+          "y": 170.967,
+          "width": 170.002,
+          "height": 5.004,
+          "text": "Subtotal: R$ 302,10 · 3 movimento(s)",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "fontStyle": "Bold",
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "line",
+          "x": 19.99,
+          "y": 176.962,
+          "width": 170.002,
+          "height": 0,
+          "from": {
+            "x": 19.99,
+            "y": 176.962
+          },
+          "to": {
+            "x": 189.992,
+            "y": 176.962
+          },
+          "color": "#000000",
+          "thickness": 0.178
+        },
+        {
+          "type": "text",
+          "x": 19.99,
+          "y": 179.959,
+          "width": 170.002,
+          "height": 8.001,
+          "text": "Total do dia: R$ 1.109,30",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 12,
+            "fontStyle": "Bold",
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 19.99,
+          "y": 188.951,
+          "width": 170.002,
+          "height": 5.004,
+          "text": "Movimentos: 10 · Maior: R$ 312,70 · Menor: R$ 12,50",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#808080",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 19.99,
+          "y": 270.002,
+          "width": 84.988,
+          "height": 5.004,
+          "text": "OmniReport · 17/06/2026 18:15",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8,
+            "color": "#808080"
+          }
+        },
+        {
+          "type": "text",
+          "x": 104.978,
+          "y": 270.002,
+          "width": 84.988,
+          "height": 5.004,
+          "text": "Página 1 de 1",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 8,
+            "color": "#808080",
+            "horizontalAlignment": "Right"
+          }
+        }
+      ]
+    }
+  ]
+}

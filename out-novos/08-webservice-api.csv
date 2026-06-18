@@ -1,0 +1,17 @@
+﻿Catálogo de Produtos · Fonte REST,,,,
+Origem: GET https://api.demo/produtos · Bearer demo-token · path: items,,,,
+SKU,Produto,Preço,Estoque,★
+Acessórios,,,,
+SKU-002,Mouse Logitech MX Master,449.9,23,4.8
+SKU-003,Teclado Keychron K2,890,15,4.7
+SKU-007,Webcam Logitech Brio,990,6,4.4
+Áudio,,,,
+SKU-005,Headset Sony WH-1000XM5,2890,12,4.9
+Laptops,,,,
+SKU-001,Notebook Dell XPS 13,9500,4,4.6
+Monitores,,,,
+SKU-004,Monitor LG 27 UltraFine,3290,8,4.5
+Storage,,,,
+SKU-006,SSD Samsung 980 PRO 1TB,799,18,4.8
+Itens: 7 · Estoque total: 86,,,,
+OmniReport · Página 1 de 1,,,,

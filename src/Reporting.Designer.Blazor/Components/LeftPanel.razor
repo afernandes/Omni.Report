@@ -1,0 +1,59 @@
+@namespace Reporting.Designer.Blazor.Components
+
+<aside class="left-panel" aria-label="Painel esquerdo">
+    <div class="panel-tabs" role="tablist">
+        @* No count badge here: the toolbox is a fixed palette, not a user-managed collection like
+           Dados/Parâmetros below, so any number would be static/misleading. *@
+        <button class="panel-tab @(_tab == 0 ? "is-active" : null)"
+                role="tab" type="button" @onclick="@(() => _tab = 0)">
+            Toolbox
+        </button>
+        <button class="panel-tab @(_tab == 1 ? "is-active" : null)"
+                role="tab" type="button" @onclick="@(() => _tab = 1)">
+            Dados <span class="badge-count">@DataSources.Count</span>
+        </button>
+        <button class="panel-tab @(_tab == 2 ? "is-active" : null)"
+                role="tab" type="button" @onclick="@(() => _tab = 2)">
+            Parâmetros <span class="badge-count">@Parameters.Count</span>
+        </button>
+    </div>
+
+    <div class="panel-body">
+        @switch (_tab)
+        {
+            case 0:
+                <ElementToolbox OnAdd="OnAdd" OnAddSystemField="OnAddSystemField" />
+                break;
+            case 1:
+                <DataSourcesTree DataSources="DataSources" Relations="Relations" OnEdit="OnEditDataSource" />
+                <div style="padding:4px 8px;">
+                    <button class="btn" type="button" @onclick="OnAddDataSource"
+                            style="width:100%;padding:5px;border:1px dashed var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:11px;border-radius:var(--r-2);">
+                        + Adicionar Data Source
+                    </button>
+                </div>
+                break;
+            case 2:
+                <ParametersList Parameters="Parameters"
+                                OnAdd="OnAddParameter"
+                                OnRemove="OnRemoveParameter" />
+                break;
+        }
+    </div>
+
+    <div class="split-handle right" aria-hidden="true"></div>
+</aside>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<DesignerDataSource> DataSources { get; set; } = default!;
+    [Parameter, EditorRequired] public IReadOnlyList<DesignerParameter>  Parameters  { get; set; } = default!;
+    [Parameter] public System.Collections.ObjectModel.ObservableCollection<DesignerRelation>? Relations { get; set; }
+    [Parameter] public EventCallback<DesignerElementKind> OnAdd { get; set; }
+    [Parameter] public EventCallback<ElementToolbox.SystemFieldDescriptor> OnAddSystemField { get; set; }
+    [Parameter] public EventCallback OnAddParameter { get; set; }
+    [Parameter] public EventCallback<DesignerParameter> OnRemoveParameter { get; set; }
+    [Parameter] public EventCallback OnAddDataSource { get; set; }
+    [Parameter] public EventCallback<DesignerDataSource> OnEditDataSource { get; set; }
+
+    private int _tab;
+}

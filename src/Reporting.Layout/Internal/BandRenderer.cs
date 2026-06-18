@@ -1,0 +1,412 @@
+using System.Collections.Concurrent;
+using Reporting.Bands;
+using Reporting.Common;
+using Reporting.Elements;
+using Reporting.Expressions;
+using Reporting.Geometry;
+using Reporting.Layout.Primitives;
+using Reporting.Rendering;
+using Reporting.Styling;
+
+namespace Reporting.Layout.Internal;
+
+/// <summary>
+/// Converts a single <see cref="IBand"/> + expression context + origin into a list of
+/// positioned <see cref="LayoutPrimitive"/> instances, and reports the band's actual height
+/// (which can differ from the declared height when CanGrow / CanShrink kick in).
+/// </summary>
+internal sealed class BandRenderer
+{
+    private readonly ExpressionEvaluator _evaluator;
+    private readonly TemplateRenderer _templates;
+    private readonly ITextMeasurer _measurer;
+    private readonly IReadOnlyDictionary<string, List<IReadOnlyList<KeyValuePair<string, object?>>>> _dataSources;
+    private readonly string? _primarySource;
+
+    public BandRenderer(
+        ExpressionEvaluator evaluator,
+        TemplateRenderer templates,
+        ITextMeasurer measurer,
+        IReadOnlyDictionary<string, List<IReadOnlyList<KeyValuePair<string, object?>>>>? dataSources = null,
+        string? primarySource = null)
+    {
+        _evaluator = evaluator;
+        _templates = templates;
+        _measurer = measurer;
+        _dataSources = dataSources ?? new Dictionary<string, List<IReadOnlyList<KeyValuePair<string, object?>>>>();
+        _primarySource = primarySource;
+    }
+
+    /// <summary>Renders <paramref name="band"/> at the given origin and returns the resulting
+    /// primitives along with the actual band height.</summary>
+    public BandLayout Render(IBand band, Point origin, IReportExpressionContext ctx)
+    {
+        var primitives = new List<LayoutPrimitive>();
+        Unit actualHeight = band.Height;
+
+        foreach (var element in band.Elements)
+        {
+            if (!IsVisible(element, ctx))
+            {
+                continue;
+            }
+            var elementBounds = new Rectangle(
+                origin.X + element.Bounds.X,
+                origin.Y + element.Bounds.Y,
+                element.Bounds.Width,
+                element.Bounds.Height);
+
+            var style = ResolveStyle(element, ctx);
+
+            switch (element)
+            {
+                case LabelElement lbl:
+                    primitives.Add(EmitText(lbl.Text, elementBounds, style, lbl.Id));
+                    actualHeight = MaxHeight(actualHeight, elementBounds, origin, growsTo: null);
+                    break;
+
+                case TextBoxElement tb:
+                    var text = ResolveText(tb.Expression, ctx);
+                    var rendered = EmitText(text, elementBounds, style, tb.Id, tb.CanGrow, tb.CanShrink);
+                    primitives.Add(rendered);
+                    actualHeight = MaxHeight(actualHeight, rendered.Bounds, origin, growsTo: tb.CanGrow ? rendered.Bounds : null);
+                    break;
+
+                case LineElement line:
+                    primitives.Add(EmitLine(line, elementBounds));
+                    actualHeight = MaxHeight(actualHeight, elementBounds, origin, null);
+                    break;
+
+                case RectangleElement rect:
+                    primitives.Add(new DrawRectanglePrimitive
+                    {
+                        Bounds = elementBounds,
+                        SourceElementId = rect.Id,
+                        Pen = ResolveBorderPen(rect),
+                        Fill = rect.FillColor is { } c ? new BrushStyle(c) : null,
+                    });
+                    actualHeight = MaxHeight(actualHeight, elementBounds, origin, null);
+                    break;
+
+                case EllipseElement ellipse:
+                    primitives.Add(new DrawEllipsePrimitive
+                    {
+                        Bounds = elementBounds,
+                        SourceElementId = ellipse.Id,
+                        Pen = ResolveBorderPen(ellipse),
+                        Fill = ellipse.FillColor is { } cf ? new BrushStyle(cf) : null,
+                    });
+                    actualHeight = MaxHeight(actualHeight, elementBounds, origin, null);
+                    break;
+
+                case ImageElement image:
+                    var bytes = ResolveImageBytes(image, ctx);
+                    if (bytes.Count > 0)
+                    {
+                        primitives.Add(new DrawImagePrimitive
+                        {
+                            Bounds = elementBounds,
+                            SourceElementId = image.Id,
+                            Data = bytes,
+                        });
+                    }
+                    actualHeight = MaxHeight(actualHeight, elementBounds, origin, null);
+                    break;
+
+                case BarcodeElement barcode:
+                    var bcValue = ResolveText(barcode.Expression, ctx);
+                    foreach (var p in BarcodeRenderer.Render(barcode, elementBounds, bcValue,
+                                                             style.ForeColor, style, out _))
+                    {
+                        primitives.Add(p);
+                    }
+                    actualHeight = MaxHeight(actualHeight, elementBounds, origin, null);
+                    break;
+
+                case ChartElement chart:
+                    foreach (var p in ChartRenderer.Render(chart, elementBounds, ResolveRows(), _evaluator, ctx, out _))
+                    {
+                        primitives.Add(p);
+                    }
+                    actualHeight = MaxHeight(actualHeight, elementBounds, origin, null);
+                    break;
+
+                case SparklineElement sparkline:
+                    foreach (var p in KpiRenderer.RenderSparkline(sparkline, elementBounds, ResolveRows(sparkline.DataSetName), _evaluator, ctx))
+                    {
+                        primitives.Add(p);
+                    }
+                    actualHeight = MaxHeight(actualHeight, elementBounds, origin, null);
+                    break;
+
+                case IndicatorElement indicator:
+                    foreach (var p in KpiRenderer.RenderIndicator(indicator, elementBounds, _evaluator, ctx))
+                    {
+                        primitives.Add(p);
+                    }
+                    actualHeight = MaxHeight(actualHeight, elementBounds, origin, null);
+                    break;
+
+                case DataBarElement dataBar:
+                    foreach (var p in KpiRenderer.RenderDataBar(dataBar, elementBounds, _evaluator, ctx))
+                    {
+                        primitives.Add(p);
+                    }
+                    actualHeight = MaxHeight(actualHeight, elementBounds, origin, null);
+                    break;
+
+                case GaugeElement gauge:
+                    foreach (var p in KpiRenderer.RenderGauge(gauge, elementBounds, _evaluator, ctx))
+                    {
+                        primitives.Add(p);
+                    }
+                    actualHeight = MaxHeight(actualHeight, elementBounds, origin, null);
+                    break;
+
+                case TablixElement tablix:
+                    var tablixPrims = TablixRenderer.Render(tablix, elementBounds, ResolveRows(tablix.DataSetName),
+                                                            _evaluator, _templates, ctx, out var tablixHeight);
+                    foreach (var p in tablixPrims)
+                    {
+                        primitives.Add(p);
+                    }
+                    var tablixGrown = new Rectangle(elementBounds.X, elementBounds.Y, elementBounds.Width, tablixHeight);
+                    actualHeight = MaxHeight(actualHeight, tablixGrown, origin, tablixGrown);
+                    break;
+
+                case MapElement mapEl:
+                    foreach (var p in MapRenderer.Render(mapEl, elementBounds, ResolveRows(mapEl.DataSetName), _evaluator, ctx))
+                    {
+                        primitives.Add(p);
+                    }
+                    actualHeight = MaxHeight(actualHeight, elementBounds, origin, null);
+                    break;
+
+                // SubreportElement remains deferred.
+            }
+        }
+
+        return new BandLayout(primitives, actualHeight);
+    }
+
+    /// <summary>Estimates the height of a band without producing primitives — used for KeepTogether
+    /// checks and page-fit pre-checks.</summary>
+    public Unit Measure(IBand band, IReportExpressionContext ctx)
+    {
+        Unit height = band.Height;
+        foreach (var element in band.Elements)
+        {
+            if (element is TextBoxElement tb && tb.CanGrow && IsVisible(element, ctx))
+            {
+                var style = BuildTextStyle(element.Style);
+                var text = ResolveText(tb.Expression, ctx);
+                var size = _measurer.Measure(text, style, element.Bounds.Width);
+                var bottom = element.Bounds.Y + size.Height;
+                if (bottom > height)
+                {
+                    height = bottom;
+                }
+            }
+        }
+        return height;
+    }
+
+    private bool IsVisible(ReportElement element, IReportExpressionContext ctx)
+    {
+        if (!element.Visible)
+        {
+            return false;
+        }
+        if (string.IsNullOrEmpty(element.VisibleExpression))
+        {
+            return true;
+        }
+        return _evaluator.Evaluate<bool>(element.VisibleExpression, ctx);
+    }
+
+    private readonly ConcurrentDictionary<string, bool> _knownLiteral = new(StringComparer.Ordinal);
+
+    private string ResolveText(string expression, IReportExpressionContext ctx)
+    {
+        if (TemplateRenderer.HasPlaceholders(expression))
+        {
+            return _templates.Render(expression, ctx);
+        }
+        // Strings without any "{}" placeholder fall back to a literal label if they don't parse
+        // as NCalc — this lets users write `.Text("Relatório de Vendas")` without quoting.
+        if (_knownLiteral.TryGetValue(expression, out _))
+        {
+            return expression;
+        }
+        try
+        {
+            var value = _evaluator.Evaluate(expression, ctx);
+            return value is null ? string.Empty : Convert.ToString(value, ctx.Culture) ?? string.Empty;
+        }
+        catch (ExpressionParseException)
+        {
+            _knownLiteral[expression] = true;
+            return expression;
+        }
+    }
+
+    /// <summary>Resolves the rows a data-bound element (chart, sparkline) iterates: the named
+    /// data source when <paramref name="dataSetName"/> matches a registered source, otherwise
+    /// the report's primary source (falling back to the first registered source).</summary>
+    private IReadOnlyList<IReadOnlyList<KeyValuePair<string, object?>>> ResolveRows(string? dataSetName = null)
+    {
+        if (!string.IsNullOrEmpty(dataSetName) && _dataSources.TryGetValue(dataSetName, out var named))
+        {
+            return named;
+        }
+        if (_primarySource is not null && _dataSources.TryGetValue(_primarySource, out var primary))
+        {
+            return primary;
+        }
+        foreach (var kv in _dataSources)
+        {
+            return kv.Value;
+        }
+        return [];
+    }
+
+    private DrawTextPrimitive EmitText(string text, Rectangle bounds, TextStyle style, string? id, bool canGrow = false, bool canShrink = false)
+    {
+        Rectangle actualBounds = bounds;
+        if (canGrow || canShrink)
+        {
+            var size = _measurer.Measure(text, style, bounds.Width);
+            var newHeight = bounds.Height;
+            if (canGrow && size.Height > bounds.Height)
+            {
+                newHeight = size.Height;
+            }
+            else if (canShrink && size.Height < bounds.Height)
+            {
+                newHeight = size.Height;
+            }
+            actualBounds = new Rectangle(bounds.X, bounds.Y, bounds.Width, newHeight);
+        }
+        return new DrawTextPrimitive
+        {
+            Bounds = actualBounds,
+            Text = text,
+            Style = style,
+            SourceElementId = id,
+        };
+    }
+
+    private static DrawLinePrimitive EmitLine(LineElement line, Rectangle bounds)
+    {
+        var pen = new PenStyle(line.Pen.Color, line.Pen.Thickness, line.Pen.Style);
+        var (from, to) = line.Direction switch
+        {
+            LineDirection.Horizontal =>
+                (new Point(bounds.X, bounds.Y + bounds.Height / 2), new Point(bounds.Right, bounds.Y + bounds.Height / 2)),
+            LineDirection.Vertical =>
+                (new Point(bounds.X + bounds.Width / 2, bounds.Y), new Point(bounds.X + bounds.Width / 2, bounds.Bottom)),
+            LineDirection.BottomLeftToTopRight =>
+                (new Point(bounds.X, bounds.Bottom), new Point(bounds.Right, bounds.Y)),
+            _ =>
+                (new Point(bounds.X, bounds.Y), new Point(bounds.Right, bounds.Bottom)),
+        };
+        return new DrawLinePrimitive
+        {
+            Bounds = bounds,
+            From = from,
+            To = to,
+            Pen = pen,
+            SourceElementId = line.Id,
+        };
+    }
+
+    private static PenStyle? ResolveBorderPen(ReportElement element)
+    {
+        var border = element.Style.Border;
+        if (border is null)
+        {
+            return null;
+        }
+        // Element-level fallback: use the top side as representative.
+        return PenStyle.FromBorderSide(border.Top);
+    }
+
+    private TextStyle ResolveStyle(ReportElement element, IReportExpressionContext ctx)
+    {
+        var style = element.Style;
+        foreach (var cf in element.ConditionalFormats)
+        {
+            if (_evaluator.Evaluate<bool>(cf.Condition, ctx))
+            {
+                style = Merge(style, cf.Style);
+            }
+        }
+        return BuildTextStyle(style);
+    }
+
+    private static TextStyle BuildTextStyle(Style style)
+        => new(
+            style.Font ?? Font.Default,
+            style.ForeColor ?? Color.Black,
+            style.HorizontalAlignment,
+            style.VerticalAlignment,
+            style.WordWrap,
+            style.Padding ?? Thickness.Zero);
+
+    private static Style Merge(Style baseStyle, Style overlay)
+        => baseStyle with
+        {
+            Font = overlay.Font ?? baseStyle.Font,
+            ForeColor = overlay.ForeColor ?? baseStyle.ForeColor,
+            BackColor = overlay.BackColor ?? baseStyle.BackColor,
+            Border = overlay.Border ?? baseStyle.Border,
+            Padding = overlay.Padding ?? baseStyle.Padding,
+            HorizontalAlignment = overlay.HorizontalAlignment,
+            VerticalAlignment = overlay.VerticalAlignment,
+            WordWrap = overlay.WordWrap,
+            Format = overlay.Format ?? baseStyle.Format,
+        };
+
+    private static Unit MaxHeight(Unit current, Rectangle bounds, Point origin, Rectangle? growsTo)
+    {
+        var bottomRelative = (growsTo ?? bounds).Bottom - origin.Y;
+        return bottomRelative > current ? bottomRelative : current;
+    }
+
+    private EquatableArray<byte> ResolveImageBytes(ImageElement image, IReportExpressionContext ctx)
+    {
+        return image.Source switch
+        {
+            ImageSourceKind.Inline => image.InlineData,
+            ImageSourceKind.Path => LoadFile(image.Path),
+            ImageSourceKind.Expression => ResolveExpression(image.Expression, ctx),
+            _ => EquatableArray<byte>.Empty,
+        };
+    }
+
+    private static EquatableArray<byte> LoadFile(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+        {
+            return EquatableArray<byte>.Empty;
+        }
+        return new EquatableArray<byte>(File.ReadAllBytes(path));
+    }
+
+    private EquatableArray<byte> ResolveExpression(string? expr, IReportExpressionContext ctx)
+    {
+        if (string.IsNullOrWhiteSpace(expr))
+        {
+            return EquatableArray<byte>.Empty;
+        }
+        var value = _evaluator.Evaluate(expr, ctx);
+        return value switch
+        {
+            byte[] bytes => new EquatableArray<byte>(bytes),
+            string path when File.Exists(path) => new EquatableArray<byte>(File.ReadAllBytes(path)),
+            _ => EquatableArray<byte>.Empty,
+        };
+    }
+}
+
+internal readonly record struct BandLayout(List<LayoutPrimitive> Primitives, Unit Height);

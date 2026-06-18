@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Report SchemaVersion="1.0" Name="Catálogo de Produtos (Tablix)">
+  <PageSetup Orientation="Portrait" Margins="709,709,709,709" Columns="1" ColumnSpacing="0">
+    <Paper Name="A4" Width="8268" Height="11693" />
+  </PageSetup>
+  <DataSources>
+    <DataSource Name="Produtos">
+      <Fields>
+        <Field Name="Codigo" Type="System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" />
+        <Field Name="Descricao" Type="System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" />
+        <Field Name="Ean13" Type="System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" />
+        <Field Name="PrecoVarejo" Type="System.Decimal, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" />
+        <Field Name="PrecoAtacado" Type="System.Decimal, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" />
+      </Fields>
+    </DataSource>
+  </DataSources>
+  <ReportHeader Kind="ReportHeader" Height="3740" Visible="true" PrintOnFirstPage="true" PrintOnLastPage="true">
+    <Elements>
+      <TextBox Id="50f72217ab5b42399f8ed0270a3560b1" Bounds="0,0,6850,394" Visible="true">
+        <Style HorizontalAlignment="Center" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Arial" Size="15" Style="Bold" />
+        </Style>
+        <Expression>Catálogo de Produtos</Expression>
+      </TextBox>
+      <TextBox Id="813616fa88d54621b39f3a6c3e3055ca" Bounds="0,433,6850,236" Visible="true">
+        <Style HorizontalAlignment="Center" VerticalAlignment="Top" WordWrap="true">
+          <ForeColor>#808080</ForeColor>
+        </Style>
+        <Expression>Tablix — cabeçalho + uma linha por registro, com gridlines</Expression>
+      </TextBox>
+      <Tablix Id="ef58287935504004a0f4c1b5f35a59df" Bounds="0,787,6850,2835" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true" />
+        <ColumnWidths>
+          <W>1</W>
+          <W>2.6</W>
+          <W>1.5</W>
+          <W>1.1</W>
+          <W>1.1</W>
+        </ColumnWidths>
+        <Cells>
+          <Cell RowIndex="0" ColumnIndex="0">
+            <Content>
+              <Label Id="d753111cb3014e4cb042a9e197ffd8dd" Bounds="0,0,0,0" Visible="true">
+                <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true" />
+                <Text>Código</Text>
+              </Label>
+            </Content>
+          </Cell>
+          <Cell RowIndex="1" ColumnIndex="0">
+            <Content>
+              <TextBox Id="29d1a037419a4654bfb19dc426cfd9ed" Bounds="0,0,0,0" Visible="true">
+                <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true" />
+                <Expression>Fields.Codigo</Expression>
+              </TextBox>
+            </Content>
+          </Cell>
+          <Cell RowIndex="0" ColumnIndex="1">
+            <Content>
+              <Label Id="ff2f7c8faea942658e234e4843331f6e" Bounds="0,0,0,0" Visible="true">
+                <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true" />
+                <Text>Descrição</Text>
+              </Label>
+            </Content>
+          </Cell>
+          <Cell RowIndex="1" ColumnIndex="1">
+            <Content>
+              <TextBox Id="72db4e4c911a4125aff7969682fba1c8" Bounds="0,0,0,0" Visible="true">
+                <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true" />
+                <Expression>Fields.Descricao</Expression>
+              </TextBox>
+            </Content>
+          </Cell>
+          <Cell RowIndex="0" ColumnIndex="2">
+            <Content>
+              <Label Id="d981cb285dca446ba4e0393b4d5463c1" Bounds="0,0,0,0" Visible="true">
+                <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true" />
+                <Text>EAN-13</Text>
+              </Label>
+            </Content>
+          </Cell>
+          <Cell RowIndex="1" ColumnIndex="2">
+            <Content>
+              <TextBox Id="e6edd1239806418cb672dcf9411001b9" Bounds="0,0,0,0" Visible="true">
+                <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true" />
+                <Expression>Fields.Ean13</Expression>
+              </TextBox>
+            </Content>
+          </Cell>
+          <Cell RowIndex="0" ColumnIndex="3">
+            <Content>
+              <Label Id="1e011fb3e9514382b19692e8dc941e3f" Bounds="0,0,0,0" Visible="true">
+                <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true" />
+                <Text>Varejo</Text>
+              </Label>
+            </Content>
+          </Cell>
+          <Cell RowIndex="1" ColumnIndex="3">
+            <Content>
+              <TextBox Id="2f7847d86af04b1397598d7899a561c5" Bounds="0,0,0,0" Visible="true">
+                <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true" />
+                <Expression>{Fields.PrecoVarejo:C}</Expression>
+              </TextBox>
+            </Content>
+          </Cell>
+          <Cell RowIndex="0" ColumnIndex="4">
+            <Content>
+              <Label Id="576e275e61af4ac2a6ed6a6c0efac583" Bounds="0,0,0,0" Visible="true">
+                <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true" />
+                <Text>Atacado</Text>
+              </Label>
+            </Content>
+          </Cell>
+          <Cell RowIndex="1" ColumnIndex="4">
+            <Content>
+              <TextBox Id="4892b6d838d2419994b5a123408bf8ca" Bounds="0,0,0,0" Visible="true">
+                <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true" />
+                <Expression>{Fields.PrecoAtacado:C}</Expression>
+              </TextBox>
+            </Content>
+          </Cell>
+        </Cells>
+      </Tablix>
+    </Elements>
+  </ReportHeader>
+  <Detail Height="0" Visible="true" CanGrow="false" CanShrink="false">
+    <Elements />
+  </Detail>
+</Report>

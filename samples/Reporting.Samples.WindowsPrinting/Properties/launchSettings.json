@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Reporting.Samples.WindowsPrinting": {
+      "commandName": "Project",
+      "commandLineArgs": "PDF24"
+    }
+  }
+}

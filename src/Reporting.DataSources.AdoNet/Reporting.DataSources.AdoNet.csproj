@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Reporting.DataSources.AdoNet</RootNamespace>
+    <AssemblyName>Reporting.DataSources.AdoNet</AssemblyName>
+    <Description>OmniReport — provider-agnostic ADO.NET data source. Streams DbDataReader rows into the report engine. Works with any ADO.NET provider (Npgsql, Microsoft.Data.SqlClient, Microsoft.Data.Sqlite, MySqlConnector, etc.) — caller supplies the DbConnection or DbProviderFactory.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Reporting.Core\Reporting.Core.csproj" />
+    <ProjectReference Include="..\Reporting.DataSources\Reporting.DataSources.csproj" />
+  </ItemGroup>
+
+</Project>

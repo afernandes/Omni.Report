@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>OmniReport Blog</title>
+    <link>https://omnireport.example.com/blog</link>
+    <description>Notícias técnicas sobre relatórios .NET</description>
+    <item>
+      <title>RDL Phase 1 lançada</title>
+      <author>Anderson Fernandes</author>
+      <pubDate>2026-05-25T10:00:00Z</pubDate>
+      <category>Release</category>
+      <link>https://omnireport.example.com/blog/rdl-phase-1</link>
+    </item>
+    <item>
+      <title>4 novos data providers (JSON, XML, REST, FS)</title>
+      <author>Anderson Fernandes</author>
+      <pubDate>2026-05-26T09:30:00Z</pubDate>
+      <category>Release</category>
+      <link>https://omnireport.example.com/blog/providers</link>
+    </item>
+    <item>
+      <title>Designer UI: PropertyGrid completo para Actions/Bookmarks</title>
+      <author>Equipe OmniReport</author>
+      <pubDate>2026-05-26T11:15:00Z</pubDate>
+      <category>UX</category>
+      <link>https://omnireport.example.com/blog/designer-rdl-ui</link>
+    </item>
+    <item>
+      <title>Print profissional cross-platform</title>
+      <author>Equipe OmniReport</author>
+      <pubDate>2026-05-20T14:00:00Z</pubDate>
+      <category>Print</category>
+      <link>https://omnireport.example.com/blog/printing</link>
+    </item>
+    <item>
+      <title>Tutorial: usando o Expression Editor com Monaco</title>
+      <author>Anderson Fernandes</author>
+      <pubDate>2026-05-18T08:45:00Z</pubDate>
+      <category>Tutorial</category>
+      <link>https://omnireport.example.com/blog/expression-editor</link>
+    </item>
+  </channel>
+</rss>

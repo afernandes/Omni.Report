@@ -1,0 +1,964 @@
+{
+  "name": "Vendas SQLite (ADO.NET)",
+  "pageCount": 1,
+  "unit": "millimeters",
+  "pages": [
+    {
+      "pageNumber": 1,
+      "size": {
+        "width": 210.007,
+        "height": 297.002
+      },
+      "primitives": [
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 18.009,
+          "width": 173.99,
+          "height": 11.989,
+          "text": "Vendas · Fonte SQLite (ADO.NET)",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 16,
+            "fontStyle": "Bold",
+            "color": "#000000",
+            "horizontalAlignment": "Center"
+          }
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 32.004,
+          "width": 173.99,
+          "height": 5.994,
+          "text": "Período: 01/05/2026 a 31/05/2026",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#808080",
+            "horizontalAlignment": "Center"
+          }
+        },
+        {
+          "type": "line",
+          "x": 18.009,
+          "y": 40.005,
+          "width": 173.99,
+          "height": 0,
+          "from": {
+            "x": 18.009,
+            "y": 40.005
+          },
+          "to": {
+            "x": 191.999,
+            "y": 40.005
+          },
+          "color": "#000000",
+          "thickness": 0.178
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 45.999,
+          "width": 81.991,
+          "height": 5.994,
+          "text": "Produto",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "fontStyle": "Bold",
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 100,
+          "y": 45.999,
+          "width": 19.99,
+          "height": 5.994,
+          "text": "Qtde",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "fontStyle": "Bold",
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 121.996,
+          "y": 45.999,
+          "width": 29.997,
+          "height": 5.994,
+          "text": "Preço Unitário",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "fontStyle": "Bold",
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 154,
+          "y": 45.999,
+          "width": 34.011,
+          "height": 5.994,
+          "text": "Total",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "fontStyle": "Bold",
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "line",
+          "x": 18.009,
+          "y": 51.994,
+          "width": 173.99,
+          "height": 0,
+          "from": {
+            "x": 18.009,
+            "y": 51.994
+          },
+          "to": {
+            "x": 191.999,
+            "y": 51.994
+          },
+          "color": "#000000",
+          "thickness": 0.076
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 56.007,
+          "width": 173.99,
+          "height": 5.994,
+          "text": "Cliente: Ana Beatriz",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 11,
+            "fontStyle": "Bold",
+            "color": "#C2410C"
+          }
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 64.008,
+          "width": 80.01,
+          "height": 5.994,
+          "text": "Caneta Bic Azul",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 100,
+          "y": 64.008,
+          "width": 19.99,
+          "height": 5.994,
+          "text": "10,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 121.996,
+          "y": 64.008,
+          "width": 29.997,
+          "height": 5.994,
+          "text": "R$ 2,50",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 154,
+          "y": 64.008,
+          "width": 34.011,
+          "height": 5.994,
+          "text": "R$ 25,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 70.002,
+          "width": 80.01,
+          "height": 5.994,
+          "text": "Caderno Brochura",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 100,
+          "y": 70.002,
+          "width": 19.99,
+          "height": 5.994,
+          "text": "1,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 121.996,
+          "y": 70.002,
+          "width": 29.997,
+          "height": 5.994,
+          "text": "R$ 27,40",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 154,
+          "y": 70.002,
+          "width": 34.011,
+          "height": 5.994,
+          "text": "R$ 27,40",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "line",
+          "x": 18.009,
+          "y": 75.997,
+          "width": 173.99,
+          "height": 0,
+          "from": {
+            "x": 18.009,
+            "y": 75.997
+          },
+          "to": {
+            "x": 191.999,
+            "y": 75.997
+          },
+          "color": "#000000",
+          "thickness": 0.076
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 76.987,
+          "width": 173.99,
+          "height": 5.994,
+          "text": "Subtotal Ana Beatriz: R$ 52,40",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "fontStyle": "Bold",
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 86.004,
+          "width": 173.99,
+          "height": 5.994,
+          "text": "Cliente: Bruno Costa",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 11,
+            "fontStyle": "Bold",
+            "color": "#C2410C"
+          }
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 94.005,
+          "width": 80.01,
+          "height": 5.994,
+          "text": "Pasta Catálogo",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 100,
+          "y": 94.005,
+          "width": 19.99,
+          "height": 5.994,
+          "text": "5,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 121.996,
+          "y": 94.005,
+          "width": 29.997,
+          "height": 5.994,
+          "text": "R$ 14,90",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 154,
+          "y": 94.005,
+          "width": 34.011,
+          "height": 5.994,
+          "text": "R$ 74,50",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 100,
+          "width": 80.01,
+          "height": 5.994,
+          "text": "Caneta Bic Vermelha",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 100,
+          "y": 100,
+          "width": 19.99,
+          "height": 5.994,
+          "text": "12,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 121.996,
+          "y": 100,
+          "width": 29.997,
+          "height": 5.994,
+          "text": "R$ 2,50",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 154,
+          "y": 100,
+          "width": 34.011,
+          "height": 5.994,
+          "text": "R$ 30,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 105.994,
+          "width": 80.01,
+          "height": 5.994,
+          "text": "Borracha Branca",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 100,
+          "y": 105.994,
+          "width": 19.99,
+          "height": 5.994,
+          "text": "20,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 121.996,
+          "y": 105.994,
+          "width": 29.997,
+          "height": 5.994,
+          "text": "R$ 1,30",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 154,
+          "y": 105.994,
+          "width": 34.011,
+          "height": 5.994,
+          "text": "R$ 26,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "line",
+          "x": 18.009,
+          "y": 111.989,
+          "width": 173.99,
+          "height": 0,
+          "from": {
+            "x": 18.009,
+            "y": 111.989
+          },
+          "to": {
+            "x": 191.999,
+            "y": 111.989
+          },
+          "color": "#000000",
+          "thickness": 0.076
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 112.979,
+          "width": 173.99,
+          "height": 5.994,
+          "text": "Subtotal Bruno Costa: R$ 130,50",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "fontStyle": "Bold",
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 121.996,
+          "width": 173.99,
+          "height": 5.994,
+          "text": "Cliente: Carla Dias",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 11,
+            "fontStyle": "Bold",
+            "color": "#C2410C"
+          }
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 129.997,
+          "width": 80.01,
+          "height": 5.994,
+          "text": "Bloco de Notas A5",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 100,
+          "y": 129.997,
+          "width": 19.99,
+          "height": 5.994,
+          "text": "3,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 121.996,
+          "y": 129.997,
+          "width": 29.997,
+          "height": 5.994,
+          "text": "R$ 18,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 154,
+          "y": 129.997,
+          "width": 34.011,
+          "height": 5.994,
+          "text": "R$ 54,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 135.992,
+          "width": 80.01,
+          "height": 5.994,
+          "text": "Marcador CD",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 100,
+          "y": 135.992,
+          "width": 19.99,
+          "height": 5.994,
+          "text": "6,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 121.996,
+          "y": 135.992,
+          "width": 29.997,
+          "height": 5.994,
+          "text": "R$ 4,50",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 154,
+          "y": 135.992,
+          "width": 34.011,
+          "height": 5.994,
+          "text": "R$ 27,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "line",
+          "x": 18.009,
+          "y": 141.986,
+          "width": 173.99,
+          "height": 0,
+          "from": {
+            "x": 18.009,
+            "y": 141.986
+          },
+          "to": {
+            "x": 191.999,
+            "y": 141.986
+          },
+          "color": "#000000",
+          "thickness": 0.076
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 142.977,
+          "width": 173.99,
+          "height": 5.994,
+          "text": "Subtotal Carla Dias: R$ 81,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "fontStyle": "Bold",
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 151.994,
+          "width": 173.99,
+          "height": 5.994,
+          "text": "Cliente: Diego Lima",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 11,
+            "fontStyle": "Bold",
+            "color": "#C2410C"
+          }
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 159.995,
+          "width": 80.01,
+          "height": 5.994,
+          "text": "Régua 30cm",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 100,
+          "y": 159.995,
+          "width": 19.99,
+          "height": 5.994,
+          "text": "2,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 121.996,
+          "y": 159.995,
+          "width": 29.997,
+          "height": 5.994,
+          "text": "R$ 8,20",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 154,
+          "y": 159.995,
+          "width": 34.011,
+          "height": 5.994,
+          "text": "R$ 16,40",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 165.989,
+          "width": 80.01,
+          "height": 5.994,
+          "text": "Apontador c/depósito",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 100,
+          "y": 165.989,
+          "width": 19.99,
+          "height": 5.994,
+          "text": "10,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 121.996,
+          "y": 165.989,
+          "width": 29.997,
+          "height": 5.994,
+          "text": "R$ 3,90",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 154,
+          "y": 165.989,
+          "width": 34.011,
+          "height": 5.994,
+          "text": "R$ 39,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "line",
+          "x": 18.009,
+          "y": 171.983,
+          "width": 173.99,
+          "height": 0,
+          "from": {
+            "x": 18.009,
+            "y": 171.983
+          },
+          "to": {
+            "x": 191.999,
+            "y": 171.983
+          },
+          "color": "#000000",
+          "thickness": 0.076
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 172.974,
+          "width": 173.99,
+          "height": 5.994,
+          "text": "Subtotal Diego Lima: R$ 55,40",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "fontStyle": "Bold",
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 181.991,
+          "width": 173.99,
+          "height": 5.994,
+          "text": "Cliente: Eduardo Sousa",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 11,
+            "fontStyle": "Bold",
+            "color": "#C2410C"
+          }
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 189.992,
+          "width": 80.01,
+          "height": 5.994,
+          "text": "Caixa Clips 100un",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000"
+          }
+        },
+        {
+          "type": "text",
+          "x": 100,
+          "y": 189.992,
+          "width": 19.99,
+          "height": 5.994,
+          "text": "4,00",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 121.996,
+          "y": 189.992,
+          "width": 29.997,
+          "height": 5.994,
+          "text": "R$ 6,70",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 154,
+          "y": 189.992,
+          "width": 34.011,
+          "height": 5.994,
+          "text": "R$ 26,80",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "line",
+          "x": 18.009,
+          "y": 195.986,
+          "width": 173.99,
+          "height": 0,
+          "from": {
+            "x": 18.009,
+            "y": 195.986
+          },
+          "to": {
+            "x": 191.999,
+            "y": 195.986
+          },
+          "color": "#000000",
+          "thickness": 0.076
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 196.977,
+          "width": 173.99,
+          "height": 5.994,
+          "text": "Subtotal Eduardo Sousa: R$ 26,80",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "fontStyle": "Bold",
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "line",
+          "x": 18.009,
+          "y": 203.987,
+          "width": 173.99,
+          "height": 0,
+          "from": {
+            "x": 18.009,
+            "y": 203.987
+          },
+          "to": {
+            "x": 191.999,
+            "y": 203.987
+          },
+          "color": "#000000",
+          "thickness": 0.178
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 205.994,
+          "width": 173.99,
+          "height": 10.008,
+          "text": "Total geral: R$ 346,10",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 11,
+            "fontStyle": "Bold",
+            "color": "#000000",
+            "horizontalAlignment": "Right"
+          }
+        },
+        {
+          "type": "text",
+          "x": 18.009,
+          "y": 271.983,
+          "width": 173.99,
+          "height": 5.994,
+          "text": "OmniReport · Página 1 de 1",
+          "style": {
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "color": "#808080",
+            "horizontalAlignment": "Right"
+          }
+        }
+      ]
+    }
+  ]
+}

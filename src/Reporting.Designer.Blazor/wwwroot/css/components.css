@@ -1,0 +1,1156 @@
+/* ============================================================
+   Components — topbar, tabs, toolbar, statusbar, panels
+   ============================================================ */
+
+/* ---------- TopBar ---------- */
+.topbar {
+  height: var(--h-topbar);
+  display: flex;
+  align-items: center;
+  padding: 0 var(--sp-3);
+  gap: var(--sp-4);
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  font-size: var(--fs-md);
+  color: var(--text-primary);
+  padding-right: var(--sp-3);
+  border-right: 1px solid var(--border);
+  height: 26px;
+}
+.brand .brand-mark {
+  width: 22px;
+  height: 22px;
+  border-radius: var(--r-2);
+  background: var(--text-primary);
+  color: var(--bg-canvas);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  position: relative;
+}
+.brand .brand-mark::after {
+  content: "";
+  position: absolute;
+  width: 4px; height: 4px;
+  background: var(--accent);
+  bottom: 3px; right: 3px;
+  border-radius: 1px;
+}
+.brand .crumb {
+  color: var(--text-tertiary);
+  font-weight: 400;
+}
+
+/* Menu items */
+.menu {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+}
+.menu-item {
+  height: 26px;
+  padding: 0 10px;
+  font-size: var(--fs-md);
+  color: var(--text-secondary);
+  border-radius: var(--r-2);
+  display: inline-flex;
+  align-items: center;
+}
+.menu-item:hover { background: var(--bg-surface); color: var(--text-primary); }
+.menu-item.is-open {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+
+/* Command palette trigger */
+.cmd-trigger {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  height: 28px;
+  flex: 1;
+  max-width: 540px;
+  margin: 0 auto;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
+  border-radius: var(--r-3);
+  color: var(--text-tertiary);
+  font-size: var(--fs-md);
+  transition: border-color var(--t-fast) var(--ease-out);
+}
+.cmd-trigger:hover { border-color: var(--border-strong); }
+.cmd-trigger .cmd-text { flex: 1; text-align: left; }
+.cmd-trigger .cmd-kbd { display: flex; gap: 2px; }
+
+.topbar-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.icon-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--r-2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  position: relative;
+}
+.icon-btn:hover { background: var(--bg-surface); color: var(--text-primary); }
+.icon-btn.is-active {
+  background: var(--bg-surface);
+  color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+
+/* ---------- TabBar (open reports) ---------- */
+.tabbar {
+  height: var(--h-tabbar);
+  display: flex;
+  align-items: stretch;
+  padding: 0 var(--sp-2);
+  background: var(--bg-panel-strong);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  gap: 1px;
+}
+.tab {
+  height: 100%;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px 0 12px;
+  font-size: var(--fs-md);
+  color: var(--text-secondary);
+  border-right: 1px solid var(--border);
+  position: relative;
+  background: var(--bg-panel-strong);
+  max-width: 220px;
+  min-width: 0;
+}
+.tab:first-child { border-left: 1px solid var(--border); }
+.tab .tab-icon { color: var(--data-bound); }
+.tab .tab-name {
+  font-size: var(--fs-md);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.tab .dirty-dot {
+  width: 6px; height: 6px;
+  background: var(--accent);
+  border-radius: 50%;
+  margin: 0 1px;
+}
+.tab .tab-close {
+  width: 16px; height: 16px;
+  border-radius: var(--r-1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+  margin-left: 2px;
+  visibility: hidden;
+}
+.tab:hover .tab-close { visibility: visible; }
+.tab .tab-close:hover { background: var(--border); color: var(--text-primary); }
+.tab.is-active {
+  color: var(--text-primary);
+  background: var(--bg-canvas);
+}
+.tab.is-active::after {
+  content: "";
+  position: absolute;
+  top: -1px; left: 0; right: 0;
+  height: 1.5px;
+  background: var(--accent);
+}
+.tab-new {
+  width: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+}
+.tab-new:hover { color: var(--text-primary); }
+
+.tabbar-right {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding-right: 4px;
+}
+.tabbar-right .icon-btn { width: 24px; height: 24px; }
+
+/* ---------- Toolbar ---------- */
+.toolbar {
+  height: var(--h-toolbar);
+  display: flex;
+  align-items: center;
+  padding: 0 var(--sp-2);
+  gap: var(--sp-1);
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.tb-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  padding: 0 4px;
+}
+.tb-sep {
+  width: 1px;
+  height: 18px;
+  background: var(--border);
+  margin: 0 2px;
+}
+.tb-btn {
+  height: 28px;
+  min-width: 28px;
+  padding: 0 6px;
+  border-radius: var(--r-2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: var(--text-secondary);
+  font-size: var(--fs-md);
+  font-weight: 500;
+}
+.tb-btn:hover { background: var(--bg-surface); color: var(--text-primary); }
+.tb-btn:disabled, .tb-btn.is-disabled {
+  color: var(--text-tertiary);
+  opacity: 0.55;
+  pointer-events: none;
+}
+.tb-btn.is-toggled {
+  background: var(--accent-soft);
+  color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent-border);
+}
+.tb-btn.primary {
+  background: var(--text-primary);
+  color: var(--bg-canvas);
+  padding: 0 12px;
+  height: 28px;
+  gap: 6px;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.05);
+}
+.tb-btn.primary:hover { background: #2a2a2a; color: var(--bg-canvas); }
+[data-theme="dark"] .tb-btn.primary { background: var(--text-primary); color: var(--text-inverted); }
+[data-theme="dark"] .tb-btn.primary:hover { background: #DCDBD2; }
+
+.tb-zoom {
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-2);
+  background: var(--bg-surface);
+}
+.tb-zoom .zoom-btn {
+  width: 22px; height: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+}
+.tb-zoom .zoom-btn:hover { color: var(--text-primary); }
+.tb-zoom .zoom-val {
+  padding: 0 6px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+  color: var(--text-primary);
+  min-width: 54px;
+  text-align: center;
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  line-height: 26px;
+  font-variant-numeric: tabular-nums;
+}
+
+.tb-spacer { flex: 1; }
+
+/* Inline align toolbar group (visible only on multi-select state) */
+.tb-align-grp {
+  display: none;
+  align-items: center;
+  gap: 1px;
+  padding: 0 4px 0 6px;
+  margin-left: 2px;
+  height: 28px;
+  border-left: 1px solid var(--border);
+}
+.tb-align-grp .tb-align-label {
+  font-size: var(--fs-xs);
+  letter-spacing: var(--tracked);
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  padding: 0 6px;
+}
+[data-state="3"] .tb-align-grp { display: inline-flex; }
+
+/* ---------- StatusBar ---------- */
+.statusbar {
+  height: var(--h-statusbar);
+  display: flex;
+  align-items: center;
+  font-size: var(--fs-xs);
+  color: var(--text-secondary);
+  background: var(--bg-panel-strong);
+  border-top: 1px solid var(--border);
+  padding: 0 var(--sp-3);
+  gap: 0;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+.sb-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px 0 0;
+}
+.sb-item + .sb-item {
+  border-left: 1px solid var(--border-divider);
+  padding-left: 10px;
+}
+.sb-item .icon { width: 11px; height: 11px; }
+.sb-item .key { color: var(--text-tertiary); }
+.sb-item .val { color: var(--text-primary); font-family: var(--font-mono); font-size: 11px; }
+.sb-item.ok .val { color: var(--success); }
+.sb-spacer { flex: 1; }
+.sb-item .dot { width: 6px; height: 6px; border-radius: 50%; }
+
+/* ---------- Left Panel: Toolbox ---------- */
+.toolbox-search {
+  display: flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 8px;
+  margin: 6px 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
+  border-radius: var(--r-2);
+  gap: 6px;
+  color: var(--text-tertiary);
+}
+.toolbox-search input {
+  flex: 1;
+  font-size: var(--fs-md);
+  color: var(--text-primary);
+}
+.toolbox-search input::placeholder { color: var(--text-tertiary); }
+
+.tb-group-h {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px 4px 8px;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--tracked);
+  color: var(--text-tertiary);
+}
+.tb-group-h .chev {
+  width: 14px; height: 14px;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--text-tertiary);
+}
+
+.toolbox-list { padding: 0 4px 8px 4px; }
+
+.tbx-item {
+  display: grid;
+  grid-template-columns: 22px 1fr auto;
+  align-items: center;
+  height: 26px;
+  padding: 0 8px;
+  border-radius: var(--r-2);
+  font-size: var(--fs-md);
+  color: var(--text-primary);
+  gap: 6px;
+  cursor: grab;
+  user-select: none;
+}
+.tbx-item:hover { background: var(--bg-surface); }
+.tbx-item .icon { color: var(--text-secondary); }
+.tbx-item .meta {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-tertiary);
+}
+.tbx-item.is-drag-source {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.tbx-item.is-drag-source .icon { color: var(--accent); }
+
+/* ---------- Data sources tree ---------- */
+.tree {
+  padding: 4px 4px 8px;
+  font-size: var(--fs-md);
+}
+.tree-node {
+  display: grid;
+  grid-template-columns: 14px 18px 1fr auto;
+  align-items: center;
+  gap: 4px;
+  height: 24px;
+  padding: 0 6px 0 4px;
+  border-radius: var(--r-2);
+  color: var(--text-primary);
+}
+.tree-node:hover { background: var(--bg-surface); }
+.tree-node .chev { color: var(--text-tertiary); }
+.tree-node .type-icon {
+  width: 16px; height: 16px;
+  border-radius: 3px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 600;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+}
+.tree-node .type-icon.t-num   { color: var(--syn-number); }
+.tree-node .type-icon.t-text  { color: var(--text-primary); }
+.tree-node .type-icon.t-date  { color: var(--accent); }
+.tree-node .type-icon.t-bool  { color: var(--data-bound); }
+.tree-node .type-icon.t-money { color: var(--data-bound); }
+.tree-node.is-field { cursor: grab; }
+.tree-node.is-field:hover .field-name { color: var(--accent); }
+.tree-node .field-name { font-size: var(--fs-md); }
+.tree-node.depth-0 { font-weight: 600; font-size: var(--fs-md); padding-left: 4px; }
+.tree-node.depth-1 { padding-left: 18px; }
+.tree-node.depth-2 { padding-left: 32px; }
+.tree-node .field-tail {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-tertiary);
+}
+
+/* ── Collapsible group headers ───────────────────────────────────────────────
+   Single set of rules applies to every section header pattern in the sidebars:
+   - .tb-group-h        (ElementToolbox)
+   - .prop-section-head (PropertyGrid)
+   - .ds-source-node    (DataSourcesTree)
+   - .outline-section-head (OutlineTree)
+
+   Click anywhere on the header toggles .is-collapsed via the delegated JS handler
+   in designer.js. When collapsed, every sibling up to the next header is hidden
+   via the general-sibling combinator pattern — see the per-component sections below. */
+.tb-group-h,
+.prop-section-head,
+.outline-section-head,
+.ds-source-node {
+  cursor: pointer;
+  user-select: none;
+  transition: background var(--t-fast) var(--ease-out);
+}
+.tb-group-h:hover,
+.prop-section-head:hover,
+.outline-section-head:hover,
+.ds-source-node:hover {
+  background: var(--bg-surface, rgba(0, 0, 0, 0.025));
+}
+.tb-group-h .chev,
+.prop-section-head .chev,
+.outline-section-head .chev,
+.ds-source-node .chev {
+  transition: transform 120ms ease;
+}
+
+/* Toolbox: header.is-collapsed hides the immediately-following .toolbox-list. */
+.tb-group-h.is-collapsed + .toolbox-list { display: none; }
+
+/* PropertyGrid: each section is wrapped in .prop-section with the head as the first
+   child. When collapsed, hide every sibling (rows / sub-blocks) inside the same section. */
+.prop-section-head.is-collapsed ~ * { display: none; }
+
+/* DataSourcesTree: when a source-node row is collapsed, hide every following
+   row up to the next source at the same depth. Rules are duplicated for depth-0
+   and depth-1 because the tree can nest one level deep (child sources under
+   their parent via master-detail relations). */
+/* depth-0 collapse: hide everything that isn't another depth-0 source until the
+   next depth-0 source. */
+.ds-source-node.depth-0.is-collapsed ~ .tree-node:not(.depth-0) { display: none; }
+.ds-source-node.depth-0.is-collapsed ~ .ds-source-node.depth-0 ~ .tree-node:not(.depth-0) { display: revert; }
+.ds-source-node.depth-0.is-collapsed ~ .ds-source-node.depth-0.is-collapsed ~ .tree-node:not(.depth-0) { display: none; }
+/* depth-1 collapse: hide only depth-2 fields. */
+.ds-source-node.depth-1.is-collapsed ~ .tree-node.depth-2 { display: none; }
+.ds-source-node.depth-1.is-collapsed ~ .ds-source-node ~ .tree-node.depth-2 { display: revert; }
+.ds-source-node.depth-1.is-collapsed ~ .ds-source-node.is-collapsed ~ .tree-node.depth-2 { display: none; }
+
+/* OutlineTree: when a section is collapsed, hide the following section content
+   wrapper. The Razor uses `.outline-section-body` for groups. */
+.outline-section-head.is-collapsed + .outline-section-body { display: none; }
+/* ── Master-detail relation badge ─────────────────────────────────────────────
+   Crystal/SSRS/FastReport pattern: child sources nest under their parent in the
+   data tree, and a small "↳ via <fk>" caption documents the join key. The badge
+   itself isn't interactive — editing the relation is done in the Data Source
+   Editor dialog's "Relações" tab. */
+.tree-node.ds-rel-badge {
+  cursor: default;
+  height: 18px;
+  font-size: 10.5px;
+  color: var(--text-tertiary);
+  font-style: italic;
+  user-select: none;
+}
+.tree-node.ds-rel-badge .ds-rel-arrow {
+  color: var(--accent);
+  font-weight: 600;
+  font-style: normal;
+  margin-right: 4px;
+}
+.tree-node.ds-rel-badge .ds-rel-text {
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+/* Nested child source row — same affordance as root-level, just indented one notch. */
+.tree-node.depth-1.ds-source-node { padding-left: 18px; }
+
+/* Inline ambiguity badge — same field name exists in 2+ data sources, so the drag
+   will auto-qualify with Fields.<Source>.<Field>. */
+.tree-node .field-amb {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  margin-left: 4px;
+  border-radius: 50%;
+  background: rgba(245, 158, 11, 0.15);
+  color: #b45309;
+  font-size: 10px;
+  cursor: help;
+}
+
+/* Parameters tab */
+.param-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  height: 32px;
+  padding: 0 10px;
+  border-bottom: 1px solid var(--border-soft);
+  font-size: var(--fs-md);
+}
+.param-row:hover { background: var(--bg-surface); }
+.param-row .p-name { display: flex; align-items: center; gap: 6px; }
+.param-row .p-type {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-tertiary);
+  padding: 1px 5px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+}
+.param-row .p-value {
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+  color: var(--text-secondary);
+}
+
+/* ---------- Property Grid ---------- */
+.prop-section {
+  border-bottom: 1px solid var(--border);
+}
+.prop-section-head {
+  display: grid;
+  grid-template-columns: 16px 1fr auto;
+  align-items: center;
+  height: 26px;
+  padding: 0 10px;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  letter-spacing: var(--tracked);
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  background: var(--bg-panel-strong);
+  cursor: pointer;
+  gap: 6px;
+}
+.prop-section-head:hover { color: var(--text-primary); }
+.prop-section-head .chev { color: var(--text-tertiary); }
+.prop-section-head .count {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  color: var(--text-tertiary);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.prop-row {
+  display: grid;
+  grid-template-columns: 42% 1fr;
+  align-items: stretch;
+  min-height: var(--h-row);
+  border-bottom: 1px solid var(--border-soft);
+  font-size: var(--fs-sm);
+}
+.prop-row:last-child { border-bottom: 0; }
+.prop-row:hover { background: var(--bg-surface); }
+.prop-row .p-label {
+  display: flex;
+  align-items: center;
+  padding: 0 10px 0 12px;
+  color: var(--text-secondary);
+  font-size: var(--fs-sm);
+  border-right: 1px solid var(--border-soft);
+  gap: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.prop-row.is-bound .p-label::before {
+  content: "fx";
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--data-bound);
+  background: var(--data-bound-soft);
+  padding: 1px 4px;
+  border-radius: 2px;
+  line-height: 1;
+}
+.prop-row .p-editor {
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  color: var(--text-primary);
+  font-size: var(--fs-sm);
+  gap: 4px;
+  min-width: 0;
+  overflow: hidden;
+}
+.prop-row .p-editor > span:not(.color-swatch):not(.p-unit):not(.p-stepper):not(.editor-toggle):not(.align-row) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.prop-row.is-bound .p-editor {
+  font-family: var(--font-mono);
+  color: var(--data-bound);
+}
+.prop-row .p-editor input {
+  flex: 1;
+  font-size: var(--fs-sm);
+  min-width: 0;
+}
+.prop-row .p-unit {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--text-tertiary);
+  margin-left: 2px;
+}
+.prop-row .p-stepper {
+  display: inline-flex;
+  flex-direction: column;
+  margin-right: -4px;
+  opacity: 0;
+  transition: opacity var(--t-fast) var(--ease-out);
+}
+.prop-row:hover .p-stepper { opacity: 1; }
+.prop-row .p-stepper button {
+  width: 14px; height: 10px;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--text-tertiary);
+}
+.prop-row .p-stepper button:hover { color: var(--text-primary); }
+.prop-row.is-focused {
+  background: var(--selection-soft);
+}
+.prop-row.is-focused .p-editor {
+  box-shadow: inset 0 0 0 1px var(--selection);
+}
+
+/* Color swatch */
+.color-swatch {
+  width: 14px; height: 14px;
+  border-radius: 3px;
+  border: 1px solid var(--border-strong);
+  flex-shrink: 0;
+}
+
+/* Toggle / segmented buttons inside editors */
+.editor-toggle {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: var(--r-2);
+  height: 18px;
+  overflow: hidden;
+  background: var(--bg-surface);
+}
+.editor-toggle button {
+  padding: 0 6px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-weight: 500;
+}
+.editor-toggle button + button { border-left: 1px solid var(--border); }
+.editor-toggle button.is-on { background: var(--text-primary); color: var(--bg-canvas); }
+.editor-toggle button.is-mixed {
+  /* Used in MultiSelectionPanel when selected elements have mixed values for the
+     toggle — shows a diagonal half-fill to convey "indeterminate". Visual Studio
+     uses a similar pattern in the multi-select Property Grid. */
+  background: repeating-linear-gradient(45deg,
+    var(--text-primary) 0 3px,
+    transparent 3px 6px);
+  color: var(--text-primary);
+}
+[data-theme="dark"] .editor-toggle button.is-on { background: var(--text-primary); color: var(--text-inverted); }
+
+/* Align row (6 icons, single line) */
+.align-row {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: var(--r-2);
+  height: 18px;
+  overflow: hidden;
+  background: var(--bg-surface);
+}
+.align-row button {
+  width: 18px;
+  height: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+}
+.align-row button + button { border-left: 1px solid var(--border); }
+.align-row button:hover { color: var(--text-primary); }
+.align-row button.is-on { background: var(--text-primary); color: var(--bg-canvas); }
+[data-theme="dark"] .align-row button.is-on { background: var(--text-primary); color: var(--text-inverted); }
+
+/* Outline tree */
+.outline-row {
+  display: grid;
+  grid-template-columns: 14px 16px 1fr auto;
+  align-items: center;
+  gap: 4px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: var(--r-1);
+  font-size: var(--fs-sm);
+  color: var(--text-primary);
+}
+.outline-row .chev { color: var(--text-tertiary); }
+.outline-row .type-i { color: var(--text-tertiary); }
+.outline-row:hover { background: var(--bg-surface); }
+.outline-row.is-selected {
+  background: var(--selection-soft);
+  color: var(--text-primary);
+  box-shadow: inset 2px 0 0 var(--selection);
+}
+.outline-row.is-band { font-weight: 500; }
+.outline-row.is-band .type-i { color: var(--accent); }
+.outline-row.depth-1 { padding-left: 20px; }
+.outline-row.depth-2 { padding-left: 36px; }
+
+/* SubDetail's DataMember picker row — sits under the SD band row, indented like
+   a child node. The select takes the bulk of the width so the relation/source name
+   is fully visible (no truncation). */
+.outline-row.is-datamember {
+  background: rgba(139, 92, 246, 0.06);
+  border-left: 2px solid rgba(139, 92, 246, 0.45);
+  padding-left: 18px;
+  cursor: default;
+}
+.outline-row.is-datamember .type-i { color: #8b5cf6; }
+.outline-row.is-datamember .outline-datamember {
+  grid-column: 4;
+  min-width: 0;
+  width: 100%;
+  padding: 2px 6px;
+  border: 1px solid rgba(139, 92, 246, 0.35);
+  border-radius: 3px;
+  background: var(--bg-surface, white);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  cursor: pointer;
+}
+.outline-row.is-datamember .outline-datamember:focus {
+  outline: 2px solid #8b5cf6;
+  outline-offset: -1px;
+}
+
+/* ---------- Canvas ---------- */
+/* Top-left corner cell — clicking it cycles the ruler unit (cm / mm / pol). */
+.standard-canvas > .corner {
+  grid-column: 1; grid-row: 1;
+  border: none;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  background: var(--ruler-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: 600 8px var(--font-mono, ui-monospace, monospace);
+  color: var(--ruler-text);
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+.standard-canvas > .corner:hover { color: var(--text-primary); }
+/* Horizontal ruler canvas — top-right cell. The JS engine sizes its backing store to the
+   rendered box (DPR-aware) and draws ticks/labels. */
+.ruler-h-canvas {
+  grid-column: 2; grid-row: 1;
+  width: 100%;
+  height: 100%;
+  display: block;
+  background: var(--ruler-bg);
+  border-bottom: 1px solid var(--border);
+}
+/* Vertical ruler canvas — bottom-left cell. */
+.canvas-ruler-v {
+  grid-column: 1; grid-row: 2;
+  width: 100%;
+  height: 100%;
+  display: block;
+  background: var(--ruler-bg);
+  border-right: 1px solid var(--border);
+}
+/* Guides dragged out from the rulers. The hit zone is wider than the 1px visible line
+   (drawn via ::before) so they're easy to grab; they live inside #designerPage so they
+   scale and scroll with the page. */
+.omni-guide { position: absolute; z-index: 26; }
+.omni-guide.v { top: 0; bottom: 0; width: 9px; margin-left: -4px; cursor: ew-resize; }
+.omni-guide.h { left: 0; right: 0; height: 9px; margin-top: -4px; cursor: ns-resize; }
+.omni-guide::before { content: ""; position: absolute; background: var(--guide-color, #0EA5E9); }
+.omni-guide.v::before { left: 4px; top: 0; bottom: 0; width: 1px; }
+.omni-guide.h::before { top: 4px; left: 0; right: 0; height: 1px; }
+.omni-guide:hover::before { background: var(--accent, #C2410C); }
+/* Floating coordinate readout shown while dragging a guide. */
+.omni-guide-tip {
+  position: fixed;
+  z-index: 1000;
+  display: none;
+  pointer-events: none;
+  background: var(--bg-elevated, #1f2937);
+  color: #fff;
+  font: 10px/1.4 var(--font-mono, ui-monospace, monospace);
+  padding: 2px 6px;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+.canvas-scroll {
+  grid-column: 2; grid-row: 2;
+  overflow: auto;
+  background: var(--bg-canvas);
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  min-height: 0;
+  min-width: 0;
+  position: relative;
+}
+.canvas-stage {
+  position: relative;
+  /* Extra padding-left reserves room for the band-strip gutter (band names sit
+     OUTSIDE the page, in this gutter). 56px = strip width (38) + small breathing
+     room (18) so labels don't kiss the canvas edge. */
+  padding: var(--sp-6) var(--sp-6) var(--sp-10) 56px;
+  margin: 0 auto;
+}
+/* Page + bands as SVG */
+.page-shell {
+  position: relative;
+  width: var(--page-w);
+  /* Don't clip the band-strip gutter — it's intentionally positioned to the
+     LEFT of this shell so band labels live off the paper. */
+  overflow: visible;
+}
+.page {
+  background: var(--bg-surface);
+  width: var(--page-w);
+  position: relative;
+  box-shadow: var(--page-shadow);
+  border-radius: 2px;
+  /* Let the band-strip's negative-left positioning overflow the paper. */
+  overflow: visible;
+}
+[data-theme="dark"] .page { background: #1F1F1F; }
+
+/* Band */
+.band {
+  position: relative;
+  border-bottom: 1px dashed var(--border-strong);
+  background: transparent;
+}
+.band:last-child { border-bottom: 0; }
+.band .band-strip {
+  position: absolute;
+  top: 0; bottom: 0;
+  left: calc(-1 * var(--band-strip-w));
+  width: var(--band-strip-w);
+  background: var(--band-strip);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  overflow: hidden;
+}
+.band .band-strip::after {
+  content: "";
+  position: absolute;
+  right: 0; top: 0; bottom: 0;
+  width: 2px;
+  background: var(--text-tertiary);
+  opacity: 0.45;
+}
+.band.t-rh .band-strip::after, .band.t-rf .band-strip::after { background: var(--accent); opacity: 1; }
+.band.t-gh .band-strip::after, .band.t-gf .band-strip::after { background: var(--data-bound); opacity: 1; }
+.band.t-d  .band-strip::after { background: var(--text-primary); opacity: 0.6; }
+.band:hover .band-strip { background: var(--band-strip-hover); }
+
+/* Active band ("focused" band) — gets a tinted strip and an accent left rail so the user
+   knows where paste/insert/click-toolbox will land. Click on the strip toggles this. */
+.band .band-strip { cursor: pointer; }
+.band-strip.is-active,
+.band.is-active > .band-strip {
+  background: var(--accent-soft, rgba(194, 65, 12, 0.10));
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+.band-strip.is-active .band-label,
+.band.is-active > .band-strip .band-label {
+  color: var(--accent);
+}
+.band.is-active {
+  /* very subtle dashed outline on the active band itself so the user can locate it at
+     a glance even when the strip is offscreen due to horizontal scroll */
+  outline: 1px dashed var(--accent);
+  outline-offset: -1px;
+}
+.band-strip .band-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  color: var(--text-secondary);
+  line-height: 1;
+  font-family: var(--font-mono);
+}
+.band-strip .band-meta {
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  color: var(--text-tertiary);
+  line-height: 1;
+  letter-spacing: 0;
+}
+.band.t-rh .band-strip .band-label { color: var(--accent); }
+.band.t-rf .band-strip .band-label { color: var(--accent); }
+.band.t-ph .band-strip .band-label { color: var(--text-secondary); }
+.band.t-pf .band-strip .band-label { color: var(--text-secondary); }
+.band.t-gh .band-strip .band-label,
+.band.t-gf .band-strip .band-label { color: var(--data-bound); }
+.band.t-d  .band-strip .band-label { color: var(--text-primary); }
+
+.band .band-meta {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-tertiary);
+}
+.band .band-resize {
+  position: absolute;
+  left: 0; right: 0;
+  bottom: -2px;
+  height: 4px;
+  cursor: ns-resize;
+}
+.band .band-resize:hover { background: var(--selection-soft); }
+
+.band-content {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+/* Elements on canvas */
+.el {
+  position: absolute;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  padding: 0 2px;
+  white-space: nowrap;
+  border: 1px solid transparent;
+  user-select: none;
+}
+.el > span { overflow: visible; }
+.el.txt-right { justify-content: flex-end; }
+.el.txt-center { justify-content: center; }
+.el.bold { font-weight: 600; }
+.el.italic { font-style: italic; }
+
+.el.is-data {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--data-bound);
+}
+/* Left-edge binding stripe — subtle, always on data-bound elements */
+.el.is-data::before {
+  content: "";
+  position: absolute;
+  left: -3px;
+  top: 1px;
+  bottom: 1px;
+  width: 2px;
+  border-radius: 1px;
+  background: var(--data-bound);
+  opacity: 0.7;
+  pointer-events: none;
+}
+/* fx badge — explicit; only appears on selected/hover bound elements */
+.el .fx-badge {
+  position: absolute;
+  top: -7px;
+  left: -6px;
+  height: 12px;
+  padding: 0 4px;
+  border-radius: 2px;
+  background: var(--data-bound);
+  color: white;
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  font-weight: 700;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: 0;
+  line-height: 1;
+  box-shadow: 0 1px 2px rgba(20, 18, 14, 0.22);
+  z-index: 2;
+}
+.el.is-data:hover .fx-badge,
+.el.is-data.is-selected .fx-badge { display: inline-flex; }
+.el:hover { border-color: var(--border-strong); }
+
+.el.is-selected {
+  border-color: var(--selection);
+  background: var(--selection-soft);
+  z-index: 4;
+}
+.el.is-selected .fx-badge { background: var(--selection); }
+
+/* Resize handles */
+.handles {
+  position: absolute;
+  inset: -4px;
+  pointer-events: none;
+  display: none;
+}
+.el.is-selected .handles { display: block; }
+.handle {
+  position: absolute;
+  width: 7px; height: 7px;
+  background: var(--bg-surface);
+  border: 1.5px solid var(--selection);
+  border-radius: 1px;
+  /* `.handles` container has pointer-events:none so the dashed overlay doesn't
+     swallow clicks on the element body. The handles themselves MUST opt back in
+     or the resize gesture never reaches their pointerdown listener. */
+  pointer-events: auto;
+  z-index: 10;
+}
+.handle.nw { top: 0; left: 0; cursor: nwse-resize; }
+.handle.n  { top: 0; left: 50%; transform: translateX(-50%); cursor: ns-resize; }
+.handle.ne { top: 0; right: 0; cursor: nesw-resize; }
+.handle.e  { top: 50%; right: 0; transform: translateY(-50%); cursor: ew-resize; }
+.handle.se { bottom: 0; right: 0; cursor: nwse-resize; }
+.handle.s  { bottom: 0; left: 50%; transform: translateX(-50%); cursor: ns-resize; }
+.handle.sw { bottom: 0; left: 0; cursor: nesw-resize; }
+.handle.w  { top: 50%; left: 0; transform: translateY(-50%); cursor: ew-resize; }
+
+/* Page margins guide — dashed box marking the boundary between the printable
+   content area and the page margins. Positioned absolutely from the .page's
+   padding-box; the inline style on each instance sets the actual offsets to match
+   PageSetup.Margins. z-index lifts it above the bands so the dashed lines are
+   visible on every side (otherwise opaque element content would obscure them);
+   pointer-events:none keeps clicks falling through to the bands underneath. */
+.page-margins {
+  position: absolute;
+  /* Fallback values when inline style is missing (e.g. snapshot tests). */
+  top: calc(15 * var(--mm));
+  bottom: calc(15 * var(--mm));
+  left: calc(15 * var(--mm));
+  right: calc(15 * var(--mm));
+  border: 1px dashed var(--border-strong, var(--border));
+  pointer-events: none;
+  opacity: 0.7;
+  z-index: 4;
+}
+
+/* Smart guides */
+.smart-guide {
+  position: absolute;
+  background: var(--smart-guide);
+  pointer-events: none;
+  z-index: 5;
+}
+.smart-guide.h { height: 1px; left: 0; right: 0; }
+.smart-guide.v { width: 1px; top: 0; bottom: 0; }
+.smart-guide .dim {
+  position: absolute;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--smart-guide);
+  padding: 1px 4px;
+  background: var(--bg-surface);
+  border-radius: 2px;
+  border: 1px solid var(--smart-guide);
+  white-space: nowrap;
+}
+
+/* Drag ghost */
+.drag-ghost {
+  position: absolute;
+  border: 1px dashed var(--selection);
+  background: var(--selection-soft);
+  pointer-events: none;
+  z-index: 6;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--selection-strong);
+  padding: 0 4px;
+  display: flex;
+  align-items: center;
+  opacity: 0.9;
+}
+
+/* Marquee selection */
+.marquee {
+  position: absolute;
+  border: 1px dashed var(--selection);
+  background: var(--selection-soft);
+  pointer-events: none;
+  z-index: 3;
+}

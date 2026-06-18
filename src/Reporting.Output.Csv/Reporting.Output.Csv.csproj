@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Reporting.Output.Csv</RootNamespace>
+    <AssemblyName>Reporting.Output.Csv</AssemblyName>
+    <Description>OmniReport — CSV exporter that walks the rendered report's text primitives, quantizes them into a tabular grid (via LayoutPrimitiveGrid), and emits RFC 4180 CSV.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Reporting.Core\Reporting.Core.csproj" />
+    <ProjectReference Include="..\Reporting.Layout\Reporting.Layout.csproj" />
+    <ProjectReference Include="..\Reporting.Output.Pdf\Reporting.Output.Pdf.csproj" />
+  </ItemGroup>
+
+</Project>
