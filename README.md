@@ -18,8 +18,29 @@ sistema de arquivos.
 Equivalente em capacidade a Crystal Reports / SSRS / FastReport, original, MIT, com foco
 em cenários brasileiros (PDV, NFC-e, DANFE, ABNT NBR 5891).
 
+## Galeria
+
+### Designer visual (Blazor)
+
+<!-- 📸 Capture a UI do Designer e salve em assets/designer.png; depois descomente a linha abaixo: -->
+<!-- ![Designer visual do OmniReport](assets/designer.png) -->
+
+> _Screenshot pendente._ Para capturar: `dotnet run --project samples/Reporting.Samples.BlazorServer`,
+> abra **`/designer`**, carregue um exemplo pela faixa **Sandbox** (ex.: "12 · Dashboard") e salve a
+> imagem em **`assets/designer.png`** — depois é só descomentar a linha acima.
+
+### Saída do engine (renderização real dos samples)
+
+| | |
+|:--:|:--:|
+| <img src="assets/sample-dashboard.png" width="360" alt="Dashboard"/><br/>**Dashboard** — gráficos + Gauge + Sparkline + Indicator + DataBar | <img src="assets/sample-map.png" width="360" alt="Mapa vetorial"/><br/>**Mapa vetorial** — Web Mercator + graticule + shapes |
+| <img src="assets/sample-tablix.png" width="360" alt="Tablix"/><br/>**Tablix** — tabela bandada | <img src="assets/sample-nfce.png" width="220" alt="Cupom NFC-e"/><br/>**Cupom NFC-e** — térmico 80 mm (DANFE) |
+
+> Imagens geradas por `dotnet run --project samples/Reporting.Samples.CodeFirst -- ./out` (PNG vetorial→raster via SkiaSharp).
+
 ## Sumário
 
+- [Galeria](#galeria)
 - [Arquitetura](#arquitetura)
 - [Instalação](#instalação)
 - [Quickstarts](#quickstarts)
