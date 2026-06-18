@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Reporting.DataSources.Sqlite</RootNamespace>
+    <AssemblyName>Reporting.DataSources.Sqlite</AssemblyName>
+    <Description>OmniReport — SQLite data source. Thin convenience wrapper around AdoNetDataSource + Microsoft.Data.Sqlite. Cross-platform; works with file-backed or in-memory databases.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Reporting.DataSources\Reporting.DataSources.csproj" />
+    <ProjectReference Include="..\Reporting.DataSources.AdoNet\Reporting.DataSources.AdoNet.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" />
+  </ItemGroup>
+
+</Project>
