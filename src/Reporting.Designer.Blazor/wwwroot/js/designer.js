@@ -35,6 +35,32 @@
         return 1;
     }
 
+    // ───── Zoom: reservar a caixa ESCALADA para o container de scroll ─────────────
+    // O .canvas-stage recebe `transform: scale(z)` (origin 0 0). `transform` é PAINT:
+    // amplia o visual mas NÃO cresce a caixa de layout — então o .canvas-scroll
+    // (overflow:auto) não enxerga a página ampliada e não mostra scrollbar em zoom > 1
+    // (direita/baixo ficam inalcançáveis). Mantemos o transform (getCanvasZoom() e as
+    // réguas continuam iguais) e reservamos o excedente (z-1)× como MARGEM — que é
+    // layout puro e NÃO é afetada pelo transform do próprio elemento. Assim a área de
+    // scroll do pai = natural + natural·(z-1) = natural·z = o tamanho visual escalado.
+    // Medimos o .page-shell (offset* são px de layout, imunes ao transform) para evitar
+    // loop de feedback com o ResizeObserver do .canvas-scroll.
+    function sizeZoomBox() {
+        const stage = document.querySelector(".canvas-stage");
+        if (!stage) return;
+        const shell = stage.querySelector(".page-shell");
+        if (!shell) { stage.style.marginRight = ""; stage.style.marginBottom = ""; return; }
+        const z = getCanvasZoom();
+        if (z <= 1) { stage.style.marginRight = "0px"; stage.style.marginBottom = "0px"; return; }
+        const cs = getComputedStyle(stage);
+        const padX = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight)  || 0);
+        const padY = (parseFloat(cs.paddingTop)  || 0) + (parseFloat(cs.paddingBottom) || 0);
+        const naturalW = shell.offsetWidth  + padX;   // px de layout (não escalados)
+        const naturalH = shell.offsetHeight + padY;
+        stage.style.marginRight  = `${Math.ceil(naturalW * (z - 1))}px`;
+        stage.style.marginBottom = `${Math.ceil(naturalH * (z - 1))}px`;
+    }
+
     // CSS-pixel offset of `el` relative to `ancestor`, walking the offsetParent chain.
     // offsetLeft/Top are zoom-independent because they're declared dimensions, not
     // rendered ones — perfect for converting between page-relative coords and band-
@@ -1248,6 +1274,7 @@
         }
 
         function drawAll() {
+            sizeZoomBox();   // reserva (via margem) a caixa escalada p/ o scroll no zoom
             const pr = pageRect();
             const k = pxPerMm();
             drawAxis(hCanvas, true, pr, k);

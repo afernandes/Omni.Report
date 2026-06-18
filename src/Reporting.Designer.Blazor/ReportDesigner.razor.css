@@ -333,7 +333,7 @@
 /* The band-content of a SubDetail mirrors the caption-row tone with a dashed
    border so the canvas reflects the iteration boundary. */
 ::deep .band[data-band-kind="SubDetail"] .band-content {
-    background: rgba(139, 92, 246, 0.03);
+    background: rgba(139, 92, 246, 0.10);
 }
 
 /* Compact warning pill shown under any UNFOCUSED SubDetail that has no DataMember
