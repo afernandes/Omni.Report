@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Net;
 using System.Text;
+using Reporting.Geometry;
 using Reporting.Layout;
 using Reporting.Output.Pdf;
 using Reporting.Output.Svg;
@@ -88,6 +89,12 @@ public sealed class SvgHtmlExporter : IReportExporter
             writer.Write(heightMm);
             writer.Write("mm;\">\n      ");
             writer.Write(p.SvgMarkup);
+            var overlay = BuildOverlay(report.Pages[i]);
+            if (overlay.Length > 0)
+            {
+                writer.Write("\n      ");
+                writer.Write(overlay);
+            }
             writer.Write("\n    </section>\n");
         }
 
@@ -102,7 +109,7 @@ public sealed class SvgHtmlExporter : IReportExporter
         sb.Append("body{background:").Append(_options.BodyBackground)
           .Append(";font-family:system-ui,-apple-system,'Segoe UI',sans-serif;color:#1F2937;}");
         sb.Append(".report{display:flex;flex-direction:column;align-items:center;gap:16px;padding:24px;}");
-        sb.Append(".page{display:block;background:").Append(_options.PageBackground)
+        sb.Append(".page{display:block;position:relative;background:").Append(_options.PageBackground)
           .Append(";box-sizing:border-box;");
         if (_options.DropShadow)
         {
@@ -110,6 +117,7 @@ public sealed class SvgHtmlExporter : IReportExporter
         }
         sb.Append("}");
         sb.Append(".page svg{display:block;width:100%;height:100%;}");
+        sb.Append(".lnk{position:absolute;display:block;text-decoration:none;}");
 
         if (_options.EmitPrintRules)
         {
@@ -127,6 +135,42 @@ public sealed class SvgHtmlExporter : IReportExporter
         }
         return sb.ToString();
     }
+
+    /// <summary>Builds the interactivity overlay for a page: a transparent, absolutely-positioned
+    /// <c>&lt;a&gt;</c> over each primitive that carries a link (clickable) or a bookmark (anchor
+    /// target). Positions are in millimetres, matching the page section's physical sizing.</summary>
+    private static string BuildOverlay(RenderedPage page)
+    {
+        var sb = new StringBuilder();
+        foreach (var prim in page.Primitives)
+        {
+            if (prim.LinkTarget is null && prim.BookmarkId is null)
+            {
+                continue;
+            }
+            sb.Append("<a class=\"lnk\"");
+            if (prim.BookmarkId is not null)
+            {
+                sb.Append(" id=\"").Append(WebUtility.HtmlEncode(prim.BookmarkId)).Append('"');
+            }
+            if (prim.LinkTarget is not null)
+            {
+                sb.Append(" href=\"").Append(WebUtility.HtmlEncode(prim.LinkTarget)).Append('"');
+                if (prim.LinkTarget.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                {
+                    sb.Append(" target=\"_blank\" rel=\"noopener noreferrer\"");
+                }
+            }
+            sb.Append(" style=\"left:").Append(Mm(prim.Bounds.X))
+              .Append("mm;top:").Append(Mm(prim.Bounds.Y))
+              .Append("mm;width:").Append(Mm(prim.Bounds.Width))
+              .Append("mm;height:").Append(Mm(prim.Bounds.Height))
+              .Append("mm;\"></a>");
+        }
+        return sb.ToString();
+    }
+
+    private static string Mm(Unit u) => u.ToMm().ToString("0.###", CultureInfo.InvariantCulture);
 
     private static double PointsToMm(double pt) => pt * 25.4 / 72.0;
 }

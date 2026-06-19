@@ -65,6 +65,7 @@ internal sealed class BandRenderer
 
             var style = ResolveStyle(element, ctx);
 
+            int linkFrom = primitives.Count;
             switch (element)
             {
                 case LabelElement lbl:
@@ -197,9 +198,44 @@ internal sealed class BandRenderer
                     actualHeight = MaxHeight(actualHeight, elementBounds, origin, null);
                     break;
             }
+
+            // Propagate the element's Action/Bookmark onto every primitive it just emitted, so
+            // interactivity-aware exporters (HTML) can wrap them in clickable links / anchors.
+            var linkTarget = ResolveLink(element, ctx);
+            var bookmarkId = string.IsNullOrWhiteSpace(element.Bookmark) ? null : "bm-" + element.Bookmark;
+            if (linkTarget is not null || bookmarkId is not null)
+            {
+                for (int li = linkFrom; li < primitives.Count; li++)
+                {
+                    primitives[li] = primitives[li] with
+                    {
+                        LinkTarget = linkTarget ?? primitives[li].LinkTarget,
+                        BookmarkId = bookmarkId ?? primitives[li].BookmarkId,
+                    };
+                }
+            }
         }
 
         return new BandLayout(primitives, actualHeight);
+    }
+
+    /// <summary>Resolves the element's <c>Action</c> to a navigation target string: a hyperlink URL
+    /// (its expression is evaluated in <paramref name="ctx"/>), <c>"#bm-&lt;id&gt;"</c> for a bookmark
+    /// link, or a <c>?drillthrough=</c> query the host resolves. Null when there's no action.</summary>
+    private string? ResolveLink(ReportElement element, IReportExpressionContext ctx)
+    {
+        if (element.Action is not { } a)
+        {
+            return null;
+        }
+        return a.Kind switch
+        {
+            ActionKind.Hyperlink when !string.IsNullOrWhiteSpace(a.Hyperlink) => ResolveText(a.Hyperlink, ctx),
+            ActionKind.BookmarkLink when !string.IsNullOrWhiteSpace(a.BookmarkId) => "#bm-" + a.BookmarkId,
+            ActionKind.DrillthroughReport when !string.IsNullOrWhiteSpace(a.DrillthroughReportName)
+                => "?drillthrough=" + Uri.EscapeDataString(a.DrillthroughReportName!),
+            _ => null,
+        };
     }
 
     /// <summary>Estimates the height of a band without producing primitives — used for KeepTogether
