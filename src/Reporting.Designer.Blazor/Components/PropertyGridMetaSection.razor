@@ -1,0 +1,153 @@
+@using System.Globalization
+@using Reporting.Designer.Blazor.Services
+@using Reporting.Designer.Blazor.ViewModels
+@using Reporting.Geometry
+@using Reporting.Styling
+
+@*
+    Metadata-driven section: renders every [PropertyGrid]-annotated property of the selected element
+    (base + derived, discovered by reflection) with the editor inferred from its type, plus an "fx"
+    toggle per bindable property that drives it by a report expression (stored in PropertyExpressions).
+    A new element that derives from an existing one gets all this automatically — no hand-coded UI.
+*@
+
+@if (_descriptors.Count > 0)
+{
+    <div class="prop-section">
+        <div class="prop-section-head">
+            <Icon Name="chevron-down" Size="12" CssClass="chev icon icon-12" />
+            <span>Propriedades</span>
+            <span class="count">@_descriptors.Count</span>
+        </div>
+        @foreach (var d in _descriptors)
+        {
+            var path = d.Path;
+            var expr = Element.GetPropertyExpression(path);
+            var bound = expr is not null || _fxOpen.Contains(path);
+            var current = Element.GetMetaValue(d);
+            <div class="prop-row @(bound ? "is-bound" : null)">
+                <div class="p-label">@d.Label</div>
+                <div class="p-editor">
+                    @if (bound)
+                    {
+                        <input type="text" value="@expr" placeholder="= expressão"
+                               @onchange="@(e => Element.SetPropertyExpression(path, e.Value?.ToString()))"
+                               style="flex:1;font-family:var(--font-mono);font-size:11.5px;color:var(--data-bound);" />
+                    }
+                    else
+                    {
+                        @switch (d.Editor)
+                        {
+                            case "enum":
+                                <select style="flex:1;font-size:11.5px;"
+                                        @onchange="@(e => Element.ApplyMetaSet(d, Enum.Parse(EnumType(d), e.Value?.ToString() ?? string.Empty, ignoreCase: true)))">
+                                    @foreach (var v in Enum.GetValues(EnumType(d)))
+                                    {
+                                        <option value="@v" selected="@(Equals(current, v))">@v</option>
+                                    }
+                                </select>
+                                break;
+
+                            case "color-picker":
+                                var col = current as Color?;
+                                <span class="color-swatch" style="background:@(col is { } c ? c.ToHex() : "transparent");@(col is null ? "border-style:dashed;" : null)"></span>
+                                <input type="color" value="@((col ?? Color.Black).ToHex())"
+                                       @onchange="@(e => Element.ApplyMetaSet(d, Color.FromHex(e.Value?.ToString() ?? "#000000")))"
+                                       style="width:36px;height:16px;cursor:pointer;" />
+                                @if (col is not null && IsNullable(d))
+                                {
+                                    <button class="icon-btn" type="button" title="Limpar" @onclick="@(() => Element.ApplyMetaSet(d, null))"
+                                            style="width:18px;height:18px;">×</button>
+                                }
+                                break;
+
+                            case "unit-spinner":
+                                var unit = current is Unit u ? u : Unit.Zero;
+                                <input type="number" step="0.1" value="@unit.ToMm().ToString("0.##", CultureInfo.InvariantCulture)"
+                                       @onchange="@(e => Element.ApplyMetaSet(d, Unit.FromMm(ParseDouble(e.Value))))"
+                                       style="width:64px;font-size:11.5px;" />
+                                <span class="p-unit">mm</span>
+                                break;
+
+                            case "number":
+                                <input type="number" step="0.1" value="@Convert.ToString(current, CultureInfo.InvariantCulture)"
+                                       @onchange="@(e => Element.ApplyMetaSet(d, ConvertNumber(d, e.Value)))"
+                                       style="width:64px;font-size:11.5px;" />
+                                break;
+
+                            case "toggle":
+                                var on = current is true;
+                                <span class="editor-toggle">
+                                    <button class="@(on ? "is-on" : null)" @onclick="@(() => Element.ApplyMetaSet(d, true))">On</button>
+                                    <button class="@(!on ? "is-on" : null)" @onclick="@(() => Element.ApplyMetaSet(d, false))">Off</button>
+                                </span>
+                                break;
+
+                            default:
+                                <input type="text" value="@Convert.ToString(current)" placeholder="@d.Placeholder"
+                                       @onchange="@(e => Element.ApplyMetaSet(d, e.Value?.ToString()))"
+                                       style="flex:1;font-size:11.5px;" />
+                                break;
+                        }
+                    }
+                    @if (d.Bindable)
+                    {
+                        <button class="icon-btn" type="button"
+                                title="@(bound ? "Usar valor fixo" : "Vincular a expressão (fx)")"
+                                @onclick="@(() => ToggleFx(path, bound))"
+                                style="width:18px;height:18px;border-radius:3px;font-family:var(--font-mono);font-size:9.5px;font-weight:600;cursor:pointer;color:@(bound ? "var(--bg-canvas)" : "var(--data-bound)");background:@(bound ? "var(--data-bound)" : "var(--data-bound-soft)");">fx</button>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public ElementViewModel Element { get; set; } = default!;
+
+    /// <summary>Paths whose fx editor is open but not yet committed (the binding dict only holds
+    /// non-empty expressions, so an empty fx editor is tracked here).</summary>
+    private readonly HashSet<string> _fxOpen = new(StringComparer.Ordinal);
+
+    private IReadOnlyList<PropertyGridDescriptor> _descriptors = Array.Empty<PropertyGridDescriptor>();
+
+    private string? _loadedElementId;
+
+    protected override void OnParametersSet()
+    {
+        // Drop fx-open markers ONLY when a different element is selected — not on same-element edits
+        // (which also re-fire OnParametersSet), or an open expression editor would close mid-typing.
+        if (Element.Id != _loadedElementId)
+        {
+            _fxOpen.Clear();
+            _loadedElementId = Element.Id;
+        }
+        _descriptors = PropertyGridDescriptors.For(Element.ToElement().GetType());
+    }
+
+    private void ToggleFx(string path, bool bound)
+    {
+        if (bound)
+        {
+            _fxOpen.Remove(path);
+            Element.SetPropertyExpression(path, null); // revert to the static value
+        }
+        else
+        {
+            _fxOpen.Add(path);
+        }
+    }
+
+    private static Type EnumType(PropertyGridDescriptor d) => Nullable.GetUnderlyingType(d.Type) ?? d.Type;
+
+    private static bool IsNullable(PropertyGridDescriptor d)
+        => Nullable.GetUnderlyingType(d.Type) is not null || !d.Type.IsValueType;
+
+    private static double ParseDouble(object? value)
+        => double.TryParse(Convert.ToString(value, CultureInfo.InvariantCulture),
+            NumberStyles.Any, CultureInfo.InvariantCulture, out var x) ? x : 0;
+
+    private static object ConvertNumber(PropertyGridDescriptor d, object? value)
+        => Convert.ChangeType(ParseDouble(value), Nullable.GetUnderlyingType(d.Type) ?? d.Type, CultureInfo.InvariantCulture);
+}

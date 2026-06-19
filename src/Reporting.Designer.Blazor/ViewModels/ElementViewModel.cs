@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using Reporting.Common;
+using Reporting.Designer.Blazor.Services;
 using Reporting.Elements;
 using Reporting.Geometry;
 using Reporting.Styling;
@@ -757,6 +758,20 @@ public sealed class ElementViewModel : Notifying
         RaiseChanged();
     }
 
+    /// <summary>Reads a metadata descriptor's current value off the materialized element. The generic
+    /// editor uses this so it never needs a hand-written getter per property.</summary>
+    public object? GetMetaValue(PropertyGridDescriptor descriptor) => descriptor.Get(ToElement());
+
+    /// <summary>Applies a metadata descriptor's immutable setter and re-hydrates this VM from the
+    /// result — so ONE generic editor can drive ANY <c>[PropertyGrid]</c> property (basic or advanced)
+    /// without per-property plumbing. The static value lands back in the VM; expression bindings and
+    /// every other field are preserved (the change round-trips through <see cref="ToElement"/>).</summary>
+    public void ApplyMetaSet(PropertyGridDescriptor descriptor, object? value)
+    {
+        LoadFrom(descriptor.Set(ToElement(), value));
+        RaiseChanged();
+    }
+
     public Rectangle Bounds
     {
         get => new(X, Y, Width, Height);
@@ -1003,97 +1018,118 @@ public sealed class ElementViewModel : Notifying
             BarcodeElement => DesignerElementKind.Barcode,
             _ => DesignerElementKind.TextBox,
         };
+        var vm = new ElementViewModel(kind, element.Id);
+        vm.LoadFrom(element);
+        return vm;
+    }
+
+    /// <summary>Re-hydrates this view model from an immutable <paramref name="element"/> — the inverse of
+    /// <see cref="ToElement"/>. Used by <see cref="FromElement"/> on load and by
+    /// <see cref="ApplyMetaSet"/> to push a metadata-driven change back in place. Mutable collections are
+    /// cleared first so re-loading stays idempotent (no duplicated rows).</summary>
+    private void LoadFrom(ReportElement element)
+    {
+        ConditionalFormats.Clear();
+        ChartSeries.Clear();
+        DrillthroughParameters.Clear();
+        _propertyExpressions.Clear();
+
         var fontStyle = element.Style.Font?.Style ?? FontStyle.Regular;
-        var vm = new ElementViewModel(kind, element.Id)
-        {
-            Name = element.Name,
-            X = element.Bounds.X,
-            Y = element.Bounds.Y,
-            Width = element.Bounds.Width,
-            Height = element.Bounds.Height,
-            ForeColor = element.Style.ForeColor ?? Color.Black,
-            BackColor = element.Style.BackColor,
-            Padding   = element.Style.Padding,
-            FontFamily = element.Style.Font?.Family ?? "Arial",
-            FontSize = element.Style.Font?.Size ?? 10,
-            IsBold          = (fontStyle & FontStyle.Bold)      != 0,
-            IsItalic        = (fontStyle & FontStyle.Italic)    != 0,
-            IsUnderline     = (fontStyle & FontStyle.Underline) != 0,
-            IsStrikethrough = (fontStyle & FontStyle.Strikeout) != 0,
-            HorizontalAlignment = element.Style.HorizontalAlignment,
-            VerticalAlignment   = element.Style.VerticalAlignment,
-            WordWrap            = element.Style.WordWrap,
-            Format              = element.Style.Format,
-            Border              = element.Style.Border,
-            IsVisible = element.Visible,
-            VisibleExpr = element.VisibleExpression,
-        };
+        Name = element.Name;
+        X = element.Bounds.X;
+        Y = element.Bounds.Y;
+        Width = element.Bounds.Width;
+        Height = element.Bounds.Height;
+        ForeColor = element.Style.ForeColor ?? Color.Black;
+        BackColor = element.Style.BackColor;
+        Padding = element.Style.Padding;
+        FontFamily = element.Style.Font?.Family ?? "Arial";
+        FontSize = element.Style.Font?.Size ?? 10;
+        IsBold = (fontStyle & FontStyle.Bold) != 0;
+        IsItalic = (fontStyle & FontStyle.Italic) != 0;
+        IsUnderline = (fontStyle & FontStyle.Underline) != 0;
+        IsStrikethrough = (fontStyle & FontStyle.Strikeout) != 0;
+        HorizontalAlignment = element.Style.HorizontalAlignment;
+        VerticalAlignment = element.Style.VerticalAlignment;
+        WordWrap = element.Style.WordWrap;
+        Format = element.Style.Format;
+        Border = element.Style.Border;
+        IsVisible = element.Visible;
+        VisibleExpr = element.VisibleExpression;
+
         switch (element)
         {
-            case LabelElement lbl: vm.Text = lbl.Text; break;
+            case LabelElement lbl: Text = lbl.Text; break;
             case TextBoxElement tb:
-                vm.Expression = tb.Expression;
-                vm.CanGrow = tb.CanGrow;
-                vm.CanShrink = tb.CanShrink;
+                Expression = tb.Expression;
+                CanGrow = tb.CanGrow;
+                CanShrink = tb.CanShrink;
                 break;
             case BarcodeElement bc:
-                vm.Expression = bc.Expression;
-                vm.Symbology = bc.Symbology;
-                vm.QrEcc = bc.QrEcc;
-                vm.BarcodeShowText = bc.ShowText;
+                Expression = bc.Expression;
+                Symbology = bc.Symbology;
+                QrEcc = bc.QrEcc;
+                BarcodeShowText = bc.ShowText;
                 break;
-            case LineElement ln: vm.LineDir = ln.Direction; break;
-            case RectangleElement r: vm.FillColor = r.FillColor; vm.CornerRadiusMm = r.CornerRadius.ToMm(); break;
-            case EllipseElement e: vm.FillColor = e.FillColor; break;
+            case LineElement ln: LineDir = ln.Direction; break;
+            case RectangleElement r: FillColor = r.FillColor; CornerRadiusMm = r.CornerRadius.ToMm(); break;
+            case EllipseElement e: FillColor = e.FillColor; break;
             case ImageElement img:
-                if (img.InlineData.Count > 0) vm.InlineImageData = img.InlineData.ToArray();
-                vm.ImagePath = img.Path;
-                vm.ImageExpression = img.Expression;
-                vm.ImageSizing = img.Sizing;
+                InlineImageData = img.InlineData.Count > 0 ? img.InlineData.ToArray() : null;
+                ImagePath = img.Path;
+                ImageExpression = img.Expression;
+                ImageSizing = img.Sizing;
                 break;
             case ChartElement ch:
-                vm.ChartKind = ch.Kind;
-                vm.ChartTitle = ch.Title ?? string.Empty;
-                vm.ShowLegend = ch.ShowLegend;
+                ChartKind = ch.Kind;
+                ChartTitle = ch.Title ?? string.Empty;
+                ShowLegend = ch.ShowLegend;
                 foreach (var s in ch.Series)
                 {
-                    vm.ChartSeries.Add(ChartSeriesRule.From(s));
+                    ChartSeries.Add(ChartSeriesRule.From(s));
                 }
                 break;
         }
         foreach (var cf in element.ConditionalFormats)
         {
-            vm.ConditionalFormats.Add(ConditionalFormatRule.From(cf));
+            ConditionalFormats.Add(ConditionalFormatRule.From(cf));
         }
         foreach (var kv in element.PropertyExpressions)
         {
-            vm._propertyExpressions[kv.Key] = kv.Value;
+            _propertyExpressions[kv.Key] = kv.Value;
         }
+
         // RDL Phase 1 extensions: pull every additive field back into the VM so the
         // PropertyGrid can edit them. HasAction is derived from the presence of an
         // Action child — matches the "checkbox enables the section" UX.
-        vm.Bookmark = element.Bookmark;
-        vm.DocumentMapLabel = element.DocumentMapLabel;
-        vm.ToggleItemId = element.ToggleItemId;
-        vm.InitiallyHidden = element.InitiallyHidden;
+        Bookmark = element.Bookmark;
+        DocumentMapLabel = element.DocumentMapLabel;
+        ToggleItemId = element.ToggleItemId;
+        InitiallyHidden = element.InitiallyHidden;
         if (element.Action is { } act)
         {
-            vm.HasAction = true;
-            vm.ActionKind = act.Kind;
-            vm.Hyperlink = act.Hyperlink;
-            vm.BookmarkLinkId = act.BookmarkId;
-            vm.DrillthroughReportName = act.DrillthroughReportName;
+            HasAction = true;
+            ActionKind = act.Kind;
+            Hyperlink = act.Hyperlink;
+            BookmarkLinkId = act.BookmarkId;
+            DrillthroughReportName = act.DrillthroughReportName;
             foreach (var p in act.DrillthroughParameters)
             {
-                vm.DrillthroughParameters.Add(DrillthroughParameterRule.From(p));
+                DrillthroughParameters.Add(DrillthroughParameterRule.From(p));
             }
+        }
+        else
+        {
+            // No action on the element → clear the editor fields too, so a re-hydration (ApplyMetaSet)
+            // can't leave a stale URL/bookmark that would resurface if the action toggle is re-enabled.
+            HasAction = false;
+            ActionKind = ActionKind.Hyperlink;
+            Hyperlink = null;
+            BookmarkLinkId = null;
+            DrillthroughReportName = null;
         }
         // Preserve the full domain element for advanced kinds without a dedicated editor, so
         // re-saving doesn't degrade them (they'd otherwise fall back to a TextBox).
-        if (IsOpaqueAdvanced(kind))
-        {
-            vm._sourceElement = element;
-        }
-        return vm;
+        _sourceElement = IsOpaqueAdvanced(Kind) ? element : null;
     }
 }
