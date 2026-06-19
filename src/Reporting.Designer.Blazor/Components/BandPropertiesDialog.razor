@@ -47,6 +47,25 @@
                 </div>
             </div>
 
+            <div class="bp-section">
+                <div class="bp-section-head">
+                    <Icon Name="eye" Size="14" CssClass="icon icon-14" />
+                    <span>Visibilidade</span>
+                </div>
+                <div class="bp-row">
+                    <label title="Quando desmarcado, a banda inteira é suprimida.">Visível</label>
+                    <input type="checkbox" checked="@Band.BandVisible"
+                           @onchange="@(e => Band.BandVisible = (bool)(e.Value ?? true))" />
+                </div>
+                <div class="bp-row">
+                    <label title="RDL <Visibility>: a banda só renderiza quando esta expressão é verdadeira.">Visível se</label>
+                    <input type="text" value="@(Band.BandVisibleExpr ?? "")"
+                           @onchange="@(e => Band.BandVisibleExpr = AsNullable(e.Value?.ToString()))"
+                           placeholder="ex: Parameters.Detalhado = true"
+                           style="font-family:var(--font-mono);" />
+                </div>
+            </div>
+
             @if (IsDataRegion)
             {
                 <div class="bp-section">

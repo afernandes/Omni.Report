@@ -98,6 +98,15 @@ public sealed class BandViewModel : Notifying
     /// Applies to every band kind (the paginator skips it for Detail-non-applicable kinds).</summary>
     public Reporting.Bands.PageBreak PageBreak { get => _pageBreak; set => Set(ref _pageBreak, value); }
 
+    private bool _bandVisible = true;
+    /// <summary>RDL <c>&lt;Visibility&gt;&lt;Hidden&gt;</c> (static): when false the whole band is suppressed.</summary>
+    public bool BandVisible { get => _bandVisible; set => Set(ref _bandVisible, value); }
+
+    private string? _bandVisibleExpr;
+    /// <summary>RDL <c>&lt;Visibility&gt;</c> expression — when set, the band renders only when it
+    /// evaluates to true (layered on top of <see cref="BandVisible"/>).</summary>
+    public string? BandVisibleExpr { get => _bandVisibleExpr; set => Set(ref _bandVisibleExpr, value); }
+
     private string? _noRowsMessage;
     /// <summary>RDL <c>&lt;NoRows&gt;</c>: message shown when the bound data set produces
     /// zero rows. Only meaningful for <see cref="DesignerBandKind.Detail"/> and
@@ -138,6 +147,8 @@ public sealed class BandViewModel : Notifying
     internal ReportBand BuildReportBand(BandKind targetKind)
         => new(targetKind, Height,
             new EquatableArray<ReportElement>(Elements.Select(e => e.ToElement())),
+            Visible: BandVisible,
+            VisibleExpression: string.IsNullOrWhiteSpace(BandVisibleExpr) ? null : BandVisibleExpr,
             PageBreak: PageBreak);
 
     internal DetailBand BuildDetailBand()
@@ -148,6 +159,8 @@ public sealed class BandViewModel : Notifying
                 SortExpressions.Select(s => s.ToDescriptor()));
         return new DetailBand(Height,
             new EquatableArray<ReportElement>(Elements.Select(e => e.ToElement())),
+            Visible: BandVisible,
+            VisibleExpression: string.IsNullOrWhiteSpace(BandVisibleExpr) ? null : BandVisibleExpr,
             NoRowsMessage: string.IsNullOrWhiteSpace(NoRowsMessage) ? null : NoRowsMessage,
             FilterExpression: string.IsNullOrWhiteSpace(FilterExpression) ? null : FilterExpression,
             SortExpressions: sorts,
@@ -165,8 +178,8 @@ public sealed class BandViewModel : Notifying
             Elements: new EquatableArray<ReportElement>(Elements.Select(e => e.ToElement())),
             Header: null,
             Footer: null,
-            Visible: true,
-            VisibleExpression: null,
+            Visible: BandVisible,
+            VisibleExpression: string.IsNullOrWhiteSpace(BandVisibleExpr) ? null : BandVisibleExpr,
             PrintIfEmpty: PrintIfEmpty);
 
     /// <summary>Loads a <see cref="SubDetailBand"/> into a designer band of kind
@@ -179,6 +192,8 @@ public sealed class BandViewModel : Notifying
             DataMember = band.DataMember,
             GroupName = band.Name, // reuse GroupName as the sub-band's display name
             PrintIfEmpty = band.PrintIfEmpty,
+            BandVisible = band.Visible,
+            BandVisibleExpr = band.VisibleExpression,
         };
         foreach (var e in band.Elements)
         {
@@ -189,7 +204,12 @@ public sealed class BandViewModel : Notifying
 
     internal static BandViewModel FromReportBand(ReportBand band, DesignerBandKind kind)
     {
-        var vm = new BandViewModel(kind, band.Height) { PageBreak = band.PageBreak };
+        var vm = new BandViewModel(kind, band.Height)
+        {
+            PageBreak = band.PageBreak,
+            BandVisible = band.Visible,
+            BandVisibleExpr = band.VisibleExpression,
+        };
         foreach (var e in band.Elements)
         {
             vm.AddElement(ElementViewModel.FromElement(e));
@@ -201,6 +221,8 @@ public sealed class BandViewModel : Notifying
     {
         var vm = new BandViewModel(DesignerBandKind.Detail, band.Height)
         {
+            BandVisible = band.Visible,
+            BandVisibleExpr = band.VisibleExpression,
             NoRowsMessage = band.NoRowsMessage,
             FilterExpression = band.FilterExpression,
             PageBreak = band.PageBreak,
