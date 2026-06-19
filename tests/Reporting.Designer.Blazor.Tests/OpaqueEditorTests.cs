@@ -153,4 +153,33 @@ public class OpaqueEditorTests : Bunit.BunitContext
         vm.TablixColumns.Should().HaveCount(2);
         vm.TablixColumns[1].Header.Should().Be("Preço");
     }
+
+    [Fact]
+    public void Rectangle_exposes_a_fill_colour_editor()
+    {
+        // Regression: the only fill-colour editor lived in the "Appearance" section, which is gated to
+        // text elements (HasTextContent), so a rectangle had no way to set its background in the designer.
+        var cut = Render<PropertyGrid>(p => p.Add(x => x.Element, new ElementViewModel(DesignerElementKind.Rectangle, "r1")));
+        cut.Markup.Should().Contain("Forma");
+        cut.Markup.Should().Contain("Preenchimento", "a rectangle's fill colour must be editable in the designer");
+    }
+
+    [Fact]
+    public void Ellipse_exposes_a_fill_colour_editor()
+    {
+        var cut = Render<PropertyGrid>(p => p.Add(x => x.Element, new ElementViewModel(DesignerElementKind.Ellipse, "e1")));
+        cut.Markup.Should().Contain("Preenchimento");
+    }
+
+    [Fact]
+    public void Rectangle_fill_colour_round_trips()
+    {
+        var vm = new ElementViewModel(DesignerElementKind.Rectangle, "r1")
+        {
+            FillColor = Reporting.Styling.Color.FromHex("#FF8800"),
+        };
+        var rect = (RectangleElement)vm.ToElement();
+        rect.FillColor.Should().NotBeNull();
+        ElementViewModel.FromElement(rect).FillColor.Should().Be(vm.FillColor);
+    }
 }
