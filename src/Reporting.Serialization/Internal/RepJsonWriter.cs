@@ -146,6 +146,18 @@ internal static class RepJsonWriter
                 ["childField"] = r.ChildField,
             }).ToArray());
         }
+        if (ds.FilterExpression is not null)
+        {
+            o["filterExpression"] = ds.FilterExpression;
+        }
+        if (ds.CalculatedFields.Count > 0)
+        {
+            o["calculatedFields"] = new JsonArray(ds.CalculatedFields.Select(WriteCalculatedField).Cast<JsonNode?>().ToArray());
+        }
+        if (ds.SortExpressions.Count > 0)
+        {
+            o["sortExpressions"] = WriteSortExpressions(ds.SortExpressions);
+        }
         if (ds.Parameters.Count > 0)
         {
             var p = new JsonObject();
@@ -154,6 +166,25 @@ internal static class RepJsonWriter
                 p[kv.Key] = kv.Value;
             }
             o["parameters"] = p;
+        }
+        return o;
+    }
+
+    // ── Shared sort / calculated-field helpers (data sources, bands, groups) ─────
+
+    private static JsonArray WriteSortExpressions(Reporting.Common.EquatableArray<SortDescriptor> sorts)
+        => new(sorts.Select(s => (JsonNode?)new JsonObject
+        {
+            ["expression"] = s.Expression,
+            ["direction"] = s.Direction.ToString(),
+        }).ToArray());
+
+    private static JsonObject WriteCalculatedField(CalculatedField cf)
+    {
+        var o = new JsonObject { ["name"] = cf.Name, ["expression"] = cf.Expression };
+        if (cf.ResultType is not null)
+        {
+            o["type"] = Formats.FormatType(cf.ResultType);
         }
         return o;
     }
@@ -169,6 +200,7 @@ internal static class RepJsonWriter
             ["visible"] = band.Visible,
             ["printOnFirstPage"] = band.PrintOnFirstPage,
             ["printOnLastPage"] = band.PrintOnLastPage,
+            ["pageBreak"] = band.PageBreak.ToString(),
             ["elements"] = new JsonArray(band.Elements.Select(e => (JsonNode?)WriteElement(e)).ToArray()),
         };
         if (band.VisibleExpression is not null)
@@ -186,12 +218,49 @@ internal static class RepJsonWriter
             ["visible"] = band.Visible,
             ["canGrow"] = band.CanGrow,
             ["canShrink"] = band.CanShrink,
+            ["pageBreak"] = band.PageBreak.ToString(),
             ["elements"] = new JsonArray(band.Elements.Select(e => (JsonNode?)WriteElement(e)).ToArray()),
         };
         if (band.VisibleExpression is not null)
         {
             o["visibleExpression"] = band.VisibleExpression;
         }
+        if (band.NoRowsMessage is not null)
+        {
+            o["noRowsMessage"] = band.NoRowsMessage;
+        }
+        if (band.FilterExpression is not null)
+        {
+            o["filterExpression"] = band.FilterExpression;
+        }
+        if (band.SortExpressions.Count > 0)
+        {
+            o["sortExpressions"] = WriteSortExpressions(band.SortExpressions);
+        }
+        if (band.SubDetails.Count > 0)
+        {
+            o["subDetails"] = new JsonArray(band.SubDetails.Select(WriteSubDetail).Cast<JsonNode?>().ToArray());
+        }
+        return o;
+    }
+
+    private static JsonObject WriteSubDetail(SubDetailBand sd)
+    {
+        var o = new JsonObject
+        {
+            ["name"] = sd.Name,
+            ["dataMember"] = sd.DataMember,
+            ["height"] = Formats.FormatUnit(sd.Height),
+            ["visible"] = sd.Visible,
+            ["printIfEmpty"] = sd.PrintIfEmpty,
+            ["elements"] = new JsonArray(sd.Elements.Select(e => (JsonNode?)WriteElement(e)).ToArray()),
+        };
+        if (sd.VisibleExpression is not null) o["visibleExpression"] = sd.VisibleExpression;
+        if (sd.NoRowsMessage is not null) o["noRowsMessage"] = sd.NoRowsMessage;
+        if (sd.FilterExpression is not null) o["filterExpression"] = sd.FilterExpression;
+        if (sd.SortExpressions.Count > 0) o["sortExpressions"] = WriteSortExpressions(sd.SortExpressions);
+        if (sd.Header is not null) o["header"] = WriteBand(sd.Header);
+        if (sd.Footer is not null) o["footer"] = WriteBand(sd.Footer);
         return o;
     }
 
@@ -206,10 +275,23 @@ internal static class RepJsonWriter
             ["newPageAfter"] = g.NewPageAfter,
             ["repeatHeaderOnNewPage"] = g.RepeatHeaderOnNewPage,
             ["visible"] = g.Visible,
+            ["pageBreak"] = g.PageBreak.ToString(),
         };
         if (g.VisibleExpression is not null)
         {
             o["visibleExpression"] = g.VisibleExpression;
+        }
+        if (g.FilterExpression is not null)
+        {
+            o["filterExpression"] = g.FilterExpression;
+        }
+        if (g.SortExpressions.Count > 0)
+        {
+            o["sortExpressions"] = WriteSortExpressions(g.SortExpressions);
+        }
+        if (g.Variables.Count > 0)
+        {
+            o["variables"] = new JsonArray(g.Variables.Select(WriteVariable).Cast<JsonNode?>().ToArray());
         }
         if (g.Header is not null)
         {
