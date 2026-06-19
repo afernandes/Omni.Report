@@ -26,7 +26,7 @@ Legenda:
 
 | Elemento | Render | Round-trip | Observações |
 |---|:--:|:--:|---|
-| Chart | 🟡 | ✅ | Bar (agrupado), Line, Pie renderizam. Area/Scatter/Bubble/Stock/Radar **pendentes** |
+| Chart | 🟡 | ✅ | Bar (agrupado), Line, Pie, **Area, Scatter, Radar** renderizam. Bubble/Stock (exigem dimensão extra na série) **pendentes** |
 | Gauge | ✅ | ✅ | radial (anéis/ponteiro) + linear bullet |
 | DataBar | ✅ | ✅ | barra proporcional |
 | Sparkline | ✅ | ✅ | line / column / area |

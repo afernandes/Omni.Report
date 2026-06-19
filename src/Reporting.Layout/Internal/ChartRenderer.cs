@@ -88,8 +88,17 @@ internal static class ChartRenderer
             case ChartKind.Pie:
                 RenderPie(chart, data, plotX, plotY, plotW, plotH, list);
                 break;
+            case ChartKind.Radar:
+                RenderRadar(chart, data, plotX, plotY, plotW, plotH, list);
+                break;
             case ChartKind.Line:
                 RenderCartesian(chart, data, plotX, plotY, plotW, plotH, list, line: true);
+                break;
+            case ChartKind.Area:
+                RenderCartesian(chart, data, plotX, plotY, plotW, plotH, list, line: true, area: true);
+                break;
+            case ChartKind.Scatter:
+                RenderCartesian(chart, data, plotX, plotY, plotW, plotH, list, line: false, markers: true);
                 break;
             default:
                 RenderCartesian(chart, data, plotX, plotY, plotW, plotH, list, line: false);
@@ -183,7 +192,7 @@ internal static class ChartRenderer
     private static void RenderCartesian(
         ChartElement chart, ChartData data,
         double px, double py, double pw, double ph,
-        List<LayoutPrimitive> list, bool line)
+        List<LayoutPrimitive> list, bool line, bool area = false, bool markers = false)
     {
         const double leftGutter = 12; // mm reserved for y-axis labels
         const double bottomGutter = 6; // mm reserved for x-axis labels
@@ -219,7 +228,28 @@ internal static class ChartRenderer
         int cats = data.Categories.Count;
         double slot = aw / cats;
 
-        if (!line)
+        if (markers)
+        {
+            // Scatter: an ellipse marker per (category, value) point, no connecting line.
+            for (int s = 0; s < data.Series.Count; s++)
+            {
+                var sd = data.Series[s];
+                for (int c = 0; c < cats; c++)
+                {
+                    double cx = ax + c * slot + slot / 2;
+                    double cy = YOf(sd.Values[c]);
+                    const double rr = 1.4;
+                    list.Add(new DrawEllipsePrimitive
+                    {
+                        Bounds = Rect(cx - rr, cy - rr, rr * 2, rr * 2),
+                        Fill = new BrushStyle(sd.Color),
+                        Pen = null,
+                        SourceElementId = chart.Id,
+                    });
+                }
+            }
+        }
+        else if (!line)
         {
             int sCount = data.Series.Count;
             double groupPad = slot * 0.15;
@@ -257,6 +287,24 @@ internal static class ChartRenderer
                     double cx = ax + c * slot + slot / 2;
                     pts[c] = Pt(cx, YOf(sd.Values[c]));
                 }
+                // Area mode fills below the polyline first (translucent), so the stroked line
+                // sits on top of its own shaded region.
+                if (area && cats > 0)
+                {
+                    var poly = new Point[cats + 2];
+                    for (int c = 0; c < cats; c++) poly[c] = pts[c];
+                    poly[cats] = Pt(ax + (cats - 1) * slot + slot / 2, baseY);
+                    poly[cats + 1] = Pt(ax + slot / 2, baseY);
+                    list.Add(new DrawPolygonPrimitive
+                    {
+                        Points = new EquatableArray<Point>(poly),
+                        Closed = true,
+                        Pen = null,
+                        Fill = new BrushStyle(sd.Color with { A = 70 }),
+                        Bounds = Rect(ax, ay, aw, ah),
+                        SourceElementId = chart.Id,
+                    });
+                }
                 list.Add(new DrawPolygonPrimitive
                 {
                     Points = new EquatableArray<Point>(pts),
@@ -273,6 +321,85 @@ internal static class ChartRenderer
         {
             list.Add(Text(data.Categories[c], ax + c * slot, baseY + 0.5, slot, bottomGutter - 0.5,
                 6, false, HorizontalAlignment.Center, chart.Id));
+        }
+    }
+
+    // ─── Radar (polar) ───────────────────────────────────────────────────────────────
+
+    private static void RenderRadar(
+        ChartElement chart, ChartData data,
+        double px, double py, double pw, double ph,
+        List<LayoutPrimitive> list)
+    {
+        int cats = data.Categories.Count;
+        if (cats < 3)
+        {
+            // A radar needs at least 3 axes to form a web — fall back to bars for 1–2 categories.
+            RenderCartesian(chart, data, px, py, pw, ph, list, line: false);
+            return;
+        }
+
+        double size = Math.Min(pw, ph);
+        double cx = px + pw / 2;
+        double cy = py + ph / 2;
+        double r = size / 2 * 0.78;
+        double top = NiceCeil(data.MaxValue <= 0 ? 1 : data.MaxValue);
+        double Angle(int c) => -Math.PI / 2 + 2 * Math.PI * c / cats; // start at 12 o'clock, clockwise
+
+        var gridPen = new PenStyle(GridColor, Unit.FromPoint(0.5));
+        var axisPen = new PenStyle(AxisColor, Unit.FromPoint(0.6));
+
+        // Concentric grid rings (polygons through the axis directions).
+        const int rings = 4;
+        for (int ring = 1; ring <= rings; ring++)
+        {
+            double rr = r * ring / rings;
+            var ringPts = new Point[cats];
+            for (int c = 0; c < cats; c++)
+            {
+                ringPts[c] = Pt(cx + rr * Math.Cos(Angle(c)), cy + rr * Math.Sin(Angle(c)));
+            }
+            list.Add(new DrawPolygonPrimitive
+            {
+                Points = new EquatableArray<Point>(ringPts),
+                Closed = true,
+                Pen = gridPen,
+                Fill = null,
+                Bounds = Rect(px, py, pw, ph),
+                SourceElementId = chart.Id,
+            });
+        }
+
+        // Spokes + category labels at each axis tip.
+        for (int c = 0; c < cats; c++)
+        {
+            double ex = cx + r * Math.Cos(Angle(c));
+            double ey = cy + r * Math.Sin(Angle(c));
+            list.Add(Line(cx, cy, ex, ey, axisPen, chart.Id));
+            double lx = cx + (r + 3) * Math.Cos(Angle(c)) - 6;
+            double ly = cy + (r + 3) * Math.Sin(Angle(c)) - 2;
+            list.Add(Text(data.Categories[c], lx, ly, 12, 4, 6, false, HorizontalAlignment.Center, chart.Id));
+        }
+
+        // Each series → a closed web at value-scaled radii.
+        for (int s = 0; s < data.Series.Count; s++)
+        {
+            var sd = data.Series[s];
+            var pts = new Point[cats];
+            for (int c = 0; c < cats; c++)
+            {
+                double rr = r * (top <= 0 ? 0 : Math.Max(0, sd.Values[c]) / top);
+                pts[c] = Pt(cx + rr * Math.Cos(Angle(c)), cy + rr * Math.Sin(Angle(c)));
+            }
+            list.Add(new DrawPolygonPrimitive
+            {
+                Points = new EquatableArray<Point>(pts),
+                Closed = true,
+                Pen = new PenStyle(sd.Color, Unit.FromPoint(1.5)),
+                Fill = new BrushStyle(sd.Color with { A = 50 }),
+                Bounds = Rect(px, py, pw, ph),
+                SourceElementId = chart.Id,
+            });
         }
     }
 
