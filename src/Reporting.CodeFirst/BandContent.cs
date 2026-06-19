@@ -447,6 +447,46 @@ public sealed class BandContent
     public BandContent ShapeColors(string fill, string stroke)
         => MutatePending(e => e is MapElement m ? m with { ShapeFill = fill, ShapeStroke = stroke } : e);
 
+    /// <summary>Embeds a child report referenced by id at this element's bounds. The id is resolved
+    /// at pagination time via <c>PaginationRequest.SubreportResolver</c>; the child paginates at the
+    /// subreport's width against the parent's data sources. Use <see cref="SubreportInline"/> for an
+    /// inline definition and <see cref="SubreportParameter"/> to bind child parameters.</summary>
+    public BandContent Subreport(string reportId)
+    {
+        Flush();
+        _pending = new SubreportElement { Bounds = Reporting.Geometry.Rectangle.Empty, ReportId = reportId };
+        return this;
+    }
+
+    /// <summary>Embeds an inline child report definition at this element's bounds.</summary>
+    public BandContent SubreportInline(ReportDefinition definition)
+    {
+        ArgumentNullException.ThrowIfNull(definition);
+        Flush();
+        _pending = new SubreportElement { Bounds = Reporting.Geometry.Rectangle.Empty, InlineDefinition = definition };
+        return this;
+    }
+
+    /// <summary>Binds a child report parameter to an expression evaluated in the parent context.
+    /// No-op unless the pending element is a <see cref="SubreportElement"/>.</summary>
+    public BandContent SubreportParameter(string name, string valueExpression)
+        => MutatePending(e => e is SubreportElement s
+            ? s with { ParameterBindings = AddBinding(s.ParameterBindings, name, valueExpression) }
+            : e);
+
+    /// <summary>Binds the child's data to an expression in the parent context. No-op unless the
+    /// pending element is a <see cref="SubreportElement"/>.</summary>
+    public BandContent SubreportData(string dataExpression)
+        => MutatePending(e => e is SubreportElement s ? s with { DataExpression = dataExpression } : e);
+
+    private static EquatableDictionary<string, string> AddBinding(
+        EquatableDictionary<string, string> existing, string key, string value)
+    {
+        var dict = existing.ToDictionary(kv => kv.Key, kv => kv.Value);
+        dict[key] = value;
+        return new EquatableDictionary<string, string>(dict);
+    }
+
     // ── Internals ───────────────────────────────────────────────────────────────
 
     internal EquatableArray<ReportElement> BuildElements()

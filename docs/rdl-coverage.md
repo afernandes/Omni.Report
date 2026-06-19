@@ -33,7 +33,7 @@ Legenda:
 | Indicator | ✅ | ✅ | seta direcional / forma / rating por faixa |
 | Tablix | 🟡 | ✅ | **tabela plana** renderiza (cabeçalho + linha de detalhe + gridlines). **Matrix/pivô com grupos linha×coluna aninhados pendente** |
 | Map | 🟡 | ✅ | **vetorial** renderiza (Web Mercator + graticule + shapes GeoJSON + marcadores). **Basemap por tiles online (OSM/Bing) pendente** |
-| Subreport | ❌ | ✅ | modelo round-trippa; **render real pendente** (hoje ignorado na paginação) |
+| Subreport | ✅ | ✅ | renderiza o filho (inline ou via resolver de id) na largura do subreport, com bindings de parâmetro avaliados no contexto pai; code-first `.Subreport()`/`.SubreportInline()` + editor no Designer |
 | Code (bloco C#) | — | ✅ | não é "render": **avalia** via pacote opt-in `Reporting.Expressions.Roslyn` (`Code.Metodo(...)`). ⚠ executa C#: use só com fontes confiáveis |
 
 ## Recursos de interação
