@@ -370,6 +370,40 @@ public sealed class ElementViewModel : Notifying
     /// <summary>Source language of the code block (<see cref="CodeElement.Language"/>).</summary>
     public CodeLanguage CodeLang { get => Src<CodeElement>()?.Language ?? CodeLanguage.CSharp; set => Mutate<CodeElement>(e => e with { Language = value }); }
 
+    // Subreport (embeds a child report at the element's bounds)
+    /// <summary>Registry id of the child report (<see cref="SubreportElement.ReportId"/>).</summary>
+    public string SubreportReportId { get => Src<SubreportElement>()?.ReportId ?? string.Empty; set => Mutate<SubreportElement>(e => e with { ReportId = string.IsNullOrWhiteSpace(value) ? null : value }); }
+    /// <summary>Parent-context expression yielding the child's data (<see cref="SubreportElement.DataExpression"/>).</summary>
+    public string SubreportDataExpression { get => Src<SubreportElement>()?.DataExpression ?? string.Empty; set => Mutate<SubreportElement>(e => e with { DataExpression = string.IsNullOrWhiteSpace(value) ? null : value }); }
+    /// <summary>Parameter bindings edited as one <c>name=expression</c> per line. Maps to
+    /// <see cref="SubreportElement.ParameterBindings"/>; expressions are evaluated in the parent context.</summary>
+    public string SubreportParametersText
+    {
+        get
+        {
+            var src = Src<SubreportElement>();
+            return src is null ? string.Empty : string.Join("\n", src.ParameterBindings.Select(kv => $"{kv.Key}={kv.Value}"));
+        }
+        set => Mutate<SubreportElement>(e => e with { ParameterBindings = ParseBindings(value) });
+    }
+
+    private static Reporting.Common.EquatableDictionary<string, string> ParseBindings(string? text)
+    {
+        var pairs = new List<KeyValuePair<string, string>>();
+        foreach (var line in (text ?? string.Empty).Split('\n'))
+        {
+            var trimmed = line.Trim();
+            var eq = trimmed.IndexOf('=');
+            if (eq <= 0) continue; // skip blank lines and lines without a key
+            var key = trimmed[..eq].Trim();
+            if (key.Length == 0) continue;
+            pairs.Add(new KeyValuePair<string, string>(key, trimmed[(eq + 1)..].Trim()));
+        }
+        // Last binding for a repeated key wins — ImmutableDictionary would otherwise throw on dupes.
+        return new Reporting.Common.EquatableDictionary<string, string>(
+            pairs.GroupBy(p => p.Key).Select(g => g.Last()));
+    }
+
     // Gauge (scalars + coloured ranges)
     public GaugeKind GaugeType { get => Src<GaugeElement>()?.Kind ?? GaugeKind.Radial; set => Mutate<GaugeElement>(e => e with { Kind = value }); }
     public string GaugeValue { get => Src<GaugeElement>()?.ValueExpression ?? "0"; set => Mutate<GaugeElement>(e => e with { ValueExpression = value }); }
