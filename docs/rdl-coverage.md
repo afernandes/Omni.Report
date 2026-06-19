@@ -42,7 +42,7 @@ Legenda:
 |---|:--:|:--:|---|
 | `Action` (link/bookmark/drill-through) | ✅ | ✅ | hyperlink / bookmark-link / drill-through viram **link clicável no HTML** (overlay `<a>` posicionado em mm sobre o elemento); editável no Designer. PDF link annotations: futuro |
 | Drill-down / toggle (`ToggleItemId` + `InitiallyHidden`) | ❌ | ✅ | modelo round-trippa; **toggle interativo (chevron) pendente** no Viewer/HTML |
-| `DocumentMapLabel` / `Bookmark` | 🟡 | ✅ | **Bookmark** vira âncora navegável (`id="bm-…"`) no HTML; DocumentMap (TOC/outline) pendente |
+| `DocumentMapLabel` / `Bookmark` | ✅ | ✅ | **Bookmark** vira âncora (`id="bm-…"`) e **DocumentMap vira um TOC navegável** (`<nav class="docmap">` no topo do HTML, linkando às âncoras `dm-…`) |
 
 ## Saídas (exporters)
 

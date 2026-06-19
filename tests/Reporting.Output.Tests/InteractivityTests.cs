@@ -32,4 +32,25 @@ public class InteractivityTests
         html.Should().Contain("id=\"bm-inicio\"", "the bookmark becomes an anchor target");
         html.Should().Contain("class=\"lnk\"");
     }
+
+    [Fact]
+    public async Task Html_emits_a_document_map_table_of_contents()
+    {
+        var report = ReportBuilder.Create("DocMap")
+            .Page(p => p.A4().Portrait().Margins(10))
+            .ReportHeader(h => h.Height(30)
+                .Label("Resumo").At(0, 0).Size(80, 8).DocumentMapLabel("Resumo")
+                .Label("Detalhes").At(0, 12).Size(80, 8).DocumentMapLabel("Detalhes"))
+            .Build();
+
+        var rendered = await report.PaginateAsync();
+        using var ms = new MemoryStream();
+        new SvgHtmlExporter().Export(rendered, ms);
+        var html = new UTF8Encoding(false).GetString(ms.ToArray());
+
+        html.Should().Contain("class=\"docmap\"", "the document map renders as a navigable TOC");
+        html.Should().Contain(">Resumo</a>");
+        html.Should().Contain(">Detalhes</a>");
+        html.Should().Contain("href=\"#dm-", "TOC entries link to the synthesised doc-map anchors");
+    }
 }

@@ -21,6 +21,11 @@ public abstract record LayoutPrimitive
     /// <summary>Anchor id this primitive defines, from the source element's <c>Bookmark</c>
     /// (prefixed <c>"bm-"</c>), so bookmark links can scroll to it. Null = not a bookmark target.</summary>
     public string? BookmarkId { get; init; }
+
+    /// <summary>Document-map / outline label from the source element's <c>DocumentMapLabel</c>.
+    /// Interactive viewers list these as a navigable table of contents linking to
+    /// <see cref="BookmarkId"/>. Null = not a document-map entry.</summary>
+    public string? DocMapLabel { get; init; }
 }
 
 public sealed record DrawTextPrimitive : LayoutPrimitive

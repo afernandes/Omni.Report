@@ -202,8 +202,17 @@ internal sealed class BandRenderer
             // Propagate the element's Action/Bookmark onto every primitive it just emitted, so
             // interactivity-aware exporters (HTML) can wrap them in clickable links / anchors.
             var linkTarget = ResolveLink(element, ctx);
-            var bookmarkId = string.IsNullOrWhiteSpace(element.Bookmark) ? null : "bm-" + element.Bookmark;
-            if (linkTarget is not null || bookmarkId is not null)
+            // A document-map label is literal text (it may carry {expr} placeholders) — render
+            // it through the template engine only when it has any, never as a bare expression.
+            var docMapLabel = string.IsNullOrWhiteSpace(element.DocumentMapLabel) ? null
+                : TemplateRenderer.HasPlaceholders(element.DocumentMapLabel) ? _templates.Render(element.DocumentMapLabel, ctx)
+                : element.DocumentMapLabel;
+            // Bookmark wins as the anchor; a document-map entry without an explicit bookmark still
+            // needs one to link to, so synthesise "dm-<id>".
+            var bookmarkId = !string.IsNullOrWhiteSpace(element.Bookmark) ? "bm-" + element.Bookmark
+                : docMapLabel is not null ? "dm-" + element.Id
+                : null;
+            if (linkTarget is not null || bookmarkId is not null || docMapLabel is not null)
             {
                 for (int li = linkFrom; li < primitives.Count; li++)
                 {
@@ -211,6 +220,7 @@ internal sealed class BandRenderer
                     {
                         LinkTarget = linkTarget ?? primitives[li].LinkTarget,
                         BookmarkId = bookmarkId ?? primitives[li].BookmarkId,
+                        DocMapLabel = docMapLabel ?? primitives[li].DocMapLabel,
                     };
                 }
             }
