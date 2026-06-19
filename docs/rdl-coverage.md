@@ -32,7 +32,7 @@ Legenda:
 | Sparkline | ✅ | ✅ | line / column / area |
 | Indicator | ✅ | ✅ | seta direcional / forma / rating por faixa |
 | Tablix | ✅ | ✅ | tabela plana e **matrix/pivô com grupos aninhados** (N níveis de linha × N de coluna; soma por interseção-folha; níveis externos com visual "outline") — **construível e editável no Designer** (toggle Crosstab + editores de grupo multi-linha) + code-first `.Tablix(t => t.RowGroup().RowGroup().ColumnGroup().Cell())` |
-| Map | 🟡 | ✅ | **vetorial** renderiza (Web Mercator + graticule + shapes GeoJSON + marcadores). **Basemap por tiles online (OSM/Bing) pendente** |
+| Map | 🟡 | ✅ | **vetorial** renderiza 100% (Web Mercator + graticule + shapes GeoJSON + marcadores), autorável nas 3 superfícies. Tiles raster (OSM/Bing) são um **limite conhecido** — exigem rede; caberiam num provider online opt-in (ver [Limites conhecidos](#limites-conhecidos-decisão-de-escopo)) |
 | Subreport | ✅ | ✅ | renderiza o filho (inline ou via resolver de id) na largura do subreport, com bindings de parâmetro avaliados no contexto pai; code-first `.Subreport()`/`.SubreportInline()` + editor no Designer |
 | Code (bloco C#) | — | ✅ | não é "render": **avalia** via pacote opt-in `Reporting.Expressions.Roslyn` (`Code.Metodo(...)`). ⚠ executa C#: use só com fontes confiáveis |
 
@@ -41,7 +41,7 @@ Legenda:
 | Recurso | Render | Round-trip | Observações |
 |---|:--:|:--:|---|
 | `Action` (link/bookmark/drill-through) | ✅ | ✅ | hyperlink / bookmark-link / drill-through viram **link clicável no HTML** (overlay `<a>` posicionado em mm sobre o elemento); editável no Designer. PDF link annotations: futuro |
-| Drill-down / toggle (`ToggleItemId` + `InitiallyHidden`) | ❌ | ✅ | modelo round-trippa; **toggle interativo (chevron) pendente** no Viewer/HTML |
+| Drill-down / toggle (`ToggleItemId` + `InitiallyHidden`) | ❌ | ✅ | modelo round-trippa; colapso interativo é um **limite arquitetural** — todo render é Skia (SVG/PDF/HTML/preview achatados, sem nó por elemento), exigiria um pipeline DOM-render (ver [Limites conhecidos](#limites-conhecidos-decisão-de-escopo)) |
 | `DocumentMapLabel` / `Bookmark` | ✅ | ✅ | **Bookmark** vira âncora (`id="bm-…"`) e **DocumentMap vira um TOC navegável** (`<nav class="docmap">` no topo do HTML, linkando às âncoras `dm-…`) |
 
 ## Saídas (exporters)
@@ -53,7 +53,29 @@ Legenda:
 | SVG / HTML | ✅ | SVG embutido + CSS de impressão |
 | CSV / JSON / Markdown | ✅ | RFC 4180 / schema estável de primitivos / GFM |
 | ESC/POS (térmica) | ✅ | raster 203 dpi, corte automático |
-| Word/DOCX | ❌ | **pendente** (maior pedido corporativo faltante) |
+| Word/DOCX | ❌ | **limite conhecido** — Word é layout de fluxo; o engine é canvas posicionado. Exige um motor de fluxo dedicado (ver [Limites conhecidos](#limites-conhecidos-decisão-de-escopo)) |
+
+## Limites conhecidos (decisão de escopo)
+
+Três itens **não** são entregues como render real — por restrições arquiteturais reais, não por
+estarem "pela metade". Ficam aqui documentados com honestidade para não virarem surpresa:
+
+1. **Drill-down / toggle de visibilidade** — todo o render do engine passa pelo Skia: SVG e PDF saem
+   de `SKSvgCanvas` (achatado, sem `<g>` por elemento) e o preview do Designer é PNG rasterizado.
+   Não há nó por elemento para mostrar/ocultar, então o colapso interativo (com reflow) exigiria um
+   **pipeline DOM-render** novo (cada elemento como nó HTML posicionado e ocultável) — uma adição
+   grande e ortogonal ao pipeline atual. O modelo (`ToggleItemId`/`InitiallyHidden`) round-trippa.
+
+2. **Map — tiles raster (OSM/Bing)** — o mapa **vetorial** está 100% (projeção, graticule, shapes,
+   marcadores). Tiles raster são imagens **de rede**; seguindo o padrão opt-in do `Code` (Roslyn),
+   caberiam num provider HTTP separado, configurável no Designer mas sem render offline (igual a uma
+   imagem-por-URL). É um limite de **recurso externo**, não de modelagem.
+
+3. **Word/DOCX** — o engine posiciona tudo em canvas absoluto (mils); o Word é **fluxo**
+   (parágrafos/tabelas que refluem). Um DOCX fiel precisa de um **motor de layout de fluxo** à parte,
+   não de um simples serializador — esforço comparável a um novo backend.
+
+Os demais 16 itens da matriz renderizam de verdade e são autoráveis nas três superfícies.
 
 ## As três superfícies de autoria
 
@@ -63,6 +85,7 @@ Todo elemento que renderiza deve ser **autorável das três formas** — é um i
 2. **Low-level** — canvas sem bandas (primitivos + elementos posicionados manualmente).
 3. **Designer** — toolbox + canvas + PropertyGrid no `Reporting.Designer.Blazor`.
 
-> Mantenha esta matriz sincronizada ao concluir cada item pendente (Tablix matrix, Subreports,
-> tiles de Map, toggle de visibilidade, tipos de gráfico, DOCX). Veja o `CHANGELOG.md` para o
+> Estado atual: **16 dos 19 itens 100% reais nas 3 superfícies**; os 3 restantes estão na seção
+> [Limites conhecidos](#limites-conhecidos-decisão-de-escopo) acima, com a razão arquitetural de cada
+> um. Mantenha esta matriz sincronizada ao mexer em qualquer um deles. Veja o `CHANGELOG.md` para o
 > histórico por versão.
