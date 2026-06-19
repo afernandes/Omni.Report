@@ -194,10 +194,21 @@ public sealed record RoundedShadowRectangle : RectangleElement
 - **+ Layout/Bounds** (da base `ReportElement`),
 
 …**sem tocar `PropertyGrid.razor`, sem backing field, sem branch de editor, sem `@if`**, com o editor
-escolhido pelo **tipo** de cada prop (`Color?` → color-picker).
+escolhido pelo **tipo** de cada prop (`Color?` → color-picker), e **fx** (expressão) em cada prop marcada
+`Bindable`.
 
-O **único** trabalho manual restante é a **paridade de serialização** (§10) — inerente ao formato de
-arquivo e que nenhuma engine elimina, mas que deixou de ser um problema de UI.
+> **Validado por teste** (`PropertyGridDescriptorsTests.A_derived_element_inherits_the_base_editors_plus_its_own`):
+> um record derivado ganha os descritores `[PropertyGrid]` do pai **+** os próprios, com editor inferido
+> pelo tipo, e o setter imutável (`<Clone>$`) funciona até numa prop **herdada**.
+
+**Ressalva (`sealed`):** os records de elemento em produção são `sealed` hoje, então derivar de fato exige
+**remover o `sealed`** da base (ex.: `RectangleElement`). Feito isso, o PropertyGrid dá os editores
+herdados automaticamente. Suporte **completo** ao novo tipo (serialização + render) é um passo à parte
+(os switches por tipo concreto tratariam o derivado como a base) — é o tópico de **extensibilidade de
+componentes**, distinto desta questão de *propriedades*.
+
+O **único** trabalho manual restante para a parte de propriedades é a **paridade de serialização** (§10) —
+inerente ao formato de arquivo e que nenhuma engine elimina, mas que deixou de ser um problema de UI.
 
 ## 7. Migração incremental (sem big-bang) — **ENTREGUE**
 
