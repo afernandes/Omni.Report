@@ -16,7 +16,9 @@ public sealed record Style(
     Color? ForeColor = null,
     [property: PropertyGrid(Category = "Aparência", Order = 2, Label = "Cor de fundo", Bindable = true)]
     Color? BackColor = null,
+    [property: PropertyGrid(Category = "Borda", Order = 10, Label = "Borda", Editor = "border")]
     Border? Border = null,
+    [property: PropertyGrid(Category = "Borda", Order = 11, Label = "Padding", Editor = "padding")]
     Thickness? Padding = null,
     [property: PropertyGrid(Category = "Aparência", Order = 5, Label = "Alinhamento H", Editor = "h-align")]
     HorizontalAlignment HorizontalAlignment = HorizontalAlignment.Left,

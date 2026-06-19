@@ -74,4 +74,15 @@ public class PropertyGridMetaSectionTests : Bunit.BunitContext
         cut.Markup.Should().Contain("Alinhamento H");
         cut.Markup.Should().Contain(">B<", "the bold toggle of the rich font editor renders (not a generic textbox)");
     }
+
+    [Fact]
+    public void Text_element_renders_border_and_padding_editors_from_metadata()
+    {
+        var cut = Render<PropertyGridMetaSection>(p =>
+            p.Add(x => x.Element, new ElementViewModel(DesignerElementKind.TextBox, "t1")));
+
+        cut.Markup.Should().Contain("Borda");
+        cut.Markup.Should().Contain("Padding");
+        cut.Markup.Should().Contain("Solid", "the border-style dropdown renders (not a generic editor)");
+    }
 }

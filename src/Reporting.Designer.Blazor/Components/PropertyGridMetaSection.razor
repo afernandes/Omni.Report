@@ -118,6 +118,37 @@
                                 </span>
                                 break;
 
+                            case "border":
+                                var border = current as Border;
+                                var bside = border?.Top;
+                                <select style="flex:1;font-size:11.5px;"
+                                        @onchange="@(e => Element.ApplyMetaSet(d, WithBorderStyle(border, e.Value?.ToString())))">
+                                    <option value="None" selected="@(bside is null || bside.Style == BorderLineStyle.None)">— Nenhuma —</option>
+                                    <option value="Solid" selected="@(bside?.Style == BorderLineStyle.Solid)">Solid</option>
+                                    <option value="Dashed" selected="@(bside?.Style == BorderLineStyle.Dashed)">Dashed</option>
+                                    <option value="Dotted" selected="@(bside?.Style == BorderLineStyle.Dotted)">Dotted</option>
+                                    <option value="Double" selected="@(bside?.Style == BorderLineStyle.Double)">Double</option>
+                                </select>
+                                @if (bside is not null && bside.Style != BorderLineStyle.None)
+                                {
+                                    <input type="number" step="0.1" min="0" max="10" value="@bside.Thickness.ToPoints().ToString("F1", CultureInfo.InvariantCulture)"
+                                           @onchange="@(e => Element.ApplyMetaSet(d, WithBorderThickness(border!, ParseDouble(e.Value))))"
+                                           style="width:52px;font-family:var(--font-mono);font-size:11.5px;" />
+                                    <span class="p-unit">pt</span>
+                                    <input type="color" value="@bside.Color.ToHex()"
+                                           @onchange="@(e => Element.ApplyMetaSet(d, WithBorderColor(border!, e.Value?.ToString())))"
+                                           style="width:36px;height:16px;cursor:pointer;" />
+                                }
+                                break;
+
+                            case "padding":
+                                var pad = current as Thickness?;
+                                <input type="number" step="0.1" min="0" value="@((pad?.Top.ToMm() ?? 0).ToString("F1", CultureInfo.InvariantCulture))"
+                                       @onchange="@(e => Element.ApplyMetaSet(d, PaddingFromMm(ParseDouble(e.Value))))"
+                                       style="width:60px;font-family:var(--font-mono);font-size:11.5px;" />
+                                <span class="p-unit">mm</span>
+                                break;
+
                             default:
                                 <input type="text" value="@Convert.ToString(current)" placeholder="@d.Placeholder"
                                        @onchange="@(e => Element.ApplyMetaSet(d, e.Value?.ToString()))"
@@ -185,4 +216,49 @@
 
     private static object ConvertNumber(PropertyGridDescriptor d, object? value)
         => Convert.ChangeType(ParseDouble(value), Nullable.GetUnderlyingType(d.Type) ?? d.Type, CultureInfo.InvariantCulture);
+
+    // ── Border / Padding: edit the box uniformly (all four sides the same), matching the previous
+    //    hand-coded editors. A "None" style clears the border; a non-positive padding clears it.
+    private static Border? WithBorderStyle(Border? current, string? styleName)
+    {
+        if (string.IsNullOrEmpty(styleName) || !Enum.TryParse<BorderLineStyle>(styleName, out var style) || style == BorderLineStyle.None)
+        {
+            return null;
+        }
+        var side = (current?.Top ?? new BorderSide(BorderLineStyle.Solid, Unit.FromPoint(0.5), Color.Black)) with { Style = style };
+        return new Border(side, side, side, side);
+    }
+
+    private static Border WithBorderThickness(Border current, double points)
+    {
+        var side = current.Top with { Thickness = Unit.FromPoint(points) };
+        return new Border(side, side, side, side);
+    }
+
+    private static Border WithBorderColor(Border current, string? hex)
+    {
+        if (string.IsNullOrEmpty(hex))
+        {
+            return current;
+        }
+        try
+        {
+            var side = current.Top with { Color = Color.FromHex(hex) };
+            return new Border(side, side, side, side);
+        }
+        catch (FormatException)
+        {
+            return current;
+        }
+    }
+
+    private static Thickness? PaddingFromMm(double mm)
+    {
+        if (mm <= 0)
+        {
+            return null;
+        }
+        var u = Unit.FromMm(mm);
+        return new Thickness(u, u, u, u);
+    }
 }

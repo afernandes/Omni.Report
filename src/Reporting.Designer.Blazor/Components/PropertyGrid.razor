@@ -36,46 +36,6 @@ else
     @if (HasTextContent(Element))
     {
 
-        @* ── Border + Padding section ──────────────────────────────────────── *@
-        <div class="prop-section">
-            <div class="prop-section-head"><Icon Name="chevron-down" Size="12" CssClass="chev icon icon-12" /><span>Border &amp; Padding</span><span class="count">2</span></div>
-            <div class="prop-row">
-                <div class="p-label">Border</div>
-                <div class="p-editor">
-                    <select @onchange="@(e => SetBorderStyle(e.Value?.ToString()))" style="flex:1;font-size:11.5px;">
-                        <option value="None" selected="@(Element.Border is null || Element.Border.Top.Style == BorderLineStyle.None)">— Nenhuma —</option>
-                        <option value="Solid"  selected="@(Element.Border?.Top.Style == BorderLineStyle.Solid)">Solid</option>
-                        <option value="Dashed" selected="@(Element.Border?.Top.Style == BorderLineStyle.Dashed)">Dashed</option>
-                        <option value="Dotted" selected="@(Element.Border?.Top.Style == BorderLineStyle.Dotted)">Dotted</option>
-                        <option value="Double" selected="@(Element.Border?.Top.Style == BorderLineStyle.Double)">Double</option>
-                    </select>
-                    @if (Element.Border is not null && Element.Border.Top.Style != BorderLineStyle.None)
-                    {
-                        <input type="number" step="0.1" min="0" max="10"
-                               value="@BorderThickness"
-                               @onchange="@(e => SetBorderThickness(e.Value?.ToString()))"
-                               style="width:52px;font-family:var(--font-mono);font-size:11.5px;" />
-                        <span class="p-unit">pt</span>
-                        <input type="color"
-                               value="@ColorHex(Element.Border.Top.Color)"
-                               @onchange="@(e => SetBorderColor(e.Value?.ToString()))"
-                               style="width:36px;height:16px;cursor:pointer;" />
-                    }
-                </div>
-            </div>
-            <div class="prop-row">
-                <div class="p-label">Padding</div>
-                <div class="p-editor">
-                    <input type="number" step="0.1" min="0"
-                           value="@PaddingMm"
-                           @onchange="@(e => SetUniformPadding(e.Value?.ToString()))"
-                           style="width:60px;font-family:var(--font-mono);font-size:11.5px;" />
-                    <span class="p-unit">mm</span>
-                    <span style="color:var(--text-tertiary);font-size:10.5px;">(uniforme)</span>
-                </div>
-            </div>
-        </div>
-
         <div class="prop-section">
             <div class="prop-section-head" style="background:var(--accent-soft);color:var(--accent);">
                 <Icon Name="chevron-down" Size="12" CssClass="chev icon icon-12" />
@@ -975,69 +935,6 @@ else
             return;
         }
         Element.Format = string.IsNullOrEmpty(value) ? null : value;
-    }
-
-    // ─── Border editing ────────────────────────────────────────────────────────
-    private string BorderThickness => Element?.Border is null
-        ? "0.5"
-        : ((double)Element.Border.Top.Thickness.ToPoints()).ToString("F1", CultureInfo.InvariantCulture);
-
-    private void SetBorderStyle(string? value)
-    {
-        if (Element is null) return;
-        if (string.IsNullOrEmpty(value) || value == "None")
-        {
-            Element.Border = null;
-            return;
-        }
-        if (!Enum.TryParse<BorderLineStyle>(value, out var lineStyle)) return;
-        var current = Element.Border ?? Border.Uniform(BorderLineStyle.Solid, 0.5.Pt(), Color.Black);
-        var side = current.Top with { Style = lineStyle };
-        Element.Border = new Border(side, side, side, side);
-    }
-
-    private void SetBorderThickness(string? value)
-    {
-        if (Element?.Border is null) return;
-        if (!double.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out var pt)) return;
-        var side = Element.Border.Top with { Thickness = Unit.FromPoint(pt) };
-        Element.Border = new Border(side, side, side, side);
-    }
-
-    private void SetBorderColor(string? value)
-    {
-        if (Element?.Border is null || string.IsNullOrEmpty(value)) return;
-        try
-        {
-            var c = Color.FromHex(value);
-            var side = Element.Border.Top with { Color = c };
-            Element.Border = new Border(side, side, side, side);
-        }
-        catch { /* ignore invalid color */ }
-    }
-
-    // ─── Padding (uniform editor) ──────────────────────────────────────────────
-    private string PaddingMm
-    {
-        get => Element?.Padding is null
-            ? "0"
-            : Element.Padding.Value.Top.ToMm().ToString("F1", CultureInfo.InvariantCulture);
-    }
-
-    private void SetUniformPadding(string? value)
-    {
-        if (Element is null) return;
-        if (!double.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out var mm))
-        {
-            return;
-        }
-        if (mm <= 0)
-        {
-            Element.Padding = null;
-            return;
-        }
-        var u = Unit.FromMm(mm);
-        Element.Padding = new Thickness(u, u, u, u);
     }
 
     // ─── Image upload ──────────────────────────────────────────────────────────
