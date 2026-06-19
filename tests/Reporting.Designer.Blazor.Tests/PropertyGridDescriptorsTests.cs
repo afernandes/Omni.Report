@@ -72,8 +72,10 @@ public class PropertyGridDescriptorsTests
         foreColor.Bindable.Should().BeTrue();
         foreColor.Category.Should().Be("Aparência");
         foreColor.Label.Should().Be("Cor do texto");
-        // Font/Border/Padding are NOT annotated, so they don't flatten.
-        descriptors.Should().NotContain(d => d.Name == "Look.Font");
+        // Style.Font flattens with its custom "font" editor; Border/Padding are unannotated complex
+        // records and don't flatten.
+        descriptors.Should().ContainSingle(d => d.Name == "Look.Font").Which.Editor.Should().Be("font");
+        descriptors.Should().NotContain(d => d.Name == "Look.Border");
     }
 
     [Fact]
@@ -89,5 +91,30 @@ public class PropertyGridDescriptorsTests
         updated.Should().NotBeSameAs(el);
         updated.Look.Should().NotBeSameAs(el.Look, "the nested record is cloned, not mutated in place");
         ((Color?)foreColor.Get(updated)).Should().Be(Color.FromHex("#FF0000"));
+    }
+
+    [Fact]
+    public void Text_elements_flatten_the_shared_style_appearance_via_TextStyled()
+    {
+        var text = PropertyGridDescriptors.For(typeof(TextBoxElement));
+        text.Should().ContainSingle(d => d.Name == "Style.Font").Which.Editor.Should().Be("font");
+        text.Should().Contain(d => d.Name == "Style.ForeColor" && d.Editor == "color-picker");
+        text.Should().Contain(d => d.Name == "Style.HorizontalAlignment" && d.Editor == "h-align");
+
+        // A shape is NOT [TextStyled] → its Style appearance is NOT flattened (font/alignment would be noise).
+        PropertyGridDescriptors.For(typeof(RectangleElement)).Should().NotContain(d => d.Name == "Style.Font");
+    }
+
+    [Fact]
+    public void Editing_a_flattened_style_font_rebuilds_element_then_style_then_font_immutably()
+    {
+        var tb = new TextBoxElement { Expression = "x", Style = Style.Default with { Font = new Font("Arial", 10) } };
+        var fontDesc = PropertyGridDescriptors.For(typeof(TextBoxElement)).Single(d => d.Name == "Style.Font");
+
+        var updated = (TextBoxElement)fontDesc.Set(tb, new Font("Calibri", 14, FontStyle.Bold));
+
+        updated.Style.Font!.Family.Should().Be("Calibri");
+        updated.Style.Font.Size.Should().Be(14);
+        tb.Style.Font!.Family.Should().Be("Arial", "the original element, its Style and its Font are all untouched");
     }
 }

@@ -1,9 +1,11 @@
 using Reporting.Common;
+using Reporting.Metadata;
 using Reporting.Styling;
 
 namespace Reporting.Elements;
 
 /// <summary>A literal text label — no expressions, no data binding.</summary>
+[TextStyled]
 public sealed record LabelElement : ReportElement
 {
     public required string Text { get; init; }
@@ -28,6 +30,7 @@ public sealed record LabelElement : ReportElement
 /// until the mixed-font drawing path lands. The contract guarantees: a report saved
 /// with TextRuns loads back identically, never silently drops them.</para>
 /// </remarks>
+[TextStyled]
 public sealed record TextBoxElement : ReportElement
 {
     public required string Expression { get; init; }

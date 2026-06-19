@@ -62,4 +62,16 @@ public class PropertyGridMetaSectionTests : Bunit.BunitContext
 
         cut.Markup.Should().NotContain("= expressão", "the fx-open marker belongs to the previous element, not the new one");
     }
+
+    [Fact]
+    public void Text_element_renders_rich_appearance_editors_from_the_flattened_style()
+    {
+        var cut = Render<PropertyGridMetaSection>(p =>
+            p.Add(x => x.Element, new ElementViewModel(DesignerElementKind.TextBox, "t1")));
+
+        cut.Markup.Should().Contain("Fonte", "the flattened Style.Font row");
+        cut.Markup.Should().Contain("Cor do texto", "the flattened Style.ForeColor row");
+        cut.Markup.Should().Contain("Alinhamento H");
+        cut.Markup.Should().Contain(">B<", "the bold toggle of the rich font editor renders (not a generic textbox)");
+    }
 }

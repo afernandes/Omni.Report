@@ -10,6 +10,7 @@ namespace Reporting.Styling;
 /// <c>[PropertyGrid(Nested = true)]</c>. Font/Border/Padding are complex records edited by dedicated
 /// editors, so they're not flattened here.</remarks>
 public sealed record Style(
+    [property: PropertyGrid(Category = "Aparência", Order = 0, Label = "Fonte", Editor = "font")]
     Font? Font = null,
     [property: PropertyGrid(Category = "Aparência", Order = 1, Label = "Cor do texto", Bindable = true)]
     Color? ForeColor = null,
@@ -17,13 +18,14 @@ public sealed record Style(
     Color? BackColor = null,
     Border? Border = null,
     Thickness? Padding = null,
-    [property: PropertyGrid(Category = "Aparência", Order = 5, Label = "Alinhamento H")]
+    [property: PropertyGrid(Category = "Aparência", Order = 5, Label = "Alinhamento H", Editor = "h-align")]
     HorizontalAlignment HorizontalAlignment = HorizontalAlignment.Left,
-    [property: PropertyGrid(Category = "Aparência", Order = 6, Label = "Alinhamento V")]
+    [property: PropertyGrid(Category = "Aparência", Order = 6, Label = "Alinhamento V", Editor = "v-align")]
     VerticalAlignment VerticalAlignment = VerticalAlignment.Top,
     [property: PropertyGrid(Category = "Aparência", Order = 7, Label = "Quebra de linha", Bindable = true)]
     bool WordWrap = true,
-    [property: PropertyGrid(Category = "Aparência", Order = 8, Label = "Formato", Bindable = true)]
+    // Format is intentionally NOT flattened here: the hand-coded "Data" section owns it with a rich
+    // preset dropdown (currency/percent/date/…). It migrates to metadata in a later phase.
     string? Format = null)
 {
     public static readonly Style Default = new();

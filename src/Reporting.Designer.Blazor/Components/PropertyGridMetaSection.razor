@@ -83,6 +83,41 @@
                                 </span>
                                 break;
 
+                            case "font":
+                                var font = current as Font ?? new Font("Arial", 10);
+                                <input value="@font.Family" title="Família"
+                                       @onchange="@(e => Element.ApplyMetaSet(d, font with { Family = string.IsNullOrWhiteSpace(e.Value?.ToString()) ? "Arial" : e.Value!.ToString()! }))"
+                                       style="width:84px;font-family:var(--font-mono);font-size:11.5px;" />
+                                <input type="number" step="0.5" title="Tamanho (pt)" value="@font.Size.ToString("0.##", CultureInfo.InvariantCulture)"
+                                       @onchange="@(e => Element.ApplyMetaSet(d, font with { Size = ParseDouble(e.Value) }))"
+                                       style="width:42px;font-family:var(--font-mono);font-size:11.5px;text-align:right;" />
+                                <span class="p-unit">pt</span>
+                                <span class="editor-toggle">
+                                    <button type="button" class="@(font.Style.HasFlag(FontStyle.Bold) ? "is-on" : null)" @onclick="@(() => Element.ApplyMetaSet(d, font with { Style = font.Style ^ FontStyle.Bold }))">B</button>
+                                    <button type="button" class="@(font.Style.HasFlag(FontStyle.Italic) ? "is-on" : null)" @onclick="@(() => Element.ApplyMetaSet(d, font with { Style = font.Style ^ FontStyle.Italic }))">I</button>
+                                    <button type="button" class="@(font.Style.HasFlag(FontStyle.Underline) ? "is-on" : null)" @onclick="@(() => Element.ApplyMetaSet(d, font with { Style = font.Style ^ FontStyle.Underline }))">U</button>
+                                    <button type="button" class="@(font.Style.HasFlag(FontStyle.Strikeout) ? "is-on" : null)" @onclick="@(() => Element.ApplyMetaSet(d, font with { Style = font.Style ^ FontStyle.Strikeout }))">S</button>
+                                </span>
+                                break;
+
+                            case "h-align":
+                                var ha = current is HorizontalAlignment hv ? hv : HorizontalAlignment.Left;
+                                <span class="align-row" aria-label="Horizontal">
+                                    <button type="button" class="@(ha == HorizontalAlignment.Left ? "is-on" : null)" title="Esquerda" @onclick="@(() => Element.ApplyMetaSet(d, HorizontalAlignment.Left))"><Icon Name="align-left" Size="12" CssClass="icon icon-12" /></button>
+                                    <button type="button" class="@(ha == HorizontalAlignment.Center ? "is-on" : null)" title="Centro" @onclick="@(() => Element.ApplyMetaSet(d, HorizontalAlignment.Center))"><Icon Name="align-center" Size="12" CssClass="icon icon-12" /></button>
+                                    <button type="button" class="@(ha == HorizontalAlignment.Right ? "is-on" : null)" title="Direita" @onclick="@(() => Element.ApplyMetaSet(d, HorizontalAlignment.Right))"><Icon Name="align-right" Size="12" CssClass="icon icon-12" /></button>
+                                </span>
+                                break;
+
+                            case "v-align":
+                                var va = current is VerticalAlignment vv ? vv : VerticalAlignment.Top;
+                                <span class="align-row" aria-label="Vertical">
+                                    <button type="button" class="@(va == VerticalAlignment.Top ? "is-on" : null)" title="Topo" @onclick="@(() => Element.ApplyMetaSet(d, VerticalAlignment.Top))"><Icon Name="align-start-horizontal" Size="12" CssClass="icon icon-12" /></button>
+                                    <button type="button" class="@(va == VerticalAlignment.Middle ? "is-on" : null)" title="Centro" @onclick="@(() => Element.ApplyMetaSet(d, VerticalAlignment.Middle))"><Icon Name="align-center-horizontal" Size="12" CssClass="icon icon-12" /></button>
+                                    <button type="button" class="@(va == VerticalAlignment.Bottom ? "is-on" : null)" title="Base" @onclick="@(() => Element.ApplyMetaSet(d, VerticalAlignment.Bottom))"><Icon Name="align-end-horizontal" Size="12" CssClass="icon icon-12" /></button>
+                                </span>
+                                break;
+
                             default:
                                 <input type="text" value="@Convert.ToString(current)" placeholder="@d.Placeholder"
                                        @onchange="@(e => Element.ApplyMetaSet(d, e.Value?.ToString()))"
