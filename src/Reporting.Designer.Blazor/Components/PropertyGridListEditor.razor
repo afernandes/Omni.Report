@@ -2,6 +2,7 @@
 @using System.Globalization
 @using Reporting.Designer.Blazor.Services
 @using Reporting.Designer.Blazor.ViewModels
+@using Reporting.Styling
 
 @*
     Generic editor for an EquatableArray<T> property. Each item T is itself rendered from its
@@ -18,7 +19,7 @@
     {
         var index = i;
         var item = items[index];
-        <div style="display:flex;align-items:center;gap:3px;">
+        <div style="display:flex;align-items:center;gap:3px;flex-wrap:wrap;">
             @foreach (var f in fields)
             {
                 var field = f;
@@ -29,6 +30,13 @@
                         var hex = val as string ?? "#000000";
                         <input type="color" value="@hex" title="@field.Label"
                                @onchange="@(e => EditField(index, field, e.Value?.ToString() ?? hex))"
+                               style="width:28px;height:18px;padding:0;cursor:pointer;flex:0 0 auto;" />
+                        break;
+
+                    case "color-picker":
+                        var col = val as Color?;
+                        <input type="color" value="@((col ?? Color.Black).ToHex())" title="@field.Label"
+                               @onchange="@(e => EditField(index, field, Color.FromHex(e.Value?.ToString() ?? "#000000")))"
                                style="width:28px;height:18px;padding:0;cursor:pointer;flex:0 0 auto;" />
                         break;
 
