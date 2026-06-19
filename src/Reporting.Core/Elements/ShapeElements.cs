@@ -1,4 +1,5 @@
 using Reporting.Geometry;
+using Reporting.Metadata;
 using Reporting.Styling;
 
 namespace Reporting.Elements;
@@ -7,7 +8,9 @@ namespace Reporting.Elements;
 /// the line is drawn between two of its corners as indicated by <see cref="LineDirection"/>.</summary>
 public sealed record LineElement : ReportElement
 {
+    [PropertyGrid(Category = "Linha", Order = 1, Label = "Orientação")]
     public LineDirection Direction { get; init; } = LineDirection.TopLeftToBottomRight;
+
     public BorderSide Pen { get; init; } = new(BorderLineStyle.Solid, Unit.FromPoint(0.5), Color.Black);
 }
 
