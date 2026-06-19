@@ -39,6 +39,13 @@ internal static class TablixRenderer
         var list = new List<LayoutPrimitive>();
         actualHeight = bounds.Height;
 
+        // Matrix / pivot mode: a row group AND a column group turn the Tablix into a crosstab.
+        // (Single-level groups in v1; nested groups remain a future enhancement.)
+        if (tablix.RowGroups.Count >= 1 && tablix.ColumnGroups.Count >= 1)
+        {
+            return RenderMatrix(tablix, bounds, rows, ev, templates, baseCtx, out actualHeight);
+        }
+
         // Split cells into the header template (row 0) and the detail template (row 1),
         // indexed by column. Column count is the widest column index seen.
         var headerCells = new Dictionary<int, ReportElement?>();
@@ -108,6 +115,135 @@ internal static class TablixRenderer
 
         actualHeight = Unit.FromMm(totalH);
         return list;
+    }
+
+    /// <summary>Renders a crosstab: distinct values of the row group down the left, distinct values
+    /// of the column group across the top, and each body cell = the SUM of the cell's value
+    /// expression over the rows that fall in that (rowValue, columnValue) intersection. Single-level
+    /// groups; the body template is the cell at (row≥1, col≥1), the corner label is cell (0,0).</summary>
+    private static IEnumerable<LayoutPrimitive> RenderMatrix(
+        TablixElement tablix,
+        Rectangle bounds,
+        IReadOnlyList<IReadOnlyList<KeyValuePair<string, object?>>> rows,
+        ExpressionEvaluator ev,
+        TemplateRenderer templates,
+        IReportExpressionContext baseCtx,
+        out Unit actualHeight)
+    {
+        var list = new List<LayoutPrimitive>();
+        actualHeight = bounds.Height;
+
+        string rowExpr = tablix.RowGroups[0].GroupExpression ?? string.Empty;
+        string colExpr = tablix.ColumnGroups[0].GroupExpression ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(rowExpr) || string.IsNullOrWhiteSpace(colExpr))
+        {
+            return list;
+        }
+
+        TextBoxElement? body = null;
+        ReportElement? corner = null;
+        foreach (var cell in tablix.Cells)
+        {
+            if (cell.RowIndex == 0 && cell.ColumnIndex == 0) corner = cell.Content;
+            if (cell.RowIndex >= 1 && cell.ColumnIndex >= 1 && cell.Content is TextBoxElement tb) body ??= tb;
+        }
+        string valueExpr = body?.Expression ?? string.Empty;
+        string? format = body?.Style.Format;
+        string cornerText = (corner as LabelElement)?.Text ?? string.Empty;
+
+        // Pass over the rows once: collect distinct row/column values (first-seen order) and the
+        // running SUM per intersection.
+        var rowVals = new List<string>();
+        var colVals = new List<string>();
+        var rowSeen = new HashSet<string>(StringComparer.Ordinal);
+        var colSeen = new HashSet<string>(StringComparer.Ordinal);
+        var sums = new Dictionary<(string Row, string Col), double>();
+        foreach (var row in rows)
+        {
+            var rc = new RowScopedContext(baseCtx, row);
+            string rv = Resolve(ev, templates, rowExpr, rc);
+            string cv = Resolve(ev, templates, colExpr, rc);
+            if (rowSeen.Add(rv)) rowVals.Add(rv);
+            if (colSeen.Add(cv)) colVals.Add(cv);
+            double v = EvalDouble(ev, valueExpr, rc);
+            sums.TryGetValue((rv, cv), out var cur);
+            sums[(rv, cv)] = cur + v;
+        }
+        if (rowVals.Count == 0 || colVals.Count == 0)
+        {
+            return list;
+        }
+
+        double x0 = bounds.X.ToMm(), y0 = bounds.Y.ToMm(), w = bounds.Width.ToMm();
+        int nCols = colVals.Count + 1; // +1 for the row-header column
+        double colW = w / nCols;
+
+        // Header row: corner label + the distinct column values.
+        list.Add(Fill(x0, y0, w, RowHeightMm, HeaderBg, tablix.Id));
+        list.Add(CellText(cornerText, x0, y0, colW, bold: true, HeaderText, tablix.Id));
+        for (int j = 0; j < colVals.Count; j++)
+        {
+            list.Add(CellText(colVals[j], x0 + (j + 1) * colW, y0, colW, bold: true, HeaderText, tablix.Id));
+        }
+
+        // Data rows: row header (bold) + the intersection sums.
+        double y = y0 + RowHeightMm;
+        foreach (var rv in rowVals)
+        {
+            list.Add(CellText(rv, x0, y, colW, bold: true, HeaderText, tablix.Id));
+            for (int j = 0; j < colVals.Count; j++)
+            {
+                sums.TryGetValue((rv, colVals[j]), out var s);
+                list.Add(CellText(FormatNumber(s, format, baseCtx.Culture), x0 + (j + 1) * colW, y, colW, bold: false, BodyText, tablix.Id));
+            }
+            y += RowHeightMm;
+        }
+
+        double totalH = y - y0;
+        var pen = new PenStyle(GridColor, Unit.FromPoint(0.5));
+        int gridRows = rowVals.Count + 1;
+        for (int r = 0; r <= gridRows; r++)
+        {
+            double ly = y0 + r * RowHeightMm;
+            list.Add(Line(x0, ly, x0 + w, ly, pen, tablix.Id));
+        }
+        for (int c = 0; c <= nCols; c++)
+        {
+            double lx = x0 + c * colW;
+            list.Add(Line(lx, y0, lx, y0 + totalH, pen, tablix.Id));
+        }
+
+        actualHeight = Unit.FromMm(totalH);
+        return list;
+    }
+
+    private static double EvalDouble(ExpressionEvaluator ev, string expr, IReportExpressionContext ctx)
+    {
+        if (string.IsNullOrWhiteSpace(expr))
+        {
+            return 0;
+        }
+        try
+        {
+            var v = ev.Evaluate(expr, ctx);
+            return v is null ? 0 : Convert.ToDouble(v, ctx.Culture);
+        }
+        catch
+        {
+            return 0;
+        }
+    }
+
+    private static string FormatNumber(double v, string? format, System.Globalization.CultureInfo culture)
+    {
+        try
+        {
+            return string.Format(culture, "{0:" + (string.IsNullOrEmpty(format) ? "N2" : format) + "}", v);
+        }
+        catch
+        {
+            return v.ToString(culture);
+        }
     }
 
     /// <summary>Returns the <paramref name="colCount"/>+1 column boundary x-coordinates across
