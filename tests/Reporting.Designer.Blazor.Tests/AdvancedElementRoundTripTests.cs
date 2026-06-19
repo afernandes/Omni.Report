@@ -77,4 +77,67 @@ public class AdvancedElementRoundTripTests
 
         vm.ToElement().Should().BeOfType<MapElement>();
     }
+
+    [Fact]
+    public void Map_every_field_is_editable_on_a_freshly_added_element()
+    {
+        // User adds a Map from the toolbox (no _sourceElement) and configures EVERY field in the
+        // PropertyGrid — each setter must seed/mutate the domain element so ToElement() carries it.
+        // This is the "build + edit any parameter in the designer, not only when loading a file" path.
+        var vm = new ElementViewModel(DesignerElementKind.Map, "m1")
+        {
+            Width = Unit.FromMm(80),
+            Height = Unit.FromMm(60),
+        };
+
+        vm.MapLatitude = "Fields.lat";
+        vm.MapLongitude = "Fields.lon";
+        vm.MapDataSet = "Filiais";
+        vm.MapShapeSet = "brazil";
+        vm.MapShapesGeoJson = "{\"type\":\"FeatureCollection\"}";
+        vm.MapGraticule = true;
+        vm.MapShapeFill = "#FFEEDD";
+        vm.MapShapeStroke = "#112233";
+        vm.MapBasemap = "OpenStreetMap";
+
+        var map = vm.ToElement().Should().BeOfType<MapElement>().Subject;
+        map.LatitudeExpression.Should().Be("Fields.lat");
+        map.LongitudeExpression.Should().Be("Fields.lon");
+        map.DataSetName.Should().Be("Filiais");
+        map.ShapeSet.Should().Be("brazil");
+        map.ShapesGeoJson.Should().Be("{\"type\":\"FeatureCollection\"}");
+        map.ShowGraticule.Should().BeTrue();
+        map.ShapeFill.Should().Be("#FFEEDD");
+        map.ShapeStroke.Should().Be("#112233");
+        map.Basemap.Should().Be("OpenStreetMap");
+        map.Bounds.Width.Should().Be(Unit.FromMm(80));
+    }
+
+    [Fact]
+    public void Map_loaded_element_surfaces_all_fields_and_edits_stick()
+    {
+        var map = new MapElement
+        {
+            Id = "m2",
+            Bounds = new Rectangle(Unit.Zero, Unit.Zero, Unit.FromMm(80), Unit.FromMm(60)),
+            LatitudeExpression = "Fields.lat",
+            LongitudeExpression = "Fields.lon",
+            ShapeSet = "south-america",
+            ShowGraticule = true,
+            Basemap = "OpenStreetMap",
+        };
+
+        var vm = ElementViewModel.FromElement(map);
+        // Every field is surfaced for the PropertyGrid (not just preserved opaquely).
+        vm.MapShapeSet.Should().Be("south-america");
+        vm.MapGraticule.Should().BeTrue();
+        vm.MapBasemap.Should().Be("OpenStreetMap");
+
+        // Edit one in the designer, re-emit — the edit sticks and the rest is preserved.
+        vm.MapShapeSet = "brazil";
+        var back = (MapElement)vm.ToElement();
+        back.ShapeSet.Should().Be("brazil");
+        back.ShowGraticule.Should().BeTrue();
+        back.LatitudeExpression.Should().Be("Fields.lat");
+    }
 }
