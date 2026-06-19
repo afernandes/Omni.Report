@@ -1,5 +1,6 @@
 using System.Globalization;
 using NCalc;
+using NCalc.Extensions;
 using NCalc.Handlers;
 using Reporting.Aggregates;
 
@@ -145,40 +146,40 @@ public sealed class ExpressionEvaluator
             if (CodeFunctionResolver is { } resolver && name.StartsWith("Code_", StringComparison.OrdinalIgnoreCase))
             {
                 var methodName = name["Code_".Length..];
-                var values = new object?[args.Parameters.Length];
+                var values = new object?[args.Parameters.Count];
                 for (int i = 0; i < values.Length; i++)
                 {
-                    values[i] = args.Parameters[i].Evaluate();
+                    values[i] = args.Parameters.Evaluate(i);
                 }
                 args.Result = resolver(methodName, values);
             }
         };
     }
 
-    private static bool TryEvaluateAggregate(string name, FunctionArgs args, IReportExpressionContext context, out object? result)
+    private static bool TryEvaluateAggregate(string name, FunctionEventArgs args, IReportExpressionContext context, out object? result)
     {
         result = null;
         if (!AggregateNames.Contains(name))
         {
             return false;
         }
-        if (args.Parameters.Length == 0)
+        if (args.Parameters.Count == 0)
         {
             return false;
         }
         // The first argument is the expression text (we re-extract it from the AST).
         var expressionText = ExtractRawExpression(args.Parameters[0]);
         var scope = AggregateScope.Report;
-        if (args.Parameters.Length >= 2)
+        if (args.Parameters.Count >= 2)
         {
-            var scopeValue = args.Parameters[1].Evaluate();
+            var scopeValue = args.Parameters.Evaluate(1);
             scope = ParseScope(scopeValue);
         }
         result = context.EvaluateAggregate(name, expressionText, scope);
         return true;
     }
 
-    private static bool TryEvaluateBuiltin(string name, FunctionArgs args, IReportExpressionContext context, out object? result)
+    private static bool TryEvaluateBuiltin(string name, FunctionEventArgs args, IReportExpressionContext context, out object? result)
     {
         result = null;
         switch (name)
@@ -196,9 +197,9 @@ public sealed class ExpressionEvaluator
                 result = context.TotalPages;
                 return true;
             case "Coalesce":
-                foreach (var p in args.Parameters)
+                for (int i = 0; i < args.Parameters.Count; i++)
                 {
-                    var v = p.Evaluate();
+                    var v = args.Parameters.Evaluate(i);
                     if (v is not null)
                     {
                         result = v;
@@ -207,13 +208,13 @@ public sealed class ExpressionEvaluator
                 }
                 return true;
             case "IsNull":
-                result = args.Parameters.Length > 0 && args.Parameters[0].Evaluate() is null;
+                result = args.Parameters.Count > 0 && args.Parameters.Evaluate(0) is null;
                 return true;
             case "Format":
-                if (args.Parameters.Length >= 2)
+                if (args.Parameters.Count >= 2)
                 {
-                    var value = args.Parameters[0].Evaluate();
-                    var format = Convert.ToString(args.Parameters[1].Evaluate(), context.Culture) ?? string.Empty;
+                    var value = args.Parameters.Evaluate(0);
+                    var format = Convert.ToString(args.Parameters.Evaluate(1), context.Culture) ?? string.Empty;
                     result = ValueFormatter.Format(value, format, context.Culture);
                     return true;
                 }
@@ -239,11 +240,12 @@ public sealed class ExpressionEvaluator
         };
     }
 
-    private static string ExtractRawExpression(Expression expression)
+    private static string ExtractRawExpression(LogicalExpression expression)
     {
-        // NCalc keeps the original parsed text on the underlying LogicalExpression via ToString().
-        // For Identifier/Bracket nodes this yields the bare name, e.g. "[Fields.Total]" → "Fields.Total".
-        var text = expression.LogicalExpression?.ToString() ?? string.Empty;
+        // NCalc v6 surfaces the parsed AST node directly to function handlers. ToExpressionString()
+        // serializes it back to its source text (the SerializationVisitor); for Identifier/Bracket
+        // nodes that's the bracketed name, e.g. "[Fields.Total]" → "Fields.Total".
+        var text = expression.ToExpressionString();
         return text.Trim('[', ']');
     }
 

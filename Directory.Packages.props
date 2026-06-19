@@ -7,7 +7,7 @@
 
   <ItemGroup>
     <!-- Expressions -->
-    <PackageVersion Include="NCalcSync" Version="5.12.0" />
+    <PackageVersion Include="NCalcSync" Version="6.1.1" />
     <!-- Opt-in Roslyn code evaluation (Reporting.Expressions.Roslyn only) -->
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="4.12.0" />
 
@@ -51,10 +51,15 @@
     <PackageVersion Include="Microsoft.Extensions.Logging.Debug" Version="10.0.0" />
 
     <!-- DI abstractions (used by libraries that ship Add* extensions) -->
-    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.2" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.7" />
 
     <!-- Database providers (ADO.NET) -->
     <PackageVersion Include="Microsoft.Data.Sqlite" Version="9.0.0" />
+    <!-- Transitive override: Microsoft.Data.Sqlite pulls SQLitePCLRaw 2.1.x, whose bundled
+         native SQLite (lib.e_sqlite3 ≤ 2.1.11) carries GHSA-2m69-gcr7-jv3q. The fix only exists
+         in the 3.x stack (native moved to SourceGear.sqlite3 3.50.x), so we pin bundle+core to 3.x. -->
+    <PackageVersion Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.3" />
+    <PackageVersion Include="SQLitePCLRaw.core" Version="3.0.3" />
     <PackageVersion Include="Npgsql" Version="9.0.2" />
     <PackageVersion Include="Microsoft.Data.SqlClient" Version="6.0.1" />
     <PackageVersion Include="MySqlConnector" Version="2.4.0" />

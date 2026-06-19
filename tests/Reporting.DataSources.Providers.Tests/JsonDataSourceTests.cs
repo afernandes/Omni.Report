@@ -42,6 +42,68 @@ public class JsonDataSourceTests
     }
 
     [Fact]
+    public async Task Bracket_index_navigates_into_array()
+    {
+        // data.groups[0].rows — a property, then an array index, then a property.
+        var json = """
+            {"data":{"groups":[
+                {"name":"A","rows":[{"v":1},{"v":2}]},
+                {"name":"B","rows":[{"v":3}]}
+            ]}}
+            """;
+        var ds = new JsonDataSource("Test", new JsonDataSourceOptions
+        {
+            InlineJson = json,
+            RootPath = "data.groups[0].rows",
+        });
+        var rows = await ds.ReadAsync().ToListAsync();
+        rows.Should().HaveCount(2);
+        rows[0]["v"].Should().Be(1);
+        rows[1]["v"].Should().Be(2);
+    }
+
+    [Fact]
+    public async Task Index_only_segment_selects_array_element()
+    {
+        // Root is an array of arrays; "[1]" picks the second inner array.
+        var json = """[[{"a":1}],[{"a":2},{"a":3}]]""";
+        var ds = new JsonDataSource("Test", new JsonDataSourceOptions
+        {
+            InlineJson = json,
+            RootPath = "[1]",
+        });
+        var rows = await ds.ReadAsync().ToListAsync();
+        rows.Should().HaveCount(2);
+        rows[1]["a"].Should().Be(3);
+    }
+
+    [Fact]
+    public async Task Out_of_range_index_throws()
+    {
+        var json = """{"items":[{"a":1}]}""";
+        var ds = new JsonDataSource("Test", new JsonDataSourceOptions
+        {
+            InlineJson = json,
+            RootPath = "items[5]",
+        });
+        var act = async () => await ds.ReadAsync().ToListAsync();
+        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*out of range*");
+    }
+
+    [Fact]
+    public async Task Index_on_non_array_throws()
+    {
+        var json = """{"obj":{"a":1}}""";
+        var ds = new JsonDataSource("Test", new JsonDataSourceOptions
+        {
+            InlineJson = json,
+            RootPath = "obj[0]",
+        });
+        var act = async () => await ds.ReadAsync().ToListAsync();
+        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*not an Array*");
+    }
+
+    [Fact]
     public async Task Field_lookup_is_case_insensitive()
     {
         var json = """[{"Total":100}]""";
