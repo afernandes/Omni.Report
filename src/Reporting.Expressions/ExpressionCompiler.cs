@@ -1,7 +1,6 @@
 using System.Collections.Concurrent;
 using System.Globalization;
 using NCalc;
-using NCalc.Domain;
 using NCalc.Factories;
 
 namespace Reporting.Expressions;
