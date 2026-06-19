@@ -149,6 +149,29 @@
                                 <span class="p-unit">mm</span>
                                 break;
 
+                            case "format-preset":
+                                var fmt = current as string ?? string.Empty;
+                                var isCustom = !string.IsNullOrEmpty(fmt) && !KnownFormats.Contains(fmt);
+                                <select style="flex:1;font-size:11.5px;font-family:var(--font-mono);"
+                                        @onchange="@(e => Element.ApplyMetaSet(d, FormatFromPreset(e.Value?.ToString())))">
+                                    <option value="" selected="@(string.IsNullOrEmpty(fmt))">— sem formato —</option>
+                                    <option value="C" selected="@(fmt == "C")">C — Moeda (R$ 1.234,56)</option>
+                                    <option value="N0" selected="@(fmt == "N0")">N0 — Inteiro (1.234)</option>
+                                    <option value="N2" selected="@(fmt == "N2")">N2 — Decimal (1.234,56)</option>
+                                    <option value="P" selected="@(fmt == "P")">P — Percent (12,34%)</option>
+                                    <option value="dd/MM/yyyy" selected="@(fmt == "dd/MM/yyyy")">Data dd/MM/yyyy</option>
+                                    <option value="HH:mm" selected="@(fmt == "HH:mm")">Hora HH:mm</option>
+                                    <option value="dd/MM/yyyy HH:mm" selected="@(fmt == "dd/MM/yyyy HH:mm")">Data+Hora</option>
+                                    <option value="__custom__" selected="@isCustom">— Custom… —</option>
+                                </select>
+                                @if (isCustom)
+                                {
+                                    <input type="text" value="@fmt" placeholder="ex: #,##0.00"
+                                           @onchange="@(e => Element.ApplyMetaSet(d, string.IsNullOrEmpty(e.Value?.ToString()) ? null : e.Value!.ToString()))"
+                                           style="width:120px;font-family:var(--font-mono);font-size:11.5px;" />
+                                }
+                                break;
+
                             default:
                                 <input type="text" value="@Convert.ToString(current)" placeholder="@d.Placeholder"
                                        @onchange="@(e => Element.ApplyMetaSet(d, e.Value?.ToString()))"
@@ -199,6 +222,15 @@
 
     private static object ConvertNumber(PropertyGridDescriptor d, object? value)
         => Convert.ChangeType(ParseDouble(value), Nullable.GetUnderlyingType(d.Type) ?? d.Type, CultureInfo.InvariantCulture);
+
+    // ── Format preset: a dropdown of common .NET format strings + a custom escape hatch.
+    private static readonly HashSet<string> KnownFormats = new(StringComparer.Ordinal)
+    {
+        "C", "N0", "N2", "P", "dd/MM/yyyy", "HH:mm", "dd/MM/yyyy HH:mm",
+    };
+
+    private static object? FormatFromPreset(string? value)
+        => value == "__custom__" ? "custom" : (string.IsNullOrEmpty(value) ? null : value);
 
     // ── Border / Padding: edit the box uniformly (all four sides the same), matching the previous
     //    hand-coded editors. A "None" style clears the border; a non-positive padding clears it.

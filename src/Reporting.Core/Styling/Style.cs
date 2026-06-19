@@ -26,8 +26,7 @@ public sealed record Style(
     VerticalAlignment VerticalAlignment = VerticalAlignment.Top,
     [property: PropertyGrid(Category = "Aparência", Order = 7, Label = "Quebra de linha", Bindable = true)]
     bool WordWrap = true,
-    // Format is intentionally NOT flattened here: the hand-coded "Data" section owns it with a rich
-    // preset dropdown (currency/percent/date/…). It migrates to metadata in a later phase.
+    [property: PropertyGrid(Category = "Aparência", Order = 9, Label = "Formato", Editor = "format-preset", Bindable = true)]
     string? Format = null)
 {
     public static readonly Style Default = new();

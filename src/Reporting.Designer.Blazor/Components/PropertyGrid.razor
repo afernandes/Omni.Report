@@ -42,7 +42,7 @@ else
             <div class="prop-section-head" style="background:var(--accent-soft);color:var(--accent);">
                 <Icon Name="chevron-down" Size="12" CssClass="chev icon icon-12" />
                 <span>Data</span>
-                <span class="count" style="color:var(--accent);background:var(--bg-surface);border:1px solid var(--accent-border);padding:1px 4px;border-radius:2px;">@(IsBound ? 2 : 1)</span>
+                <span class="count" style="color:var(--accent);background:var(--bg-surface);border:1px solid var(--accent-border);padding:1px 4px;border-radius:2px;">1</span>
             </div>
             <div class="prop-row @(IsBound ? "is-bound is-focused" : null)">
                 <div class="p-label">@(Element.Kind == DesignerElementKind.Label ? "Text" : "Expression")</div>
@@ -62,28 +62,6 @@ else
                                 @onclick="OpenExpressionEditor"
                                 style="width:18px;height:18px;color:var(--data-bound);background:var(--data-bound-soft);border-radius:3px;font-family:var(--font-mono);font-size:9.5px;font-weight:600;cursor:pointer;"
                                 title="Editor de expressões (F8)">fx</button>
-                    }
-                </div>
-            </div>
-            <div class="prop-row">
-                <div class="p-label">Format</div>
-                <div class="p-editor">
-                    <select @onchange="@(e => SetFormatPreset(e.Value?.ToString()))" style="flex:1;font-size:11.5px;font-family:var(--font-mono);">
-                        <option value=""    selected="@(string.IsNullOrEmpty(Element.Format))">— sem formato —</option>
-                        <option value="C"   selected="@(Element.Format == "C")">C — Moeda (R$ 1.234,56)</option>
-                        <option value="N0"  selected="@(Element.Format == "N0")">N0 — Inteiro (1.234)</option>
-                        <option value="N2"  selected="@(Element.Format == "N2")">N2 — Decimal (1.234,56)</option>
-                        <option value="P"   selected="@(Element.Format == "P")">P — Percent (12,34%)</option>
-                        <option value="dd/MM/yyyy" selected="@(Element.Format == "dd/MM/yyyy")">Data dd/MM/yyyy</option>
-                        <option value="HH:mm"      selected="@(Element.Format == "HH:mm")">Hora HH:mm</option>
-                        <option value="dd/MM/yyyy HH:mm" selected="@(Element.Format == "dd/MM/yyyy HH:mm")">Data+Hora</option>
-                        <option value="__custom__" selected="@(!string.IsNullOrEmpty(Element.Format) && !_knownFormats.Contains(Element.Format!))">— Custom… —</option>
-                    </select>
-                    @if (!string.IsNullOrEmpty(Element.Format) && !_knownFormats.Contains(Element.Format!))
-                    {
-                        <input type="text" value="@Element.Format" placeholder="ex: #,##0.00"
-                               @onchange="@(e => Element!.Format = e.Value?.ToString())"
-                               style="width:120px;font-family:var(--font-mono);font-size:11.5px;" />
                     }
                 </div>
             </div>
@@ -920,23 +898,6 @@ else
         if (string.IsNullOrWhiteSpace(raw)) return null;
         return double.TryParse(raw, NumberStyles.Any, CultureInfo.InvariantCulture, out var mm)
             ? Unit.FromMm(mm) : null;
-    }
-
-    // ─── Format presets ────────────────────────────────────────────────────────
-    private static readonly HashSet<string> _knownFormats = new(StringComparer.Ordinal)
-    {
-        "C", "N0", "N2", "P", "dd/MM/yyyy", "HH:mm", "dd/MM/yyyy HH:mm",
-    };
-
-    private void SetFormatPreset(string? value)
-    {
-        if (Element is null) return;
-        if (value == "__custom__")
-        {
-            Element.Format = "custom";
-            return;
-        }
-        Element.Format = string.IsNullOrEmpty(value) ? null : value;
     }
 
     // ─── Image upload ──────────────────────────────────────────────────────────
