@@ -312,6 +312,23 @@ else
                     }
                 </div>
             </div>
+            <div class="prop-row"><div class="p-label">Caminho/URL</div><div class="p-editor">
+                <input type="text" value="@Element.ImagePath" placeholder="/img/logo.png ou https://…"
+                       @onchange="@(e => Element.ImagePath = e.Value?.ToString() ?? string.Empty)"
+                       style="flex:1;font-size:11.5px;" /></div></div>
+            <div class="prop-row"><div class="p-label">Expressão</div><div class="p-editor">
+                <input type="text" value="@Element.ImageExpression" placeholder="(opcional) Fields.Foto"
+                       @onchange="@(e => Element.ImageExpression = e.Value?.ToString() ?? string.Empty)"
+                       style="flex:1;font-family:var(--font-mono);font-size:11.5px;" /></div></div>
+            <div class="prop-row"><div class="p-label">Ajuste</div><div class="p-editor">
+                <select value="@Element.ImageSizing"
+                        @onchange="@(e => Element.ImageSizing = Enum.TryParse<ImageSizing>(e.Value?.ToString(), out var z) ? z : ImageSizing.Fit)"
+                        style="flex:1;font-size:11.5px;">
+                    @foreach (var z in Enum.GetValues<ImageSizing>())
+                    {
+                        <option value="@z">@z</option>
+                    }
+                </select></div></div>
         </div>
     }
 
@@ -432,10 +449,73 @@ else
                 <input type="text" value="@Element.SparkValue" placeholder="Fields.Value"
                        @onchange="@(e => Element.SparkValue = e.Value?.ToString() ?? string.Empty)"
                        style="flex:1;font-family:var(--font-mono);font-size:11.5px;" /></div></div>
+            <div class="prop-row"><div class="p-label">Categoria</div><div class="p-editor">
+                <input type="text" value="@Element.SparkCategory" placeholder="(opcional) Fields.X"
+                       @onchange="@(e => Element.SparkCategory = e.Value?.ToString() ?? string.Empty)"
+                       style="flex:1;font-family:var(--font-mono);font-size:11.5px;" /></div></div>
             <div class="prop-row"><div class="p-label">Fonte</div><div class="p-editor">
                 <input type="text" value="@Element.SparkDataSet" placeholder="(fonte primária)"
                        @onchange="@(e => Element.SparkDataSet = e.Value?.ToString() ?? string.Empty)"
                        style="flex:1;font-size:11.5px;" /></div></div>
+        </div>
+    }
+
+    @* ── Line editor (orientation) ───────────────────────────────────────────── *@
+    @if (Element.Kind == DesignerElementKind.Line)
+    {
+        <div class="prop-section">
+            <div class="prop-section-head"><Icon Name="chevron-down" Size="12" CssClass="chev icon icon-12" /><span>Linha</span></div>
+            <div class="prop-row"><div class="p-label">Orientação</div><div class="p-editor">
+                <select value="@Element.LineDir"
+                        @onchange="@(e => Element.LineDir = Enum.TryParse<LineDirection>(e.Value?.ToString(), out var d) ? d : LineDirection.Horizontal)"
+                        style="flex:1;font-size:11.5px;">
+                    @foreach (var d in Enum.GetValues<LineDirection>())
+                    {
+                        <option value="@d">@d</option>
+                    }
+                </select></div></div>
+        </div>
+    }
+
+    @* ── Barcode editor (symbology / ECC / text strip) ───────────────────────── *@
+    @if (Element.Kind is DesignerElementKind.Barcode or DesignerElementKind.QrCode)
+    {
+        <div class="prop-section">
+            <div class="prop-section-head"><Icon Name="chevron-down" Size="12" CssClass="chev icon icon-12" /><span>Código de barras</span></div>
+            @if (Element.Kind == DesignerElementKind.Barcode)
+            {
+                <div class="prop-row"><div class="p-label">Simbologia</div><div class="p-editor">
+                    <select value="@Element.Symbology"
+                            @onchange="@(e => Element.Symbology = Enum.TryParse<BarcodeSymbology>(e.Value?.ToString(), out var s) ? s : BarcodeSymbology.Code128)"
+                            style="flex:1;font-size:11.5px;">
+                        @foreach (var s in Enum.GetValues<BarcodeSymbology>())
+                        {
+                            @if (s != BarcodeSymbology.QrCode)
+                            {
+                                <option value="@s">@s</option>
+                            }
+                        }
+                    </select></div></div>
+                <div class="prop-row"><div class="p-label">Texto</div><div class="p-editor">
+                    <span class="editor-toggle">
+                        <button class="@(Element.BarcodeShowText ? "is-on" : null)" type="button"
+                                @onclick="@(() => Element.BarcodeShowText = true)">On</button>
+                        <button class="@(!Element.BarcodeShowText ? "is-on" : null)" type="button"
+                                @onclick="@(() => Element.BarcodeShowText = false)">Off</button>
+                    </span></div></div>
+            }
+            else
+            {
+                <div class="prop-row"><div class="p-label">Correção (ECC)</div><div class="p-editor">
+                    <select value="@Element.QrEcc"
+                            @onchange="@(e => Element.QrEcc = Enum.TryParse<QrEccLevel>(e.Value?.ToString(), out var q) ? q : QrEccLevel.Medium)"
+                            style="flex:1;font-size:11.5px;">
+                        @foreach (var q in Enum.GetValues<QrEccLevel>())
+                        {
+                            <option value="@q">@q</option>
+                        }
+                    </select></div></div>
+            }
         </div>
     }
 

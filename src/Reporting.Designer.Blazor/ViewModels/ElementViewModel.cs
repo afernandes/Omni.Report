@@ -325,6 +325,32 @@ public sealed class ElementViewModel : Notifying
     /// Only meaningful when <see cref="Kind"/> is <see cref="DesignerElementKind.QrCode"/>.</summary>
     public QrEccLevel QrEcc { get => _qrEcc; set => Set(ref _qrEcc, value); }
 
+    private bool _barcodeShowText = true;
+    /// <summary>Whether a 1D barcode prints the human-readable text strip below the bars.
+    /// Ignored for QR (which never has one). Barcode kind only.</summary>
+    public bool BarcodeShowText { get => _barcodeShowText; set => Set(ref _barcodeShowText, value); }
+
+    // ── Line (DesignerElementKind.Line) ─────────────────────────────────────────
+
+    private LineDirection _lineDir = LineDirection.Horizontal;
+    /// <summary>Line orientation (horizontal / vertical / diagonal). Applies when
+    /// <see cref="Kind"/> is <see cref="DesignerElementKind.Line"/>.</summary>
+    public LineDirection LineDir { get => _lineDir; set => Set(ref _lineDir, value); }
+
+    // ── Image (DesignerElementKind.Image) ───────────────────────────────────────
+
+    private ImageSizing _imageSizing = ImageSizing.Fit;
+    /// <summary>How the image fits its bounds (Fit / Fill / Stretch / Native). Image kind only.</summary>
+    public ImageSizing ImageSizing { get => _imageSizing; set => Set(ref _imageSizing, value); }
+
+    private string? _imagePath;
+    /// <summary>File path or URL of the image when it is not embedded inline. Image kind only.</summary>
+    public string? ImagePath { get => _imagePath; set => Set(ref _imagePath, value); }
+
+    private string? _imageExpression;
+    /// <summary>Expression that yields the image path/bytes per row (data-bound image). Image kind only.</summary>
+    public string? ImageExpression { get => _imageExpression; set => Set(ref _imageExpression, value); }
+
     // ── Chart (DesignerElementKind.Chart) ───────────────────────────────────────
 
     private ChartKind _chartKind = ChartKind.Bar;
@@ -718,16 +744,23 @@ public sealed class ElementViewModel : Notifying
         {
             DesignerElementKind.Label => new LabelElement { Text = Text, Bounds = Bounds },
             DesignerElementKind.TextBox => new TextBoxElement { Expression = Expression, Bounds = Bounds },
-            DesignerElementKind.Line => new LineElement { Bounds = Bounds, Direction = LineDirection.Horizontal },
+            DesignerElementKind.Line => new LineElement { Bounds = Bounds, Direction = LineDir },
             DesignerElementKind.Rectangle => new RectangleElement { Bounds = Bounds, FillColor = FillColor },
             DesignerElementKind.Ellipse => new EllipseElement { Bounds = Bounds, FillColor = FillColor },
             DesignerElementKind.Image => new ImageElement
             {
                 Bounds = Bounds,
-                Source = InlineImageData is { Length: > 0 } ? ImageSourceKind.Inline : ImageSourceKind.Path,
+                // Source kind is inferred from which field the user filled: embedded bytes win,
+                // then a per-row expression, otherwise a static path/URL.
+                Source = InlineImageData is { Length: > 0 } ? ImageSourceKind.Inline
+                    : !string.IsNullOrWhiteSpace(ImageExpression) ? ImageSourceKind.Expression
+                    : ImageSourceKind.Path,
                 InlineData = InlineImageData is { Length: > 0 }
                     ? new EquatableArray<byte>(InlineImageData)
                     : EquatableArray<byte>.Empty,
+                Path = string.IsNullOrWhiteSpace(ImagePath) ? null : ImagePath,
+                Expression = string.IsNullOrWhiteSpace(ImageExpression) ? null : ImageExpression,
+                Sizing = ImageSizing,
             },
             DesignerElementKind.Barcode => new BarcodeElement
             {
@@ -737,6 +770,7 @@ public sealed class ElementViewModel : Notifying
                 // Barcode-kind element via direct property binding, force back to Code128 —
                 // the QrCode kind is the canonical place for QR.
                 Symbology = Symbology == BarcodeSymbology.QrCode ? BarcodeSymbology.Code128 : Symbology,
+                ShowText = BarcodeShowText,
             },
             DesignerElementKind.QrCode => new BarcodeElement
             {
@@ -834,6 +868,9 @@ public sealed class ElementViewModel : Notifying
             IsVisible = IsVisible, CanGrow = CanGrow, CanShrink = CanShrink, KeepTogether = KeepTogether,
             IsLocked = IsLocked,
             InlineImageData = InlineImageData is null ? null : (byte[])InlineImageData.Clone(),
+            Symbology = Symbology, QrEcc = QrEcc, BarcodeShowText = BarcodeShowText,
+            LineDir = LineDir,
+            ImageSizing = ImageSizing, ImagePath = ImagePath, ImageExpression = ImageExpression,
         };
         foreach (var rule in ConditionalFormats)
         {
@@ -944,11 +981,16 @@ public sealed class ElementViewModel : Notifying
                 vm.Expression = bc.Expression;
                 vm.Symbology = bc.Symbology;
                 vm.QrEcc = bc.QrEcc;
+                vm.BarcodeShowText = bc.ShowText;
                 break;
+            case LineElement ln: vm.LineDir = ln.Direction; break;
             case RectangleElement r: vm.FillColor = r.FillColor; break;
             case EllipseElement e: vm.FillColor = e.FillColor; break;
-            case ImageElement img when img.InlineData.Count > 0:
-                vm.InlineImageData = img.InlineData.ToArray();
+            case ImageElement img:
+                if (img.InlineData.Count > 0) vm.InlineImageData = img.InlineData.ToArray();
+                vm.ImagePath = img.Path;
+                vm.ImageExpression = img.Expression;
+                vm.ImageSizing = img.Sizing;
                 break;
             case ChartElement ch:
                 vm.ChartKind = ch.Kind;
