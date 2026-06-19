@@ -4,6 +4,7 @@ using Reporting.Designer.Blazor.Services;
 using Reporting.Designer.Blazor.ViewModels;
 using Reporting.Elements;
 using Reporting.Geometry;
+using Reporting.Styling;
 using Xunit;
 
 namespace Reporting.Designer.Blazor.Tests;
@@ -91,5 +92,43 @@ public class PropertyGridBindingTests
 
         clone.GetPropertyExpression("FillColor").Should().Be("Fields.Cor");
         clone.ToElement().PropertyExpressions["FillColor"].Should().Be("Fields.Cor");
+    }
+
+    [Fact]
+    public void Apply_meta_set_changes_the_static_value_generically()
+    {
+        var vm = ElementViewModel.FromElement(new RectangleElement
+        {
+            Id = "r1",
+            Bounds = new Rectangle(Unit.Zero, Unit.Zero, Unit.FromMm(40), Unit.FromMm(20)),
+        });
+        var fill = PropertyGridDescriptors.For(typeof(RectangleElement)).Single(d => d.Name == "FillColor");
+
+        ((Color?)vm.GetMetaValue(fill)).Should().BeNull();
+
+        vm.ApplyMetaSet(fill, Color.FromHex("#3366CC"));
+
+        ((Color?)vm.GetMetaValue(fill)).Should().Be(Color.FromHex("#3366CC"));
+        ((RectangleElement)vm.ToElement()).FillColor.Should().Be(Color.FromHex("#3366CC"));
+    }
+
+    [Fact]
+    public void Apply_meta_set_preserves_unrelated_fields_and_bindings()
+    {
+        var vm = ElementViewModel.FromElement(new RectangleElement
+        {
+            Id = "r1",
+            Name = "MyRect",
+            Bounds = new Rectangle(Unit.Zero, Unit.Zero, Unit.FromMm(40), Unit.FromMm(20)),
+        });
+        vm.SetPropertyExpression("Visible", "Fields.Show");
+        var radius = PropertyGridDescriptors.For(typeof(RectangleElement)).Single(d => d.Name == "CornerRadius");
+
+        vm.ApplyMetaSet(radius, Unit.FromMm(3));
+
+        var el = (RectangleElement)vm.ToElement();
+        el.CornerRadius.ToMm().Should().BeApproximately(3, 0.01); // Unit stores internally → tiny mm round-trip loss
+        el.Name.Should().Be("MyRect", "re-hydration must preserve unrelated fields");
+        el.PropertyExpressions["Visible"].Should().Be("Fields.Show", "and preserve expression bindings");
     }
 }
