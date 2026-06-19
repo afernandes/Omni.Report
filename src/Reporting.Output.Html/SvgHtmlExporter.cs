@@ -74,6 +74,14 @@ public sealed class SvgHtmlExporter : IReportExporter
         writer.Write(WebUtility.HtmlEncode(title));
         writer.Write("\">\n");
 
+        var docMap = BuildDocMap(report);
+        if (docMap.Length > 0)
+        {
+            writer.Write("    <nav class=\"docmap\" aria-label=\"Mapa do documento\"><strong>Conteúdo</strong>\n");
+            writer.Write(docMap);
+            writer.Write("    </nav>\n");
+        }
+
         for (int i = 0; i < pages.Count; i++)
         {
             var p = pages[i];
@@ -118,6 +126,10 @@ public sealed class SvgHtmlExporter : IReportExporter
         sb.Append("}");
         sb.Append(".page svg{display:block;width:100%;height:100%;}");
         sb.Append(".lnk{position:absolute;display:block;text-decoration:none;}");
+        sb.Append(".docmap{align-self:stretch;max-width:760px;margin:0 auto;padding:10px 16px;background:#fff;border:1px solid rgba(0,0,0,.10);border-radius:8px;}");
+        sb.Append(".docmap strong{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#6B7280;margin-bottom:4px;}");
+        sb.Append(".docmap a{display:block;padding:2px 0;color:#1D4ED8;text-decoration:none;font-size:13px;}");
+        sb.Append(".docmap a:hover{text-decoration:underline;}");
 
         if (_options.EmitPrintRules)
         {
@@ -132,6 +144,27 @@ public sealed class SvgHtmlExporter : IReportExporter
               .Append(firstHeightMm.ToString("0.###", CultureInfo.InvariantCulture))
               .Append("mm;margin:0;}");
             sb.Append("}");
+        }
+        return sb.ToString();
+    }
+
+    /// <summary>Collects the report's document-map entries (label + anchor) across all pages, deduped
+    /// by anchor and in document order, as a list of <c>&lt;a href="#anchor"&gt;label&lt;/a&gt;</c>.</summary>
+    private static string BuildDocMap(RenderedReport report)
+    {
+        var sb = new StringBuilder();
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var page in report.Pages)
+        {
+            foreach (var prim in page.Primitives)
+            {
+                if (prim.DocMapLabel is null || prim.BookmarkId is null || !seen.Add(prim.BookmarkId))
+                {
+                    continue;
+                }
+                sb.Append("      <a href=\"#").Append(WebUtility.HtmlEncode(prim.BookmarkId)).Append("\">")
+                  .Append(WebUtility.HtmlEncode(prim.DocMapLabel)).Append("</a>\n");
+            }
         }
         return sb.ToString();
     }
