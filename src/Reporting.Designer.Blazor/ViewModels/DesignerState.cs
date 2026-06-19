@@ -258,6 +258,13 @@ public sealed class DesignerState : Notifying
         {
             Relations.Add(r);
         }
+
+        // Report parameters round-trip too — prompt, type, default, required and multi-value.
+        Parameters.Clear();
+        foreach (var p in definition.Parameters)
+        {
+            Parameters.Add(DesignerParameter.From(p));
+        }
     }
 
     /// <summary>Serializes the active tab to a .repx byte array — embeds the current data
@@ -272,7 +279,7 @@ public sealed class DesignerState : Notifying
 
     /// <summary>Builds the immutable <see cref="ReportDefinition"/> with the designer's
     /// current data sources and master-detail relations attached.</summary>
-    public ReportDefinition BuildDefinition() => Report.Build(DataSources, Relations);
+    public ReportDefinition BuildDefinition() => Report.Build(DataSources, Relations, Parameters);
 
     private void SubscribeTab(DocumentTab tab)
     {

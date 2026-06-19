@@ -53,9 +53,12 @@ public sealed class ReportDefinitionViewModel : Notifying
     /// <see cref="DataSourceDefinition"/>s in the report. When passed, <c>.repx</c> round-trip
     /// preserves connection / SQL / parameter metadata via <see cref="DesignerDataSource.ToDefinition"/>.</param>
     /// <param name="relations">Optional master-detail relationships between data sources.</param>
+    /// <param name="parameters">Optional report parameters to persist on the definition (prompt,
+    /// type, default, required, multi-value) so a <c>.repx</c> round-trips them.</param>
     public ReportDefinition Build(
         IEnumerable<DesignerDataSource>? dataSources = null,
-        IEnumerable<DesignerRelation>? relations = null)
+        IEnumerable<DesignerRelation>? relations = null,
+        IEnumerable<DesignerParameter>? parameters = null)
     {
         // Build the Detail band, then attach any SubDetail bands that appear in the strip
         // immediately AFTER it (and before the first GroupFooter / PageFooter). This mirrors
@@ -105,8 +108,14 @@ public sealed class ReportDefinitionViewModel : Notifying
         }
         var dsArray = new EquatableArray<DataSourceDefinition>(dsList);
 
+        var paramArray = parameters is null
+            ? EquatableArray<Reporting.Parameters.ReportParameter>.Empty
+            : new EquatableArray<Reporting.Parameters.ReportParameter>(
+                parameters.Select(p => p.ToReportParameter()).ToArray());
+
         return new ReportDefinition(Name, PageSetup, detail)
         {
+            Parameters = paramArray,
             ReportHeader = FindBand(DesignerBandKind.ReportHeader)?.BuildReportBand(BandKind.ReportHeader),
             PageHeader   = FindBand(DesignerBandKind.PageHeader)?.BuildReportBand(BandKind.PageHeader),
             Groups       = groups,

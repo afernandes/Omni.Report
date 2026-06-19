@@ -478,4 +478,81 @@ public sealed class DesignerParameter : Notifying
 
     private string? _defaultValue;
     public string? DefaultValue { get => _defaultValue; set => Set(ref _defaultValue, value); }
+
+    private string? _prompt;
+    /// <summary>RDL <c>&lt;Prompt&gt;</c>: label shown to the user when the report runs.</summary>
+    public string? Prompt { get => _prompt; set => Set(ref _prompt, value); }
+
+    private bool _required = true;
+    /// <summary>RDL <c>Nullable=false</c>: the report can't run until a value is supplied.</summary>
+    public bool Required { get => _required; set => Set(ref _required, value); }
+
+    private bool _allowMultiple;
+    /// <summary>RDL <c>&lt;MultiValue&gt;</c>: the parameter accepts a list of values.</summary>
+    public bool AllowMultiple { get => _allowMultiple; set => Set(ref _allowMultiple, value); }
+
+    /// <summary>CLR type the runtime coerces prompted input to (maps from <see cref="Type"/>).</summary>
+    public System.Type ClrType => Type switch
+    {
+        DesignerFieldType.Number => typeof(double),
+        DesignerFieldType.Money => typeof(decimal),
+        DesignerFieldType.Date => typeof(DateTime),
+        DesignerFieldType.Bool => typeof(bool),
+        _ => typeof(string),
+    };
+
+    /// <summary>Materializes the core <see cref="Reporting.Parameters.ReportParameter"/> so the
+    /// definition (and .repx) persists the full parameter — not just its name/type.</summary>
+    internal Reporting.Parameters.ReportParameter ToReportParameter()
+        => new(Name, ClrType,
+            Prompt: string.IsNullOrWhiteSpace(Prompt) ? null : Prompt,
+            DefaultValue: CoercedDefault(),
+            AllowMultiple: AllowMultiple,
+            Required: Required);
+
+    /// <summary>Coerces the editor's string <see cref="DefaultValue"/> into the parameter's CLR type
+    /// so the serializer (which round-trips <c>object</c> defaults) gets a typed value. An empty or
+    /// unparseable typed default becomes <c>null</c> — never a type-mismatched string that would
+    /// throw when serialized.</summary>
+    private object? CoercedDefault()
+    {
+        if (string.IsNullOrWhiteSpace(DefaultValue)) return null;
+        if (Type == DesignerFieldType.Text) return DefaultValue;
+        foreach (var ci in new[] { System.Globalization.CultureInfo.CurrentCulture, System.Globalization.CultureInfo.InvariantCulture })
+        {
+            try
+            {
+                return Type switch
+                {
+                    DesignerFieldType.Number => Convert.ToDouble(DefaultValue, ci),
+                    DesignerFieldType.Money => Convert.ToDecimal(DefaultValue, ci),
+                    DesignerFieldType.Date => DateTime.Parse(DefaultValue, ci),
+                    DesignerFieldType.Bool => bool.Parse(DefaultValue),
+                    _ => (object)DefaultValue,
+                };
+            }
+            catch (FormatException) { }
+            catch (OverflowException) { }
+        }
+        return null;
+    }
+
+    /// <summary>Rebuilds a designer parameter from a loaded core parameter (reverse of
+    /// <see cref="ToReportParameter"/>) so a .repx round-trips every field.</summary>
+    internal static DesignerParameter From(Reporting.Parameters.ReportParameter p)
+        => new(p.Name, ClassifyClr(p.ValueType), p.DefaultValue?.ToString())
+        {
+            Prompt = p.Prompt,
+            Required = p.Required,
+            AllowMultiple = p.AllowMultiple,
+        };
+
+    private static DesignerFieldType ClassifyClr(System.Type t)
+    {
+        if (t == typeof(bool)) return DesignerFieldType.Bool;
+        if (t == typeof(DateTime) || t == typeof(DateTimeOffset)) return DesignerFieldType.Date;
+        if (t == typeof(decimal)) return DesignerFieldType.Money;
+        if (t == typeof(double) || t == typeof(float) || t == typeof(int) || t == typeof(long)) return DesignerFieldType.Number;
+        return DesignerFieldType.Text;
+    }
 }

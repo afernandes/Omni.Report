@@ -9,23 +9,36 @@
     {
         @foreach (var p in Parameters)
         {
-            <div class="param-row" style="grid-template-columns:1fr 70px 90px 24px;gap:4px;align-items:center;padding:4px 6px;">
-                <input type="text" value="@p.Name"
-                       @onchange="@(e => p.Name = e.Value?.ToString() ?? p.Name)"
-                       style="font-family:var(--font-mono);font-size:11px;background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--r-1);padding:2px 4px;" />
-                <select @onchange="@(e => p.Type = ParseType(e.Value?.ToString()))"
-                        style="font-size:11px;background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--r-1);">
-                    @foreach (var t in Enum.GetValues<DesignerFieldType>())
-                    {
-                        <option value="@t" selected="@(p.Type == t)">@t</option>
-                    }
-                </select>
-                <input type="text" placeholder="default" value="@p.DefaultValue"
-                       @onchange="@(e => p.DefaultValue = e.Value?.ToString())"
-                       style="font-family:var(--font-mono);font-size:11px;background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--r-1);padding:2px 4px;" />
-                <button class="icon-btn" type="button" title="Remover"
-                        @onclick="@(() => OnRemove.InvokeAsync(p))"
-                        style="width:18px;height:18px;color:var(--danger);cursor:pointer;">×</button>
+            <div style="border:1px solid var(--border-soft);border-radius:var(--r-2);padding:5px 6px;margin-bottom:5px;">
+                <div style="display:grid;grid-template-columns:1fr 68px 80px 24px;gap:4px;align-items:center;">
+                    <input type="text" value="@p.Name"
+                           @onchange="@(e => p.Name = e.Value?.ToString() ?? p.Name)"
+                           style="font-family:var(--font-mono);font-size:11px;background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--r-1);padding:2px 4px;" />
+                    <select @onchange="@(e => p.Type = ParseType(e.Value?.ToString()))"
+                            style="font-size:11px;background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--r-1);">
+                        @foreach (var t in Enum.GetValues<DesignerFieldType>())
+                        {
+                            <option value="@t" selected="@(p.Type == t)">@t</option>
+                        }
+                    </select>
+                    <input type="text" placeholder="default" value="@p.DefaultValue"
+                           @onchange="@(e => p.DefaultValue = e.Value?.ToString())"
+                           style="font-family:var(--font-mono);font-size:11px;background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--r-1);padding:2px 4px;" />
+                    <button class="icon-btn" type="button" title="Remover"
+                            @onclick="@(() => OnRemove.InvokeAsync(p))"
+                            style="width:18px;height:18px;color:var(--danger);cursor:pointer;">×</button>
+                </div>
+                <div style="display:flex;gap:8px;align-items:center;margin-top:4px;">
+                    <input type="text" value="@p.Prompt" placeholder="Prompt (rótulo ao usuário)"
+                           @onchange="@(e => p.Prompt = e.Value?.ToString())"
+                           style="flex:1;font-size:11px;background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--r-1);padding:2px 4px;" />
+                    <label style="font-size:10.5px;color:var(--text-secondary);white-space:nowrap;">
+                        <input type="checkbox" checked="@p.Required"
+                               @onchange="@(e => p.Required = (bool)(e.Value ?? false))" /> Obrig.</label>
+                    <label style="font-size:10.5px;color:var(--text-secondary);white-space:nowrap;">
+                        <input type="checkbox" checked="@p.AllowMultiple"
+                               @onchange="@(e => p.AllowMultiple = (bool)(e.Value ?? false))" /> Multi</label>
+                </div>
             </div>
         }
     }
