@@ -72,10 +72,9 @@ public class PropertyGridDescriptorsTests
         foreColor.Bindable.Should().BeTrue();
         foreColor.Category.Should().Be("Aparência");
         foreColor.Label.Should().Be("Cor do texto");
-        // Style.Font flattens with its custom "font" editor; Border/Padding are unannotated complex
-        // records and don't flatten.
+        // Complex records flatten with their custom editors (font/border).
         descriptors.Should().ContainSingle(d => d.Name == "Look.Font").Which.Editor.Should().Be("font");
-        descriptors.Should().NotContain(d => d.Name == "Look.Border");
+        descriptors.Should().ContainSingle(d => d.Name == "Look.Border").Which.Editor.Should().Be("border");
     }
 
     [Fact]
@@ -100,6 +99,8 @@ public class PropertyGridDescriptorsTests
         text.Should().ContainSingle(d => d.Name == "Style.Font").Which.Editor.Should().Be("font");
         text.Should().Contain(d => d.Name == "Style.ForeColor" && d.Editor == "color-picker");
         text.Should().Contain(d => d.Name == "Style.HorizontalAlignment" && d.Editor == "h-align");
+        text.Should().Contain(d => d.Name == "Style.Border" && d.Editor == "border");
+        text.Should().Contain(d => d.Name == "Style.Padding" && d.Editor == "padding");
 
         // A shape is NOT [TextStyled] → its Style appearance is NOT flattened (font/alignment would be noise).
         PropertyGridDescriptors.For(typeof(RectangleElement)).Should().NotContain(d => d.Name == "Style.Font");
