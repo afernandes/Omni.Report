@@ -132,25 +132,83 @@ public sealed class JsonDataSource : IReportDataSource
 
     // ── Path navigation ─────────────────────────────────────────────────────────
 
-    /// <summary>Navigates a dot-separated path inside the root element. Empty / null
-    /// path returns the root unchanged. Each segment must be an object property name;
-    /// arrays in the middle of the path aren't supported (a future enhancement could
-    /// add bracket notation <c>data.items[0].rows</c>).</summary>
+    /// <summary>Navigates a path inside the root element. Empty / null path returns the
+    /// root unchanged. Supports dot-separated object properties and bracket array indices,
+    /// freely mixed — e.g. <c>data.results</c>, <c>data.items[0].rows</c>, <c>[1].cells[2]</c>.
+    /// A property segment names an object key; <c>[n]</c> indexes into an array (0-based).</summary>
     private static JsonElement LocateArray(JsonElement root, string? path)
     {
         if (string.IsNullOrWhiteSpace(path)) return root;
         var current = root;
-        foreach (var part in path.Split('.', StringSplitOptions.RemoveEmptyEntries))
+        foreach (var token in TokenizePath(path))
         {
-            if (current.ValueKind != JsonValueKind.Object
-                || !current.TryGetProperty(part, out var next))
+            if (token.IsIndex)
             {
-                throw new InvalidOperationException(
-                    $"JsonDataSource: path segment '{part}' not found in document.");
+                if (current.ValueKind != JsonValueKind.Array)
+                {
+                    throw new InvalidOperationException(
+                        $"JsonDataSource: index [{token.Index}] applied to a {current.ValueKind}, not an Array (path '{path}').");
+                }
+                if (token.Index < 0 || token.Index >= current.GetArrayLength())
+                {
+                    throw new InvalidOperationException(
+                        $"JsonDataSource: index [{token.Index}] is out of range (array length {current.GetArrayLength()}, path '{path}').");
+                }
+                current = current[token.Index];
             }
-            current = next;
+            else
+            {
+                if (current.ValueKind != JsonValueKind.Object
+                    || !current.TryGetProperty(token.Name, out var next))
+                {
+                    throw new InvalidOperationException(
+                        $"JsonDataSource: path segment '{token.Name}' not found in document (path '{path}').");
+                }
+                current = next;
+            }
         }
         return current;
+    }
+
+    /// <summary>Splits a path like <c>data.items[0].rows</c> into ordered tokens — property
+    /// names and array indices. A single dot-part may carry trailing indexers
+    /// (<c>cells[1][2]</c>) and a part may be index-only (<c>[0]</c>).</summary>
+    private static IEnumerable<PathToken> TokenizePath(string path)
+    {
+        foreach (var part in path.Split('.', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var bracket = part.IndexOf('[');
+            // Leading property name, if any (everything before the first '[').
+            if (bracket != 0)
+            {
+                yield return PathToken.Property(bracket < 0 ? part : part[..bracket]);
+            }
+            // Trailing [n] groups.
+            var rest = bracket < 0 ? string.Empty : part[bracket..];
+            while (rest.Length > 0)
+            {
+                var close = rest.IndexOf(']');
+                if (rest[0] != '[' || close < 0)
+                {
+                    throw new InvalidOperationException(
+                        $"JsonDataSource: malformed index in path segment '{part}'.");
+                }
+                var inner = rest[1..close];
+                if (!int.TryParse(inner, NumberStyles.Integer, CultureInfo.InvariantCulture, out var idx))
+                {
+                    throw new InvalidOperationException(
+                        $"JsonDataSource: non-numeric array index '[{inner}]' in path segment '{part}'.");
+                }
+                yield return PathToken.AtIndex(idx);
+                rest = rest[(close + 1)..];
+            }
+        }
+    }
+
+    private readonly record struct PathToken(string Name, int Index, bool IsIndex)
+    {
+        public static PathToken Property(string name) => new(name, 0, false);
+        public static PathToken AtIndex(int index) => new(string.Empty, index, true);
     }
 
     // ── Per-row conversion ──────────────────────────────────────────────────────

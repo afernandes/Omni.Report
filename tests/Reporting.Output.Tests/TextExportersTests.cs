@@ -114,6 +114,13 @@ public class TextExportersTests
         svg.Should().Contain("<path");
     }
 
+    [Fact]
+    public async Task Svg_has_explicit_viewbox()
+    {
+        var svg = await ExportToStringAsync(new SvgExporter(), BuildGridReport());
+        svg.Should().Contain("viewBox=", "an explicit viewBox lets CSS scale the SVG without distortion");
+    }
+
     // ── HTML ─────────────────────────────────────────────────────────────────────
 
     [Fact]
@@ -151,6 +158,18 @@ public class TextExportersTests
         using var noBom = new MemoryStream();
         new CsvExporter(new CsvExportOptions { IncludeBom = false }).Export(rendered, noBom);
         noBom.ToArray()[0].Should().NotBe(0xEF);
+    }
+
+    [Fact]
+    public async Task Csv_honours_custom_delimiter()
+    {
+        // With ';' as the delimiter, a comma is no longer special — "Ana, Beatriz" stays unquoted.
+        var csv = await ExportToStringAsync(
+            new CsvExporter(new CsvExportOptions { IncludeBom = false, Delimiter = ';' }), BuildGridReport());
+
+        csv.Should().Contain(";", "the configured delimiter must separate fields");
+        csv.Should().Contain("Ana, Beatriz", "a comma is not the delimiter → the field is not quoted");
+        csv.Should().NotContain("\"Ana, Beatriz\"");
     }
 
     // ── JSON ─────────────────────────────────────────────────────────────────────

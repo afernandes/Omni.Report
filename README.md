@@ -347,7 +347,8 @@ projetos de teste) e cobertura ≥ 80% no núcleo.
 | Map | **mapa vetorial**: projeção Web Mercator + graticule + shapes GeoJSON (basemap offline) + marcadores projetados · pacote opt-in `Reporting.Maps` com shapes embutidos · fluente `.Map().ShapeSet()/.Shapes()/.Graticule()` (tiles online: futuro) | ✅ |
 | Code (C#/Roslyn) | avaliação `Code.X(...)` via pacote **opt-in** `Reporting.Expressions.Roslyn` (executa C# — só fontes confiáveis) | ✅ |
 
-Veja [CHANGELOG.md](CHANGELOG.md) para o histórico e [docs/](docs/) para guias por área.
+Veja [CHANGELOG.md](CHANGELOG.md) para o histórico, [docs/](docs/) para guias por área e a
+matriz completa de **render × round-trip** em [`docs/rdl-coverage.md`](docs/rdl-coverage.md).
 
 ### Roadmap (ainda não implementado)
 
@@ -361,6 +362,7 @@ Veja [CHANGELOG.md](CHANGELOG.md) para o histórico e [docs/](docs/) para guias 
 
 ## Documentação
 
+- [`docs/rdl-coverage.md`](docs/rdl-coverage.md) — matriz de cobertura: o que renderiza × o que só faz round-trip
 - [`docs/expressions.md`](docs/expressions.md) — NCalc estendido, templates `{expr:fmt}`, agregados, scopes
 - [`docs/data-sources.md`](docs/data-sources.md) — IEnumerable&lt;T&gt;, DataTable, scaffold para SQL/JSON
 - [`docs/low-level-canvas.md`](docs/low-level-canvas.md) — desenho direto via `IRenderingContext` (sem bandas) e retarget de backend
