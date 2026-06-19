@@ -116,6 +116,22 @@ internal static class RepJsonReader
                (string?)o["expression"] ?? "",
                Enum.Parse<VariableScope>((string?)o["scope"] ?? nameof(VariableScope.Row)));
 
+    // ── Shared sort / calculated-field helpers (mirror RepJsonWriter) ────────────
+
+    private static EquatableArray<SortDescriptor> ReadSorts(JsonObject o)
+        => new(ReadArray(o, "sortExpressions", n =>
+        {
+            var so = n.AsObject();
+            return new SortDescriptor(
+                (string?)so["expression"] ?? "",
+                Enum.Parse<SortDirection>((string?)so["direction"] ?? nameof(SortDirection.Ascending)));
+        }));
+
+    private static CalculatedField ReadCalculatedField(JsonObject o)
+        => new((string?)o["name"] ?? "",
+               (string?)o["expression"] ?? "",
+               (string?)o["type"] is { } t ? Formats.ParseType(t) : null);
+
     private static DataSourceDefinition ReadDataSource(JsonObject o)
     {
         var fields = ReadArray(o, "fields", n =>
@@ -149,7 +165,11 @@ internal static class RepJsonReader
             (string?)o["dataMember"],
             new EquatableArray<DataField>(fields),
             new EquatableArray<DataRelation>(relations),
-            new EquatableDictionary<string, string>(parameters));
+            new EquatableDictionary<string, string>(parameters),
+            CalculatedFields: new EquatableArray<CalculatedField>(
+                ReadArray(o, "calculatedFields", n => ReadCalculatedField(n.AsObject()))),
+            FilterExpression: (string?)o["filterExpression"],
+            SortExpressions: ReadSorts(o));
     }
 
     // ── Bands ───────────────────────────────────────────────────────────────────
@@ -161,7 +181,8 @@ internal static class RepJsonReader
                Visible: (bool?)o["visible"] ?? true,
                VisibleExpression: (string?)o["visibleExpression"],
                PrintOnFirstPage: (bool?)o["printOnFirstPage"] ?? true,
-               PrintOnLastPage: (bool?)o["printOnLastPage"] ?? true);
+               PrintOnLastPage: (bool?)o["printOnLastPage"] ?? true,
+               PageBreak: Enum.Parse<PageBreak>((string?)o["pageBreak"] ?? nameof(PageBreak.None)));
 
     private static DetailBand ReadDetailBand(JsonObject o)
         => new(Formats.ParseUnit((string?)o["height"]),
@@ -169,7 +190,27 @@ internal static class RepJsonReader
                Visible: (bool?)o["visible"] ?? true,
                VisibleExpression: (string?)o["visibleExpression"],
                CanGrow: (bool?)o["canGrow"] ?? false,
-               CanShrink: (bool?)o["canShrink"] ?? false);
+               CanShrink: (bool?)o["canShrink"] ?? false,
+               SubDetails: new EquatableArray<SubDetailBand>(
+                   ReadArray(o, "subDetails", n => ReadSubDetail(n.AsObject()))),
+               NoRowsMessage: (string?)o["noRowsMessage"],
+               FilterExpression: (string?)o["filterExpression"],
+               SortExpressions: ReadSorts(o),
+               PageBreak: Enum.Parse<PageBreak>((string?)o["pageBreak"] ?? nameof(PageBreak.None)));
+
+    private static SubDetailBand ReadSubDetail(JsonObject o)
+        => new(Name: (string?)o["name"] ?? "",
+               DataMember: (string?)o["dataMember"] ?? "",
+               Height: Formats.ParseUnit((string?)o["height"]),
+               Elements: ReadElements(o["elements"]),
+               Header: o["header"] is JsonObject h ? ReadReportBand(h, BandKind.GroupHeader) : null,
+               Footer: o["footer"] is JsonObject f ? ReadReportBand(f, BandKind.GroupFooter) : null,
+               Visible: (bool?)o["visible"] ?? true,
+               VisibleExpression: (string?)o["visibleExpression"],
+               PrintIfEmpty: (bool?)o["printIfEmpty"] ?? false,
+               NoRowsMessage: (string?)o["noRowsMessage"],
+               FilterExpression: (string?)o["filterExpression"],
+               SortExpressions: ReadSorts(o));
 
     private static GroupBand ReadGroup(JsonObject o)
         => new((string?)o["name"] ?? "",
@@ -181,7 +222,12 @@ internal static class RepJsonReader
                NewPageAfter: (bool?)o["newPageAfter"] ?? false,
                RepeatHeaderOnNewPage: (bool?)o["repeatHeaderOnNewPage"] ?? false,
                Visible: (bool?)o["visible"] ?? true,
-               VisibleExpression: (string?)o["visibleExpression"]);
+               VisibleExpression: (string?)o["visibleExpression"],
+               PageBreak: Enum.Parse<PageBreak>((string?)o["pageBreak"] ?? nameof(PageBreak.None)),
+               FilterExpression: (string?)o["filterExpression"],
+               SortExpressions: ReadSorts(o),
+               Variables: new EquatableArray<ReportVariable>(
+                   ReadArray(o, "variables", n => ReadVariable(n.AsObject()))));
 
     private static EquatableArray<ReportElement> ReadElements(JsonNode? node)
     {
