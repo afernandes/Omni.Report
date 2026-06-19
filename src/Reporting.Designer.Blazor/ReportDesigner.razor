@@ -138,12 +138,12 @@
                      OnClosed="() => _printDialogOpen = false" />
 
         <ExpressionEditorDialog Visible="_expressionEditorOpen"
-                                InitialExpression="@(State.SelectedElement?.Expression ?? string.Empty)"
+                                InitialExpression="@CurrentEditedExpression()"
                                 DataSources="State.DataSources"
                                 Parameters="State.Parameters"
                                 Theme="@State.Theme"
                                 OnApplied="OnExpressionApplied"
-                                OnClosed="() => _expressionEditorOpen = false" />
+                                OnClosed="@(() => { _expressionEditorOpen = false; _bindingPath = null; })" />
 
         <ContextMenu Visible="_ctxVisible"
                      X="_ctxX" Y="_ctxY"
@@ -694,16 +694,39 @@
         StateHasChanged();
     }
 
-    private void OpenExpressionEditor() => _expressionEditorOpen = true;
+    // When set, the expression editor edits a per-property binding (PropertyExpressions[path]) instead of
+    // the element's primary Text/Expression — this is what the metadata grid's "fx" buttons target.
+    private string? _bindingPath;
+
+    private void OpenExpressionEditor(string? bindingPath = null)
+    {
+        _bindingPath = bindingPath;
+        _expressionEditorOpen = true;
+    }
+
+    private string CurrentEditedExpression()
+    {
+        if (State.SelectedElement is not { } el)
+        {
+            return string.Empty;
+        }
+        return _bindingPath is not null
+            ? el.GetPropertyExpression(_bindingPath) ?? string.Empty
+            : el.Expression;
+    }
+
     private void OnExpressionApplied(string expression)
     {
-        if (State.SelectedElement is not null)
+        if (State.SelectedElement is { } el)
         {
-            if (State.SelectedElement.Kind == DesignerElementKind.Label)
-                State.SelectedElement.Text = expression;
+            if (_bindingPath is not null)
+                el.SetPropertyExpression(_bindingPath, expression);
+            else if (el.Kind == DesignerElementKind.Label)
+                el.Text = expression;
             else
-                State.SelectedElement.Expression = expression;
+                el.Expression = expression;
         }
+        _bindingPath = null;
         _expressionEditorOpen = false;
     }
 

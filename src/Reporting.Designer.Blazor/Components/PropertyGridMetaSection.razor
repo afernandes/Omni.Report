@@ -23,16 +23,16 @@
         {
             var path = d.Path;
             var expr = Element.GetPropertyExpression(path);
-            var bound = expr is not null || _fxOpen.Contains(path);
+            var bound = expr is not null;
             var current = Element.GetMetaValue(d);
             <div class="prop-row @(bound ? "is-bound" : null)">
                 <div class="p-label">@d.Label</div>
                 <div class="p-editor">
                     @if (bound)
                     {
-                        <input type="text" value="@expr" placeholder="= expressão"
-                               @onchange="@(e => Element.SetPropertyExpression(path, e.Value?.ToString()))"
-                               style="flex:1;font-family:var(--font-mono);font-size:11.5px;color:var(--data-bound);" />
+                        <span class="mono" title="@expr (clique para editar)"
+                              @onclick="@(() => OnEditExpression.InvokeAsync(path))"
+                              style="flex:1;font-size:11px;color:var(--data-bound);cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">@expr</span>
                     }
                     else
                     {
@@ -159,9 +159,15 @@
                     @if (d.Bindable)
                     {
                         <button class="icon-btn" type="button"
-                                title="@(bound ? "Usar valor fixo" : "Vincular a expressão (fx)")"
-                                @onclick="@(() => ToggleFx(path, bound))"
+                                title="@(bound ? "Editar expressão (fx)" : "Vincular a expressão (fx)")"
+                                @onclick="@(() => OnEditExpression.InvokeAsync(path))"
                                 style="width:18px;height:18px;border-radius:3px;font-family:var(--font-mono);font-size:9.5px;font-weight:600;cursor:pointer;color:@(bound ? "var(--bg-canvas)" : "var(--data-bound)");background:@(bound ? "var(--data-bound)" : "var(--data-bound-soft)");">fx</button>
+                        @if (bound)
+                        {
+                            <button class="icon-btn" type="button" title="Remover expressão (voltar ao valor fixo)"
+                                    @onclick="@(() => Element.SetPropertyExpression(path, null))"
+                                    style="width:18px;height:18px;color:var(--text-tertiary);">×</button>
+                        }
                     }
                 </div>
             </div>
@@ -172,38 +178,15 @@
 @code {
     [Parameter, EditorRequired] public ElementViewModel Element { get; set; } = default!;
 
-    /// <summary>Paths whose fx editor is open but not yet committed (the binding dict only holds
-    /// non-empty expressions, so an empty fx editor is tracked here).</summary>
-    private readonly HashSet<string> _fxOpen = new(StringComparer.Ordinal);
+    /// <summary>Raised when the user clicks "fx" on a bindable property — the argument is the property
+    /// path. The host opens the rich expression editor (Monaco) seeded with the current binding and
+    /// writes the result back to <c>PropertyExpressions[path]</c>.</summary>
+    [Parameter] public EventCallback<string> OnEditExpression { get; set; }
 
     private IReadOnlyList<PropertyGridDescriptor> _descriptors = Array.Empty<PropertyGridDescriptor>();
 
-    private string? _loadedElementId;
-
     protected override void OnParametersSet()
-    {
-        // Drop fx-open markers ONLY when a different element is selected — not on same-element edits
-        // (which also re-fire OnParametersSet), or an open expression editor would close mid-typing.
-        if (Element.Id != _loadedElementId)
-        {
-            _fxOpen.Clear();
-            _loadedElementId = Element.Id;
-        }
-        _descriptors = PropertyGridDescriptors.For(Element.ToElement().GetType());
-    }
-
-    private void ToggleFx(string path, bool bound)
-    {
-        if (bound)
-        {
-            _fxOpen.Remove(path);
-            Element.SetPropertyExpression(path, null); // revert to the static value
-        }
-        else
-        {
-            _fxOpen.Add(path);
-        }
-    }
+        => _descriptors = PropertyGridDescriptors.For(Element.ToElement().GetType());
 
     private static Type EnumType(PropertyGridDescriptor d) => Nullable.GetUnderlyingType(d.Type) ?? d.Type;
 

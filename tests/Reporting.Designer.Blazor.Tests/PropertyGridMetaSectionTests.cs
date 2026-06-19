@@ -1,5 +1,6 @@
 using Bunit;
 using FluentAssertions;
+using Microsoft.AspNetCore.Components;
 using Reporting.Designer.Blazor.Components;
 using Reporting.Designer.Blazor.ViewModels;
 using Xunit;
@@ -38,29 +39,28 @@ public class PropertyGridMetaSectionTests : Bunit.BunitContext
     }
 
     [Fact]
-    public void Fx_toggle_reveals_the_expression_editor()
+    public void Fx_button_requests_the_rich_expression_editor_for_the_property_path()
     {
-        var cut = Render<PropertyGridMetaSection>(p =>
-            p.Add(x => x.Element, new ElementViewModel(DesignerElementKind.Rectangle, "r1")));
+        string? requestedPath = null;
+        var cut = Render<PropertyGridMetaSection>(p => p
+            .Add(x => x.Element, new ElementViewModel(DesignerElementKind.Rectangle, "r1"))
+            .Add(x => x.OnEditExpression, EventCallback.Factory.Create<string>(this, path => requestedPath = path)));
 
         cut.FindAll("button").First(b => b.TextContent.Trim() == "fx").Click();
 
-        cut.Markup.Should().Contain("= expressão", "the fx toggle swaps the static editor for an expression input");
+        requestedPath.Should().Be("FillColor", "fx asks the host to open the Monaco editor for that property's binding");
     }
 
     [Fact]
-    public void Fx_open_state_does_not_leak_when_the_selected_element_changes()
+    public void A_bound_property_previews_its_expression_with_a_clear_button()
     {
-        var cut = Render<PropertyGridMetaSection>(p =>
-            p.Add(x => x.Element, new ElementViewModel(DesignerElementKind.Rectangle, "a")));
-        cut.FindAll("button").First(b => b.TextContent.Trim() == "fx").Click(); // open fx for a property of A
-        cut.Markup.Should().Contain("= expressão");
+        var vm = new ElementViewModel(DesignerElementKind.Rectangle, "r1");
+        vm.SetPropertyExpression("FillColor", "Fields.Cor");
 
-        // Select a DIFFERENT element of the same kind (same property paths) — the open-fx marker must not carry over.
-        cut.Render(p =>
-            p.Add(x => x.Element, new ElementViewModel(DesignerElementKind.Rectangle, "b")));
+        var cut = Render<PropertyGridMetaSection>(p => p.Add(x => x.Element, vm));
 
-        cut.Markup.Should().NotContain("= expressão", "the fx-open marker belongs to the previous element, not the new one");
+        cut.Markup.Should().Contain("Fields.Cor", "a bound property previews its expression instead of the static editor");
+        cut.FindAll("button").Should().Contain(b => b.TextContent.Trim() == "×", "and offers a clear button to drop the binding");
     }
 
     [Fact]
