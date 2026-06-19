@@ -42,6 +42,21 @@ public class AdvancedElementsRoundTripTests
     }
 
     [Fact]
+    public void TextBox_autosize_flags_round_trip()
+    {
+        // Regression: the .repx writer dropped CanGrow/CanShrink (the reader already read them), so
+        // a growable TextBox authored in the designer lost its autosize on save.
+        var tb = new TextBoxElement
+        {
+            Expression = "Fields.Nome",
+            Bounds = new Rectangle(Unit.Zero, Unit.Zero, Unit.FromMm(60), Unit.FromMm(6)),
+            CanGrow = true,
+            CanShrink = true,
+        };
+        AssertRoundTrip(Wrap(tb));
+    }
+
+    [Fact]
     public void Tablix_with_groups_and_cells_round_trips()
     {
         var tablix = new TablixElement

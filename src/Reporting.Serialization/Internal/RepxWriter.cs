@@ -394,6 +394,13 @@ internal static class RepxWriter
         {
             el.SetAttributeValue("VisibleExpression", element.VisibleExpression);
         }
+        // TextBox autosize — read back as attributes (see RepxReader.ReadTextBoxElement); emitted
+        // only when set so the common element shape stays cheap.
+        if (element is TextBoxElement tbAuto)
+        {
+            if (tbAuto.CanGrow) el.SetAttributeValue("CanGrow", true);
+            if (tbAuto.CanShrink) el.SetAttributeValue("CanShrink", true);
+        }
         // RDL-style extensions on the abstract base — emitted as attrs when set so the
         // common shape stays cheap for elements that don't use them.
         if (element.Bookmark is not null)
