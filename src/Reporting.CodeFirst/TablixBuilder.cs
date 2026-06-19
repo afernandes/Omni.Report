@@ -32,8 +32,44 @@ public sealed class TablixBuilder
         return this;
     }
 
+    private string? _rowGroup;
+    private string? _columnGroup;
+    private string? _corner;
+    private string? _cellExpression;
+
+    /// <summary>Turns the Tablix into a matrix/crosstab: groups data rows by this expression down
+    /// the left axis. Pair with <see cref="ColumnGroup"/> and <see cref="Cell"/>.</summary>
+    public TablixBuilder RowGroup(string expression) { _rowGroup = expression; return this; }
+
+    /// <summary>Groups data rows by this expression across the top axis of a matrix.</summary>
+    public TablixBuilder ColumnGroup(string expression) { _columnGroup = expression; return this; }
+
+    /// <summary>Top-left corner label of a matrix (optional).</summary>
+    public TablixBuilder Corner(string label) { _corner = label; return this; }
+
+    /// <summary>The matrix body value expression — SUMmed over each (row × column) intersection.</summary>
+    public TablixBuilder Cell(string valueExpression) { _cellExpression = valueExpression; return this; }
+
     internal TablixElement Build()
     {
+        // Matrix mode: a row group + a column group + a body value form a crosstab. The renderer
+        // reads RowGroups[0]/ColumnGroups[0] and the (1,1) body cell template.
+        if (_rowGroup is not null && _columnGroup is not null)
+        {
+            return new TablixElement
+            {
+                Bounds = Rectangle.Empty,
+                DataSetName = _dataSet,
+                RowGroups = new EquatableArray<TablixGroup>([new TablixGroup("Rows", _rowGroup)]),
+                ColumnGroups = new EquatableArray<TablixGroup>([new TablixGroup("Cols", _columnGroup)]),
+                Cells = new EquatableArray<TablixCell>(
+                [
+                    new TablixCell(0, 0, new LabelElement { Text = _corner ?? string.Empty, Bounds = Rectangle.Empty }),
+                    new TablixCell(1, 1, new TextBoxElement { Expression = _cellExpression ?? "0", Bounds = Rectangle.Empty }),
+                ]),
+            };
+        }
+
         var cells = new List<TablixCell>(_columns.Count * 2);
         for (int c = 0; c < _columns.Count; c++)
         {
