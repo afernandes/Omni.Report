@@ -119,6 +119,21 @@ public class PropertyGridDescriptorsTests
     }
 
     [Fact]
+    public void Descriptors_work_on_non_report_element_list_items()
+    {
+        // The descriptor machinery is generalized to any record, so a list item (GaugeRange, not a
+        // ReportElement) can be discovered and edited immutably — this is what powers the list editor.
+        var fields = PropertyGridDescriptors.For(typeof(GaugeRange));
+        fields.Should().ContainSingle(d => d.Name == "ColorHex").Which.Editor.Should().Be("color-hex");
+
+        var color = fields.Single(d => d.Name == "ColorHex");
+        var range = new GaugeRange("0", "50", "#16A34A");
+        var updated = (GaugeRange)color.Set(range, "#FF0000");
+        updated.ColorHex.Should().Be("#FF0000");
+        range.ColorHex.Should().Be("#16A34A", "the original list item is untouched");
+    }
+
+    [Fact]
     public void Nested_property_flattens_into_dotted_path_descriptors()
     {
         var descriptors = PropertyGridDescriptors.For(typeof(StyledFixture));

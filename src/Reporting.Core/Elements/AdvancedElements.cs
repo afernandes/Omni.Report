@@ -152,18 +152,26 @@ public sealed record MapElement : ReportElement
 /// </summary>
 public sealed record GaugeElement : ReportElement
 {
+    [PropertyGrid(Category = "Medidor", Order = 1, Label = "Tipo")]
     public GaugeKind Kind { get; init; } = GaugeKind.Radial;
+    [PropertyGrid(Category = "Medidor", Order = 3, Label = "Mínimo")]
     public string MinimumExpression { get; init; } = "0";
+    [PropertyGrid(Category = "Medidor", Order = 4, Label = "Máximo")]
     public string MaximumExpression { get; init; } = "100";
+    [PropertyGrid(Category = "Medidor", Order = 2, Label = "Valor", Placeholder = "Fields.Velocidade")]
     public string ValueExpression { get; init; } = "0";
     /// <summary>Optional banded ranges (red/yellow/green zones). Each entry is
     /// (start expr, end expr, color hex).</summary>
+    [PropertyGrid(Category = "Medidor", Order = 5, Label = "Faixas", Editor = "list")]
     public EquatableArray<GaugeRange> Ranges { get; init; } = EquatableArray<GaugeRange>.Empty;
 }
 
 public enum GaugeKind { Radial, Linear }
 
-public sealed record GaugeRange(string StartExpression, string EndExpression, string ColorHex);
+public sealed record GaugeRange(
+    [property: PropertyGrid(Order = 1, Label = "Início")] string StartExpression,
+    [property: PropertyGrid(Order = 2, Label = "Fim")] string EndExpression,
+    [property: PropertyGrid(Order = 3, Label = "Cor", Editor = "color-hex")] string ColorHex);
 
 // ─────────────────────────────────────────────────────────────────────────────────
 

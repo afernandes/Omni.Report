@@ -1,0 +1,127 @@
+@using System.Collections
+@using System.Globalization
+@using Reporting.Designer.Blazor.Services
+@using Reporting.Designer.Blazor.ViewModels
+
+@*
+    Generic editor for an EquatableArray<T> property. Each item T is itself rendered from its
+    [PropertyGrid]-annotated fields (recursive metadata) — so a new element with a list of annotated
+    records gets add/remove + per-field editing for free, with no hand-coded list UI.
+*@
+
+@{
+    var items = GetItems();
+    var fields = ItemFields;
+}
+<div style="display:flex;flex-direction:column;gap:3px;width:100%;">
+    @for (var i = 0; i < items.Count; i++)
+    {
+        var index = i;
+        var item = items[index];
+        <div style="display:flex;align-items:center;gap:3px;">
+            @foreach (var f in fields)
+            {
+                var field = f;
+                var val = field.Get(item);
+                switch (field.Editor)
+                {
+                    case "color-hex":
+                        var hex = val as string ?? "#000000";
+                        <input type="color" value="@hex" title="@field.Label"
+                               @onchange="@(e => EditField(index, field, e.Value?.ToString() ?? hex))"
+                               style="width:28px;height:18px;padding:0;cursor:pointer;flex:0 0 auto;" />
+                        break;
+
+                    case "enum":
+                        <select title="@field.Label" style="flex:1;font-size:11px;"
+                                @onchange="@(e => EditField(index, field, Enum.Parse(EnumType(field), e.Value?.ToString() ?? string.Empty, ignoreCase: true)))">
+                            @foreach (var v in Enum.GetValues(EnumType(field)))
+                            {
+                                <option value="@v" selected="@(Equals(val, v))">@v</option>
+                            }
+                        </select>
+                        break;
+
+                    case "number":
+                        <input type="number" step="0.1" title="@field.Label"
+                               value="@Convert.ToString(val, CultureInfo.InvariantCulture)"
+                               @onchange="@(e => EditField(index, field, e.Value?.ToString()))"
+                               style="width:54px;font-size:11px;" />
+                        break;
+
+                    default:
+                        <input type="text" placeholder="@field.Label" title="@field.Label"
+                               value="@Convert.ToString(val)"
+                               @onchange="@(e => EditField(index, field, e.Value?.ToString()))"
+                               style="flex:1;font-family:var(--font-mono);font-size:11px;" />
+                        break;
+                }
+            }
+            <button class="icon-btn" type="button" title="Remover" @onclick="@(() => RemoveItem(index))"
+                    style="width:18px;height:18px;color:var(--text-tertiary);flex:0 0 auto;">×</button>
+        </div>
+    }
+    <button class="icon-btn" type="button" @onclick="AddItem"
+            style="align-self:flex-start;font-size:10.5px;padding:2px 8px;">+ Adicionar</button>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public ElementViewModel Element { get; set; } = default!;
+    [Parameter, EditorRequired] public PropertyGridDescriptor Descriptor { get; set; } = default!;
+
+    private Type ItemType => Descriptor.Type.GetGenericArguments()[0];
+    private IReadOnlyList<PropertyGridDescriptor> ItemFields => PropertyGridDescriptors.For(ItemType);
+
+    private List<object> GetItems()
+        => (Descriptor.Get(Element.ToElement()) as IEnumerable)?.Cast<object>().ToList() ?? new();
+
+    private static Type EnumType(PropertyGridDescriptor d) => Nullable.GetUnderlyingType(d.Type) ?? d.Type;
+
+    private void EditField(int index, PropertyGridDescriptor field, object? value)
+    {
+        var items = GetItems();
+        if (index < 0 || index >= items.Count) return;
+        items[index] = field.Set(items[index], value);
+        Commit(items);
+    }
+
+    private void RemoveItem(int index)
+    {
+        var items = GetItems();
+        if (index < 0 || index >= items.Count) return;
+        items.RemoveAt(index);
+        Commit(items);
+    }
+
+    private void AddItem()
+    {
+        var items = GetItems();
+        items.Add(CreateDefaultItem(ItemType));
+        Commit(items);
+    }
+
+    /// <summary>Rebuilds the immutable EquatableArray&lt;T&gt; from the working list and pushes it back
+    /// through the metadata setter (which re-hydrates the element, opaque-advanced included).</summary>
+    private void Commit(List<object> items)
+    {
+        var typed = (IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(ItemType))!;
+        foreach (var it in items)
+        {
+            typed.Add(it);
+        }
+        var newArray = Activator.CreateInstance(Descriptor.Type, typed)!;
+        Element.ApplyMetaSet(Descriptor, newArray);
+    }
+
+    /// <summary>Creates a fresh list item by invoking its primary constructor with defaulted args
+    /// (empty string / default struct / null) — the user then fills the fields in.</summary>
+    private static object CreateDefaultItem(Type itemType)
+    {
+        var ctor = itemType.GetConstructors().OrderByDescending(c => c.GetParameters().Length).First();
+        var args = ctor.GetParameters().Select(p =>
+            p.ParameterType == typeof(string) ? string.Empty
+            : p.ParameterType.IsValueType ? Activator.CreateInstance(p.ParameterType)
+            : null).ToArray();
+        return ctor.Invoke(args);
+    }
+}
