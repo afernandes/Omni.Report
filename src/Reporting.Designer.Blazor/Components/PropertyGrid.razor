@@ -338,7 +338,7 @@ else
          Replaces the hand-coded Line/Shape sections: each [PropertyGrid]-annotated property
          renders its type's editor automatically (inherited props included), with an fx toggle
          to bind it to an expression. A new derived element gets all of this for free. *@
-    <PropertyGridMetaSection Element="Element" />
+    <PropertyGridMetaSection Element="Element" OnEditExpression="@(path => OnOpenExpressionEditor.InvokeAsync(path))" />
 
     @* ── Barcode editor (symbology / ECC / text strip) ───────────────────────── *@
     @if (Element.Kind is DesignerElementKind.Barcode or DesignerElementKind.QrCode)
@@ -835,9 +835,12 @@ else
 @code {
     [Parameter] public ElementViewModel? Element { get; set; }
     [Parameter] public string BandLabel { get; set; } = "Detail";
-    [Parameter] public EventCallback OnOpenExpressionEditor { get; set; }
+    /// <summary>Asks the host to open the rich expression editor. A null argument edits the element's
+    /// primary Text/Expression (legacy "Data" fx); a non-null property path edits that property's
+    /// expression binding (the metadata grid's per-property "fx").</summary>
+    [Parameter] public EventCallback<string?> OnOpenExpressionEditor { get; set; }
 
-    private Task OpenExpressionEditor() => OnOpenExpressionEditor.InvokeAsync();
+    private Task OpenExpressionEditor() => OnOpenExpressionEditor.InvokeAsync(null);
 
     private ElementViewModel? _subscribed;
 

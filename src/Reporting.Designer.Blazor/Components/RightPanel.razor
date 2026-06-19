@@ -43,7 +43,7 @@
     [Parameter] public IReadOnlyList<ElementViewModel> Selection { get; set; } = Array.Empty<ElementViewModel>();
     [Parameter] public string BandLabel { get; set; } = "Detail";
     [Parameter] public EventCallback<ElementViewModel?> OnSelect { get; set; }
-    [Parameter] public EventCallback OnOpenExpressionEditor { get; set; }
+    [Parameter] public EventCallback<string?> OnOpenExpressionEditor { get; set; }
     [Parameter] public BandViewModel? ActiveBand { get; set; }
     [Parameter] public EventCallback<BandViewModel> OnBandActivated { get; set; }
     [Parameter] public IReadOnlyList<DesignerDataSource> DataSources { get; set; } = Array.Empty<DesignerDataSource>();
