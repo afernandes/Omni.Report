@@ -83,6 +83,36 @@ public class ChartCodeFirstTests
         wedges.Should().OnlyContain(w => w.Points.Count > 3, "wedges approximate an arc with many vertices");
     }
 
+    [Fact]
+    public async Task Area_chart_fills_below_the_line()
+    {
+        var prims = await RenderChartAsync(ChartKind.Area);
+        // An area series = a translucent closed fill polygon + the stroked open polyline on top.
+        prims.OfType<DrawPolygonPrimitive>().Should().Contain(p => p.Closed && p.Fill != null,
+            "the area below the line is filled");
+        prims.OfType<DrawPolygonPrimitive>().Should().Contain(p => !p.Closed, "the line is stroked on top");
+    }
+
+    [Fact]
+    public async Task Scatter_chart_emits_one_marker_per_point()
+    {
+        var prims = await RenderChartAsync(ChartKind.Scatter);
+        // 3 categories × 1 series = 3 ellipse markers.
+        prims.OfType<DrawEllipsePrimitive>().Count().Should().Be(3);
+        // No data bars (the only rectangle, if any, is the legend swatch).
+        prims.OfType<DrawRectanglePrimitive>().Count().Should().BeLessThan(2);
+    }
+
+    [Fact]
+    public async Task Radar_chart_emits_a_closed_web_and_axis_labels()
+    {
+        var prims = await RenderChartAsync(ChartKind.Radar);
+        // The series web is a closed, filled polygon (grid rings are closed but unfilled).
+        prims.OfType<DrawPolygonPrimitive>().Should().Contain(p => p.Closed && p.Fill != null,
+            "the series is drawn as a closed web");
+        prims.OfType<DrawTextPrimitive>().Select(t => t.Text).Should().Contain("Jan", "category axis label");
+    }
+
     private static async Task<List<LayoutPrimitive>> RenderChartAsync(ChartKind kind)
     {
         var report = ReportBuilder.Create("c")

@@ -8,6 +8,12 @@ public enum ChartKind
     Bar,
     Line,
     Pie,
+    /// <summary>Line chart with the area below each series filled (translucent).</summary>
+    Area,
+    /// <summary>Point/marker plot — an ellipse per (category, value), no connecting line.</summary>
+    Scatter,
+    /// <summary>Polar plot — categories on radial axes, value as radius; each series a closed web.</summary>
+    Radar,
 }
 
 public sealed record ChartSeries(
