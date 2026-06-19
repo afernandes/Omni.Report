@@ -494,6 +494,27 @@ else
         </div>
     }
 
+    @* ── Subreport editor ────────────────────────────────────────────────────── *@
+    @if (Element.Kind == DesignerElementKind.Subreport)
+    {
+        <div class="prop-section">
+            <div class="prop-section-head"><Icon Name="chevron-down" Size="12" CssClass="chev icon icon-12" /><span>Sub-relatório</span></div>
+            <div class="prop-row"><div class="p-label">Report ID</div><div class="p-editor">
+                <input type="text" value="@Element.SubreportReportId" placeholder="nome no registro de reports"
+                       @onchange="@(e => Element.SubreportReportId = e.Value?.ToString() ?? string.Empty)"
+                       style="flex:1;font-size:11.5px;" /></div></div>
+            <div class="prop-row"><div class="p-label">Dados</div><div class="p-editor">
+                <input type="text" value="@Element.SubreportDataExpression" placeholder="Fields.Itens (expressão no pai)"
+                       @onchange="@(e => Element.SubreportDataExpression = e.Value?.ToString() ?? string.Empty)"
+                       style="flex:1;font-family:var(--font-mono);font-size:11.5px;" /></div></div>
+            <div class="prop-row" style="flex-direction:column;align-items:stretch;gap:4px;">
+                <div class="p-label">Parâmetros (nome=expressão)</div>
+                <textarea value="@Element.SubreportParametersText" placeholder="dataInicio=Parameters.De&#10;clienteId=Fields.id"
+                          @onchange="@(e => Element.SubreportParametersText = e.Value?.ToString() ?? string.Empty)"
+                          rows="4" style="width:100%;font-family:var(--font-mono);font-size:11px;resize:vertical;"></textarea></div>
+        </div>
+    }
+
     @* ── Gauge editor ────────────────────────────────────────────────────────── *@
     @if (Element.Kind == DesignerElementKind.Gauge)
     {

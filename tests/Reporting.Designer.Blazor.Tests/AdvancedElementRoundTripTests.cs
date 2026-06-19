@@ -180,4 +180,51 @@ public class AdvancedElementRoundTripTests
         back.Language.Should().Be(CodeLanguage.VisualBasic);
         back.Source.Should().Contain("Dobro");
     }
+
+    [Fact]
+    public void Subreport_is_editable_on_a_freshly_added_element()
+    {
+        var vm = new ElementViewModel(DesignerElementKind.Subreport, "s1")
+        {
+            Width = Unit.FromMm(120),
+            Height = Unit.FromMm(60),
+        };
+
+        vm.SubreportReportId = "DetalhePedido";
+        vm.SubreportDataExpression = "Fields.Itens";
+        vm.SubreportParametersText = "pedidoId=Fields.id\ncliente=Parameters.Cliente";
+
+        var sub = vm.ToElement().Should().BeOfType<SubreportElement>().Subject;
+        sub.ReportId.Should().Be("DetalhePedido");
+        sub.DataExpression.Should().Be("Fields.Itens");
+        sub.ParameterBindings.Should().HaveCount(2);
+        sub.ParameterBindings["pedidoId"].Should().Be("Fields.id");
+        sub.ParameterBindings["cliente"].Should().Be("Parameters.Cliente");
+    }
+
+    [Fact]
+    public void Subreport_round_trips_and_surfaces_parameter_bindings_as_text()
+    {
+        var sub = new SubreportElement
+        {
+            Id = "s2",
+            Bounds = new Rectangle(Unit.Zero, Unit.Zero, Unit.FromMm(120), Unit.FromMm(60)),
+            ReportId = "Detalhe",
+            DataExpression = "Fields.Linhas",
+            ParameterBindings = new EquatableDictionary<string, string>(
+                new Dictionary<string, string> { ["a"] = "Fields.x" }),
+        };
+
+        var vm = ElementViewModel.FromElement(sub);
+        vm.Kind.Should().Be(DesignerElementKind.Subreport);
+        vm.SubreportReportId.Should().Be("Detalhe");
+        vm.SubreportParametersText.Should().Contain("a=Fields.x");
+
+        // Edit the bindings as text in the designer; they re-materialise into the dictionary.
+        vm.SubreportParametersText = "a=Fields.y\nb=Fields.z";
+        var back = (SubreportElement)vm.ToElement();
+        back.ParameterBindings.Should().HaveCount(2);
+        back.ParameterBindings["a"].Should().Be("Fields.y");
+        back.ParameterBindings["b"].Should().Be("Fields.z");
+    }
 }
