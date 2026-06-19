@@ -360,51 +360,6 @@ else
         </div>
     }
 
-    @* ── Map editor ──────────────────────────────────────────────────────────── *@
-    @if (Element.Kind == DesignerElementKind.Map)
-    {
-        <div class="prop-section">
-            <div class="prop-section-head"><Icon Name="chevron-down" Size="12" CssClass="chev icon icon-12" /><span>Mapa</span></div>
-            <div class="prop-row"><div class="p-label">Latitude</div><div class="p-editor">
-                <input type="text" value="@Element.MapLatitude" placeholder="Fields.lat"
-                       @onchange="@(e => Element.MapLatitude = e.Value?.ToString() ?? string.Empty)"
-                       style="flex:1;font-family:var(--font-mono);font-size:11.5px;" /></div></div>
-            <div class="prop-row"><div class="p-label">Longitude</div><div class="p-editor">
-                <input type="text" value="@Element.MapLongitude" placeholder="Fields.lon"
-                       @onchange="@(e => Element.MapLongitude = e.Value?.ToString() ?? string.Empty)"
-                       style="flex:1;font-family:var(--font-mono);font-size:11.5px;" /></div></div>
-            <div class="prop-row"><div class="p-label">Fonte</div><div class="p-editor">
-                <input type="text" value="@Element.MapDataSet" placeholder="(fonte primária)"
-                       @onchange="@(e => Element.MapDataSet = e.Value?.ToString() ?? string.Empty)"
-                       style="flex:1;font-size:11.5px;" /></div></div>
-            <div class="prop-row"><div class="p-label">Conjunto de shapes</div><div class="p-editor">
-                <input type="text" value="@Element.MapShapeSet" placeholder="brazil, south-america"
-                       @onchange="@(e => Element.MapShapeSet = e.Value?.ToString() ?? string.Empty)"
-                       style="flex:1;font-size:11.5px;" /></div></div>
-            <div class="prop-row"><div class="p-label">GeoJSON inline</div><div class="p-editor">
-                <textarea value="@Element.MapShapesGeoJson" placeholder="{ &quot;type&quot;: &quot;FeatureCollection&quot;, … }"
-                          @onchange="@(e => Element.MapShapesGeoJson = e.Value?.ToString() ?? string.Empty)"
-                          rows="3" style="flex:1;font-family:var(--font-mono);font-size:11px;resize:vertical;"></textarea></div></div>
-            <div class="prop-row"><div class="p-label">Graticule</div><div class="p-editor">
-                <label style="font-size:11px;"><input type="checkbox" checked="@Element.MapGraticule"
-                       @onchange="@(e => Element.MapGraticule = (bool)(e.Value ?? false))" /> Mostrar grade lat/long</label></div></div>
-            <div class="prop-row"><div class="p-label">Preenchimento</div><div class="p-editor">
-                <input type="color" value="@Element.MapShapeFill"
-                       @onchange="@(e => Element.MapShapeFill = e.Value?.ToString() ?? "#E8EDE4")"
-                       style="width:38px;height:22px;padding:0;border:1px solid var(--omni-line);background:none;" />
-                <span style="font-family:var(--font-mono);font-size:11px;margin-left:6px;">@Element.MapShapeFill</span></div></div>
-            <div class="prop-row"><div class="p-label">Traço</div><div class="p-editor">
-                <input type="color" value="@Element.MapShapeStroke"
-                       @onchange="@(e => Element.MapShapeStroke = e.Value?.ToString() ?? "#9CA3AF")"
-                       style="width:38px;height:22px;padding:0;border:1px solid var(--omni-line);background:none;" />
-                <span style="font-family:var(--font-mono);font-size:11px;margin-left:6px;">@Element.MapShapeStroke</span></div></div>
-            <div class="prop-row"><div class="p-label">Basemap (tiles)</div><div class="p-editor">
-                <input type="text" value="@Element.MapBasemap" placeholder="OpenStreetMap / (nenhum)"
-                       @onchange="@(e => Element.MapBasemap = e.Value?.ToString() ?? string.Empty)"
-                       style="flex:1;font-size:11.5px;" /></div></div>
-        </div>
-    }
-
     @* ── Code editor ─────────────────────────────────────────────────────────── *@
     @if (Element.Kind == DesignerElementKind.Code)
     {

@@ -98,6 +98,16 @@ public class PropertyGridDescriptorsTests
     }
 
     [Fact]
+    public void Map_properties_flatten_with_their_inferred_and_explicit_editors()
+    {
+        var map = PropertyGridDescriptors.For(typeof(MapElement));
+        map.Should().Contain(d => d.Name == "Basemap" && d.Editor == "text");
+        map.Should().Contain(d => d.Name == "ShowGraticule" && d.Editor == "toggle");
+        map.Should().Contain(d => d.Name == "ShapesGeoJson" && d.Editor == "textarea");
+        map.Should().Contain(d => d.Name == "ShapeFill" && d.Editor == "color-hex");
+    }
+
+    [Fact]
     public void Nested_property_flattens_into_dotted_path_descriptors()
     {
         var descriptors = PropertyGridDescriptors.For(typeof(StyledFixture));
