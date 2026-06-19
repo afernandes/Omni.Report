@@ -31,7 +31,7 @@ Legenda:
 | DataBar | ✅ | ✅ | barra proporcional |
 | Sparkline | ✅ | ✅ | line / column / area |
 | Indicator | ✅ | ✅ | seta direcional / forma / rating por faixa |
-| Tablix | 🟡 | ✅ | tabela plana **e matrix/pivô** (1 grupo linha × 1 grupo coluna; célula = soma da interseção) renderizam; code-first `.Tablix(t => t.RowGroup().ColumnGroup().Cell())`. Grupos **aninhados** (multi-nível) e editor de matrix no Designer pendentes |
+| Tablix | 🟡 | ✅ | tabela plana **e matrix/pivô** (1 grupo linha × 1 grupo coluna; célula = soma da interseção) renderizam; **construível e editável no Designer** (toggle Crosstab) + code-first `.Tablix(t => t.RowGroup().ColumnGroup().Cell())`. Grupos **aninhados** (multi-nível) pendentes |
 | Map | 🟡 | ✅ | **vetorial** renderiza (Web Mercator + graticule + shapes GeoJSON + marcadores). **Basemap por tiles online (OSM/Bing) pendente** |
 | Subreport | ✅ | ✅ | renderiza o filho (inline ou via resolver de id) na largura do subreport, com bindings de parâmetro avaliados no contexto pai; code-first `.Subreport()`/`.SubreportInline()` + editor no Designer |
 | Code (bloco C#) | — | ✅ | não é "render": **avalia** via pacote opt-in `Reporting.Expressions.Roslyn` (`Code.Metodo(...)`). ⚠ executa C#: use só com fontes confiáveis |

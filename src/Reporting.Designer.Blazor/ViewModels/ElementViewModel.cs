@@ -427,6 +427,97 @@ public sealed class ElementViewModel : Notifying
     // Tablix (columns derived from Cells: row 0 = header label, row 1 = detail expression)
     public string TablixDataSet { get => Src<TablixElement>()?.DataSetName ?? string.Empty; set => Mutate<TablixElement>(e => e with { DataSetName = string.IsNullOrWhiteSpace(value) ? null : value }); }
 
+    // ── Tablix matrix / crosstab ─────────────────────────────────────────────────
+    /// <summary>True when the Tablix is a matrix (has both a row group and a column group). The
+    /// PropertyGrid swaps the flat-column editor for the matrix fields below.</summary>
+    public bool TablixIsMatrix => Src<TablixElement>() is { RowGroups.Count: > 0, ColumnGroups.Count: > 0 };
+
+    /// <summary>Row-group expression (left axis of the matrix). Maps to <c>RowGroups[0]</c>.</summary>
+    public string TablixRowGroup
+    {
+        get { var t = Src<TablixElement>(); return t is { RowGroups.Count: > 0 } ? t.RowGroups[0].GroupExpression ?? string.Empty : string.Empty; }
+        set => Mutate<TablixElement>(e => e with { RowGroups = SingleGroup("Rows", value) });
+    }
+
+    /// <summary>Column-group expression (top axis of the matrix). Maps to <c>ColumnGroups[0]</c>.</summary>
+    public string TablixColumnGroup
+    {
+        get { var t = Src<TablixElement>(); return t is { ColumnGroups.Count: > 0 } ? t.ColumnGroups[0].GroupExpression ?? string.Empty : string.Empty; }
+        set => Mutate<TablixElement>(e => e with { ColumnGroups = SingleGroup("Cols", value) });
+    }
+
+    /// <summary>Top-left corner label of the matrix (cell 0,0).</summary>
+    public string TablixCorner
+    {
+        get => (TablixCellAt(0, 0) as LabelElement)?.Text ?? string.Empty;
+        set => Mutate<TablixElement>(e => e with { Cells = SetTablixCell(e.Cells, 0, 0, new LabelElement { Text = value, Bounds = Rectangle.Empty }) });
+    }
+
+    /// <summary>Body value expression — SUMmed per intersection (cell 1,1).</summary>
+    public string TablixCellExpr
+    {
+        get => (TablixCellAt(1, 1) as TextBoxElement)?.Expression ?? string.Empty;
+        set => Mutate<TablixElement>(e => e with { Cells = SetTablixCell(e.Cells, 1, 1, new TextBoxElement { Expression = value, Bounds = Rectangle.Empty }) });
+    }
+
+    /// <summary>Turns matrix mode on/off. Enabling seeds default groups + corner/body cells so the
+    /// fields are editable immediately; disabling clears the groups (and falls back to one flat
+    /// column so the table still renders something).</summary>
+    public void SetTablixMatrix(bool on)
+    {
+        if (on)
+        {
+            Mutate<TablixElement>(e => e with
+            {
+                RowGroups = e.RowGroups.Count > 0 ? e.RowGroups : SingleGroup("Rows", "Fields.Linha"),
+                ColumnGroups = e.ColumnGroups.Count > 0 ? e.ColumnGroups : SingleGroup("Cols", "Fields.Coluna"),
+                Cells = SeedMatrixCells(e.Cells),
+            });
+        }
+        else
+        {
+            Mutate<TablixElement>(e => e with
+            {
+                RowGroups = Reporting.Common.EquatableArray<TablixGroup>.Empty,
+                ColumnGroups = Reporting.Common.EquatableArray<TablixGroup>.Empty,
+            });
+            if (TablixColumns.Count == 0)
+            {
+                AddTablixColumn();
+            }
+        }
+    }
+
+    private static Reporting.Common.EquatableArray<TablixGroup> SingleGroup(string name, string expr)
+        => string.IsNullOrWhiteSpace(expr)
+            ? Reporting.Common.EquatableArray<TablixGroup>.Empty
+            : new Reporting.Common.EquatableArray<TablixGroup>([new TablixGroup(name, expr)]);
+
+    private ReportElement? TablixCellAt(int row, int col)
+        => Src<TablixElement>()?.Cells.FirstOrDefault(c => c.RowIndex == row && c.ColumnIndex == col)?.Content;
+
+    private static Reporting.Common.EquatableArray<TablixCell> SetTablixCell(
+        Reporting.Common.EquatableArray<TablixCell> cells, int row, int col, ReportElement content)
+    {
+        var list = cells.Where(c => !(c.RowIndex == row && c.ColumnIndex == col)).ToList();
+        list.Add(new TablixCell(row, col, content));
+        return new Reporting.Common.EquatableArray<TablixCell>(list);
+    }
+
+    private static Reporting.Common.EquatableArray<TablixCell> SeedMatrixCells(Reporting.Common.EquatableArray<TablixCell> existing)
+    {
+        var list = existing.ToList();
+        if (!list.Any(c => c.RowIndex == 0 && c.ColumnIndex == 0))
+        {
+            list.Add(new TablixCell(0, 0, new LabelElement { Text = string.Empty, Bounds = Rectangle.Empty }));
+        }
+        if (!list.Any(c => c.RowIndex == 1 && c.ColumnIndex == 1 && c.Content is TextBoxElement))
+        {
+            list.Add(new TablixCell(1, 1, new TextBoxElement { Expression = "Fields.Valor", Bounds = Rectangle.Empty }));
+        }
+        return new Reporting.Common.EquatableArray<TablixCell>(list);
+    }
+
     public IReadOnlyList<TablixColumnView> TablixColumns
     {
         get

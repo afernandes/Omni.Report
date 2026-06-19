@@ -227,4 +227,37 @@ public class AdvancedElementRoundTripTests
         back.ParameterBindings["a"].Should().Be("Fields.y");
         back.ParameterBindings["b"].Should().Be("Fields.z");
     }
+
+    [Fact]
+    public void Tablix_matrix_is_buildable_and_editable_in_the_designer()
+    {
+        // Build a crosstab from scratch in the designer (no source element), then edit every field.
+        var vm = new ElementViewModel(DesignerElementKind.Tablix, "t1")
+        {
+            Width = Unit.FromMm(150),
+            Height = Unit.FromMm(40),
+        };
+        vm.TablixIsMatrix.Should().BeFalse("a fresh Tablix starts as a flat table");
+
+        vm.SetTablixMatrix(true);
+        vm.TablixIsMatrix.Should().BeTrue();
+        vm.TablixRowGroup = "Fields.Regiao";
+        vm.TablixColumnGroup = "Fields.Mes";
+        vm.TablixCorner = "Região";
+        vm.TablixCellExpr = "Fields.Total";
+
+        var t = vm.ToElement().Should().BeOfType<TablixElement>().Subject;
+        t.RowGroups.Should().ContainSingle().Which.GroupExpression.Should().Be("Fields.Regiao");
+        t.ColumnGroups.Should().ContainSingle().Which.GroupExpression.Should().Be("Fields.Mes");
+        t.Cells.Should().Contain(c => c.RowIndex == 0 && c.ColumnIndex == 0);
+        t.Cells.Should().Contain(c => c.RowIndex == 1 && c.ColumnIndex == 1);
+
+        // Reloading the element surfaces matrix mode + the fields for further editing.
+        var reloaded = ElementViewModel.FromElement(t);
+        reloaded.TablixIsMatrix.Should().BeTrue();
+        reloaded.TablixRowGroup.Should().Be("Fields.Regiao");
+        reloaded.TablixColumnGroup.Should().Be("Fields.Mes");
+        reloaded.TablixCorner.Should().Be("Região");
+        reloaded.TablixCellExpr.Should().Be("Fields.Total");
+    }
 }
