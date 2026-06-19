@@ -2,6 +2,7 @@ using FluentAssertions;
 using Reporting.Designer.Blazor.Services;
 using Reporting.Elements;
 using Reporting.Geometry;
+using Reporting.Metadata;
 using Reporting.Styling;
 using Xunit;
 
@@ -51,5 +52,42 @@ public class PropertyGridDescriptorsTests
         PropertyGridDescriptors.InferEditor(typeof(Unit)).Should().Be("unit-spinner");
         PropertyGridDescriptors.InferEditor(typeof(double)).Should().Be("number");
         PropertyGridDescriptors.InferEditor(typeof(string)).Should().Be("text");
+    }
+
+    // A nested-record property (like the shared Style) flattened into the element grid.
+    private sealed record StyledFixture : ReportElement
+    {
+        [PropertyGrid(Nested = true)]
+        public Style Look { get; init; } = Style.Default;
+    }
+
+    [Fact]
+    public void Nested_property_flattens_into_dotted_path_descriptors()
+    {
+        var descriptors = PropertyGridDescriptors.For(typeof(StyledFixture));
+
+        var foreColor = descriptors.Should().ContainSingle(d => d.Name == "Look.ForeColor").Subject;
+        foreColor.Editor.Should().Be("color-picker", "Style.ForeColor's Color? type infers the colour editor");
+        foreColor.Path.Should().Be("Look.ForeColor");
+        foreColor.Bindable.Should().BeTrue();
+        foreColor.Category.Should().Be("Aparência");
+        foreColor.Label.Should().Be("Cor do texto");
+        // Font/Border/Padding are NOT annotated, so they don't flatten.
+        descriptors.Should().NotContain(d => d.Name == "Look.Font");
+    }
+
+    [Fact]
+    public void Nested_setter_rebuilds_the_record_chain_immutably()
+    {
+        var el = new StyledFixture { Look = Style.Default with { ForeColor = Color.Black } };
+        var foreColor = PropertyGridDescriptors.For(typeof(StyledFixture)).Single(d => d.Name == "Look.ForeColor");
+
+        var updated = (StyledFixture)foreColor.Set(el, Color.FromHex("#FF0000"));
+
+        updated.Look.ForeColor.Should().Be(Color.FromHex("#FF0000"));
+        el.Look.ForeColor.Should().Be(Color.Black, "the original element AND its nested Style must be untouched");
+        updated.Should().NotBeSameAs(el);
+        updated.Look.Should().NotBeSameAs(el.Look, "the nested record is cloned, not mutated in place");
+        ((Color?)foreColor.Get(updated)).Should().Be(Color.FromHex("#FF0000"));
     }
 }

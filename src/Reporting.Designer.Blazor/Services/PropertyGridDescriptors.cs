@@ -53,29 +53,43 @@ public static class PropertyGridDescriptors
     private static IReadOnlyList<PropertyGridDescriptor> Build(Type type)
     {
         var list = new List<PropertyGridDescriptor>();
-        // GetProperties on the concrete type already returns BASE + DERIVED properties — this is what
-        // makes inheritance automatic: a derived element shows its base's [PropertyGrid] editors.
-        foreach (var prop in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+        Collect(type, chain: [], prefix: null, list);
+        return list.OrderBy(d => d.Order).ThenBy(d => d.Label, StringComparer.Ordinal).ToList();
+    }
+
+    /// <summary>Recursively collects descriptors. <c>GetProperties</c> on a concrete type already returns
+    /// BASE + DERIVED properties — that's what makes inheritance automatic. A <c>[PropertyGrid(Nested)]</c>
+    /// property (e.g. the shared <c>Style</c>) is FLATTENED: its own annotated properties become rows with
+    /// a dotted path (<c>"Style.ForeColor"</c>), so a single grid edits the nested record immutably.</summary>
+    private static void Collect(Type ownerType, IReadOnlyList<PropertyInfo> chain, string? prefix, List<PropertyGridDescriptor> list)
+    {
+        foreach (var prop in ownerType.GetProperties(BindingFlags.Public | BindingFlags.Instance))
         {
             var attr = prop.GetCustomAttribute<PropertyGridAttribute>();
-            if (attr is null || attr.Nested)
+            if (attr is null)
             {
-                continue; // [Nested] flattening of e.g. Style is a later phase
+                continue;
+            }
+            var path = prefix is null ? prop.Name : $"{prefix}.{prop.Name}";
+            var nextChain = new List<PropertyInfo>(chain) { prop };
+            if (attr.Nested)
+            {
+                Collect(prop.PropertyType, nextChain, path, list); // flatten the nested record's [PropertyGrid] props
+                continue;
             }
             list.Add(new PropertyGridDescriptor(
-                Name: prop.Name,
+                Name: path,
                 Label: attr.Label ?? prop.Name,
                 Placeholder: attr.Placeholder,
                 Type: prop.PropertyType,
                 Editor: attr.Editor ?? InferEditor(prop.PropertyType),
                 Category: attr.Category ?? "Geral",
                 Order: attr.Order,
-                Get: prop.GetValue,
-                Set: BuildSetter(type, prop),
+                Get: BuildGetter(nextChain),
+                Set: BuildSetter(nextChain),
                 Bindable: attr.Bindable,
-                PropertyPath: prop.Name));
+                PropertyPath: path));
         }
-        return list.OrderBy(d => d.Order).ThenBy(d => d.Label, StringComparer.Ordinal).ToList();
     }
 
     /// <summary>Maps a property's CLR type to a default editor id. An explicit
@@ -98,20 +112,52 @@ public static class PropertyGridDescriptors
         return "text";
     }
 
-    /// <summary>Builds an immutable setter using the record's synthesized <c>&lt;Clone&gt;$</c> method:
-    /// clones the element (so the original is untouched, preserving value semantics) and sets the
-    /// init-only property on the copy. Equivalent to <c>element with { Prop = value }</c>, generically.
-    /// (Setting an <c>init</c>-only property via reflection is allowed — <c>init</c> is a compile-time
-    /// constraint, not a runtime one — and here it targets a fresh copy, never the original.)</summary>
-    private static Func<ReportElement, object?, ReportElement> BuildSetter(Type type, PropertyInfo prop)
-    {
-        var clone = type.GetMethod("<Clone>$", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
-                    ?? throw new InvalidOperationException($"{type} is not a record (no <Clone>$ method).");
-        return (element, value) =>
+    /// <summary>Reads the value at the end of a property <paramref name="chain"/> (e.g.
+    /// <c>element → Style → ForeColor</c>), returning null if any record on the way is null.</summary>
+    private static Func<ReportElement, object?> BuildGetter(IReadOnlyList<PropertyInfo> chain)
+        => element =>
         {
-            var copy = (ReportElement)clone.Invoke(element, null)!;
-            prop.SetValue(copy, value);
-            return copy;
+            object? current = element;
+            foreach (var prop in chain)
+            {
+                if (current is null)
+                {
+                    return null;
+                }
+                current = prop.GetValue(current);
+            }
+            return current;
         };
+
+    /// <summary>Builds an immutable setter over a property <paramref name="chain"/> using each record's
+    /// synthesized <c>&lt;Clone&gt;$</c>: it rebuilds the chain bottom-up (clone the leaf's owner, set the
+    /// property; clone its owner, point it at the new child; …) so the original element — and every record
+    /// on the path — is untouched. Equivalent to <c>element with { Style = element.Style with { ForeColor
+    /// = value } }</c>, generically. (Setting an <c>init</c>-only property via reflection is allowed —
+    /// <c>init</c> is a compile-time constraint — and here it targets a fresh copy, never the original.)</summary>
+    private static Func<ReportElement, object?, ReportElement> BuildSetter(IReadOnlyList<PropertyInfo> chain)
+        => (element, value) => (ReportElement)SetChain(element, chain, 0, value)!;
+
+    private static object? SetChain(object obj, IReadOnlyList<PropertyInfo> chain, int index, object? leaf)
+    {
+        var copy = CloneMethod(obj.GetType()).Invoke(obj, null)!;
+        if (index == chain.Count - 1)
+        {
+            chain[index].SetValue(copy, leaf);
+            return copy;
+        }
+        var child = chain[index].GetValue(obj);
+        if (child is null)
+        {
+            return obj; // can't navigate into a null nested record — leave the element unchanged
+        }
+        chain[index].SetValue(copy, SetChain(child, chain, index + 1, leaf));
+        return copy;
     }
+
+    private static readonly ConcurrentDictionary<Type, MethodInfo> CloneCache = new();
+
+    private static MethodInfo CloneMethod(Type type) => CloneCache.GetOrAdd(type, t =>
+        t.GetMethod("<Clone>$", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+        ?? throw new InvalidOperationException($"{t} is not a record (no <Clone>$ method)."));
 }
