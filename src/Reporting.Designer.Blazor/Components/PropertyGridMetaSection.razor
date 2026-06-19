@@ -25,12 +25,19 @@
             var expr = Element.GetPropertyExpression(path);
             var bound = expr is not null;
             var current = Element.GetMetaValue(d);
-            if (d.Editor == "list")
+            if (d.Editor is "list" or "dict")
             {
-                // A list spans the full width (label on top, items below) — a label|editor grid is too tight.
+                // A list/dict spans the full width (label on top, items below) — a label|editor grid is too tight.
                 <div class="prop-row" style="display:flex;flex-direction:column;align-items:stretch;gap:4px;padding:6px 10px;">
                     <div class="p-label" style="border:0;padding:0;">@d.Label</div>
-                    <PropertyGridListEditor Element="Element" Descriptor="d" />
+                    @if (d.Editor == "list")
+                    {
+                        <PropertyGridListEditor Element="Element" Descriptor="d" />
+                    }
+                    else
+                    {
+                        <PropertyGridDictEditor Element="Element" Descriptor="d" />
+                    }
                 </div>
                 continue;
             }
