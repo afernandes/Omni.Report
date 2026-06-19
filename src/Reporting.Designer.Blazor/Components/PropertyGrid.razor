@@ -623,6 +623,30 @@ else
                 <input type="text" value="@Element.TablixDataSet" placeholder="(fonte primária)"
                        @onchange="@(e => Element.TablixDataSet = e.Value?.ToString() ?? string.Empty)"
                        style="flex:1;font-size:11.5px;" /></div></div>
+            <div class="prop-row"><div class="p-label">Matrix</div><div class="p-editor">
+                <label style="font-size:11px;"><input type="checkbox" checked="@Element.TablixIsMatrix"
+                       @onchange="@(e => Element.SetTablixMatrix((bool)(e.Value ?? false)))" /> Crosstab (grupos linha × coluna)</label></div></div>
+            @if (Element.TablixIsMatrix)
+            {
+                <div class="prop-row"><div class="p-label">Grupo linha</div><div class="p-editor">
+                    <input type="text" value="@Element.TablixRowGroup" placeholder="Fields.Regiao"
+                           @onchange="@(e => Element.TablixRowGroup = e.Value?.ToString() ?? string.Empty)"
+                           style="flex:1;font-family:var(--font-mono);font-size:11.5px;" /></div></div>
+                <div class="prop-row"><div class="p-label">Grupo coluna</div><div class="p-editor">
+                    <input type="text" value="@Element.TablixColumnGroup" placeholder="Fields.Mes"
+                           @onchange="@(e => Element.TablixColumnGroup = e.Value?.ToString() ?? string.Empty)"
+                           style="flex:1;font-family:var(--font-mono);font-size:11.5px;" /></div></div>
+                <div class="prop-row"><div class="p-label">Canto</div><div class="p-editor">
+                    <input type="text" value="@Element.TablixCorner" placeholder="(rótulo do canto)"
+                           @onchange="@(e => Element.TablixCorner = e.Value?.ToString() ?? string.Empty)"
+                           style="flex:1;font-size:11.5px;" /></div></div>
+                <div class="prop-row"><div class="p-label">Célula (Σ)</div><div class="p-editor">
+                    <input type="text" value="@Element.TablixCellExpr" placeholder="Fields.Total"
+                           @onchange="@(e => Element.TablixCellExpr = e.Value?.ToString() ?? string.Empty)"
+                           style="flex:1;font-family:var(--font-mono);font-size:11.5px;" /></div></div>
+            }
+            else
+            {
             <div style="padding:6px 10px;">
                 @foreach (var (col, i) in Element.TablixColumns.Select((c, i) => (c, i)).ToArray())
                 {
@@ -654,6 +678,7 @@ else
                 <button class="btn" type="button" style="font-size:11px;padding:3px 8px;cursor:pointer;border:1px dashed var(--border);background:transparent;color:var(--text-secondary);width:100%;"
                         @onclick="@(() => Element.AddTablixColumn())">+ Adicionar coluna</button>
             </div>
+            }
         </div>
     }
 
