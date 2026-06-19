@@ -85,6 +85,29 @@ Todo elemento que renderiza deve ser **autorável das três formas** — é um i
 2. **Low-level** — canvas sem bandas (primitivos + elementos posicionados manualmente).
 3. **Designer** — toolbox + canvas + PropertyGrid no `Reporting.Designer.Blazor`.
 
+### Autorabilidade no Designer (construir e editar do zero)
+
+Invariante mais forte: **todo parâmetro que um elemento renderiza deve ser editável ao construir do
+zero** — não basta round-trippar quando se carrega um `.repx` já configurado. Uma auditoria
+adversarial encontrou 16 lacunas "round-trip sem editor"; **12 foram fechadas** (com testes que
+constroem o valor do zero → `ToElement` emite → `FromElement` recupera):
+
+- Line: orientação (horizontal/vertical/diagonal) · Image: caminho/URL, expressão (data-bound) e
+  sizing · Barcode: simbologia, texto e ECC (QR) · Sparkline: categoria · TextBox: autosize
+  (`CanGrow`/`CanShrink`) e visibilidade condicional (`VisibleExpression`) · Chart: cor por série ·
+  Indicator: ícone por estado · Rectangle: cantos arredondados · **Parâmetros do relatório**
+  (prompt/obrigatório/multi — antes nem eram salvos) · Visibilidade de banda (estática + expressão).
+
+As **4 restantes são features**, não simples editores faltando — ficam como follow-ups:
+
+1. **Tablix — sort por grupo**: o editor de grupos é multi-linha (uma expressão por linha); capturar
+   `SortExpression`/direção por nível pede um editor estruturado por grupo.
+2. **Subreport — `InlineDefinition`**: editar um sub-relatório **embutido** exige um editor de
+   relatório aninhado (hoje o Designer referencia por `ReportId`; o inline round-trippa no `.repx`).
+3. **TextBox — `TextRuns` (rich text)**: edição de texto rico com runs/estilos por trecho é um
+   editor à parte (hoje o Designer edita a `Expression` única).
+4. **GroupBand no band strip**: edição completa de grupos direto na faixa de bandas.
+
 > Estado atual: **16 dos 19 itens 100% reais nas 3 superfícies**; os 3 restantes estão na seção
 > [Limites conhecidos](#limites-conhecidos-decisão-de-escopo) acima, com a razão arquitetural de cada
 > um. Mantenha esta matriz sincronizada ao mexer em qualquer um deles. Veja o `CHANGELOG.md` para o
