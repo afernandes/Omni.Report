@@ -12,6 +12,15 @@ public abstract record LayoutPrimitive
 
     /// <summary>Original element id (for traceability / hit-testing).</summary>
     public string? SourceElementId { get; init; }
+
+    /// <summary>Navigation target propagated from the source element's <c>Action</c>: a resolved
+    /// hyperlink URL, <c>"#bm-&lt;id&gt;"</c> for a bookmark link, or a drillthrough query. Exporters
+    /// that support interactivity (HTML) wrap this primitive in a clickable link. Null = no action.</summary>
+    public string? LinkTarget { get; init; }
+
+    /// <summary>Anchor id this primitive defines, from the source element's <c>Bookmark</c>
+    /// (prefixed <c>"bm-"</c>), so bookmark links can scroll to it. Null = not a bookmark target.</summary>
+    public string? BookmarkId { get; init; }
 }
 
 public sealed record DrawTextPrimitive : LayoutPrimitive
