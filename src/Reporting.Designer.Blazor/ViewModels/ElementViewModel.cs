@@ -350,6 +350,18 @@ public sealed class ElementViewModel : Notifying
     public string MapLatitude { get => Src<MapElement>()?.LatitudeExpression ?? string.Empty; set => Mutate<MapElement>(e => e with { LatitudeExpression = string.IsNullOrWhiteSpace(value) ? null : value }); }
     public string MapLongitude { get => Src<MapElement>()?.LongitudeExpression ?? string.Empty; set => Mutate<MapElement>(e => e with { LongitudeExpression = string.IsNullOrWhiteSpace(value) ? null : value }); }
     public string MapDataSet { get => Src<MapElement>()?.DataSetName ?? string.Empty; set => Mutate<MapElement>(e => e with { DataSetName = string.IsNullOrWhiteSpace(value) ? null : value }); }
+    /// <summary>Draws the lat/long graticule behind the data (maps to <see cref="MapElement.ShowGraticule"/>).</summary>
+    public bool MapGraticule { get => Src<MapElement>()?.ShowGraticule ?? false; set => Mutate<MapElement>(e => e with { ShowGraticule = value }); }
+    /// <summary>Named built-in shape set, e.g. "brazil"/"south-america" (<see cref="MapElement.ShapeSet"/>).</summary>
+    public string MapShapeSet { get => Src<MapElement>()?.ShapeSet ?? string.Empty; set => Mutate<MapElement>(e => e with { ShapeSet = string.IsNullOrWhiteSpace(value) ? null : value }); }
+    /// <summary>Inline GeoJSON vector basemap (<see cref="MapElement.ShapesGeoJson"/>); takes precedence over the shape set.</summary>
+    public string MapShapesGeoJson { get => Src<MapElement>()?.ShapesGeoJson ?? string.Empty; set => Mutate<MapElement>(e => e with { ShapesGeoJson = string.IsNullOrWhiteSpace(value) ? null : value }); }
+    /// <summary>Polygon fill colour for shapes (<see cref="MapElement.ShapeFill"/>).</summary>
+    public string MapShapeFill { get => Src<MapElement>()?.ShapeFill ?? "#E8EDE4"; set => Mutate<MapElement>(e => e with { ShapeFill = string.IsNullOrWhiteSpace(value) ? "#E8EDE4" : value }); }
+    /// <summary>Shape outline / graticule stroke colour (<see cref="MapElement.ShapeStroke"/>).</summary>
+    public string MapShapeStroke { get => Src<MapElement>()?.ShapeStroke ?? "#9CA3AF"; set => Mutate<MapElement>(e => e with { ShapeStroke = string.IsNullOrWhiteSpace(value) ? "#9CA3AF" : value }); }
+    /// <summary>Tile/basemap provider name (<see cref="MapElement.Basemap"/>) — consumed by the online tile layer.</summary>
+    public string MapBasemap { get => Src<MapElement>()?.Basemap ?? string.Empty; set => Mutate<MapElement>(e => e with { Basemap = string.IsNullOrWhiteSpace(value) ? null : value }); }
 
     // Gauge (scalars + coloured ranges)
     public GaugeKind GaugeType { get => Src<GaugeElement>()?.Kind ?? GaugeKind.Radial; set => Mutate<GaugeElement>(e => e with { Kind = value }); }
