@@ -172,6 +172,20 @@
                                 }
                                 break;
 
+                            case "textarea":
+                                <textarea @onchange="@(e => Element.ApplyMetaSet(d, e.Value?.ToString()))" rows="3"
+                                          placeholder="@d.Placeholder"
+                                          style="flex:1;font-family:var(--font-mono);font-size:11px;resize:vertical;">@Convert.ToString(current)</textarea>
+                                break;
+
+                            case "color-hex":
+                                var hex = current as string ?? "#000000";
+                                <input type="color" value="@hex"
+                                       @onchange="@(e => Element.ApplyMetaSet(d, e.Value?.ToString() ?? hex))"
+                                       style="width:36px;height:16px;cursor:pointer;" />
+                                <span class="mono" style="font-size:11px;">@hex</span>
+                                break;
+
                             default:
                                 <input type="text" value="@Convert.ToString(current)" placeholder="@d.Placeholder"
                                        @onchange="@(e => Element.ApplyMetaSet(d, e.Value?.ToString()))"

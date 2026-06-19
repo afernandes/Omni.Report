@@ -142,4 +142,22 @@ public class PropertyGridBindingTests
         new ElementViewModel(DesignerElementKind.Rectangle, "r").IsTextStyled.Should().BeFalse();
         new ElementViewModel(DesignerElementKind.Line, "ln").IsTextStyled.Should().BeFalse();
     }
+
+    [Fact]
+    public void Apply_meta_set_edits_an_opaque_advanced_element_through_its_preserved_source()
+    {
+        var vm = ElementViewModel.FromElement(new MapElement
+        {
+            Id = "m1",
+            Bounds = new Rectangle(Unit.Zero, Unit.Zero, Unit.FromMm(100), Unit.FromMm(60)),
+            LatitudeExpression = "Fields.lat",
+        });
+        var basemap = PropertyGridDescriptors.For(typeof(MapElement)).Single(d => d.Name == "Basemap");
+
+        vm.ApplyMetaSet(basemap, "OpenStreetMap");
+
+        var map = (MapElement)vm.ToElement();
+        map.Basemap.Should().Be("OpenStreetMap", "the metadata edit flows into the preserved opaque _sourceElement");
+        map.LatitudeExpression.Should().Be("Fields.lat", "other fields of the opaque element survive the edit");
+    }
 }
