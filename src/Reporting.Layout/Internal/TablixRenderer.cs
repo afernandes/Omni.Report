@@ -14,9 +14,9 @@ namespace Reporting.Layout.Internal;
 /// auto-grows downward and reports its actual height so the band layout accounts for it.
 /// </summary>
 /// <remarks>
-/// v1 covers the flat table (static columns × data rows) with gridlines and a header band —
-/// equivalent to an RDL <c>Table</c> data region. Nested row/column groups and matrix pivots
-/// (the full Tablix) remain a future enhancement; the model already round-trips them.
+/// Two shapes are covered: the flat table (static columns × data rows, equivalent to an RDL
+/// <c>Table</c>) and the <b>matrix/crosstab</b> with <b>nested</b> row and column groups
+/// (<see cref="RenderMatrix"/>) — outer levels span their children in an outline layout.
 /// </remarks>
 internal static class TablixRenderer
 {
@@ -39,8 +39,8 @@ internal static class TablixRenderer
         var list = new List<LayoutPrimitive>();
         actualHeight = bounds.Height;
 
-        // Matrix / pivot mode: a row group AND a column group turn the Tablix into a crosstab.
-        // (Single-level groups in v1; nested groups remain a future enhancement.)
+        // Matrix / pivot mode: a row group AND a column group turn the Tablix into a crosstab
+        // (any number of nested levels on each axis).
         if (tablix.RowGroups.Count >= 1 && tablix.ColumnGroups.Count >= 1)
         {
             return RenderMatrix(tablix, bounds, rows, ev, templates, baseCtx, out actualHeight);
@@ -117,10 +117,12 @@ internal static class TablixRenderer
         return list;
     }
 
-    /// <summary>Renders a crosstab: distinct values of the row group down the left, distinct values
-    /// of the column group across the top, and each body cell = the SUM of the cell's value
-    /// expression over the rows that fall in that (rowValue, columnValue) intersection. Single-level
-    /// groups; the body template is the cell at (row≥1, col≥1), the corner label is cell (0,0).</summary>
+    /// <summary>Renders a crosstab with <b>nested</b> row and column groups. Each row-group level is a
+    /// column of headers down the left; each column-group level is a row of headers across the top;
+    /// outer levels span their children (drawn once at the top of each block — an "outline" look).
+    /// Every body cell = the SUM of the value expression over the rows whose full row-path × column-path
+    /// land on that leaf intersection. The body template is the first cell at (row≥1, col≥1); the corner
+    /// label is cell (0,0). A single level on each axis collapses to the classic 1×1 matrix.</summary>
     private static IEnumerable<LayoutPrimitive> RenderMatrix(
         TablixElement tablix,
         Rectangle bounds,
@@ -133,12 +135,15 @@ internal static class TablixRenderer
         var list = new List<LayoutPrimitive>();
         actualHeight = bounds.Height;
 
-        string rowExpr = tablix.RowGroups[0].GroupExpression ?? string.Empty;
-        string colExpr = tablix.ColumnGroups[0].GroupExpression ?? string.Empty;
-        if (string.IsNullOrWhiteSpace(rowExpr) || string.IsNullOrWhiteSpace(colExpr))
+        var rowExprs = tablix.RowGroups.Where(g => !string.IsNullOrWhiteSpace(g.GroupExpression))
+            .Select(g => g.GroupExpression!).ToList();
+        var colExprs = tablix.ColumnGroups.Where(g => !string.IsNullOrWhiteSpace(g.GroupExpression))
+            .Select(g => g.GroupExpression!).ToList();
+        if (rowExprs.Count == 0 || colExprs.Count == 0)
         {
             return list;
         }
+        int nRowLevels = rowExprs.Count, nColLevels = colExprs.Count;
 
         TextBoxElement? body = null;
         ReportElement? corner = null;
@@ -151,63 +156,93 @@ internal static class TablixRenderer
         string? format = body?.Style.Format;
         string cornerText = (corner as LabelElement)?.Text ?? string.Empty;
 
-        // Pass over the rows once: collect distinct row/column values (first-seen order) and the
-        // running SUM per intersection.
-        var rowVals = new List<string>();
-        var colVals = new List<string>();
-        var rowSeen = new HashSet<string>(StringComparer.Ordinal);
-        var colSeen = new HashSet<string>(StringComparer.Ordinal);
+        // One pass over the data: grow the ordered row/column group trees and accumulate the SUM per
+        // full (rowPath, columnPath) leaf intersection.
+        const char Sep = '\u0001'; // unlikely-in-data path separator
+        var rowTree = new GroupNode();
+        var colTree = new GroupNode();
         var sums = new Dictionary<(string Row, string Col), double>();
         foreach (var row in rows)
         {
             var rc = new RowScopedContext(baseCtx, row);
-            string rv = Resolve(ev, templates, rowExpr, rc);
-            string cv = Resolve(ev, templates, colExpr, rc);
-            if (rowSeen.Add(rv)) rowVals.Add(rv);
-            if (colSeen.Add(cv)) colVals.Add(cv);
+            var rk = new string[nRowLevels];
+            for (int l = 0; l < nRowLevels; l++) rk[l] = Resolve(ev, templates, rowExprs[l], rc);
+            var ck = new string[nColLevels];
+            for (int l = 0; l < nColLevels; l++) ck[l] = Resolve(ev, templates, colExprs[l], rc);
+            rowTree.Add(rk);
+            colTree.Add(ck);
+            string rKey = string.Join(Sep, rk), cKey = string.Join(Sep, ck);
             double v = EvalDouble(ev, valueExpr, rc);
-            sums.TryGetValue((rv, cv), out var cur);
-            sums[(rv, cv)] = cur + v;
+            sums.TryGetValue((rKey, cKey), out var cur);
+            sums[(rKey, cKey)] = cur + v;
         }
-        if (rowVals.Count == 0 || colVals.Count == 0)
+        var rowLeaves = rowTree.Leaves(nRowLevels);
+        var colLeaves = colTree.Leaves(nColLevels);
+        if (rowLeaves.Count == 0 || colLeaves.Count == 0)
         {
             return list;
         }
 
         double x0 = bounds.X.ToMm(), y0 = bounds.Y.ToMm(), w = bounds.Width.ToMm();
-        int nCols = colVals.Count + 1; // +1 for the row-header column
-        double colW = w / nCols;
+        int totalCols = nRowLevels + colLeaves.Count;
+        double colW = w / totalCols;
+        double headerH = nColLevels * RowHeightMm;
 
-        // Header row: corner label + the distinct column values.
-        list.Add(Fill(x0, y0, w, RowHeightMm, HeaderBg, tablix.Id));
+        // Header band (corner + column-header rows) gets the header fill.
+        list.Add(Fill(x0, y0, w, headerH, HeaderBg, tablix.Id));
         list.Add(CellText(cornerText, x0, y0, colW, bold: true, HeaderText, tablix.Id));
-        for (int j = 0; j < colVals.Count; j++)
+
+        // Column headers: at each level draw a value only where its path-prefix changes (merged look).
+        for (int cl = 0; cl < nColLevels; cl++)
         {
-            list.Add(CellText(colVals[j], x0 + (j + 1) * colW, y0, colW, bold: true, HeaderText, tablix.Id));
+            string? prev = null;
+            for (int j = 0; j < colLeaves.Count; j++)
+            {
+                string prefix = string.Join(Sep, colLeaves[j].Take(cl + 1));
+                if (prefix != prev)
+                {
+                    list.Add(CellText(colLeaves[j][cl], x0 + (nRowLevels + j) * colW, y0 + cl * RowHeightMm,
+                        colW, bold: true, HeaderText, tablix.Id));
+                    prev = prefix;
+                }
+            }
         }
 
-        // Data rows: row header (bold) + the intersection sums.
-        double y = y0 + RowHeightMm;
-        foreach (var rv in rowVals)
+        // Data rows: nested row headers (merged look) + the intersection sums.
+        double y = y0 + headerH;
+        var prevRowPrefix = new string?[nRowLevels];
+        for (int i = 0; i < rowLeaves.Count; i++)
         {
-            list.Add(CellText(rv, x0, y, colW, bold: true, HeaderText, tablix.Id));
-            for (int j = 0; j < colVals.Count; j++)
+            for (int rl = 0; rl < nRowLevels; rl++)
             {
-                sums.TryGetValue((rv, colVals[j]), out var s);
-                list.Add(CellText(FormatNumber(s, format, baseCtx.Culture), x0 + (j + 1) * colW, y, colW, bold: false, BodyText, tablix.Id));
+                string prefix = string.Join(Sep, rowLeaves[i].Take(rl + 1));
+                if (prefix != prevRowPrefix[rl])
+                {
+                    list.Add(CellText(rowLeaves[i][rl], x0 + rl * colW, y, colW, bold: true, HeaderText, tablix.Id));
+                    prevRowPrefix[rl] = prefix;
+                    for (int d = rl + 1; d < nRowLevels; d++) prevRowPrefix[d] = null; // deeper levels restart
+                }
+            }
+            string rKey = string.Join(Sep, rowLeaves[i]);
+            for (int j = 0; j < colLeaves.Count; j++)
+            {
+                string cKey = string.Join(Sep, colLeaves[j]);
+                sums.TryGetValue((rKey, cKey), out var s);
+                list.Add(CellText(FormatNumber(s, format, baseCtx.Culture),
+                    x0 + (nRowLevels + j) * colW, y, colW, bold: false, BodyText, tablix.Id));
             }
             y += RowHeightMm;
         }
 
         double totalH = y - y0;
         var pen = new PenStyle(GridColor, Unit.FromPoint(0.5));
-        int gridRows = rowVals.Count + 1;
+        int gridRows = nColLevels + rowLeaves.Count;
         for (int r = 0; r <= gridRows; r++)
         {
             double ly = y0 + r * RowHeightMm;
             list.Add(Line(x0, ly, x0 + w, ly, pen, tablix.Id));
         }
-        for (int c = 0; c <= nCols; c++)
+        for (int c = 0; c <= totalCols; c++)
         {
             double lx = x0 + c * colW;
             list.Add(Line(lx, y0, lx, y0 + totalH, pen, tablix.Id));
@@ -215,6 +250,50 @@ internal static class TablixRenderer
 
         actualHeight = Unit.FromMm(totalH);
         return list;
+    }
+
+    /// <summary>An ordered prefix tree of group-key paths: children keep first-seen insertion order so
+    /// flattening to <see cref="Leaves"/> yields the hierarchical row/column ordering of a crosstab.</summary>
+    private sealed class GroupNode
+    {
+        private readonly List<string> _order = new();
+        private readonly Dictionary<string, GroupNode> _children = new(StringComparer.Ordinal);
+
+        public void Add(IReadOnlyList<string> path)
+        {
+            var cur = this;
+            foreach (var k in path)
+            {
+                if (!cur._children.TryGetValue(k, out var child))
+                {
+                    child = new GroupNode();
+                    cur._children[k] = child;
+                    cur._order.Add(k);
+                }
+                cur = child;
+            }
+        }
+
+        public List<string[]> Leaves(int depth)
+        {
+            var result = new List<string[]>();
+            var path = new string[depth];
+            void Dfs(GroupNode node, int d)
+            {
+                if (d == depth)
+                {
+                    result.Add((string[])path.Clone());
+                    return;
+                }
+                foreach (var k in node._order)
+                {
+                    path[d] = k;
+                    Dfs(node._children[k], d + 1);
+                }
+            }
+            Dfs(this, 0);
+            return result;
+        }
     }
 
     private static double EvalDouble(ExpressionEvaluator ev, string expr, IReportExpressionContext ctx)

@@ -32,17 +32,19 @@ public sealed class TablixBuilder
         return this;
     }
 
-    private string? _rowGroup;
-    private string? _columnGroup;
+    private readonly List<string> _rowGroups = [];
+    private readonly List<string> _columnGroups = [];
     private string? _corner;
     private string? _cellExpression;
 
     /// <summary>Turns the Tablix into a matrix/crosstab: groups data rows by this expression down
-    /// the left axis. Pair with <see cref="ColumnGroup"/> and <see cref="Cell"/>.</summary>
-    public TablixBuilder RowGroup(string expression) { _rowGroup = expression; return this; }
+    /// the left axis. Call more than once to <b>nest</b> row groups (outer→inner). Pair with
+    /// <see cref="ColumnGroup"/> and <see cref="Cell"/>.</summary>
+    public TablixBuilder RowGroup(string expression) { _rowGroups.Add(expression); return this; }
 
-    /// <summary>Groups data rows by this expression across the top axis of a matrix.</summary>
-    public TablixBuilder ColumnGroup(string expression) { _columnGroup = expression; return this; }
+    /// <summary>Groups data rows by this expression across the top axis of a matrix. Call more than
+    /// once to <b>nest</b> column groups (outer→inner).</summary>
+    public TablixBuilder ColumnGroup(string expression) { _columnGroups.Add(expression); return this; }
 
     /// <summary>Top-left corner label of a matrix (optional).</summary>
     public TablixBuilder Corner(string label) { _corner = label; return this; }
@@ -52,16 +54,19 @@ public sealed class TablixBuilder
 
     internal TablixElement Build()
     {
-        // Matrix mode: a row group + a column group + a body value form a crosstab. The renderer
-        // reads RowGroups[0]/ColumnGroups[0] and the (1,1) body cell template.
-        if (_rowGroup is not null && _columnGroup is not null)
+        // Matrix mode: one or more row groups + column groups (nested outer→inner) + a body value
+        // form a crosstab. The renderer reads every RowGroups/ColumnGroups level and the (1,1) body
+        // cell template.
+        if (_rowGroups.Count > 0 && _columnGroups.Count > 0)
         {
             return new TablixElement
             {
                 Bounds = Rectangle.Empty,
                 DataSetName = _dataSet,
-                RowGroups = new EquatableArray<TablixGroup>([new TablixGroup("Rows", _rowGroup)]),
-                ColumnGroups = new EquatableArray<TablixGroup>([new TablixGroup("Cols", _columnGroup)]),
+                RowGroups = new EquatableArray<TablixGroup>(
+                    _rowGroups.Select((e, i) => new TablixGroup($"Rows{i}", e)).ToArray()),
+                ColumnGroups = new EquatableArray<TablixGroup>(
+                    _columnGroups.Select((e, i) => new TablixGroup($"Cols{i}", e)).ToArray()),
                 Cells = new EquatableArray<TablixCell>(
                 [
                     new TablixCell(0, 0, new LabelElement { Text = _corner ?? string.Empty, Bounds = Rectangle.Empty }),

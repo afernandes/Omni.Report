@@ -260,4 +260,29 @@ public class AdvancedElementRoundTripTests
         reloaded.TablixCorner.Should().Be("Região");
         reloaded.TablixCellExpr.Should().Be("Fields.Total");
     }
+
+    [Fact]
+    public void Tablix_matrix_nested_groups_round_trip_via_the_multiline_editor()
+    {
+        var vm = new ElementViewModel(DesignerElementKind.Tablix, "t2")
+        {
+            Width = Unit.FromMm(170),
+            Height = Unit.FromMm(50),
+        };
+        vm.SetTablixMatrix(true);
+
+        // Two nested levels on each axis — one expression per line, outer→inner.
+        vm.TablixRowGroupsText = "Fields.Regiao\nFields.Cidade";
+        vm.TablixColumnGroupsText = "Fields.Ano\nFields.Mes";
+        vm.TablixCellExpr = "Fields.Total";
+
+        var t = vm.ToElement().Should().BeOfType<TablixElement>().Subject;
+        t.RowGroups.Select(g => g.GroupExpression).Should().Equal("Fields.Regiao", "Fields.Cidade");
+        t.ColumnGroups.Select(g => g.GroupExpression).Should().Equal("Fields.Ano", "Fields.Mes");
+
+        // Reloaded, the multi-line editor surfaces every level for further editing in the designer.
+        var reloaded = ElementViewModel.FromElement(t);
+        reloaded.TablixRowGroupsText.Should().Be("Fields.Regiao\nFields.Cidade");
+        reloaded.TablixColumnGroupsText.Should().Be("Fields.Ano\nFields.Mes");
+    }
 }

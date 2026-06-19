@@ -643,14 +643,14 @@ else
                        @onchange="@(e => Element.SetTablixMatrix((bool)(e.Value ?? false)))" /> Crosstab (grupos linha × coluna)</label></div></div>
             @if (Element.TablixIsMatrix)
             {
-                <div class="prop-row"><div class="p-label">Grupo linha</div><div class="p-editor">
-                    <input type="text" value="@Element.TablixRowGroup" placeholder="Fields.Regiao"
-                           @onchange="@(e => Element.TablixRowGroup = e.Value?.ToString() ?? string.Empty)"
-                           style="flex:1;font-family:var(--font-mono);font-size:11.5px;" /></div></div>
-                <div class="prop-row"><div class="p-label">Grupo coluna</div><div class="p-editor">
-                    <input type="text" value="@Element.TablixColumnGroup" placeholder="Fields.Mes"
-                           @onchange="@(e => Element.TablixColumnGroup = e.Value?.ToString() ?? string.Empty)"
-                           style="flex:1;font-family:var(--font-mono);font-size:11.5px;" /></div></div>
+                <div class="prop-row"><div class="p-label">Grupos linha</div><div class="p-editor">
+                    <textarea value="@Element.TablixRowGroupsText" placeholder="Fields.Regiao&#10;Fields.Cidade (aninhar: 1 por linha)" rows="2"
+                              @onchange="@(e => Element.TablixRowGroupsText = e.Value?.ToString() ?? string.Empty)"
+                              style="flex:1;font-family:var(--font-mono);font-size:11.5px;resize:vertical;"></textarea></div></div>
+                <div class="prop-row"><div class="p-label">Grupos coluna</div><div class="p-editor">
+                    <textarea value="@Element.TablixColumnGroupsText" placeholder="Fields.Ano&#10;Fields.Mes (aninhar: 1 por linha)" rows="2"
+                              @onchange="@(e => Element.TablixColumnGroupsText = e.Value?.ToString() ?? string.Empty)"
+                              style="flex:1;font-family:var(--font-mono);font-size:11.5px;resize:vertical;"></textarea></div></div>
                 <div class="prop-row"><div class="p-label">Canto</div><div class="p-editor">
                     <input type="text" value="@Element.TablixCorner" placeholder="(rótulo do canto)"
                            @onchange="@(e => Element.TablixCorner = e.Value?.ToString() ?? string.Empty)"

@@ -464,6 +464,22 @@ public sealed class ElementViewModel : Notifying
         set => Mutate<TablixElement>(e => e with { ColumnGroups = SingleGroup("Cols", value) });
     }
 
+    /// <summary>All row-group levels (left axis), one expression per line, outer→inner. One line is a
+    /// single-level matrix; add lines to <b>nest</b>. Maps to the whole <c>RowGroups</c> array.</summary>
+    public string TablixRowGroupsText
+    {
+        get { var t = Src<TablixElement>(); return t is null ? string.Empty : string.Join("\n", t.RowGroups.Select(g => g.GroupExpression ?? string.Empty)); }
+        set => Mutate<TablixElement>(e => e with { RowGroups = GroupsFromText("Rows", value) });
+    }
+
+    /// <summary>All column-group levels (top axis), one expression per line, outer→inner. Maps to the
+    /// whole <c>ColumnGroups</c> array.</summary>
+    public string TablixColumnGroupsText
+    {
+        get { var t = Src<TablixElement>(); return t is null ? string.Empty : string.Join("\n", t.ColumnGroups.Select(g => g.GroupExpression ?? string.Empty)); }
+        set => Mutate<TablixElement>(e => e with { ColumnGroups = GroupsFromText("Cols", value) });
+    }
+
     /// <summary>Top-left corner label of the matrix (cell 0,0).</summary>
     public string TablixCorner
     {
@@ -510,6 +526,18 @@ public sealed class ElementViewModel : Notifying
         => string.IsNullOrWhiteSpace(expr)
             ? Reporting.Common.EquatableArray<TablixGroup>.Empty
             : new Reporting.Common.EquatableArray<TablixGroup>([new TablixGroup(name, expr)]);
+
+    /// <summary>Parses a multi-line group editor (one expression per line, blanks skipped) into an
+    /// ordered <c>RowGroups</c>/<c>ColumnGroups</c> array — outer level first.</summary>
+    private static Reporting.Common.EquatableArray<TablixGroup> GroupsFromText(string prefix, string? text)
+    {
+        var levels = (text ?? string.Empty).Replace("\r\n", "\n").Split('\n')
+            .Select(s => s.Trim()).Where(s => s.Length > 0).ToArray();
+        return levels.Length == 0
+            ? Reporting.Common.EquatableArray<TablixGroup>.Empty
+            : new Reporting.Common.EquatableArray<TablixGroup>(
+                levels.Select((e, i) => new TablixGroup($"{prefix}{i}", e)).ToArray());
+    }
 
     private ReportElement? TablixCellAt(int row, int col)
         => Src<TablixElement>()?.Cells.FirstOrDefault(c => c.RowIndex == row && c.ColumnIndex == col)?.Content;

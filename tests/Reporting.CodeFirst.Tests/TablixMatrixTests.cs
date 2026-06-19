@@ -7,6 +7,8 @@ namespace Reporting.CodeFirst.Tests;
 
 public sealed record VendaRegional(string Regiao, string Mes, decimal Total);
 
+public sealed record VendaDetalhada(string Regiao, string Cidade, string Mes, decimal Total);
+
 /// <summary>
 /// Covers the Tablix <b>matrix/crosstab</b> path: a row group × column group with a summed body
 /// cell, proving the renderer pivots the data (not just a flat table) — code-first
@@ -51,5 +53,42 @@ public class TablixMatrixTests
         // Intersections are summed: Sul/Jan = 100 + 25 = 125; Norte/Fev = 70.
         texts.Should().Contain(t => t.Contains("125"), "Sul×Jan sums the two matching rows");
         texts.Should().Contain(t => t.Contains("70"), "Norte×Fev");
+    }
+
+    [Fact]
+    public async Task Nested_row_groups_render_both_levels_and_sum_each_leaf()
+    {
+        VendaDetalhada[] rows =
+        [
+            new("Sul",   "Porto Alegre", "Jan", 100m),
+            new("Sul",   "Curitiba",     "Jan",  40m),
+            new("Sul",   "Porto Alegre", "Fev",  60m),
+            new("Norte", "Manaus",       "Jan",  30m),
+        ];
+
+        var report = ReportBuilder.Create("NestedCrosstab")
+            .Page(p => p.A4().Portrait().Margins(10))
+            .DataSource("Vendas", rows)
+            .ReportHeader(h => h.Height(70)
+                .Tablix(t => t
+                    .RowGroup("Fields.Regiao")
+                    .RowGroup("Fields.Cidade")   // nested under região
+                    .ColumnGroup("Fields.Mes")
+                    .Corner("Local")
+                    .Cell("Fields.Total"))
+                .At(0, 0).Size(170, 55))
+            .Build();
+
+        var texts = (await report.PaginateAsync()).Pages
+            .SelectMany(p => p.Primitives).OfType<DrawTextPrimitive>().Select(t => t.Text).ToList();
+
+        // Both group levels surface as headers (outer once, inner per city).
+        texts.Should().Contain("Sul").And.Contain("Norte");
+        texts.Should().Contain("Porto Alegre").And.Contain("Curitiba").And.Contain("Manaus");
+        texts.Should().Contain("Jan").And.Contain("Fev");
+
+        // Leaf intersections sum independently within the nested path.
+        texts.Should().Contain(t => t.Contains("100"), "Sul→Porto Alegre→Jan");
+        texts.Should().Contain(t => t.Contains("40"), "Sul→Curitiba→Jan");
     }
 }
