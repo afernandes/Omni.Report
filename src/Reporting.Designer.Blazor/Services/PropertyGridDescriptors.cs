@@ -20,7 +20,16 @@ public sealed record PropertyGridDescriptor(
     string Category,
     int Order,
     Func<ReportElement, object?> Get,
-    Func<ReportElement, object?, ReportElement> Set);
+    Func<ReportElement, object?, ReportElement> Set,
+    bool Bindable = false,
+    string? PropertyPath = null)
+{
+    /// <summary>The dotted path used to bind this property to an expression in
+    /// <see cref="ReportElement.PropertyExpressions"/>. Equals <see cref="Name"/> for a direct property
+    /// (e.g. <c>"Direction"</c>, <c>"FillColor"</c>); a nested-record property would carry a dotted path
+    /// (e.g. <c>"Style.ForeColor"</c>).</summary>
+    public string Path => PropertyPath ?? Name;
+}
 
 /// <summary>
 /// Discovers the <see cref="PropertyGridAttribute"/>-annotated properties of a
@@ -62,7 +71,9 @@ public static class PropertyGridDescriptors
                 Category: attr.Category ?? "Geral",
                 Order: attr.Order,
                 Get: prop.GetValue,
-                Set: BuildSetter(type, prop)));
+                Set: BuildSetter(type, prop),
+                Bindable: attr.Bindable,
+                PropertyPath: prop.Name));
         }
         return list.OrderBy(d => d.Order).ThenBy(d => d.Label, StringComparer.Ordinal).ToList();
     }

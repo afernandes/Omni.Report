@@ -37,4 +37,11 @@ public sealed class PropertyGridAttribute : Attribute
     /// properties are flattened into this element's grid (e.g. the shared <c>Style</c>), instead of the
     /// property itself getting a single editor.</summary>
     public bool Nested { get; init; }
+
+    /// <summary>When true, the designer offers an <c>fx</c> toggle next to the editor so the property can
+    /// be driven by a report <b>expression</b> (SSRS-style) instead of a static value — the expression is
+    /// stored in the element's <c>PropertyExpressions</c> map under the property's path and evaluated per
+    /// instance at render time, with the static value as the fallback. Defaults to false; not every
+    /// property should be bindable (e.g. an identifier).</summary>
+    public bool Bindable { get; init; }
 }
