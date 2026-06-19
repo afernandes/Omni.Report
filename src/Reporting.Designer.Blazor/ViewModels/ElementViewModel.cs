@@ -363,6 +363,13 @@ public sealed class ElementViewModel : Notifying
     /// <summary>Tile/basemap provider name (<see cref="MapElement.Basemap"/>) — consumed by the online tile layer.</summary>
     public string MapBasemap { get => Src<MapElement>()?.Basemap ?? string.Empty; set => Mutate<MapElement>(e => e with { Basemap = string.IsNullOrWhiteSpace(value) ? null : value }); }
 
+    // Code (custom C#/VB block; evaluated via the opt-in Reporting.Expressions.Roslyn package)
+    /// <summary>Source text of the code block — helper methods reachable as <c>Code.Method(...)</c>
+    /// (<see cref="CodeElement.Source"/>).</summary>
+    public string CodeSource { get => Src<CodeElement>()?.Source ?? string.Empty; set => Mutate<CodeElement>(e => e with { Source = value }); }
+    /// <summary>Source language of the code block (<see cref="CodeElement.Language"/>).</summary>
+    public CodeLanguage CodeLang { get => Src<CodeElement>()?.Language ?? CodeLanguage.CSharp; set => Mutate<CodeElement>(e => e with { Language = value }); }
+
     // Gauge (scalars + coloured ranges)
     public GaugeKind GaugeType { get => Src<GaugeElement>()?.Kind ?? GaugeKind.Radial; set => Mutate<GaugeElement>(e => e with { Kind = value }); }
     public string GaugeValue { get => Src<GaugeElement>()?.ValueExpression ?? "0"; set => Mutate<GaugeElement>(e => e with { ValueExpression = value }); }

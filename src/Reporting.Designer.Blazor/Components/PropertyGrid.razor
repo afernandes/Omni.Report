@@ -469,6 +469,31 @@ else
         </div>
     }
 
+    @* ── Code editor ─────────────────────────────────────────────────────────── *@
+    @if (Element.Kind == DesignerElementKind.Code)
+    {
+        <div class="prop-section">
+            <div class="prop-section-head"><Icon Name="chevron-down" Size="12" CssClass="chev icon icon-12" /><span>Código</span></div>
+            <div class="prop-row"><div class="p-label">Linguagem</div><div class="p-editor">
+                <select value="@Element.CodeLang"
+                        @onchange="@(e => Element.CodeLang = Enum.TryParse<CodeLanguage>(e.Value?.ToString(), out var l) ? l : CodeLanguage.CSharp)"
+                        style="flex:1;font-size:11.5px;">
+                    @foreach (var l in Enum.GetValues<CodeLanguage>())
+                    {
+                        <option value="@l" selected="@(Element.CodeLang == l)">@l</option>
+                    }
+                </select></div></div>
+            <div class="prop-row" style="flex-direction:column;align-items:stretch;gap:4px;">
+                <div class="p-label">Fonte</div>
+                <textarea value="@Element.CodeSource" placeholder="public static decimal Imposto(decimal v) => v * 0.18m;"
+                          @onchange="@(e => Element.CodeSource = e.Value?.ToString() ?? string.Empty)"
+                          rows="8" style="width:100%;font-family:var(--font-mono);font-size:11px;resize:vertical;"></textarea></div>
+            <div style="font-size:10.5px;opacity:.75;padding:4px 8px;line-height:1.4;">
+                ⚠ Executa C# embutido no relatório (pacote Roslyn opt-in). Use apenas com fontes confiáveis.
+            </div>
+        </div>
+    }
+
     @* ── Gauge editor ────────────────────────────────────────────────────────── *@
     @if (Element.Kind == DesignerElementKind.Gauge)
     {
