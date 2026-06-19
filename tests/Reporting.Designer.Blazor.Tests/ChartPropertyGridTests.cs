@@ -25,21 +25,20 @@ public class ChartPropertyGridTests : Bunit.BunitContext
 
         var cut = Render<PropertyGrid>(p => p.Add(x => x.Element, vm));
 
-        cut.Markup.Should().Contain("Gráfico");
-        cut.Markup.Should().Contain("Adicionar série");
-        cut.Markup.Should().Contain("Receita");
+        cut.Markup.Should().Contain("Gráfico", "the metadata category header");
+        cut.Markup.Should().Contain("Séries", "the list editor row label");
+        cut.Markup.Should().Contain("Receita", "the existing series renders in the list editor");
     }
 
     [Fact]
-    public void Adding_a_series_via_the_button_mutates_the_view_model()
+    public void Adding_a_series_via_the_list_editor_mutates_the_view_model()
     {
         var vm = new ElementViewModel(DesignerElementKind.Chart, "c1");
         var cut = Render<PropertyGrid>(p => p.Add(x => x.Element, vm));
 
-        var addButton = cut.FindAll("button").First(b => b.TextContent.Contains("Adicionar série"));
-        addButton.Click();
+        cut.FindAll("button").First(b => b.TextContent.Contains("Adicionar")).Click();
 
-        vm.ChartSeries.Should().ContainSingle();
+        vm.ChartSeries.Should().ContainSingle("the generic list editor appends a default series");
     }
 
     [Fact]
@@ -49,6 +48,6 @@ public class ChartPropertyGridTests : Bunit.BunitContext
 
         var cut = Render<PropertyGrid>(p => p.Add(x => x.Element, vm));
 
-        cut.Markup.Should().NotContain("Adicionar série");
+        cut.Markup.Should().NotContain("Gráfico", "the Chart category only shows for chart elements");
     }
 }
