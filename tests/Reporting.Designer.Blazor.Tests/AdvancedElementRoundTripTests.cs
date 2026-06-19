@@ -140,4 +140,44 @@ public class AdvancedElementRoundTripTests
         back.ShowGraticule.Should().BeTrue();
         back.LatitudeExpression.Should().Be("Fields.lat");
     }
+
+    [Fact]
+    public void Code_is_editable_on_a_freshly_added_element()
+    {
+        // Code has no engine render (it declares Code.Method(...) helpers), but it MUST be
+        // constructible + editable in the designer — not only preserved when loading a .repx.
+        var vm = new ElementViewModel(DesignerElementKind.Code, "c1")
+        {
+            Width = Unit.FromMm(80),
+            Height = Unit.FromMm(40),
+        };
+
+        vm.CodeSource = "public static decimal Imposto(decimal v) => v * 0.18m;";
+        vm.CodeLang = CodeLanguage.VisualBasic;
+
+        var code = vm.ToElement().Should().BeOfType<CodeElement>().Subject;
+        code.Source.Should().Contain("Imposto");
+        code.Language.Should().Be(CodeLanguage.VisualBasic);
+    }
+
+    [Fact]
+    public void Code_loaded_element_surfaces_fields_and_edits_stick()
+    {
+        var code = new CodeElement
+        {
+            Id = "c2",
+            Bounds = new Rectangle(Unit.Zero, Unit.Zero, Unit.FromMm(80), Unit.FromMm(40)),
+            Source = "public static int Dobro(int x) => x * 2;",
+            Language = CodeLanguage.CSharp,
+        };
+
+        var vm = ElementViewModel.FromElement(code);
+        vm.Kind.Should().Be(DesignerElementKind.Code);
+        vm.CodeSource.Should().Contain("Dobro");
+
+        vm.CodeLang = CodeLanguage.VisualBasic;
+        var back = (CodeElement)vm.ToElement();
+        back.Language.Should().Be(CodeLanguage.VisualBasic);
+        back.Source.Should().Contain("Dobro");
+    }
 }
