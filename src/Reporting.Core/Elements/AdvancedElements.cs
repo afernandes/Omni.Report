@@ -223,12 +223,18 @@ public enum SparklineKind { Line, Column, Area }
 /// </summary>
 public sealed record IndicatorElement : ReportElement
 {
+    [PropertyGrid(Category = "Indicador", Order = 1, Label = "Tipo")]
     public IndicatorKind Kind { get; init; } = IndicatorKind.DirectionalArrow;
+    [PropertyGrid(Category = "Indicador", Order = 2, Label = "Valor", Placeholder = "Fields.Meta")]
     public string ValueExpression { get; init; } = "0";
     /// <summary>State boundaries — each (start, end, iconName).</summary>
+    [PropertyGrid(Category = "Indicador", Order = 3, Label = "Estados", Editor = "list")]
     public EquatableArray<IndicatorState> States { get; init; } = EquatableArray<IndicatorState>.Empty;
 }
 
 public enum IndicatorKind { DirectionalArrow, Shape, RatingBar, Symbol }
 
-public sealed record IndicatorState(string StartExpression, string EndExpression, string IconName);
+public sealed record IndicatorState(
+    [property: PropertyGrid(Order = 1, Label = "Início")] string StartExpression,
+    [property: PropertyGrid(Order = 2, Label = "Fim")] string EndExpression,
+    [property: PropertyGrid(Order = 3, Label = "Ícone")] string IconName);
