@@ -134,6 +134,15 @@ public class PropertyGridDescriptorsTests
     }
 
     [Fact]
+    public void Indicator_flattens_scalars_plus_its_states_list()
+    {
+        var ind = PropertyGridDescriptors.For(typeof(IndicatorElement));
+        ind.Should().Contain(d => d.Name == "Kind" && d.Editor == "enum");
+        ind.Should().Contain(d => d.Name == "States" && d.Editor == "list");
+        PropertyGridDescriptors.For(typeof(IndicatorState)).Should().Contain(d => d.Name == "IconName");
+    }
+
+    [Fact]
     public void Nested_property_flattens_into_dotted_path_descriptors()
     {
         var descriptors = PropertyGridDescriptors.For(typeof(StyledFixture));
