@@ -49,6 +49,7 @@ public sealed partial class ReportPaginator
             Measurer = measurer,
             CodeFunctionResolver = request.CodeFunctionResolver,
             SubreportResolver = request.SubreportResolver,
+            MapTileResolver = request.MapTileResolver,
             SubreportDepth = request.SubreportDepth + 1,
         };
 

@@ -464,6 +464,13 @@ public sealed class BandContent
     public BandContent ShapeColors(string fill, string stroke)
         => MutatePending(e => e is MapElement m ? m with { ShapeFill = fill, ShapeStroke = stroke } : e);
 
+    /// <summary>Sets a raster basemap provider / tile URL template (e.g.
+    /// <c>"https://tile.openstreetmap.org/{z}/{x}/{y}.png"</c>). The engine computes the visible tile
+    /// grid and asks <c>PaginationRequest.MapTileResolver</c> for the bytes — left unwired, the map
+    /// renders vector-only. Network fetching lives in the host / an opt-in provider.</summary>
+    public BandContent Basemap(string providerOrUrlTemplate)
+        => MutatePending(e => e is MapElement m ? m with { Basemap = providerOrUrlTemplate } : e);
+
     /// <summary>Embeds a child report referenced by id at this element's bounds. The id is resolved
     /// at pagination time via <c>PaginationRequest.SubreportResolver</c>; the child paginates at the
     /// subreport's width against the parent's data sources. Use <see cref="SubreportInline"/> for an
