@@ -22,12 +22,11 @@ em cenários brasileiros (PDV, NFC-e, DANFE, ABNT NBR 5891).
 
 ### Designer visual (Blazor)
 
-<!-- 📸 Capture a UI do Designer e salve em assets/designer.png; depois descomente a linha abaixo: -->
-<!-- ![Designer visual do OmniReport](assets/designer.png) -->
-
-> _Screenshot pendente._ Para capturar: `dotnet run --project samples/Reporting.Samples.BlazorServer`,
-> abra **`/designer`**, carregue um exemplo pela faixa **Sandbox** (ex.: "12 · Dashboard") e salve a
-> imagem em **`assets/designer.png`** — depois é só descomentar a linha acima.
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/designer-dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="assets/designer-light.png">
+  <img alt="Designer visual do OmniReport" src="assets/designer-light.png">
+</picture>
 
 ### Saída do engine (renderização real dos samples)
 
