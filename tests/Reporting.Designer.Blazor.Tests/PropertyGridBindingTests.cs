@@ -131,4 +131,15 @@ public class PropertyGridBindingTests
         el.Name.Should().Be("MyRect", "re-hydration must preserve unrelated fields");
         el.PropertyExpressions["Visible"].Should().Be("Fields.Show", "and preserve expression bindings");
     }
+
+    [Fact]
+    public void Is_text_styled_is_metadata_driven_not_a_hard_coded_kind_list()
+    {
+        // The "Data" section + Style-appearance flattening key off the [TextStyled] marker, not a kind list.
+        new ElementViewModel(DesignerElementKind.TextBox, "t").IsTextStyled.Should().BeTrue();
+        new ElementViewModel(DesignerElementKind.Label, "l").IsTextStyled.Should().BeTrue();
+        new ElementViewModel(DesignerElementKind.Barcode, "b").IsTextStyled.Should().BeTrue();
+        new ElementViewModel(DesignerElementKind.Rectangle, "r").IsTextStyled.Should().BeFalse();
+        new ElementViewModel(DesignerElementKind.Line, "ln").IsTextStyled.Should().BeFalse();
+    }
 }

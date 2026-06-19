@@ -1,8 +1,11 @@
+using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
+using System.Reflection;
 using Reporting.Common;
 using Reporting.Designer.Blazor.Services;
 using Reporting.Elements;
 using Reporting.Geometry;
+using Reporting.Metadata;
 using Reporting.Styling;
 
 namespace Reporting.Designer.Blazor.ViewModels;
@@ -154,6 +157,15 @@ public sealed class ElementViewModel : Notifying
 
     public string Id { get; }
     public DesignerElementKind Kind { get; }
+
+    private static readonly ConcurrentDictionary<DesignerElementKind, bool> TextStyledCache = new();
+
+    /// <summary>True when this element's type renders text — i.e. carries <see cref="TextStyledAttribute"/>
+    /// (Label/TextBox/Barcode, and anything derived from them). Drives the "Data" section in the property
+    /// grid from METADATA instead of a hard-coded kind list, so a new text-derived element opts in
+    /// automatically just by inheriting the attribute. Cached per kind.</summary>
+    public bool IsTextStyled => TextStyledCache.GetOrAdd(Kind,
+        _ => ToElement().GetType().GetCustomAttribute<TextStyledAttribute>(inherit: true) is not null);
 
     /// <summary>For advanced elements that don't have a dedicated editor yet (Tablix, Gauge,
     /// DataBar, Sparkline, Indicator, Map), the original domain element loaded from the report.

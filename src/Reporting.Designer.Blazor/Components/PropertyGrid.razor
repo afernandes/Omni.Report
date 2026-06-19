@@ -33,7 +33,9 @@ else
         @Row("Height", ToMm(Element.Height), v => Element.Height = ParseMm(v) ?? Element.Height)
     </div>
 
-    @if (HasTextContent(Element))
+    @* "Data" stays a dedicated section (primary text/expression content + Monaco fx + format preset),
+       but its visibility is now METADATA-driven via the [TextStyled] marker — no hard-coded kind list. *@
+    @if (Element.IsTextStyled)
     {
 
         <div class="prop-section">
@@ -889,9 +891,6 @@ else
         }
         builder.CloseElement();
     };
-
-    private static bool HasTextContent(ElementViewModel e)
-        => e.Kind is DesignerElementKind.Label or DesignerElementKind.TextBox or DesignerElementKind.Barcode;
 
     private static string ToMm(Unit u) => u.ToMm().ToString("F1", CultureInfo.InvariantCulture);
 
