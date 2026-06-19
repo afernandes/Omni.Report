@@ -19,8 +19,8 @@ public sealed record PropertyGridDescriptor(
     string Editor,
     string Category,
     int Order,
-    Func<ReportElement, object?> Get,
-    Func<ReportElement, object?, ReportElement> Set,
+    Func<object, object?> Get,
+    Func<object, object?, object> Set,
     bool Bindable = false,
     string? PropertyPath = null)
 {
@@ -122,8 +122,10 @@ public static class PropertyGridDescriptors
     }
 
     /// <summary>Reads the value at the end of a property <paramref name="chain"/> (e.g.
-    /// <c>element → Style → ForeColor</c>), returning null if any record on the way is null.</summary>
-    private static Func<ReportElement, object?> BuildGetter(IReadOnlyList<PropertyInfo> chain)
+    /// <c>element → Style → ForeColor</c>), returning null if any record on the way is null. Takes
+    /// <c>object</c> so the same machinery serves list items (e.g. a <c>GaugeRange</c>), not only
+    /// <see cref="ReportElement"/>.</summary>
+    private static Func<object, object?> BuildGetter(IReadOnlyList<PropertyInfo> chain)
         => element =>
         {
             object? current = element;
@@ -144,8 +146,8 @@ public static class PropertyGridDescriptors
     /// on the path — is untouched. Equivalent to <c>element with { Style = element.Style with { ForeColor
     /// = value } }</c>, generically. (Setting an <c>init</c>-only property via reflection is allowed —
     /// <c>init</c> is a compile-time constraint — and here it targets a fresh copy, never the original.)</summary>
-    private static Func<ReportElement, object?, ReportElement> BuildSetter(IReadOnlyList<PropertyInfo> chain)
-        => (element, value) => (ReportElement)SetChain(element, chain, 0, value)!;
+    private static Func<object, object?, object> BuildSetter(IReadOnlyList<PropertyInfo> chain)
+        => (element, value) => SetChain(element, chain, 0, value)!;
 
     private static object? SetChain(object obj, IReadOnlyList<PropertyInfo> chain, int index, object? leaf)
     {

@@ -780,7 +780,7 @@ public sealed class ElementViewModel : Notifying
     /// every other field are preserved (the change round-trips through <see cref="ToElement"/>).</summary>
     public void ApplyMetaSet(PropertyGridDescriptor descriptor, object? value)
     {
-        LoadFrom(descriptor.Set(ToElement(), value));
+        LoadFrom((ReportElement)descriptor.Set(ToElement(), value));
         RaiseChanged();
     }
 
