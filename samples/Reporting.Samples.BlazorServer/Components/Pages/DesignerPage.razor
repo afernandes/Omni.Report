@@ -154,6 +154,24 @@
             };
             var vm = ReportDefinitionViewModel.FromDefinition(report.Definition);
             _state.ReplaceActiveReport(vm);          // clears any stale preview data
+            // Sync the designer's data-source catalog from the sample's definition (as a .repx load
+            // would). Without this, BuildDefinition keeps the default catalog source and the rebuilt
+            // definition's PRIMARY source no longer matches the preview data registry — so the detail
+            // band iterates zero rows and the preview renders empty cells.
+            _state.DataSources.Clear();
+            if (report.Definition.DataSources.Count > 0)
+            {
+                foreach (var ds in report.Definition.DataSources)
+                {
+                    _state.DataSources.Add(DesignerDataSource.FromDefinition(ds));
+                }
+            }
+            else
+            {
+                // Defensive: a report with no persisted data sources falls back to the seed catalog
+                // (mirrors DesignerState.Load) so the canvas/expression editor still have a source.
+                _state.DataSources.Add(DesignerDataSource.SampleVendas);
+            }
             _state.PreviewDataRegistry = report.DataSources; // feed the sample's data to the preview
             var elementCount = vm.Bands.Sum(b => b.Elements.Count);
             _status = $"Sample '{name}' carregado — {vm.Bands.Count} banda(s), {elementCount} elemento(s). " +
