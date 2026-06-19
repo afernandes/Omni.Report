@@ -159,9 +159,18 @@
             // definition's PRIMARY source no longer matches the preview data registry — so the detail
             // band iterates zero rows and the preview renders empty cells.
             _state.DataSources.Clear();
-            foreach (var ds in report.Definition.DataSources)
+            if (report.Definition.DataSources.Count > 0)
             {
-                _state.DataSources.Add(DesignerDataSource.FromDefinition(ds));
+                foreach (var ds in report.Definition.DataSources)
+                {
+                    _state.DataSources.Add(DesignerDataSource.FromDefinition(ds));
+                }
+            }
+            else
+            {
+                // Defensive: a report with no persisted data sources falls back to the seed catalog
+                // (mirrors DesignerState.Load) so the canvas/expression editor still have a source.
+                _state.DataSources.Add(DesignerDataSource.SampleVendas);
             }
             _state.PreviewDataRegistry = report.DataSources; // feed the sample's data to the preview
             var elementCount = vm.Bands.Sum(b => b.Elements.Count);
