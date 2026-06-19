@@ -96,7 +96,22 @@ public sealed class ChartSeriesRule : Notifying
     private Color? _color;
     public Color? Color { get => _color; set => Set(ref _color, value); }
 
-    internal ChartSeries ToSeries() => new(Name, CategoryExpression, ValueExpression, Color);
+    private string _sizeExpression = string.Empty;
+    /// <summary>Bubble marker size expression — used when the chart kind is <c>Bubble</c>.</summary>
+    public string SizeExpression { get => _sizeExpression; set => Set(ref _sizeExpression, value); }
+
+    private string _highExpression = string.Empty;
+    /// <summary>Stock high expression — used when the chart kind is <c>Stock</c>.</summary>
+    public string HighExpression { get => _highExpression; set => Set(ref _highExpression, value); }
+
+    private string _lowExpression = string.Empty;
+    /// <summary>Stock low expression — used when the chart kind is <c>Stock</c>.</summary>
+    public string LowExpression { get => _lowExpression; set => Set(ref _lowExpression, value); }
+
+    internal ChartSeries ToSeries() => new(Name, CategoryExpression, ValueExpression, Color,
+        SizeExpression: string.IsNullOrWhiteSpace(SizeExpression) ? null : SizeExpression,
+        HighExpression: string.IsNullOrWhiteSpace(HighExpression) ? null : HighExpression,
+        LowExpression: string.IsNullOrWhiteSpace(LowExpression) ? null : LowExpression);
 
     internal static ChartSeriesRule From(ChartSeries s) => new()
     {
@@ -104,6 +119,9 @@ public sealed class ChartSeriesRule : Notifying
         CategoryExpression = s.CategoryExpression,
         ValueExpression = s.ValueExpression,
         Color = s.Color,
+        SizeExpression = s.SizeExpression ?? string.Empty,
+        HighExpression = s.HighExpression ?? string.Empty,
+        LowExpression = s.LowExpression ?? string.Empty,
     };
 }
 

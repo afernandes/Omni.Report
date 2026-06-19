@@ -367,6 +367,21 @@ else
                         <input type="text" value="@s.ValueExpression" placeholder="Fields.Valor"
                                @onchange="@(e => s.ValueExpression = e.Value?.ToString() ?? string.Empty)"
                                style="width:100%;font-family:var(--font-mono);font-size:11px;" />
+                        @if (Element.ChartKind == ChartKind.Bubble)
+                        {
+                            <input type="text" value="@s.SizeExpression" placeholder="Tamanho (Fields.X)"
+                                   @onchange="@(e => s.SizeExpression = e.Value?.ToString() ?? string.Empty)"
+                                   style="width:100%;font-family:var(--font-mono);font-size:11px;margin-top:4px;" />
+                        }
+                        @if (Element.ChartKind == ChartKind.Stock)
+                        {
+                            <input type="text" value="@s.HighExpression" placeholder="Máxima (Fields.High)"
+                                   @onchange="@(e => s.HighExpression = e.Value?.ToString() ?? string.Empty)"
+                                   style="width:100%;font-family:var(--font-mono);font-size:11px;margin-top:4px;" />
+                            <input type="text" value="@s.LowExpression" placeholder="Mínima (Fields.Low)"
+                                   @onchange="@(e => s.LowExpression = e.Value?.ToString() ?? string.Empty)"
+                                   style="width:100%;font-family:var(--font-mono);font-size:11px;margin-top:4px;" />
+                        }
                     </div>
                 }
                 <button class="btn" type="button" style="font-size:11px;padding:3px 8px;cursor:pointer;border:1px dashed var(--border);background:transparent;color:var(--text-secondary);width:100%;"

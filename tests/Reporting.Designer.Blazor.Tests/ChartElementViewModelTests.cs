@@ -76,4 +76,37 @@ public class ChartElementViewModelTests
         clone.ChartSeries[0].Name = "B";
         vm.ChartSeries[0].Name.Should().Be("A");
     }
+
+    [Fact]
+    public void Bubble_and_stock_series_fields_round_trip_in_the_designer()
+    {
+        var bubbleVm = new ElementViewModel(DesignerElementKind.Chart, "c") { ChartKind = ChartKind.Bubble };
+        bubbleVm.ChartSeries.Add(new ChartSeriesRule
+        {
+            Name = "Bolhas",
+            CategoryExpression = "Fields.x",
+            ValueExpression = "Fields.y",
+            SizeExpression = "Fields.peso",
+        });
+
+        var bubble = (ChartElement)bubbleVm.ToElement();
+        bubble.Kind.Should().Be(ChartKind.Bubble);
+        bubble.Series[0].SizeExpression.Should().Be("Fields.peso");
+        ElementViewModel.FromElement(bubble).ChartSeries[0].SizeExpression.Should().Be("Fields.peso");
+
+        var stockVm = new ElementViewModel(DesignerElementKind.Chart, "s") { ChartKind = ChartKind.Stock };
+        stockVm.ChartSeries.Add(new ChartSeriesRule
+        {
+            Name = "Preço",
+            CategoryExpression = "Fields.dia",
+            ValueExpression = "Fields.fech",
+            HighExpression = "Fields.alta",
+            LowExpression = "Fields.baixa",
+        });
+
+        var stock = (ChartElement)stockVm.ToElement();
+        stock.Series[0].HighExpression.Should().Be("Fields.alta");
+        stock.Series[0].LowExpression.Should().Be("Fields.baixa");
+        ElementViewModel.FromElement(stock).ChartSeries[0].LowExpression.Should().Be("Fields.baixa");
+    }
 }
