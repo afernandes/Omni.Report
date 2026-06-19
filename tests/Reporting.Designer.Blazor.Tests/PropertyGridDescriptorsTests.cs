@@ -108,6 +108,17 @@ public class PropertyGridDescriptorsTests
     }
 
     [Fact]
+    public void Databar_and_sparkline_scalars_flatten_with_their_editors()
+    {
+        var bar = PropertyGridDescriptors.For(typeof(DataBarElement));
+        bar.Should().Contain(d => d.Name == "ValueExpression" && d.Editor == "text");
+        bar.Should().Contain(d => d.Name == "FillColor" && d.Editor == "color-hex");
+
+        PropertyGridDescriptors.For(typeof(SparklineElement))
+            .Should().Contain(d => d.Name == "Kind" && d.Editor == "enum");
+    }
+
+    [Fact]
     public void Nested_property_flattens_into_dotted_path_descriptors()
     {
         var descriptors = PropertyGridDescriptors.For(typeof(StyledFixture));
