@@ -262,6 +262,14 @@ internal static class RepJsonReader
             var co = n.AsObject();
             return new ConditionalFormat((string?)co["condition"] ?? "true", ReadStyle(co["style"]?.AsObject()));
         });
+        var propertyExpressions = new Dictionary<string, string>();
+        if (o["propertyExpressions"] is JsonObject peObj)
+        {
+            foreach (var kv in peObj)
+            {
+                propertyExpressions[kv.Key] = (string?)kv.Value ?? string.Empty;
+            }
+        }
         // RDL-style extensions on the abstract base — optional; round-trip losslessly when absent.
         var bookmark = (string?)o["bookmark"];
         var documentMapLabel = (string?)o["documentMapLabel"];
@@ -353,6 +361,7 @@ internal static class RepJsonReader
             VisibleExpression = visibleExpression,
             Style = style,
             ConditionalFormats = new EquatableArray<ConditionalFormat>(conditionalFormats),
+            PropertyExpressions = new EquatableDictionary<string, string>(propertyExpressions),
             Bookmark = bookmark,
             DocumentMapLabel = documentMapLabel,
             ToggleItemId = toggleItemId,

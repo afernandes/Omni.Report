@@ -27,6 +27,15 @@ public abstract record ReportElement
     /// <summary>Conditional format rules evaluated in order; matching rules layer onto <see cref="Style"/>.</summary>
     public EquatableArray<ConditionalFormat> ConditionalFormats { get; init; } = EquatableArray<ConditionalFormat>.Empty;
 
+    /// <summary>Per-property expression bindings (SSRS-style): a property <b>path</b> → an expression
+    /// evaluated per instance at render time, whose result overrides the property's static value (the
+    /// static value is the fallback when no binding exists or the expression fails). The path may be
+    /// nested: <c>"Direction"</c>, <c>"FillColor"</c>, <c>"Style.ForeColor"</c>, <c>"Style.Font.Size"</c>,
+    /// <c>"Bounds.Width"</c>. Empty for the vast majority of elements. Independent of (and applied before)
+    /// <see cref="ConditionalFormats"/>; both keep working. Code-first/low-level set static values
+    /// directly and add bindings only when wanted.</summary>
+    public EquatableDictionary<string, string> PropertyExpressions { get; init; } = EquatableDictionary<string, string>.Empty;
+
     // ── RDL-compatibility additions ──────────────────────────────────────────────
 
     /// <summary>RDL <c>&lt;Bookmark&gt;</c>: a unique string that other elements'
