@@ -1106,7 +1106,6 @@ public sealed class ElementViewModel : Notifying
         DocumentMapLabel = element.DocumentMapLabel;
         ToggleItemId = element.ToggleItemId;
         InitiallyHidden = element.InitiallyHidden;
-        HasAction = false;
         if (element.Action is { } act)
         {
             HasAction = true;
@@ -1118,6 +1117,16 @@ public sealed class ElementViewModel : Notifying
             {
                 DrillthroughParameters.Add(DrillthroughParameterRule.From(p));
             }
+        }
+        else
+        {
+            // No action on the element → clear the editor fields too, so a re-hydration (ApplyMetaSet)
+            // can't leave a stale URL/bookmark that would resurface if the action toggle is re-enabled.
+            HasAction = false;
+            ActionKind = ActionKind.Hyperlink;
+            Hyperlink = null;
+            BookmarkLinkId = null;
+            DrillthroughReportName = null;
         }
         // Preserve the full domain element for advanced kinds without a dedicated editor, so
         // re-saving doesn't degrade them (they'd otherwise fall back to a TextBox).

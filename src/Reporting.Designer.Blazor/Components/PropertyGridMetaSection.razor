@@ -112,8 +112,19 @@
 
     private IReadOnlyList<PropertyGridDescriptor> _descriptors = Array.Empty<PropertyGridDescriptor>();
 
+    private string? _loadedElementId;
+
     protected override void OnParametersSet()
-        => _descriptors = PropertyGridDescriptors.For(Element.ToElement().GetType());
+    {
+        // Drop fx-open markers ONLY when a different element is selected — not on same-element edits
+        // (which also re-fire OnParametersSet), or an open expression editor would close mid-typing.
+        if (Element.Id != _loadedElementId)
+        {
+            _fxOpen.Clear();
+            _loadedElementId = Element.Id;
+        }
+        _descriptors = PropertyGridDescriptors.For(Element.ToElement().GetType());
+    }
 
     private void ToggleFx(string path, bool bound)
     {

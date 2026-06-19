@@ -47,4 +47,19 @@ public class PropertyGridMetaSectionTests : Bunit.BunitContext
 
         cut.Markup.Should().Contain("= expressão", "the fx toggle swaps the static editor for an expression input");
     }
+
+    [Fact]
+    public void Fx_open_state_does_not_leak_when_the_selected_element_changes()
+    {
+        var cut = Render<PropertyGridMetaSection>(p =>
+            p.Add(x => x.Element, new ElementViewModel(DesignerElementKind.Rectangle, "a")));
+        cut.FindAll("button").First(b => b.TextContent.Trim() == "fx").Click(); // open fx for a property of A
+        cut.Markup.Should().Contain("= expressão");
+
+        // Select a DIFFERENT element of the same kind (same property paths) — the open-fx marker must not carry over.
+        cut.Render(p =>
+            p.Add(x => x.Element, new ElementViewModel(DesignerElementKind.Rectangle, "b")));
+
+        cut.Markup.Should().NotContain("= expressão", "the fx-open marker belongs to the previous element, not the new one");
+    }
 }
