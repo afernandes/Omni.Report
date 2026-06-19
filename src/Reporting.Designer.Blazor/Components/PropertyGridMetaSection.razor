@@ -11,15 +11,15 @@
     A new element that derives from an existing one gets all this automatically — no hand-coded UI.
 *@
 
-@if (_descriptors.Count > 0)
+@foreach (var group in _descriptors.GroupBy(d => d.Category))
 {
     <div class="prop-section">
         <div class="prop-section-head">
             <Icon Name="chevron-down" Size="12" CssClass="chev icon icon-12" />
-            <span>Propriedades</span>
-            <span class="count">@_descriptors.Count</span>
+            <span>@group.Key</span>
+            <span class="count">@group.Count()</span>
         </div>
-        @foreach (var d in _descriptors)
+        @foreach (var d in group)
         {
             var path = d.Path;
             var expr = Element.GetPropertyExpression(path);

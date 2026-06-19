@@ -21,7 +21,7 @@ public class PropertyGridMetaSectionTests : Bunit.BunitContext
         var cut = Render<PropertyGridMetaSection>(p =>
             p.Add(x => x.Element, new ElementViewModel(DesignerElementKind.Rectangle, "r1")));
 
-        cut.Markup.Should().Contain("Propriedades");
+        cut.Markup.Should().Contain("Forma", "descriptors are grouped under their category header");
         cut.Markup.Should().Contain("Preenchimento");
         cut.Markup.Should().Contain("Raio do canto");
         cut.Markup.Should().Contain(">fx<", "every bindable property gets an fx toggle");

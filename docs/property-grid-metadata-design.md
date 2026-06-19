@@ -199,18 +199,28 @@ escolhido pelo **tipo** de cada prop (`Color?` → color-picker).
 O **único** trabalho manual restante é a **paridade de serialização** (§10) — inerente ao formato de
 arquivo e que nenhuma engine elimina, mas que deixou de ser um problema de UI.
 
-## 7. Migração incremental (sem big-bang)
+## 7. Migração incremental (sem big-bang) — **ENTREGUE**
 
-Os editores hand-coded **permanecem como fallback** — exatamente como Tablix/Gauge convivem hoje via
-`Src`/`Mutate`. Nada é removido à força.
+> Status: a Opção A foi implementada e **a remoção do `HasTextContent` está completa**. Abaixo, o que
+> foi entregue (PRs reais) — mais do que o plano original, pois também incluiu o **expression-binding
+> por propriedade** (botão `fx`, ver §11), que o pedido pediu em paralelo.
 
-| Fase | Escopo | Resultado |
+| Fase | PR | Escopo entregue |
 |---|---|---|
-| **0 — Infra** | `PropertyGridAttribute` + `PropertyGridDescriptorService` (reflection + cache + setter por Expression Tree) + `PropertyGridGenericSection.razor` + testes de imutabilidade | Nada visível muda |
-| **1 — Piloto** | Anotar `LineElement` (só `Direction`); renderizar as seções genéricas ao lado do `@if` existente; validar round-trip | `Line` dirigido por metadados; resto hand-coded |
-| **2 — Herança real + bug do FillColor** | Introduzir base `ShapeElement { FillColor }`; migrar Rectangle/Ellipse; marcar `Style` como `[Nested]`; **remover o gate `HasTextContent`** | **O bug FillColor/aparência-em-formas morre estruturalmente** |
-| **3 — Enums e editores custom** | Barcode/QrCode (Symbology/QrEcc/ShowText); criar `ColorPickerEditor`/`UnitSpinner` reutilizáveis | — |
-| **4+ — Incremental** | Cada tipo migrado deleta seu `@if` + backing fields. `EquatableArray<T>` (Chart series, ConditionalFormats) por último, com componente de lista | `PropertyGrid.razor` cai de ~600 → ~100 linhas (Layout fixo + dispatch genérico) |
+| **0 — Infra** | #34 | `PropertyGridAttribute` + `PropertyGridDescriptors` (reflection + cache + setter imutável via `<Clone>$`) + testes |
+| **A — Expression-binding** | #35/#36 | `ReportElement.PropertyExpressions` (qualquer prop por expressão, render + serialização + code-first `.Bind`); metadado `Bindable`; o VM passa a preservar `PropertyExpressions` (fix de perda) |
+| **1 — Editor genérico + fx** | #37 | `PropertyGridMetaSection.razor` (editor por tipo + toggle `fx`); substitui as seções hand-coded de `Line`/`Forma`; bridge `ApplyMetaSet`/`LoadFrom` no VM |
+| **2a — Flattening `[Nested]`** | #38 | O serviço achata um record aninhado (`Style.X`) com path pontilhado + setter encadeado imutável |
+| **2b — Aparência/Borda → metadados, sem `HasTextContent`** | #39/#40/#41 | Marcador `[TextStyled]` (herdável); `Style` anotado (fonte/cor/alinhamento/borda/padding) com editores ricos **portados**; seções Appearance + Border&Padding hand-coded removidas; **`HasTextContent` eliminado** (gate da Data via `Element.IsTextStyled`) |
+| **Polimento** | #42 | Meta-grid agrupado por categoria (cabeçalhos "Aparência"/"Borda"/"Forma"/"Linha") |
+
+**Resultado:** nenhuma seção do PropertyGrid depende mais de kind-list hardcoded; aparência, borda e o
+gate de texto vêm todos dos metadados (`[PropertyGrid]` + `[TextStyled]`), respeitando herança e o tipo
+da propriedade, com `fx` (expressão) em qualquer propriedade bindável. A seção "Data" (conteúdo
+primário texto/expressão + Monaco fx + preset de formato) permanece dedicada, mas com visibilidade
+metadata-driven. **Pendências conhecidas (fora do escopo):** migrar a seção Data para metadados;
+preservar a semântica "inherit" (null) de `ForeColor`/`Font` no VM (o designer materializa Black/Arial
+hoje — pré-existente).
 
 ## 8. Riscos e mitigações
 
