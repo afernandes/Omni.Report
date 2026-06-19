@@ -80,4 +80,62 @@ public class DesignerBasicElementAuthorabilityTests
 
         ElementViewModel.FromElement(sp).SparkCategory.Should().Be("Fields.Mes");
     }
+
+    [Fact]
+    public void Visibility_expression_and_autosize_are_authorable_and_round_trip()
+    {
+        var vm = new ElementViewModel(DesignerElementKind.TextBox, "t1")
+        {
+            Expression = "Fields.X",
+            VisibleExpr = "Fields.Total > 0",
+            CanGrow = true,
+            CanShrink = true,
+        };
+
+        var tb = vm.ToElement().Should().BeOfType<TextBoxElement>().Subject;
+        tb.VisibleExpression.Should().Be("Fields.Total > 0", "a conditional-visibility expression must be settable, not just Visible on/off");
+        tb.CanGrow.Should().BeTrue();
+        tb.CanShrink.Should().BeTrue();
+
+        var back = ElementViewModel.FromElement(tb);
+        back.VisibleExpr.Should().Be("Fields.Total > 0");
+        back.CanGrow.Should().BeTrue();
+        back.CanShrink.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Rectangle_corner_radius_is_authorable_and_round_trips()
+    {
+        var vm = new ElementViewModel(DesignerElementKind.Rectangle, "r1") { CornerRadiusMm = 3.5 };
+
+        var rect = vm.ToElement().Should().BeOfType<RectangleElement>().Subject;
+        rect.CornerRadius.ToMm().Should().BeApproximately(3.5, 0.01);
+
+        ElementViewModel.FromElement(rect).CornerRadiusMm.Should().BeApproximately(3.5, 0.01);
+    }
+
+    [Fact]
+    public void Chart_series_colour_is_authorable_and_round_trips()
+    {
+        var vm = new ElementViewModel(DesignerElementKind.Chart, "c1");
+        vm.ChartSeries.Add(new ChartSeriesRule { Name = "A", ColorHex = "#FF8800" });
+
+        var chart = vm.ToElement().Should().BeOfType<ChartElement>().Subject;
+        var color = chart.Series[0].Color;
+        color.Should().NotBeNull("a per-series colour picked in the designer must reach the model");
+        (color!.Value.R, color.Value.G, color.Value.B).Should().Be(((byte)0xFF, (byte)0x88, (byte)0x00));
+
+        ElementViewModel.FromElement(chart).ChartSeries[0].Color.Should().NotBeNull();
+    }
+
+    [Fact]
+    public void Indicator_icon_per_state_is_authorable_and_round_trips()
+    {
+        var vm = new ElementViewModel(DesignerElementKind.Indicator, "ind1");
+        vm.AddIndicatorState();
+        vm.SetIndicatorState(0, start: "0", end: "100", icon: "ArrowUp");
+
+        var ind = vm.ToElement().Should().BeOfType<IndicatorElement>().Subject;
+        ind.States.Should().Contain(s => s.IconName == "ArrowUp", "the per-state icon must be editable, not only Start/End");
+    }
 }

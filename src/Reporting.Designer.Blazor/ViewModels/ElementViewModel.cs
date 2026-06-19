@@ -96,6 +96,14 @@ public sealed class ChartSeriesRule : Notifying
     private Color? _color;
     public Color? Color { get => _color; set => Set(ref _color, value); }
 
+    /// <summary>Series colour as a <c>#RRGGBB</c> hex string, for the PropertyGrid colour picker.
+    /// Null model colour surfaces a sensible default; an unparseable value is ignored.</summary>
+    public string ColorHex
+    {
+        get => _color?.ToHex() ?? "#4F46E5";
+        set { try { Color = Reporting.Styling.Color.FromHex(value); } catch (FormatException) { } }
+    }
+
     private string _sizeExpression = string.Empty;
     /// <summary>Bubble marker size expression — used when the chart kind is <c>Bubble</c>.</summary>
     public string SizeExpression { get => _sizeExpression; set => Set(ref _sizeExpression, value); }
@@ -228,6 +236,15 @@ public sealed class ElementViewModel : Notifying
 
     private bool _isVisible = true;
     public bool IsVisible { get => _isVisible; set => Set(ref _isVisible, value); }
+
+    private string? _visibleExpr;
+    /// <summary>RDL <c>&lt;Visibility&gt;</c> expression — when non-empty the element renders only when
+    /// it evaluates to true (layered on top of <see cref="IsVisible"/>). Base-element parameter.</summary>
+    public string? VisibleExpr { get => _visibleExpr; set => Set(ref _visibleExpr, value); }
+
+    private double _cornerRadiusMm;
+    /// <summary>Rounded-corner radius in millimetres for a <see cref="DesignerElementKind.Rectangle"/>.</summary>
+    public double CornerRadiusMm { get => _cornerRadiusMm; set => Set(ref _cornerRadiusMm, value); }
 
     private bool _canGrow;
     public bool CanGrow { get => _canGrow; set => Set(ref _canGrow, value); }
@@ -743,9 +760,9 @@ public sealed class ElementViewModel : Notifying
         ReportElement element = Kind switch
         {
             DesignerElementKind.Label => new LabelElement { Text = Text, Bounds = Bounds },
-            DesignerElementKind.TextBox => new TextBoxElement { Expression = Expression, Bounds = Bounds },
+            DesignerElementKind.TextBox => new TextBoxElement { Expression = Expression, Bounds = Bounds, CanGrow = CanGrow, CanShrink = CanShrink },
             DesignerElementKind.Line => new LineElement { Bounds = Bounds, Direction = LineDir },
-            DesignerElementKind.Rectangle => new RectangleElement { Bounds = Bounds, FillColor = FillColor },
+            DesignerElementKind.Rectangle => new RectangleElement { Bounds = Bounds, FillColor = FillColor, CornerRadius = Unit.FromMm(CornerRadiusMm) },
             DesignerElementKind.Ellipse => new EllipseElement { Bounds = Bounds, FillColor = FillColor },
             DesignerElementKind.Image => new ImageElement
             {
@@ -828,6 +845,7 @@ public sealed class ElementViewModel : Notifying
             Name = Name,
             Style = style,
             Visible = IsVisible,
+            VisibleExpression = string.IsNullOrWhiteSpace(VisibleExpr) ? null : VisibleExpr,
             ConditionalFormats = conditionalFormats,
             Bookmark = string.IsNullOrWhiteSpace(Bookmark) ? null : Bookmark,
             DocumentMapLabel = string.IsNullOrWhiteSpace(DocumentMapLabel) ? null : DocumentMapLabel,
@@ -865,8 +883,8 @@ public sealed class ElementViewModel : Notifying
             ForeColor = ForeColor, FillColor = FillColor, BackColor = BackColor,
             HorizontalAlignment = HorizontalAlignment, VerticalAlignment = VerticalAlignment,
             WordWrap = WordWrap, Padding = Padding, Border = Border, Format = Format,
-            IsVisible = IsVisible, CanGrow = CanGrow, CanShrink = CanShrink, KeepTogether = KeepTogether,
-            IsLocked = IsLocked,
+            IsVisible = IsVisible, VisibleExpr = VisibleExpr, CanGrow = CanGrow, CanShrink = CanShrink, KeepTogether = KeepTogether,
+            IsLocked = IsLocked, CornerRadiusMm = CornerRadiusMm,
             InlineImageData = InlineImageData is null ? null : (byte[])InlineImageData.Clone(),
             Symbology = Symbology, QrEcc = QrEcc, BarcodeShowText = BarcodeShowText,
             LineDir = LineDir,
@@ -972,11 +990,16 @@ public sealed class ElementViewModel : Notifying
             Format              = element.Style.Format,
             Border              = element.Style.Border,
             IsVisible = element.Visible,
+            VisibleExpr = element.VisibleExpression,
         };
         switch (element)
         {
             case LabelElement lbl: vm.Text = lbl.Text; break;
-            case TextBoxElement tb: vm.Expression = tb.Expression; break;
+            case TextBoxElement tb:
+                vm.Expression = tb.Expression;
+                vm.CanGrow = tb.CanGrow;
+                vm.CanShrink = tb.CanShrink;
+                break;
             case BarcodeElement bc:
                 vm.Expression = bc.Expression;
                 vm.Symbology = bc.Symbology;
@@ -984,7 +1007,7 @@ public sealed class ElementViewModel : Notifying
                 vm.BarcodeShowText = bc.ShowText;
                 break;
             case LineElement ln: vm.LineDir = ln.Direction; break;
-            case RectangleElement r: vm.FillColor = r.FillColor; break;
+            case RectangleElement r: vm.FillColor = r.FillColor; vm.CornerRadiusMm = r.CornerRadius.ToMm(); break;
             case EllipseElement e: vm.FillColor = e.FillColor; break;
             case ImageElement img:
                 if (img.InlineData.Count > 0) vm.InlineImageData = img.InlineData.ToArray();
