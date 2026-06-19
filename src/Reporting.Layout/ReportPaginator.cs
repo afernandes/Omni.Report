@@ -466,7 +466,8 @@ public sealed partial class ReportPaginator : IReportPaginator
         // totals are unchanged; this only fixes the previously-empty header/early-band case.
         ctx.PrimeReportScope(rows.Select(r => r.Fields));
 
-        var bandRenderer = new BandRenderer(_evaluator, _templates, measurer, allSources, primarySourceName);
+        var bandRenderer = new BandRenderer(_evaluator, _templates, measurer, allSources, primarySourceName,
+            renderSubreport: (sub, subBounds, subCtx) => RenderSubreport(sub, subBounds, subCtx, request, measurer));
         var page = new PageAccumulator(def.PageSetup);
 
         var pageHeaderHeight = def.PageHeader?.Height ?? Unit.Zero;

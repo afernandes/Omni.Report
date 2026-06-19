@@ -28,4 +28,14 @@ public sealed class PaginationRequest
     /// <c>Reporting.Expressions.Roslyn</c> package (<c>RoslynCode.CreateResolver(...)</c>) to
     /// enable custom code. Carries the security implications of running embedded C#.</summary>
     public Func<string, object?[], object?>? CodeFunctionResolver { get; init; }
+
+    /// <summary>Optional resolver for <see cref="Reporting.Elements.SubreportElement"/> elements
+    /// that reference a child report by id (<c>ReportId</c>). Returns the child definition, or
+    /// <c>null</c> to skip rendering it. Inline subreports (<c>InlineDefinition</c>) render without
+    /// a resolver. The child paginates against this request's data sources at the subreport's width.</summary>
+    public Func<string, ReportDefinition?>? SubreportResolver { get; init; }
+
+    /// <summary>Nesting depth for subreports — incremented for each embedded child. Guards against a
+    /// report that references itself. Public callers always start at the default (0).</summary>
+    internal int SubreportDepth { get; init; }
 }

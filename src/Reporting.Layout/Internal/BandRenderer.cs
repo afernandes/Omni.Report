@@ -23,18 +23,25 @@ internal sealed class BandRenderer
     private readonly IReadOnlyDictionary<string, List<IReadOnlyList<KeyValuePair<string, object?>>>> _dataSources;
     private readonly string? _primarySource;
 
+    /// <summary>Renders a <see cref="SubreportElement"/> at the given absolute bounds into a list of
+    /// primitives. Supplied by the paginator (which can recurse into a child report); null in
+    /// contexts that don't support subreports (the element then renders nothing).</summary>
+    private readonly Func<SubreportElement, Rectangle, IReportExpressionContext, IReadOnlyList<LayoutPrimitive>>? _renderSubreport;
+
     public BandRenderer(
         ExpressionEvaluator evaluator,
         TemplateRenderer templates,
         ITextMeasurer measurer,
         IReadOnlyDictionary<string, List<IReadOnlyList<KeyValuePair<string, object?>>>>? dataSources = null,
-        string? primarySource = null)
+        string? primarySource = null,
+        Func<SubreportElement, Rectangle, IReportExpressionContext, IReadOnlyList<LayoutPrimitive>>? renderSubreport = null)
     {
         _evaluator = evaluator;
         _templates = templates;
         _measurer = measurer;
         _dataSources = dataSources ?? new Dictionary<string, List<IReadOnlyList<KeyValuePair<string, object?>>>>();
         _primarySource = primarySource;
+        _renderSubreport = renderSubreport;
     }
 
     /// <summary>Renders <paramref name="band"/> at the given origin and returns the resulting
@@ -182,7 +189,13 @@ internal sealed class BandRenderer
                     actualHeight = MaxHeight(actualHeight, elementBounds, origin, null);
                     break;
 
-                // SubreportElement remains deferred.
+                case SubreportElement subreport when _renderSubreport is not null:
+                    foreach (var p in _renderSubreport(subreport, elementBounds, ctx))
+                    {
+                        primitives.Add(p);
+                    }
+                    actualHeight = MaxHeight(actualHeight, elementBounds, origin, null);
+                    break;
             }
         }
 
