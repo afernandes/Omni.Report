@@ -503,6 +503,15 @@ public sealed class BandContent
     public BandContent SubreportData(string dataExpression)
         => MutatePending(e => e is SubreportElement s ? s with { DataExpression = dataExpression } : e);
 
+    /// <summary>Binds a property of the pending element to a report <b>expression</b> evaluated per
+    /// instance at render time, overriding the property's static value (SSRS-style). The
+    /// <paramref name="propertyPath"/> may be nested: <c>"Direction"</c>, <c>"FillColor"</c>,
+    /// <c>"Style.ForeColor"</c>, <c>"Style.Font.Size"</c>, <c>"Bounds.Width"</c>, <c>"Visible"</c>. The
+    /// static value (set the normal way) remains the fallback when the expression fails. Works on any
+    /// element; static and bound values coexist on the same element.</summary>
+    public BandContent Bind(string propertyPath, string expression)
+        => MutatePending(e => e with { PropertyExpressions = AddBinding(e.PropertyExpressions, propertyPath, expression) });
+
     private static EquatableDictionary<string, string> AddBinding(
         EquatableDictionary<string, string> existing, string key, string value)
     {

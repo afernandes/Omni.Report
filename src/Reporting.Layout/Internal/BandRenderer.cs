@@ -56,8 +56,14 @@ internal sealed class BandRenderer
         var primitives = new List<LayoutPrimitive>();
         Unit actualHeight = band.Height;
 
-        foreach (var element in band.Elements)
+        foreach (var rawElement in band.Elements)
         {
+            // Apply per-property expression bindings first, so visibility/bounds/style overrides take
+            // effect before everything below. No bindings → zero cost, same instance.
+            var element = rawElement.PropertyExpressions.Count == 0
+                ? rawElement
+                : ApplyPropertyExpressions(rawElement, ctx);
+
             if (!IsVisible(element, ctx))
             {
                 continue;
@@ -273,6 +279,28 @@ internal sealed class BandRenderer
             }
         }
         return height;
+    }
+
+    /// <summary>Resolves each of the element's per-property expression bindings against the current
+    /// row context and overlays the results onto a copy. A binding whose expression fails to evaluate
+    /// is skipped (the property keeps its static value) — a bad binding never breaks the render.</summary>
+    private ReportElement ApplyPropertyExpressions(ReportElement element, IReportExpressionContext ctx)
+    {
+        var result = element;
+        foreach (var (path, expression) in element.PropertyExpressions)
+        {
+            object? raw;
+            try
+            {
+                raw = _evaluator.Evaluate(expression, ctx);
+            }
+            catch (Exception ex) when (ex is ExpressionParseException or ExpressionEvaluationException)
+            {
+                continue; // graceful: a bad binding skips, keeping the static value — never breaks the render
+            }
+            result = PropertyPathBinder.Apply(result, path, raw, ctx.Culture);
+        }
+        return result;
     }
 
     private bool IsVisible(ReportElement element, IReportExpressionContext ctx)

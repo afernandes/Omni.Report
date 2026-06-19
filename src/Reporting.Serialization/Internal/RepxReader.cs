@@ -272,6 +272,9 @@ internal static class RepxReader
                 Attr(cf, "Condition") ?? "true",
                 ReadStyle(cf.Element("Style"))))
             .ToArray() ?? Array.Empty<ConditionalFormat>();
+        var propertyExpressions = el.Element("PropertyExpressions")?.Elements("PropertyExpression")
+            .ToDictionary(x => Attr(x, "Path") ?? string.Empty, x => Attr(x, "Expression") ?? string.Empty)
+            ?? new Dictionary<string, string>();
         // RDL-style extensions on the abstract base — optional attrs/child reflecting
         // the additions in ReportElement. Round-trips losslessly when not present.
         var bookmark = Attr(el, "Bookmark");
@@ -322,6 +325,7 @@ internal static class RepxReader
             VisibleExpression = visibleExpression,
             Style = style,
             ConditionalFormats = new EquatableArray<ConditionalFormat>(conditionalFormats),
+            PropertyExpressions = new EquatableDictionary<string, string>(propertyExpressions),
             Bookmark = bookmark,
             DocumentMapLabel = documentMapLabel,
             ToggleItemId = toggleItemId,

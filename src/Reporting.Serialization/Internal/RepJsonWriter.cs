@@ -329,6 +329,15 @@ internal static class RepJsonWriter
             o["conditionalFormats"] = new JsonArray(element.ConditionalFormats.Select(cf =>
                 (JsonNode?)new JsonObject { ["condition"] = cf.Condition, ["style"] = WriteStyle(cf.Style) }).ToArray());
         }
+        if (element.PropertyExpressions.Count > 0)
+        {
+            var pe = new JsonObject();
+            foreach (var kv in element.PropertyExpressions)
+            {
+                pe[kv.Key] = kv.Value;
+            }
+            o["propertyExpressions"] = pe;
+        }
         // RDL-style extensions on the abstract base — emitted only when set so the common
         // shape stays compact for elements that don't use them (parity with the .repx writer).
         if (element.Action is { } act)

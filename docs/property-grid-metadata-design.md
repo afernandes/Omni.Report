@@ -243,3 +243,53 @@ A **paridade de serialização** (`ToElement`/`FromElement` + os 4 switches `.re
 conhecer os tipos concretos). O ganho é que ela passa de **6 pontos para ~4**, e **nenhum** deles é de
 UI. Uma evolução possível (fora deste escopo) é um registry `Type → handler` que centraliza esses 4
 switches num só lugar — mas isso **não reduz** a paridade, só a concentra.
+
+## 11. Propriedades dirigidas por **expressão** (modelo SSRS `fx`)
+
+> Requisito: *"todas as propriedades poderem ser alteradas via expressions do relatório"* — i.e. qualquer
+> propriedade pode ser uma **constante** OU uma **expressão** avaliada por instância/linha, como o botão
+> `fx` do SSRS. Isso **complementa** o PropertyGrid de metadados (é onde o `fx` por campo encaixa) e **não**
+> impede o code-first/low-level (o valor estático continua sendo o caminho padrão).
+
+### Como as engines resolvem (convergência)
+
+Todas usam uma **coleção lateral** `propriedade → expressão`, avaliada no render, **em vez de embrulhar
+cada tipo** num union (`ColorOrExpression`, `UnitOrExpression`… × 50 props — explode o type-system):
+
+| Engine | Armazenamento | UI |
+|---|---|---|
+| **SSRS / RDL** | cada prop é um `ReportExpression` (prefixo `=` distingue literal de expressão) | botão `fx` por campo |
+| **DevExpress XtraReports** | `XRControl.ExpressionBindings` (lista `PropertyName + Expression`); a prop real continua `Color` | diálogo coletor |
+| **Telerik Reporting** | `Bindings` com `PropertyPath` aninhado (`"Style.Font.Bold"`) resolvido por reflexão | árvore de props |
+| **JasperReports** | cada atributo aceita constante ou `$F{...}` | inline |
+
+**Timing idêntico:** ao renderizar cada instância, avalia a expressão, **coage ao tipo** da propriedade e
+**sobrescreve** o valor estático. O OmniReport segue o modelo **DevExpress/Telerik** (coleção lateral +
+`PropertyPath` aninhado + reflexão) — viabilizado pelos records imutáveis + o setter por `<Clone>$`.
+
+### Design adotado — **Fase A entregue** (núcleo, sem UI)
+
+- **Modelo:** `ReportElement.PropertyExpressions : EquatableDictionary<string,string>` (path → expressão).
+  Reusa o tipo que **já** round-trippa (provado por `SubreportElement.ParameterBindings`). O valor estático
+  permanece como **fallback**. Convive com `VisibleExpression` e `ConditionalFormats` (mantidos como estão).
+- **Render:** `BandRenderer` aplica `ApplyPropertyExpressions` no início do loop, **antes** de
+  `IsVisible`/`ResolveStyle`, produzindo um elemento efetivo → **zero mudança** nos renderers especializados.
+  O `PropertyPathBinder` (`Reporting.Layout/Internal`) navega o path (`"Style.Font.Size"`), clona a cadeia
+  de records de baixo p/ cima via `<Clone>$`, coage a folha (`Color.FromHex` / `Unit.FromMm` / `Enum.Parse`
+  / `Convert.ChangeType`) e seta. Planos cacheados por `(Type, path)`. **Falha = skip gracioso** (mantém o
+  estático), nunca quebra o render.
+- **Serialização:** espelha o padrão `ParameterBindings` nos 4 switches (`.repx` `<PropertyExpressions>` /
+  `.repjson` `propertyExpressions`), emitido só quando `Count > 0`.
+- **Code-first/low-level:** `.Bind("Style.ForeColor", "Fields.Total > 1000 ? '#C00' : '#000'")` no
+  `BandContent` — só concatena no dict; o estático (`.Color(...)`, `e.Style with {…}`) é intocado. Os dois
+  **convivem no mesmo elemento**.
+- **Coerção:** centralizada no binder; tipos de domínio (`Color`, `Unit`, enums) + `Convert.ChangeType`,
+  respeitando `Nullable<T>` e a cultura do contexto.
+
+### Fase B (designer — próximo passo)
+
+Reusa a Fase 0: flag `Bindable` no `[PropertyGrid]` (curar quais props aceitam expressão) + `PropertyPath`
+canônico no descriptor + botão `fx` ao lado de cada editor genérico, reusando o `ExpressionEditorDialog`
+existente, gravando em `PropertyExpressions[path]` via um `PropertyExpressionService` isolado (sem tocar o
+`ElementViewModel`). Fase C (opcional): unificar `VisibleExpression`/`ConditionalFormat` como açúcar sobre
+`PropertyExpressions`.

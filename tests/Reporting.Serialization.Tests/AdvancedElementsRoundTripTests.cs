@@ -57,6 +57,23 @@ public class AdvancedElementsRoundTripTests
     }
 
     [Fact]
+    public void Property_expression_bindings_round_trip()
+    {
+        var tb = new TextBoxElement
+        {
+            Expression = "Fields.Nome",
+            Bounds = new Rectangle(Unit.Zero, Unit.Zero, Unit.FromMm(60), Unit.FromMm(8)),
+            PropertyExpressions = new EquatableDictionary<string, string>(new Dictionary<string, string>
+            {
+                ["Style.ForeColor"] = "Fields.Total > 1000 ? '#C00' : '#000'",
+                ["Style.Font.Size"] = "Fields.Tamanho",
+                ["Visible"] = "Fields.Mostrar",
+            }),
+        };
+        AssertRoundTrip(Wrap(tb));
+    }
+
+    [Fact]
     public void Tablix_with_groups_and_cells_round_trips()
     {
         var tablix = new TablixElement

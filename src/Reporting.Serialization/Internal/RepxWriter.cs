@@ -425,6 +425,11 @@ internal static class RepxWriter
             el.Add(new XElement("ConditionalFormats", element.ConditionalFormats.Select(cf =>
                 new XElement("ConditionalFormat", new XAttribute("Condition", cf.Condition), WriteStyle(cf.Style)))));
         }
+        if (element.PropertyExpressions.Count > 0)
+        {
+            el.Add(new XElement("PropertyExpressions", element.PropertyExpressions.Select(kv =>
+                new XElement("PropertyExpression", new XAttribute("Path", kv.Key), new XAttribute("Expression", kv.Value)))));
+        }
         // Action is serialized as a child element (rather than attribute) because it has
         // its own sub-tree for drillthrough parameters.
         if (element.Action is { } act)
