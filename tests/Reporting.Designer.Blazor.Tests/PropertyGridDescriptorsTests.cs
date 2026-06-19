@@ -61,6 +61,42 @@ public class PropertyGridDescriptorsTests
         public Style Look { get; init; } = Style.Default;
     }
 
+    // The whole point of the metadata approach: a new element that DERIVES from another reuses the
+    // base's editors automatically (reflection walks the type hierarchy) and adds its own.
+    private record BaseWidget : ReportElement
+    {
+        [PropertyGrid(Category = "Base", Order = 1, Label = "Comum", Bindable = true)]
+        public Color? Common { get; init; }
+    }
+
+    private sealed record DerivedWidget : BaseWidget
+    {
+        [PropertyGrid(Category = "Derivado", Order = 2, Label = "Extra")]
+        public LineDirection Extra { get; init; }
+    }
+
+    [Fact]
+    public void A_derived_element_inherits_the_base_editors_plus_its_own()
+    {
+        var descriptors = PropertyGridDescriptors.For(typeof(DerivedWidget));
+
+        // Inherited from BaseWidget with ZERO extra code on the derived type — the core promise.
+        var common = descriptors.Should().ContainSingle(d => d.Name == "Common").Subject;
+        common.Editor.Should().Be("color-picker");
+        common.Bindable.Should().BeTrue();
+        common.Category.Should().Be("Base");
+
+        // Declared on DerivedWidget, with the editor inferred from its own type.
+        var extra = descriptors.Should().ContainSingle(d => d.Name == "Extra").Subject;
+        extra.Editor.Should().Be("enum");
+
+        // And the immutable setter for an INHERITED property still works on the derived record.
+        var widget = new DerivedWidget();
+        var updated = (DerivedWidget)common.Set(widget, Color.FromHex("#ABCDEF"));
+        updated.Common.Should().Be(Color.FromHex("#ABCDEF"));
+        widget.Common.Should().BeNull("the original is untouched");
+    }
+
     [Fact]
     public void Nested_property_flattens_into_dotted_path_descriptors()
     {
