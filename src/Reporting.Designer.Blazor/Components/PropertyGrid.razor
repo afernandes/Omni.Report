@@ -259,58 +259,6 @@ else
         </div>
     }
 
-    @* ── DataBar editor ──────────────────────────────────────────────────────── *@
-    @if (Element.Kind == DesignerElementKind.DataBar)
-    {
-        <div class="prop-section">
-            <div class="prop-section-head"><Icon Name="chevron-down" Size="12" CssClass="chev icon icon-12" /><span>Barra de dados</span></div>
-            <div class="prop-row"><div class="p-label">Valor</div><div class="p-editor">
-                <input type="text" value="@Element.DataBarValue" placeholder="Fields.X"
-                       @onchange="@(e => Element.DataBarValue = e.Value?.ToString() ?? string.Empty)"
-                       style="flex:1;font-family:var(--font-mono);font-size:11.5px;" /></div></div>
-            <div class="prop-row"><div class="p-label">Mín</div><div class="p-editor">
-                <input type="text" value="@Element.DataBarMin"
-                       @onchange="@(e => Element.DataBarMin = e.Value?.ToString() ?? string.Empty)"
-                       style="flex:1;font-family:var(--font-mono);font-size:11.5px;" /></div></div>
-            <div class="prop-row"><div class="p-label">Máx</div><div class="p-editor">
-                <input type="text" value="@Element.DataBarMax"
-                       @onchange="@(e => Element.DataBarMax = e.Value?.ToString() ?? string.Empty)"
-                       style="flex:1;font-family:var(--font-mono);font-size:11.5px;" /></div></div>
-            <div class="prop-row"><div class="p-label">Cor</div><div class="p-editor">
-                <input type="color" value="@Element.DataBarFill"
-                       @onchange="@(e => Element.DataBarFill = e.Value?.ToString() ?? "#C2410C")"
-                       style="width:28px;height:18px;cursor:pointer;" /></div></div>
-        </div>
-    }
-
-    @* ── Sparkline editor ────────────────────────────────────────────────────── *@
-    @if (Element.Kind == DesignerElementKind.Sparkline)
-    {
-        <div class="prop-section">
-            <div class="prop-section-head"><Icon Name="chevron-down" Size="12" CssClass="chev icon icon-12" /><span>Mini-gráfico</span></div>
-            <div class="prop-row"><div class="p-label">Tipo</div><div class="p-editor">
-                <select value="@Element.SparkKind"
-                        @onchange="@(e => Element.SparkKind = Enum.TryParse<SparklineKind>(e.Value?.ToString(), out var k) ? k : SparklineKind.Line)"
-                        style="flex:1;font-size:11.5px;">
-                    @foreach (var k in Enum.GetValues<SparklineKind>())
-                    {
-                        <option value="@k">@k</option>
-                    }
-                </select></div></div>
-            <div class="prop-row"><div class="p-label">Valor</div><div class="p-editor">
-                <input type="text" value="@Element.SparkValue" placeholder="Fields.Value"
-                       @onchange="@(e => Element.SparkValue = e.Value?.ToString() ?? string.Empty)"
-                       style="flex:1;font-family:var(--font-mono);font-size:11.5px;" /></div></div>
-            <div class="prop-row"><div class="p-label">Categoria</div><div class="p-editor">
-                <input type="text" value="@Element.SparkCategory" placeholder="(opcional) Fields.X"
-                       @onchange="@(e => Element.SparkCategory = e.Value?.ToString() ?? string.Empty)"
-                       style="flex:1;font-family:var(--font-mono);font-size:11.5px;" /></div></div>
-            <div class="prop-row"><div class="p-label">Fonte</div><div class="p-editor">
-                <input type="text" value="@Element.SparkDataSet" placeholder="(fonte primária)"
-                       @onchange="@(e => Element.SparkDataSet = e.Value?.ToString() ?? string.Empty)"
-                       style="flex:1;font-size:11.5px;" /></div></div>
-        </div>
-    }
 
     @* ── Metadata-driven properties (Line orientation, Shape fill/corner, …) ──────
          Replaces the hand-coded Line/Shape sections: each [PropertyGrid]-annotated property

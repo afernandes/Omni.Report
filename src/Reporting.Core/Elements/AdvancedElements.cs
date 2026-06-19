@@ -174,10 +174,14 @@ public sealed record GaugeRange(string StartExpression, string EndExpression, st
 /// </summary>
 public sealed record DataBarElement : ReportElement
 {
+    [PropertyGrid(Category = "Barra de dados", Order = 1, Label = "Valor", Placeholder = "Fields.Total")]
     public string ValueExpression { get; init; } = "0";
+    [PropertyGrid(Category = "Barra de dados", Order = 2, Label = "Mínimo")]
     public string MinimumExpression { get; init; } = "0";
+    [PropertyGrid(Category = "Barra de dados", Order = 3, Label = "Máximo")]
     public string MaximumExpression { get; init; } = "100";
     /// <summary>Fill colour expression (hex literal or expression returning hex).</summary>
+    [PropertyGrid(Category = "Barra de dados", Order = 4, Label = "Preenchimento", Editor = "color-hex")]
     public string FillColor { get; init; } = "#C2410C";
 }
 
@@ -189,10 +193,14 @@ public sealed record DataBarElement : ReportElement
 /// </summary>
 public sealed record SparklineElement : ReportElement
 {
+    [PropertyGrid(Category = "Mini-gráfico", Order = 1, Label = "Tipo")]
     public SparklineKind Kind { get; init; } = SparklineKind.Line;
     /// <summary>Data source providing the trend series. Each row contributes one point.</summary>
+    [PropertyGrid(Category = "Mini-gráfico", Order = 4, Label = "Fonte", Placeholder = "(fonte primária)")]
     public string? DataSetName { get; init; }
+    [PropertyGrid(Category = "Mini-gráfico", Order = 2, Label = "Valor", Placeholder = "Fields.Total")]
     public string ValueExpression { get; init; } = "Fields.Value";
+    [PropertyGrid(Category = "Mini-gráfico", Order = 3, Label = "Categoria")]
     public string? CategoryExpression { get; init; }
 }
 
