@@ -1,3 +1,5 @@
+using Reporting.Metadata;
+
 namespace Reporting.Elements;
 
 /// <summary>Barcode symbologies recognized by the renderer. Kept independent of
@@ -43,6 +45,7 @@ public enum QrEccLevel
 /// <summary>Renders a barcode whose value comes from the evaluated <see cref="Expression"/>.
 /// Vector output — the encoder produces module-unit geometry; the renderer scales it
 /// into the element bounds.</summary>
+[TextStyled]
 public sealed record BarcodeElement : ReportElement
 {
     /// <summary>Which symbology to render.</summary>

@@ -54,6 +54,15 @@ public static class PropertyGridDescriptors
     {
         var list = new List<PropertyGridDescriptor>();
         Collect(type, chain: [], prefix: null, list);
+        // A text element flattens the SHARED Style's appearance props ("Style.ForeColor", "Style.Font", …)
+        // into its grid. Style lives on the base element (for code-first/low-level), so rather than mark it
+        // [Nested] globally — which would show font/alignment on shapes too — we opt in per type via
+        // [TextStyled] (Inherited: a derived text element gets appearance automatically).
+        if (type.GetCustomAttribute<TextStyledAttribute>(inherit: true) is not null
+            && type.GetProperty(nameof(ReportElement.Style), BindingFlags.Public | BindingFlags.Instance) is { } styleProp)
+        {
+            Collect(styleProp.PropertyType, chain: [styleProp], prefix: styleProp.Name, list);
+        }
         return list.OrderBy(d => d.Order).ThenBy(d => d.Label, StringComparer.Ordinal).ToList();
     }
 
