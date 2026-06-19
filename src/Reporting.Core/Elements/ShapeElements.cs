@@ -8,7 +8,7 @@ namespace Reporting.Elements;
 /// the line is drawn between two of its corners as indicated by <see cref="LineDirection"/>.</summary>
 public sealed record LineElement : ReportElement
 {
-    [PropertyGrid(Category = "Linha", Order = 1, Label = "Orientação")]
+    [PropertyGrid(Category = "Linha", Order = 1, Label = "Orientação", Bindable = true)]
     public LineDirection Direction { get; init; } = LineDirection.TopLeftToBottomRight;
 
     public BorderSide Pen { get; init; } = new(BorderLineStyle.Solid, Unit.FromPoint(0.5), Color.Black);
@@ -28,11 +28,15 @@ public enum LineDirection
 
 public sealed record RectangleElement : ReportElement
 {
+    [PropertyGrid(Category = "Forma", Order = 1, Label = "Preenchimento", Bindable = true)]
     public Color? FillColor { get; init; }
+
+    [PropertyGrid(Category = "Forma", Order = 2, Label = "Raio do canto", Bindable = true)]
     public Unit CornerRadius { get; init; } = Unit.Zero;
 }
 
 public sealed record EllipseElement : ReportElement
 {
+    [PropertyGrid(Category = "Forma", Order = 1, Label = "Preenchimento", Bindable = true)]
     public Color? FillColor { get; init; }
 }

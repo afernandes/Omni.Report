@@ -728,6 +728,35 @@ public sealed class ElementViewModel : Notifying
     /// at render time; matching rules layer their style overrides onto the element.</summary>
     public ObservableCollection<ConditionalFormatRule> ConditionalFormats { get; } = new();
 
+    /// <summary>Per-property expression bindings (SSRS-style <c>fx</c>): property path → expression,
+    /// mirroring <see cref="ReportElement.PropertyExpressions"/>. Tracked here so a load → edit → save
+    /// cycle through the designer preserves them (without this the VM would silently drop them), and so
+    /// the metadata PropertyGrid can offer an <c>fx</c> toggle per property.</summary>
+    private readonly Dictionary<string, string> _propertyExpressions = new(StringComparer.Ordinal);
+
+    /// <summary>Read-only view of the per-property expression bindings keyed by property path.</summary>
+    public IReadOnlyDictionary<string, string> PropertyExpressions => _propertyExpressions;
+
+    /// <summary>The expression bound to <paramref name="path"/>, or null when the property uses its
+    /// static value.</summary>
+    public string? GetPropertyExpression(string path)
+        => _propertyExpressions.TryGetValue(path, out var v) ? v : null;
+
+    /// <summary>Binds <paramref name="path"/> to <paramref name="expression"/>, or clears the binding
+    /// (reverting to the static value) when the expression is null/blank.</summary>
+    public void SetPropertyExpression(string path, string? expression)
+    {
+        if (string.IsNullOrWhiteSpace(expression))
+        {
+            _propertyExpressions.Remove(path);
+        }
+        else
+        {
+            _propertyExpressions[path] = expression;
+        }
+        RaiseChanged();
+    }
+
     public Rectangle Bounds
     {
         get => new(X, Y, Width, Height);
@@ -847,6 +876,9 @@ public sealed class ElementViewModel : Notifying
             Visible = IsVisible,
             VisibleExpression = string.IsNullOrWhiteSpace(VisibleExpr) ? null : VisibleExpr,
             ConditionalFormats = conditionalFormats,
+            PropertyExpressions = _propertyExpressions.Count == 0
+                ? Reporting.Common.EquatableDictionary<string, string>.Empty
+                : new Reporting.Common.EquatableDictionary<string, string>(_propertyExpressions),
             Bookmark = string.IsNullOrWhiteSpace(Bookmark) ? null : Bookmark,
             DocumentMapLabel = string.IsNullOrWhiteSpace(DocumentMapLabel) ? null : DocumentMapLabel,
             ToggleItemId = string.IsNullOrWhiteSpace(ToggleItemId) ? null : ToggleItemId,
@@ -935,6 +967,10 @@ public sealed class ElementViewModel : Notifying
         // in place, so sharing it between the original and the clone is safe — and without this a
         // copy/paste would reset the pasted element to its empty default.
         c._sourceElement = _sourceElement;
+        foreach (var kv in _propertyExpressions)
+        {
+            c._propertyExpressions[kv.Key] = kv.Value;
+        }
         return c;
     }
 
@@ -1028,6 +1064,10 @@ public sealed class ElementViewModel : Notifying
         foreach (var cf in element.ConditionalFormats)
         {
             vm.ConditionalFormats.Add(ConditionalFormatRule.From(cf));
+        }
+        foreach (var kv in element.PropertyExpressions)
+        {
+            vm._propertyExpressions[kv.Key] = kv.Value;
         }
         // RDL Phase 1 extensions: pull every additive field back into the VM so the
         // PropertyGrid can edit them. HasAction is derived from the presence of an
