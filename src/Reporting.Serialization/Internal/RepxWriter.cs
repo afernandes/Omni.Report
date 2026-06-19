@@ -507,6 +507,9 @@ internal static class RepxWriter
                 {
                     se.SetAttributeValue("Color", Formats.FormatColor(s.Color.Value));
                 }
+                if (s.SizeExpression is not null) se.SetAttributeValue("SizeExpression", s.SizeExpression);
+                if (s.HighExpression is not null) se.SetAttributeValue("HighExpression", s.HighExpression);
+                if (s.LowExpression is not null) se.SetAttributeValue("LowExpression", s.LowExpression);
                 return se;
             })));
         }

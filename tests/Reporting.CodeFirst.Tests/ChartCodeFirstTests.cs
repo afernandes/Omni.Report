@@ -113,6 +113,39 @@ public class ChartCodeFirstTests
         prims.OfType<DrawTextPrimitive>().Select(t => t.Text).Should().Contain("Jan", "category axis label");
     }
 
+    [Fact]
+    public async Task Bubble_chart_emits_one_sized_marker_per_category()
+    {
+        var report = ReportBuilder.Create("c")
+            .Page(p => p.A4().Portrait().Margins(15))
+            .DataSource("Vendas", Rows)
+            .ReportHeader(h => h.Height(80)
+                .Chart(ChartKind.Bubble, "Bolhas").At(0, 0).Size(170, 75)
+                    .BubbleSeries("Receita", "Fields.Mes", "Fields.Total", "Fields.Total"))
+            .Build();
+
+        var prims = (await report.PaginateAsync()).Pages.SelectMany(p => p.Primitives).ToList();
+        prims.OfType<DrawEllipsePrimitive>().Count().Should().Be(3, "one bubble per category");
+    }
+
+    [Fact]
+    public async Task Stock_chart_emits_a_high_low_range_bar_per_category()
+    {
+        var report = ReportBuilder.Create("c")
+            .Page(p => p.A4().Portrait().Margins(15))
+            .DataSource("Vendas", Rows)
+            .ReportHeader(h => h.Height(80)
+                .Chart(ChartKind.Stock, "Ações").At(0, 0).Size(170, 75)
+                    .StockSeries("Preço", "Fields.Mes", "Fields.Total * 1.2", "Fields.Total * 0.8", "Fields.Total"))
+            .Build();
+
+        var prims = (await report.PaginateAsync()).Pages.SelectMany(p => p.Primitives).ToList();
+        // Vertical lines = the y-axis (1) + one high-low range bar per category (3). A non-stock
+        // chart only has the single y-axis, so ≥4 proves the range bars rendered.
+        var verticalLines = prims.OfType<DrawLinePrimitive>().Count(l => l.From.X == l.To.X);
+        verticalLines.Should().BeGreaterThanOrEqualTo(4);
+    }
+
     private static async Task<List<LayoutPrimitive>> RenderChartAsync(ChartKind kind)
     {
         var report = ReportBuilder.Create("c")

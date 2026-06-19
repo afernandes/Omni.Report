@@ -292,6 +292,23 @@ public sealed class BandContent
                 c.Series.Append(new ChartSeries(name, categoryExpression, valueExpression, color))) }
             : e);
 
+    /// <summary>Adds a bubble series — <paramref name="xExpression"/> is the category/X,
+    /// <paramref name="yExpression"/> the value/Y, and <paramref name="sizeExpression"/> scales each
+    /// marker's radius. Use with <see cref="ChartKind.Bubble"/>.</summary>
+    public BandContent BubbleSeries(string name, string xExpression, string yExpression, string sizeExpression, Color? color = null)
+        => MutatePending(e => e is ChartElement c
+            ? c with { Series = new EquatableArray<ChartSeries>(
+                c.Series.Append(new ChartSeries(name, xExpression, yExpression, color, SizeExpression: sizeExpression))) }
+            : e);
+
+    /// <summary>Adds a stock series — a high-low range per category with a close tick at
+    /// <paramref name="closeExpression"/>. Use with <see cref="ChartKind.Stock"/>.</summary>
+    public BandContent StockSeries(string name, string categoryExpression, string highExpression, string lowExpression, string closeExpression, Color? color = null)
+        => MutatePending(e => e is ChartElement c
+            ? c with { Series = new EquatableArray<ChartSeries>(
+                c.Series.Append(new ChartSeries(name, categoryExpression, closeExpression, color, HighExpression: highExpression, LowExpression: lowExpression))) }
+            : e);
+
     /// <summary>Shows or hides the chart legend (shown by default).</summary>
     public BandContent Legend(bool show = true)
         => MutatePending(e => e is ChartElement c ? c with { ShowLegend = show } : e);

@@ -396,7 +396,10 @@ internal static class RepxReader
                 Attr(s, "Name") ?? "",
                 Attr(s, "CategoryExpression") ?? "",
                 Attr(s, "ValueExpression") ?? "",
-                color);
+                color,
+                Attr(s, "SizeExpression"),
+                Attr(s, "HighExpression"),
+                Attr(s, "LowExpression"));
         }).ToArray() ?? Array.Empty<ChartSeries>();
         return new ChartElement
         {

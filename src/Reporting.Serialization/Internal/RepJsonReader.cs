@@ -383,7 +383,10 @@ internal static class RepJsonReader
                 (string?)so["name"] ?? "",
                 (string?)so["categoryExpression"] ?? "",
                 (string?)so["valueExpression"] ?? "",
-                (string?)so["color"] is { } c ? Formats.ParseColor(c) : null);
+                (string?)so["color"] is { } c ? Formats.ParseColor(c) : null,
+                (string?)so["sizeExpression"],
+                (string?)so["highExpression"],
+                (string?)so["lowExpression"]);
         });
         return new ChartElement
         {
