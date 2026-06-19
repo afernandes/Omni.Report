@@ -28,13 +28,17 @@ internal sealed class BandRenderer
     /// contexts that don't support subreports (the element then renders nothing).</summary>
     private readonly Func<SubreportElement, Rectangle, IReportExpressionContext, IReadOnlyList<LayoutPrimitive>>? _renderSubreport;
 
+    /// <summary>Resolves a Web-Mercator basemap tile to image bytes. Null = vector-only maps.</summary>
+    private readonly Func<MapTileRequest, byte[]?>? _mapTileResolver;
+
     public BandRenderer(
         ExpressionEvaluator evaluator,
         TemplateRenderer templates,
         ITextMeasurer measurer,
         IReadOnlyDictionary<string, List<IReadOnlyList<KeyValuePair<string, object?>>>>? dataSources = null,
         string? primarySource = null,
-        Func<SubreportElement, Rectangle, IReportExpressionContext, IReadOnlyList<LayoutPrimitive>>? renderSubreport = null)
+        Func<SubreportElement, Rectangle, IReportExpressionContext, IReadOnlyList<LayoutPrimitive>>? renderSubreport = null,
+        Func<MapTileRequest, byte[]?>? mapTileResolver = null)
     {
         _evaluator = evaluator;
         _templates = templates;
@@ -42,6 +46,7 @@ internal sealed class BandRenderer
         _dataSources = dataSources ?? new Dictionary<string, List<IReadOnlyList<KeyValuePair<string, object?>>>>();
         _primarySource = primarySource;
         _renderSubreport = renderSubreport;
+        _mapTileResolver = mapTileResolver;
     }
 
     /// <summary>Renders <paramref name="band"/> at the given origin and returns the resulting
@@ -183,7 +188,7 @@ internal sealed class BandRenderer
                     break;
 
                 case MapElement mapEl:
-                    foreach (var p in MapRenderer.Render(mapEl, elementBounds, ResolveRows(mapEl.DataSetName), _evaluator, ctx))
+                    foreach (var p in MapRenderer.Render(mapEl, elementBounds, ResolveRows(mapEl.DataSetName), _evaluator, ctx, _mapTileResolver))
                     {
                         primitives.Add(p);
                     }

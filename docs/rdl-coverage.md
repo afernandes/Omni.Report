@@ -32,7 +32,7 @@ Legenda:
 | Sparkline | ✅ | ✅ | line / column / area |
 | Indicator | ✅ | ✅ | seta direcional / forma / rating por faixa |
 | Tablix | ✅ | ✅ | tabela plana e **matrix/pivô com grupos aninhados** (N níveis de linha × N de coluna; soma por interseção-folha; níveis externos com visual "outline") — **construível e editável no Designer** (toggle Crosstab + editores de grupo multi-linha) + code-first `.Tablix(t => t.RowGroup().RowGroup().ColumnGroup().Cell())` |
-| Map | 🟡 | ✅ | **vetorial** renderiza 100% (Web Mercator + graticule + shapes GeoJSON + marcadores), autorável nas 3 superfícies. Tiles raster (OSM/Bing) são um **limite conhecido** — exigem rede; caberiam num provider online opt-in (ver [Limites conhecidos](#limites-conhecidos-decisão-de-escopo)) |
+| Map | ✅ | ✅ | **vetorial** 100% (Web Mercator + graticule + shapes GeoJSON + marcadores) **e tiles raster** — o engine calcula a grade de tiles Web Mercator e emite as imagens via `PaginationRequest.MapTileResolver` (plugável); `Basemap`/URL-template editável nas 3 superfícies (`.Basemap()` no code-first). O fetch HTTP em si fica num provider opt-in (rede), igual a imagem-por-URL |
 | Subreport | ✅ | ✅ | renderiza o filho (inline ou via resolver de id) na largura do subreport, com bindings de parâmetro avaliados no contexto pai; code-first `.Subreport()`/`.SubreportInline()` + editor no Designer |
 | Code (bloco C#) | — | ✅ | não é "render": **avalia** via pacote opt-in `Reporting.Expressions.Roslyn` (`Code.Metodo(...)`). ⚠ executa C#: use só com fontes confiáveis |
 
@@ -57,7 +57,7 @@ Legenda:
 
 ## Limites conhecidos (decisão de escopo)
 
-Três itens **não** são entregues como render real — por restrições arquiteturais reais, não por
+Dois itens **não** são entregues como render real — por restrições arquiteturais reais, não por
 estarem "pela metade". Ficam aqui documentados com honestidade para não virarem surpresa:
 
 1. **Drill-down / toggle de visibilidade** — todo o render do engine passa pelo Skia: SVG e PDF saem
@@ -66,16 +66,15 @@ estarem "pela metade". Ficam aqui documentados com honestidade para não virarem
    **pipeline DOM-render** novo (cada elemento como nó HTML posicionado e ocultável) — uma adição
    grande e ortogonal ao pipeline atual. O modelo (`ToggleItemId`/`InitiallyHidden`) round-trippa.
 
-2. **Map — tiles raster (OSM/Bing)** — o mapa **vetorial** está 100% (projeção, graticule, shapes,
-   marcadores). Tiles raster são imagens **de rede**; seguindo o padrão opt-in do `Code` (Roslyn),
-   caberiam num provider HTTP separado, configurável no Designer mas sem render offline (igual a uma
-   imagem-por-URL). É um limite de **recurso externo**, não de modelagem.
-
-3. **Word/DOCX** — o engine posiciona tudo em canvas absoluto (mils); o Word é **fluxo**
+2. **Word/DOCX** — o engine posiciona tudo em canvas absoluto (mils); o Word é **fluxo**
    (parágrafos/tabelas que refluem). Um DOCX fiel precisa de um **motor de layout de fluxo** à parte,
    não de um simples serializador — esforço comparável a um novo backend.
 
-Os demais 16 itens da matriz renderizam de verdade e são autoráveis nas três superfícies.
+> **Map tiles** saiu desta lista: o engine agora calcula a grade Web Mercator e emite os tiles via
+> `MapTileResolver` plugável. Só o **provider HTTP** (fetch de rede dos tiles) fica como pacote
+> opt-in — análogo a uma imagem-por-URL, não um limite de render.
+
+Os demais 17 itens da matriz renderizam de verdade e são autoráveis nas três superfícies.
 
 ## As três superfícies de autoria
 
@@ -108,7 +107,7 @@ As **4 restantes são features**, não simples editores faltando — ficam como 
    editor à parte (hoje o Designer edita a `Expression` única).
 4. **GroupBand no band strip**: edição completa de grupos direto na faixa de bandas.
 
-> Estado atual: **16 dos 19 itens 100% reais nas 3 superfícies**; os 3 restantes estão na seção
-> [Limites conhecidos](#limites-conhecidos-decisão-de-escopo) acima, com a razão arquitetural de cada
-> um. Mantenha esta matriz sincronizada ao mexer em qualquer um deles. Veja o `CHANGELOG.md` para o
-> histórico por versão.
+> Estado atual: **17 dos 19 itens 100% reais nas 3 superfícies**; os 2 restantes (drill-down
+> interativo e Word/DOCX) estão na seção [Limites conhecidos](#limites-conhecidos-decisão-de-escopo)
+> acima, com a razão arquitetural de cada um. Mantenha esta matriz sincronizada ao mexer em qualquer
+> um deles. Veja o `CHANGELOG.md` para o histórico por versão.

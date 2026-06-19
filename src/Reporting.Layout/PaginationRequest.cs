@@ -35,7 +35,20 @@ public sealed class PaginationRequest
     /// a resolver. The child paginates against this request's data sources at the subreport's width.</summary>
     public Func<string, ReportDefinition?>? SubreportResolver { get; init; }
 
+    /// <summary>Optional resolver for a <see cref="Reporting.Elements.MapElement"/> raster basemap.
+    /// The engine computes the visible Web-Mercator tile grid and calls this once per tile; the host
+    /// returns the encoded image bytes (PNG/JPEG) or <c>null</c> to skip that tile. Left null, maps
+    /// render vector-only (shapes + graticule + markers). Network fetching lives in the host/an opt-in
+    /// package — the core engine stays offline and deterministic.</summary>
+    public Func<MapTileRequest, byte[]?>? MapTileResolver { get; init; }
+
     /// <summary>Nesting depth for subreports — incremented for each embedded child. Guards against a
     /// report that references itself. Public callers always start at the default (0).</summary>
     internal int SubreportDepth { get; init; }
 }
+
+/// <summary>A single Web-Mercator tile the engine needs to draw a <see cref="Reporting.Elements.MapElement"/>
+/// basemap. <see cref="Basemap"/> is the element's configured provider/URL-template (e.g.
+/// <c>"https://tile.openstreetmap.org/{z}/{x}/{y}.png"</c>); <see cref="Z"/>/<see cref="X"/>/<see cref="Y"/>
+/// are the standard slippy-map tile coordinates. The resolver turns this into image bytes.</summary>
+public readonly record struct MapTileRequest(string Basemap, int Z, int X, int Y);

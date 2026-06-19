@@ -467,7 +467,8 @@ public sealed partial class ReportPaginator : IReportPaginator
         ctx.PrimeReportScope(rows.Select(r => r.Fields));
 
         var bandRenderer = new BandRenderer(_evaluator, _templates, measurer, allSources, primarySourceName,
-            renderSubreport: (sub, subBounds, subCtx) => RenderSubreport(sub, subBounds, subCtx, request, measurer));
+            renderSubreport: (sub, subBounds, subCtx) => RenderSubreport(sub, subBounds, subCtx, request, measurer),
+            mapTileResolver: request.MapTileResolver);
         var page = new PageAccumulator(def.PageSetup);
 
         var pageHeaderHeight = def.PageHeader?.Height ?? Unit.Zero;

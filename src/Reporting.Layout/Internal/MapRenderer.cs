@@ -40,7 +40,8 @@ internal static class MapRenderer
         Rectangle bounds,
         IReadOnlyList<IReadOnlyList<KeyValuePair<string, object?>>> rows,
         ExpressionEvaluator ev,
-        IReportExpressionContext baseCtx)
+        IReportExpressionContext baseCtx,
+        Func<MapTileRequest, byte[]?>? tileResolver = null)
     {
         var list = new List<LayoutPrimitive>();
         double x0 = bounds.X.ToMm(), y0 = bounds.Y.ToMm(), w = bounds.Width.ToMm(), h = bounds.Height.ToMm();
@@ -113,7 +114,13 @@ internal static class MapRenderer
             return Pt(sx, sy);
         }
 
-        // ── Graticule (drawn first, behind shapes) ───────────────────────────────
+        // ── Raster basemap tiles (behind everything; opt-in via a resolver) ───────
+        if (tileResolver is not null && !string.IsNullOrWhiteSpace(map.Basemap))
+        {
+            RenderTiles(list, map, tileResolver, offX, offY, scale, minX, maxY, px0, py0, pw, ph);
+        }
+
+        // ── Graticule (behind shapes) ────────────────────────────────────────────
         if (map.ShowGraticule)
         {
             DrawGraticule(list, map.Id, px0, py0, pw, ph, offX, offY, minX, maxX, minY, maxY, scale);
@@ -227,6 +234,71 @@ internal static class MapRenderer
 
     private static double InvLon(double x) => x / DegToRad;
     private static double InvLat(double y) => (2 * Math.Atan(Math.Exp(y)) - Math.PI / 2) / DegToRad;
+
+    // ─── Raster basemap tiles (Web Mercator slippy-map: z/x/y) ───────────────────────
+
+    private static void RenderTiles(
+        List<LayoutPrimitive> list, MapElement map, Func<MapTileRequest, byte[]?> resolver,
+        double offX, double offY, double scale, double minX, double maxY,
+        double px0, double py0, double pw, double ph)
+    {
+        // Visible lon/lat window from the plot-rect corners (inverse of Project).
+        double visMinLon = InvLon(minX + (px0 - offX) / scale);
+        double visMaxLon = InvLon(minX + (px0 + pw - offX) / scale);
+        double visMaxLat = InvLat(maxY - (py0 - offY) / scale);
+        double visMinLat = InvLat(maxY - (py0 + ph - offY) / scale);
+
+        // Pick a zoom so the viewport shows tiles at a comfortable on-screen size.
+        const double TargetTileMm = 64.0;
+        double lonSpan = Math.Max(1e-6, Math.Abs(visMaxLon - visMinLon));
+        double desiredAcross = Math.Max(1.0, pw / TargetTileMm);
+        int z = Math.Clamp((int)Math.Round(Math.Log2(desiredAcross * 360.0 / lonSpan)), 0, 19);
+        int n = 1 << z;
+
+        int xMin = Math.Clamp((int)Math.Floor((visMinLon + 180.0) / 360.0 * n), 0, n - 1);
+        int xMax = Math.Clamp((int)Math.Floor((visMaxLon + 180.0) / 360.0 * n), 0, n - 1);
+        int yMin = Math.Clamp(LatToTileY(visMaxLat, n), 0, n - 1); // north → smaller y
+        int yMax = Math.Clamp(LatToTileY(visMinLat, n), 0, n - 1);
+
+        // Defensive cap so a degenerate viewport can't request thousands of tiles.
+        if ((long)(xMax - xMin + 1) * (yMax - yMin + 1) > 256)
+        {
+            return;
+        }
+
+        for (int tx = xMin; tx <= xMax; tx++)
+        {
+            for (int ty = yMin; ty <= yMax; ty++)
+            {
+                var bytes = resolver(new MapTileRequest(map.Basemap!, z, tx, ty));
+                if (bytes is null || bytes.Length == 0)
+                {
+                    continue;
+                }
+                double mxL = (double)tx / n * 2 * Math.PI - Math.PI;
+                double mxR = (double)(tx + 1) / n * 2 * Math.PI - Math.PI;
+                double myT = Math.PI * (1 - 2.0 * ty / n);
+                double myB = Math.PI * (1 - 2.0 * (ty + 1) / n);
+                double sxL = offX + (mxL - minX) * scale;
+                double sxR = offX + (mxR - minX) * scale;
+                double syT = offY + (maxY - myT) * scale;
+                double syB = offY + (maxY - myB) * scale;
+                list.Add(new DrawImagePrimitive
+                {
+                    Data = new EquatableArray<byte>(bytes),
+                    Bounds = Rect(sxL, syT, sxR - sxL, syB - syT),
+                    SourceElementId = map.Id,
+                });
+            }
+        }
+    }
+
+    private static int LatToTileY(double lat, int n)
+    {
+        var (_, my) = Mercator(0, lat);
+        double normY = (1 - my / Math.PI) / 2;
+        return (int)Math.Floor(normY * n);
+    }
 
     // ─── GeoJSON parsing ─────────────────────────────────────────────────────────────
 
