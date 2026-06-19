@@ -1,0 +1,87 @@
+@using Reporting.Common
+@using Reporting.Designer.Blazor.Services
+@using Reporting.Designer.Blazor.ViewModels
+
+@*
+    Generic editor for an EquatableDictionary<string,string> property (key → value/expression): one row
+    per entry with add/remove. Used e.g. for a subreport's parameter bindings. New entries get a unique
+    default key so they don't collide before the user renames them.
+*@
+
+@{
+    var entries = GetEntries();
+}
+<div style="display:flex;flex-direction:column;gap:3px;width:100%;">
+    @for (var i = 0; i < entries.Count; i++)
+    {
+        var index = i;
+        var entry = entries[index];
+        <div style="display:flex;align-items:center;gap:3px;">
+            <input type="text" value="@entry.Key" placeholder="chave" title="Chave"
+                   @onchange="@(e => EditKey(index, e.Value?.ToString() ?? string.Empty))"
+                   style="flex:0 0 36%;font-family:var(--font-mono);font-size:11px;" />
+            <span style="color:var(--text-tertiary);">=</span>
+            <input type="text" value="@entry.Value" placeholder="valor / expressão" title="Valor"
+                   @onchange="@(e => EditValue(index, e.Value?.ToString() ?? string.Empty))"
+                   style="flex:1;font-family:var(--font-mono);font-size:11px;" />
+            <button class="icon-btn" type="button" title="Remover" @onclick="@(() => RemoveEntry(index))"
+                    style="width:18px;height:18px;color:var(--text-tertiary);flex:0 0 auto;">×</button>
+        </div>
+    }
+    <button class="icon-btn" type="button" @onclick="AddEntry"
+            style="align-self:flex-start;font-size:10.5px;padding:2px 8px;">+ Adicionar</button>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public ElementViewModel Element { get; set; } = default!;
+    [Parameter, EditorRequired] public PropertyGridDescriptor Descriptor { get; set; } = default!;
+
+    private List<KeyValuePair<string, string>> GetEntries()
+        => (Descriptor.Get(Element.ToElement()) as IEnumerable<KeyValuePair<string, string>>)?.ToList() ?? new();
+
+    private void EditKey(int index, string key) => Replace(index, e => new(key, e.Value));
+
+    private void EditValue(int index, string val) => Replace(index, e => new(e.Key, val));
+
+    private void Replace(int index, Func<KeyValuePair<string, string>, KeyValuePair<string, string>> change)
+    {
+        var entries = GetEntries();
+        if (index < 0 || index >= entries.Count) return;
+        entries[index] = change(entries[index]);
+        Commit(entries);
+    }
+
+    private void RemoveEntry(int index)
+    {
+        var entries = GetEntries();
+        if (index < 0 || index >= entries.Count) return;
+        entries.RemoveAt(index);
+        Commit(entries);
+    }
+
+    private void AddEntry()
+    {
+        var entries = GetEntries();
+        var key = "param";
+        var n = 1;
+        while (entries.Any(e => e.Key == key))
+        {
+            key = $"param{++n}";
+        }
+        entries.Add(new(key, string.Empty));
+        Commit(entries);
+    }
+
+    private void Commit(List<KeyValuePair<string, string>> entries)
+    {
+        var dict = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var e in entries)
+        {
+            if (!string.IsNullOrEmpty(e.Key))
+            {
+                dict[e.Key] = e.Value; // last write wins on a duplicate key (transient while typing)
+            }
+        }
+        Element.ApplyMetaSet(Descriptor, new EquatableDictionary<string, string>(dict));
+    }
+}
