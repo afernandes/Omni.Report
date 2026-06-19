@@ -26,7 +26,7 @@ Legenda:
 
 | Elemento | Render | Round-trip | Observações |
 |---|:--:|:--:|---|
-| Chart | 🟡 | ✅ | Bar (agrupado), Line, Pie, **Area, Scatter, Radar** renderizam. Bubble/Stock (exigem dimensão extra na série) **pendentes** |
+| Chart | 🟡 | ✅ | Bar, Line, Pie, Area, Scatter, Radar, **Bubble, Stock** renderizam (code-first `.BubbleSeries()`/`.StockSeries()`; `Size`/`High`/`Low` na série round-trippam). Falta só **editar Size/High/Low de Bubble/Stock no Designer** (dropdown de tipo já lista os 8) |
 | Gauge | ✅ | ✅ | radial (anéis/ponteiro) + linear bullet |
 | DataBar | ✅ | ✅ | barra proporcional |
 | Sparkline | ✅ | ✅ | line / column / area |

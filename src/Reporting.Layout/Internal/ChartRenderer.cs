@@ -100,6 +100,12 @@ internal static class ChartRenderer
             case ChartKind.Scatter:
                 RenderCartesian(chart, data, plotX, plotY, plotW, plotH, list, line: false, markers: true);
                 break;
+            case ChartKind.Bubble:
+                RenderCartesian(chart, data, plotX, plotY, plotW, plotH, list, line: false, bubble: true);
+                break;
+            case ChartKind.Stock:
+                RenderCartesian(chart, data, plotX, plotY, plotW, plotH, list, line: false, stock: true);
+                break;
             default:
                 RenderCartesian(chart, data, plotX, plotY, plotW, plotH, list, line: false);
                 break;
@@ -121,6 +127,9 @@ internal static class ChartRenderer
         public required string Name { get; init; }
         public required Color Color { get; init; }
         public List<double> Values { get; } = []; // aligned to ChartData.Categories
+        public List<double> Sizes { get; } = [];  // bubble radius input (summed per category)
+        public List<double> Highs { get; } = [];  // stock high (max per category)
+        public List<double> Lows { get; } = [];   // stock low (min per category)
     }
 
     private sealed class ChartData
@@ -140,18 +149,25 @@ internal static class ChartRenderer
         var data = new ChartData();
         var catIndex = new Dictionary<string, int>(StringComparer.Ordinal);
 
-        // Per-series raw (category, value) pairs collected over the rows.
-        var raw = new List<(string Cat, double Val)>[chart.Series.Count];
+        // Per-series raw tuples collected over the rows. Size/High/Low are only meaningful for
+        // Bubble/Stock; when the series doesn't set them they default (size 0, high/low = value).
+        var raw = new List<(string Cat, double Val, double Size, double High, double Low)>[chart.Series.Count];
         for (int s = 0; s < chart.Series.Count; s++)
         {
             raw[s] = [];
             var series = chart.Series[s];
+            bool hasSize = !string.IsNullOrWhiteSpace(series.SizeExpression);
+            bool hasHigh = !string.IsNullOrWhiteSpace(series.HighExpression);
+            bool hasLow = !string.IsNullOrWhiteSpace(series.LowExpression);
             foreach (var row in rows)
             {
                 var ctx = new RowScopedContext(baseCtx, row);
                 string cat = EvalString(evaluator, series.CategoryExpression, ctx);
                 double val = EvalDouble(evaluator, series.ValueExpression, ctx);
-                raw[s].Add((cat, val));
+                double size = hasSize ? EvalDouble(evaluator, series.SizeExpression!, ctx) : 0;
+                double high = hasHigh ? EvalDouble(evaluator, series.HighExpression!, ctx) : val;
+                double low = hasLow ? EvalDouble(evaluator, series.LowExpression!, ctx) : val;
+                raw[s].Add((cat, val, size, high, low));
                 if (!catIndex.ContainsKey(cat))
                 {
                     catIndex[cat] = data.Categories.Count;
@@ -164,12 +180,25 @@ internal static class ChartRenderer
         {
             var color = chart.Series[s].Color ?? Palette[s % Palette.Length];
             var sd = new SeriesData { Name = chart.Series[s].Name, Color = color };
-            var agg = new double[data.Categories.Count];
-            foreach (var (cat, val) in raw[s])
+            int n = data.Categories.Count;
+            var aggVal = new double[n];
+            var aggSize = new double[n];
+            var aggHigh = new double[n];
+            var aggLow = new double[n];
+            var seen = new bool[n];
+            foreach (var (cat, val, size, high, low) in raw[s])
             {
-                agg[catIndex[cat]] += val;
+                int ci = catIndex[cat];
+                aggVal[ci] += val;       // value/size aggregate by SUM
+                aggSize[ci] += size;
+                aggHigh[ci] = seen[ci] ? Math.Max(aggHigh[ci], high) : high; // high = MAX, low = MIN
+                aggLow[ci] = seen[ci] ? Math.Min(aggLow[ci], low) : low;
+                seen[ci] = true;
             }
-            sd.Values.AddRange(agg);
+            sd.Values.AddRange(aggVal);
+            sd.Sizes.AddRange(aggSize);
+            sd.Highs.AddRange(aggHigh);
+            sd.Lows.AddRange(aggLow);
             data.Series.Add(sd);
         }
 
@@ -181,6 +210,9 @@ internal static class ChartRenderer
                 if (v > max) max = v;
                 if (v < min) min = v;
             }
+            // Stock range bars extend to the highs/lows, so the axis must reach them.
+            foreach (var v in sd.Highs) if (v > max) max = v;
+            foreach (var v in sd.Lows) { if (v < min) min = v; if (v > max) max = v; }
         }
         data.MaxValue = max;
         data.MinValue = min;
@@ -192,7 +224,8 @@ internal static class ChartRenderer
     private static void RenderCartesian(
         ChartElement chart, ChartData data,
         double px, double py, double pw, double ph,
-        List<LayoutPrimitive> list, bool line, bool area = false, bool markers = false)
+        List<LayoutPrimitive> list, bool line, bool area = false, bool markers = false,
+        bool bubble = false, bool stock = false)
     {
         const double leftGutter = 12; // mm reserved for y-axis labels
         const double bottomGutter = 6; // mm reserved for x-axis labels
@@ -246,6 +279,51 @@ internal static class ChartRenderer
                         Pen = null,
                         SourceElementId = chart.Id,
                     });
+                }
+            }
+        }
+        else if (bubble)
+        {
+            double maxSize = 0;
+            foreach (var sd in data.Series)
+            {
+                foreach (var sz in sd.Sizes)
+                {
+                    if (sz > maxSize) maxSize = sz;
+                }
+            }
+            double maxR = Math.Max(1.2, Math.Min(slot * 0.5, ah / 6));
+            for (int s = 0; s < data.Series.Count; s++)
+            {
+                var sd = data.Series[s];
+                for (int c = 0; c < cats; c++)
+                {
+                    double cx = ax + c * slot + slot / 2;
+                    double cy = YOf(sd.Values[c]);
+                    double rr = maxSize > 0 ? maxR * Math.Sqrt(Math.Max(0, sd.Sizes[c]) / maxSize) : 1.5;
+                    if (rr < 1) rr = 1;
+                    list.Add(new DrawEllipsePrimitive
+                    {
+                        Bounds = Rect(cx - rr, cy - rr, rr * 2, rr * 2),
+                        Fill = new BrushStyle(sd.Color with { A = 140 }),
+                        Pen = new PenStyle(sd.Color, Unit.FromPoint(0.5)),
+                        SourceElementId = chart.Id,
+                    });
+                }
+            }
+        }
+        else if (stock)
+        {
+            for (int s = 0; s < data.Series.Count; s++)
+            {
+                var sd = data.Series[s];
+                var pen = new PenStyle(sd.Color, Unit.FromPoint(1.25));
+                for (int c = 0; c < cats; c++)
+                {
+                    double cx = ax + c * slot + slot / 2;
+                    list.Add(Line(cx, YOf(sd.Highs[c]), cx, YOf(sd.Lows[c]), pen, chart.Id)); // high → low range
+                    double yClose = YOf(sd.Values[c]);
+                    list.Add(Line(cx, yClose, cx + slot * 0.22, yClose, pen, chart.Id)); // close tick
                 }
             }
         }

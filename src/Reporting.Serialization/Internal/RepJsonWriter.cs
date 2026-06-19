@@ -353,6 +353,9 @@ internal static class RepJsonWriter
                         {
                             so["color"] = Formats.FormatColor(s.Color.Value);
                         }
+                        if (s.SizeExpression is not null) so["sizeExpression"] = s.SizeExpression;
+                        if (s.HighExpression is not null) so["highExpression"] = s.HighExpression;
+                        if (s.LowExpression is not null) so["lowExpression"] = s.LowExpression;
                         return (JsonNode?)so;
                     }).ToArray());
                 }
