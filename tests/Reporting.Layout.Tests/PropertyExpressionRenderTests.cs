@@ -154,6 +154,27 @@ public class PropertyExpressionRenderTests
         text.Text.Should().NotContain("R$", "an inline :N0 takes precedence over the element Format");
     }
 
+    [Fact]
+    public async Task A_flat_tablix_cell_honours_the_Format_property()
+    {
+        // Same SSRS-style Format as a band textbox, now also on a flat Tablix detail cell.
+        var detailCell = new TextBoxElement { Id = "c", Expression = "{Fields.Tamanho}", Style = Style.Default with { Format = "C" } };
+        var tablix = new TablixElement
+        {
+            Id = "t",
+            Bounds = new Rectangle(0.Mm(), 0.Mm(), 80.Mm(), 16.Mm()),
+            Cells = new EquatableArray<TablixCell>(new[] { new TablixCell(1, 0, detailCell) }),
+        };
+        var detail = new DetailBand(20.Mm(), new EquatableArray<ReportElement>(new ReportElement[] { tablix }));
+        var def = new ReportDefinition("e", PageSetup.A4Portrait, detail);
+        var registry = new DataSourceRegistry();
+        registry.Register(new EnumerableDataSource<StyledRow>("Dados", [new StyledRow("A", "#000000", 1234.5)]));
+        var report = await new ReportPaginator().PaginateAsync(new PaginationRequest { Definition = def, DataSources = registry });
+
+        var texts = report.Pages[0].Primitives.OfType<DrawTextPrimitive>().Select(t => t.Text).ToList();
+        texts.Should().Contain(t => t.Contains("R$"), "a flat Tablix cell formats via its Format property, like a band textbox");
+    }
+
     private static async Task<DrawTextPrimitive> RenderCustom(TextBoxElement tb, StyledRow row)
     {
         var detail = new DetailBand(20.Mm(), new EquatableArray<ReportElement>(new ReportElement[] { tb }));
