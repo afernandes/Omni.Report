@@ -125,7 +125,7 @@ internal static class KpiRenderer
             new PenStyle(NeedleColor, Unit.FromPoint(1.5)), el.Id));
 
         // Value label below the dial.
-        list.Add(Text(FormatValue(val), x, y + gaugeH, w, labelH, 8, bold: true, HorizontalAlignment.Center, el.Id));
+        list.Add(Text(FormatValue(val, el.Style.Format), x, y + gaugeH, w, labelH, 8, bold: true, HorizontalAlignment.Center, el.Id));
     }
 
     private static void RenderLinearGauge(
@@ -175,7 +175,7 @@ internal static class KpiRenderer
             SourceElementId = el.Id,
         });
 
-        list.Add(Text(FormatValue(val), x, y + h - labelH, w, labelH, 7, bold: false, HorizontalAlignment.Center, el.Id));
+        list.Add(Text(FormatValue(val, el.Style.Format), x, y + h - labelH, w, labelH, 7, bold: false, HorizontalAlignment.Center, el.Id));
     }
 
     /// <summary>Builds a filled annular sector (ring segment) approximated by line segments.</summary>
@@ -478,10 +478,14 @@ internal static class KpiRenderer
         catch (FormatException) { return fallback; }
     }
 
-    private static string FormatValue(double v)
-        => Math.Abs(v) >= 1000
-            ? v.ToString("#,0", CultureInfo.GetCultureInfo("pt-BR"))
-            : v.ToString("0.##", CultureInfo.InvariantCulture);
+    // The element's Format property (when set) drives the value label — so a Gauge/DataBar value can be
+    // currency, percent, etc., consistent with a textbox. Falls back to a sensible heuristic when unset.
+    private static string FormatValue(double v, string? format = null)
+        => !string.IsNullOrEmpty(format)
+            ? ValueFormatter.Format(v, format, CultureInfo.GetCultureInfo("pt-BR"))
+            : Math.Abs(v) >= 1000
+                ? v.ToString("#,0", CultureInfo.GetCultureInfo("pt-BR"))
+                : v.ToString("0.##", CultureInfo.InvariantCulture);
 
     private static DrawTextPrimitive Text(
         string text, double xMm, double yMm, double wMm, double hMm,
