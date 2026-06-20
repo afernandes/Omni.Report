@@ -23,8 +23,8 @@ Das features RDL avaliadas: **96 completas · 18 parciais · 32 ausentes** (~66%
 | # | Gap | Status | Notas |
 |---|---|---|---|
 | 5 | **Tablix: SortExpression não renderiza** | parcial | `TablixGroup.SortExpression` existe no model e round-trippa (AdvancedElements.cs:62), mas `TablixRenderer` ignora; code-first/Designer não expõem. Um `.repx` SSRS com matrix ordenado renderiza fora de ordem. **Quick win** (model já existe). |
-| 6 | **Tablix: subtotais / group footer rows** | parcial | RDL gera linhas de header/footer por grupo com agregados (Sum/Avg). Falta a linha de subtotal automática no render. |
-| 7 | **Tablix: células com merge/span** (colSpan/rowSpan) | ausente | Sem span, cabeçalhos agrupados e células mescladas não são expressáveis. |
+| 6 | **Tablix: subtotais / group footer rows** | ✅ linha (#86) | `RowSubtotals`: footer por grupo de linha externo + total geral, 3 modos. Follow-up: ColumnSubtotals, labels configuráveis. |
+| 7 | **Tablix: células com merge/span** (colSpan/rowSpan) | parcial (#86) | ✅ span verdadeiro nos headers de coluna (largura = nº folhas). Falta span por-célula arbitrário (rowSpan / merge no corpo). |
 | 8 | **Tablix: membros estático vs. dinâmico** | ausente | RDL StaticMember/DynamicMember — crosstabs assimétricos (coluna fixa "Total" + colunas dinâmicas). |
 | 9 | **Drill-down / ToggleItem runtime** | parcial | Model + round-trip + autoria completos (`ToggleItemId`/`InitiallyHidden`); falta o chevron expandir/colapsar no viewer/HTML/PDF. Exige pipeline interativo (DOM) além do raster Skia. Esforço **grande**. |
 | 10 | **Multi-coluna (newspaper)** | ausente | `Columns`/`ColumnSpacing` round-trippam mas o paginador ignora — renderiza coluna única. |
