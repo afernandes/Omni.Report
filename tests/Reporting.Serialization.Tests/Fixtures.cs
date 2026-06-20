@@ -107,6 +107,7 @@ internal static class Fixtures
             Symbology = BarcodeSymbology.Ean13,
             Expression = "{Fields.Ean}",
             ShowText = true,
+            QrEcc = QrEccLevel.High, // non-default → the round-trip catches a dropped QrEcc on either serializer
         };
 
         var chart = new ChartElement

@@ -307,6 +307,7 @@ internal static class RepJsonReader
                 Symbology = Enum.Parse<BarcodeSymbology>((string?)o["symbology"] ?? nameof(BarcodeSymbology.Code128)),
                 Expression = (string?)o["expression"] ?? "",
                 ShowText = (bool?)o["showText"] ?? true,
+                QrEcc = Enum.Parse<QrEccLevel>((string?)o["qrEcc"] ?? nameof(QrEccLevel.Medium)),
             },
             "Chart" => ReadChart(o, bounds),
             "Subreport" => ReadSubreport(o, bounds),
