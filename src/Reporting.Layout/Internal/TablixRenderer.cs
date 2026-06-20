@@ -81,8 +81,8 @@ internal static class TablixRenderer
             for (int c = 0; c < colCount; c++)
             {
                 headerCells.TryGetValue(c, out var content);
-                list.Add(CellText(Text(content, ev, templates, baseCtx),
-                    colLeft[c], y, colLeft[c + 1] - colLeft[c], bold: true, HeaderText, tablix.Id));
+                list.Add(StyledCellText(content, Text(content, ev, templates, baseCtx),
+                    colLeft[c], y, colLeft[c + 1] - colLeft[c], defaultBold: true, HeaderText, tablix.Id));
             }
             y += RowHeightMm;
         }
@@ -93,8 +93,8 @@ internal static class TablixRenderer
             for (int c = 0; c < colCount; c++)
             {
                 detailCells.TryGetValue(c, out var content);
-                list.Add(CellText(Text(content, ev, templates, rowCtx),
-                    colLeft[c], y, colLeft[c + 1] - colLeft[c], bold: false, BodyText, tablix.Id));
+                list.Add(StyledCellText(content, Text(content, ev, templates, rowCtx),
+                    colLeft[c], y, colLeft[c + 1] - colLeft[c], defaultBold: false, BodyText, tablix.Id));
             }
             y += RowHeightMm;
         }
@@ -440,6 +440,25 @@ internal static class TablixRenderer
     {
         var font = new Font("Arial", 8.5, bold ? FontStyle.Bold : FontStyle.Regular);
         var style = new TextStyle(font, color, HorizontalAlignment.Left, VerticalAlignment.Middle, WordWrap: false);
+        return new DrawTextPrimitive
+        {
+            Text = text ?? string.Empty,
+            Bounds = Rect(xMm + PadMm, yMm, Math.Max(0, wMm - 2 * PadMm), RowHeightMm),
+            Style = style,
+            SourceElementId = id,
+        };
+    }
+
+    // Like CellText, but honours the cell content's own Style (font / colour / horizontal alignment) — so a
+    // flat Tablix cell can be bold, coloured or right-aligned (e.g. a numeric column), not locked to the
+    // default. Falls back to the table defaults per property when the cell leaves it unset.
+    private static DrawTextPrimitive StyledCellText(ReportElement? content, string text, double xMm, double yMm,
+        double wMm, bool defaultBold, Color defaultColor, string? id)
+    {
+        var s = content?.Style;
+        var font = s?.Font ?? new Font("Arial", 8.5, defaultBold ? FontStyle.Bold : FontStyle.Regular);
+        var align = s?.HorizontalAlignment ?? HorizontalAlignment.Left;
+        var style = new TextStyle(font, s?.ForeColor ?? defaultColor, align, VerticalAlignment.Middle, WordWrap: false);
         return new DrawTextPrimitive
         {
             Text = text ?? string.Empty,
