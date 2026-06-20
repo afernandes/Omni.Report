@@ -574,6 +574,14 @@ public sealed class ElementViewModel : Notifying
         set => Mutate<TablixElement>(e => e with { ColumnGroups = GroupsFromText("Cols", value, e.ColumnGroups) });
     }
 
+    /// <summary>SSRS-style group totals: a subtotal row after each outer row-group block plus a grand total
+    /// row at the bottom. Maps to <c>TablixElement.RowSubtotals</c>.</summary>
+    public bool TablixRowSubtotals
+    {
+        get => Src<TablixElement>()?.RowSubtotals ?? false;
+        set => Mutate<TablixElement>(e => e with { RowSubtotals = value });
+    }
+
     /// <summary>SortExpression of the primary (outermost) row group — orders the group instances down the
     /// left axis. Empty = data order. Maps to <c>RowGroups[0].SortExpression</c>.</summary>
     public string TablixRowGroupSort

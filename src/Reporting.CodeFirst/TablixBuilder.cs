@@ -36,6 +36,7 @@ public sealed class TablixBuilder
     private readonly List<(string Expr, string? Sort, bool Desc)> _columnGroups = [];
     private string? _corner;
     private string? _cellExpression;
+    private bool _rowSubtotals;
 
     /// <summary>Turns the Tablix into a matrix/crosstab: groups data rows by this expression down
     /// the left axis. Call more than once to <b>nest</b> row groups (outer→inner). Pair with
@@ -62,6 +63,10 @@ public sealed class TablixBuilder
     /// <summary>The matrix body value expression — SUMmed over each (row × column) intersection.</summary>
     public TablixBuilder Cell(string valueExpression) { _cellExpression = valueExpression; return this; }
 
+    /// <summary>Enables SSRS-style group totals: a subtotal row after each outer row-group block plus a
+    /// grand total row at the bottom (each summing the body per column). Matrix mode only.</summary>
+    public TablixBuilder RowSubtotals(bool enabled = true) { _rowSubtotals = enabled; return this; }
+
     internal TablixElement Build()
     {
         // Matrix mode: one or more row groups + column groups (nested outer→inner) + a body value
@@ -77,6 +82,7 @@ public sealed class TablixBuilder
                     _rowGroups.Select((g, i) => new TablixGroup($"Rows{i}", g.Expr, g.Sort, g.Desc)).ToArray()),
                 ColumnGroups = new EquatableArray<TablixGroup>(
                     _columnGroups.Select((g, i) => new TablixGroup($"Cols{i}", g.Expr, g.Sort, g.Desc)).ToArray()),
+                RowSubtotals = _rowSubtotals,
                 Cells = new EquatableArray<TablixCell>(
                 [
                     new TablixCell(0, 0, new LabelElement { Text = _corner ?? string.Empty, Bounds = Rectangle.Empty }),

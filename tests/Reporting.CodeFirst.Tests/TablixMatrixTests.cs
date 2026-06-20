@@ -9,6 +9,8 @@ public sealed record VendaRegional(string Regiao, string Mes, decimal Total);
 
 public sealed record VendaDetalhada(string Regiao, string Cidade, string Mes, decimal Total);
 
+public sealed record VendaUF(string Regiao, string Estado, string Cidade, string Mes, decimal Total);
+
 /// <summary>
 /// Covers the Tablix <b>matrix/crosstab</b> path: a row group × column group with a summed body
 /// cell, proving the renderer pivots the data (not just a flat table) — code-first
@@ -90,6 +92,102 @@ public class TablixMatrixTests
         // Leaf intersections sum independently within the nested path.
         texts.Should().Contain(t => t.Contains("100"), "Sul→Porto Alegre→Jan");
         texts.Should().Contain(t => t.Contains("40"), "Sul→Curitiba→Jan");
+    }
+
+    [Fact]
+    public async Task Row_subtotals_emit_group_totals_and_a_grand_total()
+    {
+        VendaDetalhada[] rows =
+        [
+            new("Sul",   "Porto Alegre", "Jan", 100m),
+            new("Sul",   "Curitiba",     "Jan",  40m),
+            new("Sul",   "Porto Alegre", "Fev",  60m),
+            new("Norte", "Manaus",       "Jan",  30m),
+        ];
+
+        Report Build(bool subtotals) => ReportBuilder.Create("Subtotais")
+            .Page(p => p.A4().Portrait().Margins(10))
+            .DataSource("Vendas", rows)
+            .ReportHeader(h => h.Height(90)
+                .Tablix(t => t
+                    .RowGroup("Fields.Regiao")
+                    .RowGroup("Fields.Cidade")
+                    .ColumnGroup("Fields.Mes")
+                    .Corner("Local")
+                    .Cell("Fields.Total")
+                    .RowSubtotals(subtotals))
+                .At(0, 0).Size(170, 80))
+            .Build();
+
+        // Without subtotals there are no total rows.
+        var plain = await TextsOf(Build(false));
+        plain.Should().NotContain(t => t.Contains("Total geral"));
+
+        var withTotals = await TextsOf(Build(true));
+        withTotals.Should().Contain("Total Sul").And.Contain("Total Norte").And.Contain("Total geral");
+        // Sul subtotal: Jan = 100 + 40 = 140; grand total Jan = 140 + 30 = 170.
+        withTotals.Should().Contain(t => t.Contains("140"), "Sul subtotal sums its cities for Jan");
+        withTotals.Should().Contain(t => t.Contains("170"), "grand total sums all regions for Jan");
+    }
+
+    [Fact]
+    public async Task Row_subtotals_with_a_single_level_emit_only_the_grand_total()
+    {
+        var report = ReportBuilder.Create("GrandOnly")
+            .Page(p => p.A4().Portrait().Margins(10))
+            .DataSource("Vendas", Rows) // single row level (Regiao)
+            .ReportHeader(h => h.Height(70)
+                .Tablix(t => t
+                    .RowGroup("Fields.Regiao")
+                    .ColumnGroup("Fields.Mes")
+                    .Corner("Região")
+                    .Cell("Fields.Total")
+                    .RowSubtotals())
+                .At(0, 0).Size(150, 60))
+            .Build();
+
+        var texts = await TextsOf(report);
+        // No inner group to subtotal → only the grand total fires (guard nRowLevels >= 2).
+        texts.Should().Contain("Total geral");
+        texts.Should().NotContain("Total Sul").And.NotContain("Total Norte");
+        // Grand total Jan = Sul(100+25) + Norte(50) = 175.
+        texts.Should().Contain(t => t.Contains("175"), "grand total sums every region for Jan");
+    }
+
+    [Fact]
+    public async Task Row_subtotals_nest_for_three_levels_inner_before_outer()
+    {
+        VendaUF[] rows =
+        [
+            new("Sul",   "RS", "Porto Alegre", "Jan", 100m),
+            new("Sul",   "RS", "Caxias",       "Jan",  20m),
+            new("Sul",   "PR", "Curitiba",     "Jan",  40m),
+            new("Norte", "AM", "Manaus",       "Jan",  30m),
+        ];
+
+        var report = ReportBuilder.Create("ThreeLevel")
+            .Page(p => p.A4().Portrait().Margins(10))
+            .DataSource("Vendas", rows)
+            .ReportHeader(h => h.Height(130)
+                .Tablix(t => t
+                    .RowGroup("Fields.Regiao")
+                    .RowGroup("Fields.Estado")
+                    .RowGroup("Fields.Cidade")
+                    .ColumnGroup("Fields.Mes")
+                    .Corner("Local")
+                    .Cell("Fields.Total")
+                    .RowSubtotals())
+                .At(0, 0).Size(170, 120))
+            .Build();
+
+        var texts = await TextsOf(report);
+        // Subtotals at both outer levels (Estado, Regiao) + grand total.
+        texts.Should().Contain("Total RS").And.Contain("Total PR")
+             .And.Contain("Total Sul").And.Contain("Total geral");
+        // RS = 100+20 = 120; Sul = 120+40 = 160; grand = 160+30 = 190.
+        texts.Should().Contain(t => t.Contains("120")).And.Contain(t => t.Contains("160")).And.Contain(t => t.Contains("190"));
+        // Inner subtotal (Estado) renders before the outer one (Regiao).
+        texts.IndexOf("Total RS").Should().BeLessThan(texts.IndexOf("Total Sul"));
     }
 
     private static Report SortedMatrix(string? sort, bool descending) =>

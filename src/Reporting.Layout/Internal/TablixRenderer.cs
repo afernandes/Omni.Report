@@ -196,24 +196,54 @@ internal static class TablixRenderer
         list.Add(Fill(x0, y0, w, headerH, HeaderBg, tablix.Id));
         list.Add(CellText(cornerText, x0, y0, colW, bold: true, HeaderText, tablix.Id));
 
-        // Column headers: at each level draw a value only where its path-prefix changes (merged look).
+        // Column headers: each level's value spans the columns it covers (true cell span, not blank-filled).
         for (int cl = 0; cl < nColLevels; cl++)
         {
-            string? prev = null;
-            for (int j = 0; j < colLeaves.Count; j++)
+            int j = 0;
+            while (j < colLeaves.Count)
             {
                 string prefix = string.Join(Sep, colLeaves[j].Take(cl + 1));
-                if (prefix != prev)
+                int span = 1;
+                while (j + span < colLeaves.Count && string.Join(Sep, colLeaves[j + span].Take(cl + 1)) == prefix)
                 {
-                    list.Add(CellText(colLeaves[j][cl], x0 + (nRowLevels + j) * colW, y0 + cl * RowHeightMm,
-                        colW, bold: true, HeaderText, tablix.Id));
-                    prev = prefix;
+                    span++;
                 }
+                list.Add(CellText(colLeaves[j][cl], x0 + (nRowLevels + j) * colW, y0 + cl * RowHeightMm,
+                    span * colW, bold: true, HeaderText, tablix.Id));
+                j += span;
             }
         }
 
-        // Data rows: nested row headers (merged look) + the intersection sums.
+        // Sums a contiguous block of row leaves [start..end] for one column key (subtotals / grand total).
+        double SumBlock(int start, int end, string cKey)
+        {
+            double t = 0;
+            for (int k = start; k <= end; k++)
+            {
+                sums.TryGetValue((string.Join(Sep, rowLeaves[k]), cKey), out var s);
+                t += s;
+            }
+            return t;
+        }
+
+        // Emits one total row (subtotal of a group block, or the grand total): a spanning label over the
+        // row-header columns + the per-column block sums, all bold on the header fill.
+        void TotalRow(double yy, string label, int start, int end)
+        {
+            list.Add(Fill(x0, yy, w, RowHeightMm, HeaderBg, tablix.Id));
+            list.Add(CellText(label, x0, yy, nRowLevels * colW, bold: true, HeaderText, tablix.Id));
+            for (int j = 0; j < colLeaves.Count; j++)
+            {
+                list.Add(CellText(FormatNumber(SumBlock(start, end, string.Join(Sep, colLeaves[j])), format, baseCtx.Culture),
+                    x0 + (nRowLevels + j) * colW, yy, colW, bold: true, HeaderText, tablix.Id));
+            }
+        }
+
+        // Data rows: nested row headers (merged look) + the intersection sums, optionally with SSRS-style
+        // subtotal rows after each outer group block and a grand total at the bottom.
+        bool rowSub = tablix.RowSubtotals;
         double y = y0 + headerH;
+        int bodyRows = 0; // visual rows below the header band (data + subtotals + grand total) for grid lines
         var prevRowPrefix = new string?[nRowLevels];
         for (int i = 0; i < rowLeaves.Count; i++)
         {
@@ -236,11 +266,42 @@ internal static class TablixRenderer
                     x0 + (nRowLevels + j) * colW, y, colW, bold: false, BodyText, tablix.Id));
             }
             y += RowHeightMm;
+            bodyRows++;
+
+            // Subtotal each outer group level (innermost-outer first) whose block ends at this leaf.
+            if (rowSub && nRowLevels >= 2)
+            {
+                for (int level = nRowLevels - 2; level >= 0; level--)
+                {
+                    string pfx = string.Join(Sep, rowLeaves[i].Take(level + 1));
+                    bool boundary = i == rowLeaves.Count - 1
+                        || string.Join(Sep, rowLeaves[i + 1].Take(level + 1)) != pfx;
+                    if (!boundary)
+                    {
+                        continue;
+                    }
+                    int start = i;
+                    while (start > 0 && string.Join(Sep, rowLeaves[start - 1].Take(level + 1)) == pfx)
+                    {
+                        start--;
+                    }
+                    TotalRow(y, "Total " + rowLeaves[i][level], start, i);
+                    y += RowHeightMm;
+                    bodyRows++;
+                    for (int d = level; d < nRowLevels; d++) prevRowPrefix[d] = null; // next block redraws headers
+                }
+            }
+        }
+        if (rowSub)
+        {
+            TotalRow(y, "Total geral", 0, rowLeaves.Count - 1);
+            y += RowHeightMm;
+            bodyRows++;
         }
 
         double totalH = y - y0;
         var pen = new PenStyle(GridColor, Unit.FromPoint(0.5));
-        int gridRows = nColLevels + rowLeaves.Count;
+        int gridRows = nColLevels + bodyRows;
         for (int r = 0; r <= gridRows; r++)
         {
             double ly = y0 + r * RowHeightMm;

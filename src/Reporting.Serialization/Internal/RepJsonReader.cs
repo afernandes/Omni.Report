@@ -526,6 +526,7 @@ internal static class RepJsonReader
             ColumnGroups = new EquatableArray<TablixGroup>(colGroups),
             Cells = new EquatableArray<TablixCell>(cells),
             ColumnWidths = new EquatableArray<double>(columnWidths),
+            RowSubtotals = (bool?)o["rowSubtotals"] ?? false,
         };
     }
 
