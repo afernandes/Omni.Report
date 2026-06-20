@@ -140,6 +140,12 @@ public sealed class ExpressionEvaluator
                 return;
             }
 
+            if (TryEvaluateScalarFunction(name, args, context, out var scalar))
+            {
+                args.Result = scalar;
+                return;
+            }
+
             // RDL Code element: route Code.MethodName(...) to the opt-in resolver when present.
             // ExpressionRewriter flattens "Code.Method(" → "Code_Method(", so NCalc surfaces it
             // as the function name "Code_MethodName".
@@ -221,6 +227,95 @@ public sealed class ExpressionEvaluator
                 return false;
             default:
                 return false;
+        }
+    }
+
+    // SSRS/VB-style scalar functions NCalc doesn't provide natively (it already has Abs/Round/Sqrt/etc.):
+    // the everyday RDL vocabulary — conditional, text and date-part helpers. Case-insensitive, like SSRS.
+    private static bool TryEvaluateScalarFunction(string name, FunctionEventArgs args, IReportExpressionContext context, out object? result)
+    {
+        result = null;
+        var p = args.Parameters;
+        int n = p.Count;
+        string S(int i) => Convert.ToString(p.Evaluate(i), context.Culture) ?? string.Empty;
+        int Int(int i) => Convert.ToInt32(p.Evaluate(i), context.Culture);
+        DateTime Dt(int i) { var v = p.Evaluate(i); return v is DateTime d ? d : Convert.ToDateTime(v, context.Culture); }
+        bool Bool(int i) => Convert.ToBoolean(p.Evaluate(i), context.Culture);
+
+        // A function whose argument can't be coerced (e.g. a text value where a date/number/bool is
+        // expected) degrades to null for this cell — SSRS-style #Error — instead of aborting the whole
+        // expression. Arithmetic errors (divide-by-zero) inside a taken branch still propagate as before.
+        try
+        {
+        switch (name.ToLowerInvariant())
+        {
+            // ── Conditional ──
+            case "iif": // only the taken branch is evaluated (safer than SSRS, which evaluates both)
+                if (n < 3) return false;
+                result = Bool(0) ? p.Evaluate(1) : p.Evaluate(2);
+                return true;
+            case "isnothing":
+                result = n > 0 && p.Evaluate(0) is null;
+                return true;
+            case "switch": // (cond1, val1, cond2, val2, …) → first matching value, else null
+                for (int i = 0; i + 1 < n; i += 2)
+                {
+                    if (Bool(i)) { result = p.Evaluate(i + 1); return true; }
+                }
+                return true;
+            case "choose": // 1-based index into the value list
+                if (n < 2) return false;
+                var idx = Int(0);
+                if (idx >= 1 && idx < n) { result = p.Evaluate(idx); }
+                return true;
+
+            // ── Text ──
+            case "len":
+                result = n > 0 ? S(0).Length : 0;
+                return true;
+            case "left":
+                if (n < 2) return false;
+                { var s = S(0); result = s[..Math.Clamp(Int(1), 0, s.Length)]; }
+                return true;
+            case "right":
+                if (n < 2) return false;
+                { var s = S(0); result = s[(s.Length - Math.Clamp(Int(1), 0, s.Length))..]; }
+                return true;
+            case "mid": // VB Mid: 1-based start, optional length
+                if (n < 2) return false;
+                {
+                    var s = S(0);
+                    var start = Math.Max(1, Int(1)) - 1;
+                    if (start >= s.Length) { result = string.Empty; return true; }
+                    var len = n >= 3 ? Math.Max(0, Int(2)) : s.Length - start;
+                    result = s.Substring(start, Math.Min(len, s.Length - start));
+                }
+                return true;
+            case "trim": result = n > 0 ? S(0).Trim() : string.Empty; return true;
+            case "ltrim": result = n > 0 ? S(0).TrimStart() : string.Empty; return true;
+            case "rtrim": result = n > 0 ? S(0).TrimEnd() : string.Empty; return true;
+            case "ucase":
+            case "upper": result = n > 0 ? S(0).ToUpper(context.Culture) : string.Empty; return true;
+            case "lcase":
+            case "lower": result = n > 0 ? S(0).ToLower(context.Culture) : string.Empty; return true;
+            case "replace":
+                if (n < 3) return false;
+                result = S(0).Replace(S(1), S(2));
+                return true;
+
+            // ── Date parts ──
+            case "year": result = n > 0 ? Dt(0).Year : 0; return true;
+            case "month": result = n > 0 ? Dt(0).Month : 0; return true;
+            case "day": result = n > 0 ? Dt(0).Day : 0; return true;
+
+            default:
+                return false;
+        }
+        }
+        catch (Exception ex) when (ex is FormatException or InvalidCastException or OverflowException)
+        {
+            result = null;
+            return true;
         }
     }
 
