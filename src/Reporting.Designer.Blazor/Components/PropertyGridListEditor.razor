@@ -25,15 +25,15 @@
                 {
                     case "color-hex":
                         var hex = val as string is { Length: > 0 } s ? s : "#000000";
-                        <input type="color" value="@hex" title="@field.Label"
-                               @onchange="@(e => EditField(r, field, e.Value?.ToString() ?? hex))"
+                        <input type="color" value="@ColorHexUtil.ToRgbHexString(hex)" title="@field.Label"
+                               @onchange="@(e => EditField(r, field, ColorHexUtil.MergeHexAlpha(hex, e.Value?.ToString())))"
                                style="width:28px;height:18px;padding:0;cursor:pointer;flex:0 0 auto;" />
                         break;
 
                     case "color-picker":
                         var col = val as Color?;
-                        <input type="color" value="@((col ?? Color.Black).ToHex())" title="@field.Label"
-                               @onchange="@(e => EditField(r, field, Color.FromHex(e.Value?.ToString() ?? "#000000")))"
+                        <input type="color" value="@ColorHexUtil.ToRgbHex(col ?? Color.Black)" title="@field.Label"
+                               @onchange="@(e => EditField(r, field, ColorHexUtil.WithRgb(col ?? Color.Black, e.Value?.ToString())))"
                                style="width:28px;height:18px;padding:0;cursor:pointer;flex:0 0 auto;" />
                         break;
 
