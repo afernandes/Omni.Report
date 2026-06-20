@@ -597,6 +597,23 @@
         }
     }, { capture: true });
 
+    // ───── Keep keyboard focus on the designer host ───────────────────────────
+    // Every shortcut (Delete, arrows, Ctrl+Z…) reaches Blazor via the @onkeydown on the
+    // .report-designer host, which only fires when focus is inside that subtree. Clicking a
+    // NON-focusable canvas element (an SVG node) drops focus to <body>, so Delete then did
+    // nothing. After any pointerdown on a non-editable designer surface, pull focus back to the
+    // host (deferred past the browser's own focus/blur).
+    document.addEventListener("pointerdown", ev => {
+        const host = ev.target?.closest?.(".report-designer");
+        if (!host) return;
+        if (ev.target?.closest?.('input, textarea, select, [contenteditable="true"], .monaco-editor, .monaco-host')) return;
+        setTimeout(() => {
+            if (!host.contains(document.activeElement)) {
+                try { host.focus({ preventScroll: true }); } catch { /* host gone */ }
+            }
+        }, 0);
+    }, { capture: true });
+
     // ───── Context menu (right-click on element / band / page) ─────────────────
     // Delegated handler. Determines what was clicked from the closest matching element
     // and dispatches to the .NET side via OnContextMenuRequest. The browser's own context
