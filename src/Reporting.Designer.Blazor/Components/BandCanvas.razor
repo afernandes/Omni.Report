@@ -71,6 +71,20 @@
                             <div class="el-content">
                                 @ElementInner(el)
                             </div>
+                            @if (_inlineEditElement == el)
+                            {
+                                @* The editor fills the element itself — so it inherits the element's exact
+                                   on-screen position (zoom, band offset, gutters all already applied to .el)
+                                   instead of recomputing page-relative mm coordinates that drifted. *@
+                                <textarea class="inline-editor"
+                                          @ref="_inlineEditorRef"
+                                          style="position:absolute;inset:0;width:100%;height:100%;box-sizing:border-box;z-index:40;background:white;border:2px solid var(--accent);font-family:inherit;font-size:11px;padding:2px;outline:none;resize:none;"
+                                          @onblur="CommitInlineEdit"
+                                          @onkeydown="OnInlineEditKey"
+                                          @onclick:stopPropagation="true"
+                                          @ondblclick:stopPropagation="true"
+                                          @bind="_inlineEditValue"></textarea>
+                            }
                             @if (IsDataKind(el))
                             {
                                 <span class="fx-badge">fx</span>
@@ -157,15 +171,6 @@
             }
         }
 
-        @if (_inlineEditElement is not null)
-        {
-            <textarea class="inline-editor"
-                      @ref="_inlineEditorRef"
-                      style="@InlineEditorStyle"
-                      @onblur="CommitInlineEdit"
-                      @onkeydown="OnInlineEditKey"
-                      @bind="_inlineEditValue"></textarea>
-        }
     </div>
 </div>
 
@@ -394,29 +399,6 @@
         else if (e.Key == "Enter" && !e.ShiftKey)
         {
             await CommitInlineEdit();
-        }
-    }
-
-    private string InlineEditorStyle
-    {
-        get
-        {
-            if (_inlineEditElement is null) return string.Empty;
-            var el = _inlineEditElement;
-            // Position relative to .page (we know the band offsets via index lookup).
-            var bandIdx = -1;
-            double offsetMm = 0;
-            for (int i = 0; i < Report.Bands.Count; i++)
-            {
-                if (Report.Bands[i].Elements.Contains(el)) { bandIdx = i; break; }
-                offsetMm += Report.Bands[i].Height.ToMm();
-            }
-            var x = PxStr(el.X.ToMm());
-            var y = PxStr(offsetMm + el.Y.ToMm());
-            var w = PxStr(el.Width.ToMm());
-            var h = PxStr(el.Height.ToMm());
-            return $"position:absolute;left:{x}px;top:{y}px;width:{w}px;height:{h}px;z-index:40;" +
-                   "background:white;border:2px solid var(--accent);font-family:inherit;font-size:11px;padding:2px;outline:none;resize:none;";
         }
     }
 
