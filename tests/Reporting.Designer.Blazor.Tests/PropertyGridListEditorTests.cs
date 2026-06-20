@@ -93,4 +93,22 @@ public class PropertyGridListEditorTests : Bunit.BunitContext
         ranges.Should().ContainSingle();
         ranges[0].StartExpression.Should().Be("60", "the survivor is the original second range, intact");
     }
+
+    [Fact]
+    public void A_translucent_colour_hex_renders_as_rgb_not_black()
+    {
+        // A loaded #AARRGGBB must show as #RRGGBB in <input type=color> (which can't take 8 digits), not
+        // reset to #000000. The alpha-safe handling now lives in the shared ColorHexUtil, used by both editors.
+        var vm = ElementViewModel.FromElement(new GaugeElement
+        {
+            Id = "g1",
+            Bounds = new Rectangle(Unit.Zero, Unit.Zero, Unit.FromMm(40), Unit.FromMm(40)),
+            Ranges = new EquatableArray<GaugeRange>(new[] { new GaugeRange("0", "100", "#80FF0000") }),
+        });
+        var desc = PropertyGridDescriptors.For(typeof(GaugeElement)).Single(d => d.Name == "Ranges");
+        var cut = Render<PropertyGridListEditor>(p => p.Add(x => x.Element, vm).Add(x => x.Descriptor, desc));
+
+        cut.FindAll("input[type=color]")[0].GetAttribute("value")
+            .Should().Be("#FF0000", "the 8-digit alpha hex is RGB-stripped for the colour input, not reset to black");
+    }
 }
