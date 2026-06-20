@@ -62,6 +62,15 @@ public class PropertyExpressionRenderTests
     }
 
     [Fact]
+    public async Task Binds_an_enum_alignment_from_an_expression_coercing_by_name()
+    {
+        // Enums are now expression-bindable by default (SSRS-style "bind any property"). A string result
+        // coerces to the enum by name, case-insensitively — proving the newly-enabled category end-to-end.
+        var text = await RenderTextBox(new StyledRow("A", "#000000", 10), ("Style.HorizontalAlignment", "'Center'"));
+        text.Style.HorizontalAlignment.Should().Be(HorizontalAlignment.Center, "the expression result coerces to the enum by name, overriding the static default");
+    }
+
+    [Fact]
     public async Task An_unknown_path_is_ignored_and_the_static_value_is_kept()
     {
         var text = await RenderTextBox(new StyledRow("A", "#CC0000", 10), ("Style.NaoExiste", "Fields.Cor"));

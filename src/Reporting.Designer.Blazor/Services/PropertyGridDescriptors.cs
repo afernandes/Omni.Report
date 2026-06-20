@@ -86,20 +86,38 @@ public static class PropertyGridDescriptors
                 Collect(prop.PropertyType, nextChain, path, list); // flatten the nested record's [PropertyGrid] props
                 continue;
             }
+            var editor = attr.Editor ?? InferEditor(prop.PropertyType);
             list.Add(new PropertyGridDescriptor(
                 Name: path,
                 Label: attr.Label ?? prop.Name,
                 Placeholder: attr.Placeholder,
                 Type: prop.PropertyType,
-                Editor: attr.Editor ?? InferEditor(prop.PropertyType),
+                Editor: editor,
                 Category: attr.Category ?? "Geral",
                 Order: attr.Order,
                 Get: BuildGetter(nextChain),
                 Set: BuildSetter(nextChain),
-                Bindable: attr.Bindable,
+                Bindable: attr.Bindable || IsBindableByDefault(editor),
                 PropertyPath: path));
         }
     }
+
+    /// <summary>Whether a property is expression-bindable (shows an fx toggle) BY DEFAULT, inferred from
+    /// its editor. SSRS-style "bind any property": every scalar VALUE property — colour, unit, enum /
+    /// alignment, boolean, number — can be driven by a report expression (the layout's
+    /// <c>PropertyPathBinder</c> coerces the result to the leaf type and falls back to the static value on
+    /// any error). Excluded:
+    /// strings (<c>text</c>/<c>textarea</c> — which includes the <c>*Expression</c> props that ARE
+    /// expressions already, plus formats), collections (<c>list</c>/<c>dict</c>) and composite editors
+    /// (<c>font</c>/<c>border</c>/<c>padding</c>) that no single expression result could produce. An
+    /// explicit <c>[PropertyGrid(Bindable = true)]</c> still wins. This is what lets a NEW component's
+    /// scalar properties be expression-bindable with ZERO per-property annotation.</summary>
+    internal static bool IsBindableByDefault(string editor) => editor switch
+    {
+        "color-picker" or "color-hex" or "unit-spinner" or "enum"
+            or "h-align" or "v-align" or "toggle" or "number" => true,
+        _ => false,
+    };
 
     /// <summary>Maps a property's CLR type to a default editor id. An explicit
     /// <c>[PropertyGrid(Editor=…)]</c> overrides this.</summary>
