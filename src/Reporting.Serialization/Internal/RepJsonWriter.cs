@@ -422,6 +422,7 @@ internal static class RepJsonWriter
                 o["symbology"] = bc.Symbology.ToString();
                 o["expression"] = bc.Expression;
                 o["showText"] = bc.ShowText;
+                o["qrEcc"] = bc.QrEcc.ToString();
                 break;
             case ChartElement chart:
                 o["chartKind"] = chart.Kind.ToString();

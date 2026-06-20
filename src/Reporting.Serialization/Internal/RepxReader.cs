@@ -301,6 +301,7 @@ internal static class RepxReader
                 Symbology = Enum.Parse<BarcodeSymbology>(el.Element("Symbology")?.Value ?? nameof(BarcodeSymbology.Code128)),
                 Expression = el.Element("Expression")?.Value ?? string.Empty,
                 ShowText = bool.Parse(el.Element("ShowText")?.Value ?? "true"),
+                QrEcc = Enum.Parse<QrEccLevel>(el.Element("QrEcc")?.Value ?? nameof(QrEccLevel.Medium)),
             },
             "Chart" => ReadChartElement(el, bounds),
             "Subreport" => ReadSubreportElement(el, bounds),

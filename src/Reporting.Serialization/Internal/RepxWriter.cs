@@ -367,6 +367,7 @@ internal static class RepxWriter
                     new("Symbology", bc.Symbology.ToString()),
                     new("Expression", bc.Expression),
                     new("ShowText", bc.ShowText.ToString()),
+                    new("QrEcc", bc.QrEcc.ToString()),
                 }),
             ChartElement chart => ("Chart", WriteChartContent(chart)),
             SubreportElement sub => ("Subreport", WriteSubreportContent(sub)),
