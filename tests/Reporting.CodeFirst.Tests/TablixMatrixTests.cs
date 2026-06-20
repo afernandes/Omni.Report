@@ -91,4 +91,41 @@ public class TablixMatrixTests
         texts.Should().Contain(t => t.Contains("100"), "Sul→Porto Alegre→Jan");
         texts.Should().Contain(t => t.Contains("40"), "Sul→Curitiba→Jan");
     }
+
+    private static Report SortedMatrix(string? sort, bool descending) =>
+        ReportBuilder.Create("Sorted")
+            .Page(p => p.A4().Portrait().Margins(10))
+            .DataSource("Vendas", Rows) // data order encounters "Sul" before "Norte"
+            .ReportHeader(h => h.Height(60)
+                .Tablix(t => t
+                    .RowGroup("Fields.Regiao", sort, descending)
+                    .ColumnGroup("Fields.Mes")
+                    .Corner("Região")
+                    .Cell("Fields.Total"))
+                .At(0, 0).Size(150, 40))
+            .Build();
+
+    private static async Task<List<string>> TextsOf(Report report) =>
+        (await report.PaginateAsync()).Pages
+            .SelectMany(p => p.Primitives).OfType<DrawTextPrimitive>().Select(t => t.Text).ToList();
+
+    [Fact]
+    public async Task Row_group_SortExpression_orders_group_instances_ascending()
+    {
+        // Without a sort the groups keep data order (Sul encountered first)…
+        var unsorted = await TextsOf(SortedMatrix(null, false));
+        unsorted.IndexOf("Sul").Should().BeLessThan(unsorted.IndexOf("Norte"));
+
+        // …with an ascending SortExpression the instances sort by region (Norte before Sul).
+        var sorted = await TextsOf(SortedMatrix("Fields.Regiao", false));
+        sorted.IndexOf("Norte").Should().BeGreaterThanOrEqualTo(0);
+        sorted.IndexOf("Norte").Should().BeLessThan(sorted.IndexOf("Sul"));
+    }
+
+    [Fact]
+    public async Task Row_group_SortExpression_descending_reverses_order()
+    {
+        var desc = await TextsOf(SortedMatrix("Fields.Regiao", true));
+        desc.IndexOf("Sul").Should().BeLessThan(desc.IndexOf("Norte"), "descending puts Sul before Norte");
+    }
 }

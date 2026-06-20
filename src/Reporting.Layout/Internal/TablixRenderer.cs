@@ -135,10 +135,10 @@ internal static class TablixRenderer
         var list = new List<LayoutPrimitive>();
         actualHeight = bounds.Height;
 
-        var rowExprs = tablix.RowGroups.Where(g => !string.IsNullOrWhiteSpace(g.GroupExpression))
-            .Select(g => g.GroupExpression!).ToList();
-        var colExprs = tablix.ColumnGroups.Where(g => !string.IsNullOrWhiteSpace(g.GroupExpression))
-            .Select(g => g.GroupExpression!).ToList();
+        var rowGroups = tablix.RowGroups.Where(g => !string.IsNullOrWhiteSpace(g.GroupExpression)).ToList();
+        var colGroups = tablix.ColumnGroups.Where(g => !string.IsNullOrWhiteSpace(g.GroupExpression)).ToList();
+        var rowExprs = rowGroups.Select(g => g.GroupExpression!).ToList();
+        var colExprs = colGroups.Select(g => g.GroupExpression!).ToList();
         if (rowExprs.Count == 0 || colExprs.Count == 0)
         {
             return list;
@@ -169,13 +169,17 @@ internal static class TablixRenderer
             for (int l = 0; l < nRowLevels; l++) rk[l] = Resolve(ev, templates, rowExprs[l], rc);
             var ck = new string[nColLevels];
             for (int l = 0; l < nColLevels; l++) ck[l] = Resolve(ev, templates, colExprs[l], rc);
-            rowTree.Add(rk);
-            colTree.Add(ck);
+            rowTree.Add(rk, rc);
+            colTree.Add(ck, rc);
             string rKey = string.Join(Sep, rk), cKey = string.Join(Sep, ck);
             double v = EvalDouble(ev, valueExpr, rc);
             sums.TryGetValue((rKey, cKey), out var cur);
             sums[(rKey, cKey)] = cur + v;
         }
+        // RDL group sorting: order each axis' group instances by their SortExpression (per-row keys like a
+        // group label or field; aggregate sort keys are a follow-up — see GroupNode.Sort). No-op when unset.
+        rowTree.Sort(rowGroups, ev);
+        colTree.Sort(colGroups, ev);
         var rowLeaves = rowTree.Leaves(nRowLevels);
         var colLeaves = colTree.Leaves(nColLevels);
         if (rowLeaves.Count == 0 || colLeaves.Count == 0)
@@ -258,8 +262,9 @@ internal static class TablixRenderer
     {
         private readonly List<string> _order = new();
         private readonly Dictionary<string, GroupNode> _children = new(StringComparer.Ordinal);
+        private IReportExpressionContext? _sample; // first row that reached this node (for SortExpression)
 
-        public void Add(IReadOnlyList<string> path)
+        public void Add(IReadOnlyList<string> path, IReportExpressionContext rowCtx)
         {
             var cur = this;
             foreach (var k in path)
@@ -267,10 +272,44 @@ internal static class TablixRenderer
                 if (!cur._children.TryGetValue(k, out var child))
                 {
                     child = new GroupNode();
+                    child._sample = rowCtx;
                     cur._children[k] = child;
                     cur._order.Add(k);
                 }
                 cur = child;
+            }
+        }
+
+        /// <summary>Orders siblings at each level by that level's group SortExpression, evaluated on a
+        /// representative (first-seen) row of each group. This correctly orders by per-row keys (group label,
+        /// a field); an AGGREGATE SortExpression (e.g. Sum) resolves against the whole dataset, not the
+        /// group, so it can't order groups — use a per-row sort key for now. Levels without a SortExpression
+        /// keep data order; ties keep data order too (stable).</summary>
+        public void Sort(IReadOnlyList<TablixGroup> levels, ExpressionEvaluator ev, int depth = 0)
+        {
+            if (depth < levels.Count && !string.IsNullOrWhiteSpace(levels[depth].SortExpression))
+            {
+                var expr = levels[depth].SortExpression!;
+                bool desc = levels[depth].SortDescending;
+                // Stable sort: List<T>.Sort is unstable (introsort), so carry the original index as a
+                // tiebreaker — equal sort keys keep their data order, and the result is deterministic.
+                var ordered = _order.Select((k, i) => (Key: k, Index: i)).ToList();
+                ordered.Sort((a, b) =>
+                {
+                    int cmp = CompareSortValues(EvalSort(ev, expr, _children[a.Key]._sample),
+                                                EvalSort(ev, expr, _children[b.Key]._sample));
+                    if (cmp != 0)
+                    {
+                        return desc ? -cmp : cmp;
+                    }
+                    return a.Index.CompareTo(b.Index); // tie → data order, regardless of direction
+                });
+                _order.Clear();
+                _order.AddRange(ordered.Select(t => t.Key));
+            }
+            foreach (var child in _children.Values)
+            {
+                child.Sort(levels, ev, depth + 1);
             }
         }
 
@@ -311,6 +350,51 @@ internal static class TablixRenderer
         {
             return 0;
         }
+    }
+
+    private static object? EvalSort(ExpressionEvaluator ev, string expr, IReportExpressionContext? ctx)
+    {
+        if (ctx is null)
+        {
+            return null;
+        }
+        try
+        {
+            return ev.Evaluate(expr, ctx);
+        }
+        catch
+        {
+            return null; // a bad SortExpression must not break the render — fall back to data order for that pair
+        }
+    }
+
+    // Orders sort keys by natural type when possible: same-typed comparables (DateTime/decimal/…) compare
+    // directly; otherwise numeric when both parse as numbers, else ordinal string. Nulls sort first.
+    private static int CompareSortValues(object? a, object? b)
+    {
+        if (a is null)
+        {
+            return b is null ? 0 : -1;
+        }
+        if (b is null)
+        {
+            return 1;
+        }
+        // Same runtime type that's comparable (DateTime, decimal, …) → natural order. Strings are excluded
+        // so they use the ordinal path below (string.CompareTo is culture-sensitive).
+        if (a is not string && b is not string && a.GetType() == b.GetType() && a is IComparable cmp)
+        {
+            return cmp.CompareTo(b);
+        }
+        var inv = System.Globalization.CultureInfo.InvariantCulture;
+        var sa = Convert.ToString(a, inv) ?? string.Empty;
+        var sb = Convert.ToString(b, inv) ?? string.Empty;
+        if (double.TryParse(sa, System.Globalization.NumberStyles.Any, inv, out var da)
+            && double.TryParse(sb, System.Globalization.NumberStyles.Any, inv, out var db))
+        {
+            return da.CompareTo(db);
+        }
+        return string.Compare(sa, sb, StringComparison.Ordinal);
     }
 
     private static string FormatNumber(double v, string? format, System.Globalization.CultureInfo culture)
