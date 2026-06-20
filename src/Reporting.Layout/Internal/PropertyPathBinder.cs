@@ -138,7 +138,13 @@ internal static class PropertyPathBinder
         {
             if (u == typeof(Color))
             {
-                value = Color.FromHex(Convert.ToString(raw, culture)!);
+                // Only a #hex STRING is a colour. A numeric result (e.g. 160000) must NOT be silently
+                // mis-read as "#160000" — reject it so the static colour stays the fallback.
+                if (raw is not string hex)
+                {
+                    return false;
+                }
+                value = Color.FromHex(hex);
                 return true;
             }
             if (u == typeof(Unit))
@@ -159,8 +165,14 @@ internal static class PropertyPathBinder
             }
             if (u.IsEnum)
             {
-                var parsed = Enum.Parse(u, Convert.ToString(raw, culture)!, ignoreCase: true);
-                if (u.IsDefined(typeof(FlagsAttribute), inherit: false))
+                var text = Convert.ToString(raw, culture)!;
+                var isFlags = u.IsDefined(typeof(FlagsAttribute), inherit: false);
+                if (!isFlags && text.Contains(','))
+                {
+                    return false; // a comma-list is only valid for a [Flags] enum, not a single-value one
+                }
+                var parsed = Enum.Parse(u, text, ignoreCase: true);
+                if (isFlags)
                 {
                     // [Flags] (e.g. FontStyle): accept any combination of defined bits, reject the rest.
                     long mask = 0;
@@ -178,6 +190,27 @@ internal static class PropertyPathBinder
                     return false; // an out-of-range number (e.g. "99") is a coercion failure → keep the static value
                 }
                 value = parsed;
+                return true;
+            }
+            if (u == typeof(double) || u == typeof(float) || u == typeof(decimal)
+                || u == typeof(int) || u == typeof(long) || u == typeof(short) || u == typeof(byte)
+                || u == typeof(sbyte) || u == typeof(uint) || u == typeof(ulong) || u == typeof(ushort))
+            {
+                // A STRING numeric result must parse invariant-first, no thousands — the same pt-BR
+                // "2.5"→25 (10×) trap that Unit had. A boxed numeric value is converted invariantly too.
+                if (raw is string num)
+                {
+                    const NumberStyles ns = NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint
+                        | NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite | NumberStyles.AllowExponent;
+                    if (!double.TryParse(num, ns, CultureInfo.InvariantCulture, out var d)
+                        && !double.TryParse(num, ns, culture, out d))
+                    {
+                        return false;
+                    }
+                    value = Convert.ChangeType(d, u, CultureInfo.InvariantCulture);
+                    return true;
+                }
+                value = Convert.ChangeType(raw, u, CultureInfo.InvariantCulture);
                 return true;
             }
             value = Convert.ChangeType(raw, u, culture);
