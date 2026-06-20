@@ -58,7 +58,45 @@ public sealed class ConditionalFormatRule : Notifying
     }
 }
 
-public enum DesignerElementKind { Label, TextBox, Line, Rectangle, Ellipse, Image, Barcode, QrCode, Chart, Tablix, Gauge, DataBar, Sparkline, Indicator, Map, Subreport, Code }
+// Toolbox presentation lives next to the value via [ToolboxElement]; the ElementToolbox reflects over
+// these (ToolboxCatalog) so a new annotated kind appears in the palette with no markup edits.
+public enum DesignerElementKind
+{
+    [ToolboxElement("Básicos", "Label", "hash", "Texto literal", Hotkey = "L", Draggable = true)]
+    Label,
+    [ToolboxElement("Básicos", "TextBox", "type", "Expressão / template", Hotkey = "T", Draggable = true)]
+    TextBox,
+    [ToolboxElement("Básicos", "Line", "minus", "Linha", Draggable = true)]
+    Line,
+    [ToolboxElement("Básicos", "Rectangle", "square", "Retângulo", Draggable = true)]
+    Rectangle,
+    [ToolboxElement("Básicos", "Ellipse", "circle", "Elipse", Draggable = true)]
+    Ellipse,
+    [ToolboxElement("Básicos", "Picture", "image", "Imagem", Draggable = true)]
+    Image,
+    [ToolboxElement("Básicos", "Barcode", "barcode", "Código de barras", Draggable = true)]
+    Barcode,
+    [ToolboxElement("Básicos", "QR Code", "qr-code", "QR Code", Draggable = true)]
+    QrCode,
+    [ToolboxElement("Gráficos", "Chart", "bar-chart-2", "Gráfico (barras/linhas/pizza)")]
+    Chart,
+    [ToolboxElement("Dados", "Table", "table", "Tabela bandada")]
+    Tablix,
+    [ToolboxElement("Gráficos", "Gauge", "gauge", "Medidor")]
+    Gauge,
+    [ToolboxElement("Avançados", "Data Bar", "bar-chart-3", "Barra de dados proporcional")]
+    DataBar,
+    [ToolboxElement("Gráficos", "Sparkline", "trending-up", "Mini-gráfico")]
+    Sparkline,
+    [ToolboxElement("Avançados", "Indicator", "locate", "Indicador KPI (seta / forma / rating)")]
+    Indicator,
+    [ToolboxElement("Gráficos", "Map", "map", "Mapa")]
+    Map,
+    [ToolboxElement("Avançados", "Subreport", "files", "Sub-relatório embutido (referência a outro report)")]
+    Subreport,
+    [ToolboxElement("Avançados", "Code", "code", "Bloco de código C#/VB (Code.Metodo) — via Roslyn opt-in")]
+    Code,
+}
 
 /// <summary>
 /// Mutable wrapper around a <see cref="DrillthroughParameter"/>. Exposed as a row in the

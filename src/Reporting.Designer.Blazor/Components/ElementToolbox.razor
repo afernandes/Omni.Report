@@ -7,64 +7,48 @@
     <kbd>/</kbd>
 </div>
 
-<div class="tb-group-h">
-    <Icon Name="chevron-down" Size="12" CssClass="chev icon icon-12" />
-    <span>Básicos</span>
-</div>
-<div class="toolbox-list">
-    @foreach (var item in Filter(_basic))
-    {
-        <div class="tbx-item toolbox-btn"
-             draggable="true"
-             role="button"
-             tabindex="0"
-             data-kind="@item.Kind"
-             @ondragstart="@(e => OnDragStart(e, item.Kind))"
-             @onclick="@(() => OnAddClicked(item.Kind))"
-             title="@item.Description">
-            <Icon Name="@item.Icon" Size="14" />
-            <span>@item.Label</span>
-            @if (!string.IsNullOrEmpty(item.Hotkey))
+@* Element groups are discovered from [ToolboxElement] on DesignerElementKind (ToolboxCatalog) — adding a
+   new annotated kind makes it appear here automatically, no markup changes. *@
+@foreach (var group in ToolboxCatalog.Groups)
+{
+    <div class="tb-group-h">
+        <Icon Name="chevron-down" Size="12" CssClass="chev icon icon-12" />
+        <span>@group.Name</span>
+    </div>
+    <div class="toolbox-list">
+        @foreach (var item in Filter(group.Items))
+        {
+            @if (item.Draggable)
             {
-                <span class="meta">@item.Hotkey</span>
+                <div class="tbx-item toolbox-btn"
+                     draggable="true"
+                     role="button"
+                     tabindex="0"
+                     data-kind="@item.Kind"
+                     @ondragstart="@(e => OnDragStart(e, item.Kind))"
+                     @onclick="@(() => OnAddClicked(item.Kind))"
+                     title="@item.Description">
+                    <Icon Name="@item.Icon" Size="14" />
+                    <span>@item.Label</span>
+                    @if (!string.IsNullOrEmpty(item.Hotkey))
+                    {
+                        <span class="meta">@item.Hotkey</span>
+                    }
+                </div>
             }
-        </div>
-    }
-</div>
-
-<div class="tb-group-h">
-    <Icon Name="chevron-down" Size="12" CssClass="chev icon icon-12" />
-    <span>Dados</span>
-</div>
-<div class="toolbox-list">
-    @foreach (var item in Filter(_data))
-    {
-        <div class="tbx-item"
-             role="button" tabindex="0"
-             @onclick="@(() => OnAddClicked(item.Kind))"
-             title="@item.Description">
-            <Icon Name="@item.Icon" Size="14" />
-            <span>@item.Label</span>
-        </div>
-    }
-</div>
-
-<div class="tb-group-h">
-    <Icon Name="chevron-down" Size="12" CssClass="chev icon icon-12" />
-    <span>Gráficos</span>
-</div>
-<div class="toolbox-list">
-    @foreach (var item in Filter(_charts))
-    {
-        <div class="tbx-item"
-             role="button" tabindex="0"
-             @onclick="@(() => OnAddClicked(item.Kind))"
-             title="@item.Description">
-            <Icon Name="@item.Icon" Size="14" />
-            <span>@item.Label</span>
-        </div>
-    }
-</div>
+            else
+            {
+                <div class="tbx-item"
+                     role="button" tabindex="0"
+                     @onclick="@(() => OnAddClicked(item.Kind))"
+                     title="@item.Description">
+                    <Icon Name="@item.Icon" Size="14" />
+                    <span>@item.Label</span>
+                </div>
+            }
+        }
+    </div>
+}
 
 <div class="tb-group-h">
     <Icon Name="chevron-down" Size="12" CssClass="chev icon icon-12" />
@@ -85,23 +69,6 @@
     }
 </div>
 
-<div class="tb-group-h">
-    <Icon Name="chevron-down" Size="12" CssClass="chev icon icon-12" />
-    <span>Avançados</span>
-</div>
-<div class="toolbox-list">
-    @foreach (var item in Filter(_advanced))
-    {
-        <div class="tbx-item"
-             role="button" tabindex="0"
-             @onclick="@(() => OnAddClicked(item.Kind))"
-             title="@item.Description">
-            <Icon Name="@item.Icon" Size="14" />
-            <span>@item.Label</span>
-        </div>
-    }
-</div>
-
 @code {
     [Parameter] public EventCallback<DesignerElementKind> OnAdd { get; set; }
     [Parameter] public EventCallback<SystemFieldDescriptor> OnAddSystemField { get; set; }
@@ -118,7 +85,7 @@
         await Task.CompletedTask;
     }
 
-    private IEnumerable<ToolboxItem> Filter(IEnumerable<ToolboxItem> source)
+    private IEnumerable<ToolboxCatalog.Item> Filter(IEnumerable<ToolboxCatalog.Item> source)
         => string.IsNullOrWhiteSpace(_filter)
            ? source
            : source.Where(i => i.Label.Contains(_filter, StringComparison.OrdinalIgnoreCase));
@@ -127,49 +94,6 @@
         => string.IsNullOrWhiteSpace(_filter)
            ? source
            : source.Where(i => i.Label.Contains(_filter, StringComparison.OrdinalIgnoreCase));
-
-    // Order matters: tests address items by index ([0]=Label, [1]=TextBox).
-    private readonly ToolboxItem[] _basic =
-    [
-        new(DesignerElementKind.Label,     "Label",     "hash",     "Texto literal",       "L"),
-        new(DesignerElementKind.TextBox,   "TextBox",   "type",     "Expressão / template","T"),
-        new(DesignerElementKind.Line,      "Line",      "minus",    "Linha",               null),
-        new(DesignerElementKind.Rectangle, "Rectangle", "square",   "Retângulo",           null),
-        new(DesignerElementKind.Ellipse,   "Ellipse",   "circle",   "Elipse",              null),
-        new(DesignerElementKind.Image,     "Picture",   "image",    "Imagem",              null),
-        new(DesignerElementKind.Barcode,   "Barcode",   "barcode",  "Código de barras",    null),
-        new(DesignerElementKind.QrCode,    "QR Code",   "qr-code",  "QR Code",             null),
-    ];
-    // Grupos e sub-bandas (detalhe/group/sub-detail) são criados pela OutlineTree no painel
-    // direito, não arrastando da toolbox — por isso não há entradas "em breve" aqui.
-    private readonly ToolboxItem[] _data =
-    [
-        new(DesignerElementKind.Tablix, "Table", "table", "Tabela bandada", null),
-    ];
-    private readonly ToolboxItem[] _charts =
-    [
-        new(DesignerElementKind.Chart,     "Chart",     "bar-chart-2",  "Gráfico (barras/linhas/pizza)", null),
-        new(DesignerElementKind.Gauge,     "Gauge",     "gauge",        "Medidor",       null),
-        new(DesignerElementKind.Map,       "Map",       "map",          "Mapa",          null),
-        new(DesignerElementKind.Sparkline, "Sparkline", "trending-up",  "Mini-gráfico",  null),
-    ];
-    // KPI visualisations that bind to a single value/aggregate. They have full PropertyGrid
-    // editors and render natively in preview/export — exposed here so they're addable, not
-    // only reachable by loading a .repx authored elsewhere.
-    private readonly ToolboxItem[] _advanced =
-    [
-        new(DesignerElementKind.DataBar,   "Data Bar",  "bar-chart-3", "Barra de dados proporcional",        null),
-        new(DesignerElementKind.Indicator, "Indicator", "locate",      "Indicador KPI (seta / forma / rating)", null),
-        new(DesignerElementKind.Code,      "Code",      "code",        "Bloco de código C#/VB (Code.Metodo) — via Roslyn opt-in", null),
-        new(DesignerElementKind.Subreport, "Subreport", "files",       "Sub-relatório embutido (referência a outro report)",      null),
-    ];
-
-    private sealed record ToolboxItem(
-        DesignerElementKind Kind,
-        string Label,
-        string Icon,
-        string Description,
-        string? Hotkey);
 
     // System fields — click to insert a TextBox bound to the canonical expression.
     // Avoids typing things like "{Page.Number} de {Page.Total}" by hand each time.
