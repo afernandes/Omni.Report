@@ -70,7 +70,7 @@
                                 <input type="color" value="@ColorHexUtil.ToRgbHex(col ?? Color.Black)"
                                        @onchange="@(e => Element.ApplyMetaSet(d, ColorHexUtil.WithRgb(col ?? Color.Black, e.Value?.ToString())))"
                                        style="width:36px;height:16px;cursor:pointer;" />
-                                @if (col is not null && IsNullable(d))
+                                @if (col is not null && d.IsNullable)
                                 {
                                     <button class="icon-btn" type="button" title="Limpar" @onclick="@(() => Element.ApplyMetaSet(d, null))"
                                             style="width:18px;height:18px;">×</button>
@@ -243,9 +243,6 @@
         => _descriptors = PropertyGridDescriptors.For(Element.ToElement().GetType());
 
     private static Type EnumType(PropertyGridDescriptor d) => Nullable.GetUnderlyingType(d.Type) ?? d.Type;
-
-    private static bool IsNullable(PropertyGridDescriptor d)
-        => Nullable.GetUnderlyingType(d.Type) is not null || !d.Type.IsValueType;
 
     private static double ParseDouble(object? value)
         => double.TryParse(Convert.ToString(value, CultureInfo.InvariantCulture),

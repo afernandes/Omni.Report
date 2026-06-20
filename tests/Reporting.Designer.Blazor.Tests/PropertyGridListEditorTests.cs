@@ -6,6 +6,7 @@ using Reporting.Designer.Blazor.Services;
 using Reporting.Designer.Blazor.ViewModels;
 using Reporting.Elements;
 using Reporting.Geometry;
+using Reporting.Styling;
 using Xunit;
 
 namespace Reporting.Designer.Blazor.Tests;
@@ -110,5 +111,24 @@ public class PropertyGridListEditorTests : Bunit.BunitContext
 
         cut.FindAll("input[type=color]")[0].GetAttribute("value")
             .Should().Be("#FF0000", "the 8-digit alpha hex is RGB-stripped for the colour input, not reset to black");
+    }
+
+    [Fact]
+    public void Clearing_a_nullable_series_colour_reverts_it_to_null_for_the_auto_palette()
+    {
+        // ChartSeries.Color is Color? — null = "use the auto palette". The list editor's color-picker must
+        // offer a clear (×) back to null, matching the metadata section (parity via the shared IsNullable).
+        var vm = ElementViewModel.FromElement(new ChartElement
+        {
+            Id = "c1",
+            Bounds = new Rectangle(Unit.Zero, Unit.Zero, Unit.FromMm(80), Unit.FromMm(55)),
+            Series = new EquatableArray<ChartSeries>(new[] { new ChartSeries("S", "Fields.cat", "Fields.val", Color.Red) }),
+        });
+        var desc = PropertyGridDescriptors.For(typeof(ChartElement)).Single(d => d.Name == "Series");
+        var cut = Render<PropertyGridListEditor>(p => p.Add(x => x.Element, vm).Add(x => x.Descriptor, desc));
+
+        cut.FindAll("button").First(b => (b.GetAttribute("title") ?? "").Contains("Limpar")).Click();
+
+        ((ChartElement)vm.ToElement()).Series[0].Color.Should().BeNull("clearing reverts the series to the auto palette");
     }
 }

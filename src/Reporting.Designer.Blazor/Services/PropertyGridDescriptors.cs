@@ -29,6 +29,11 @@ public sealed record PropertyGridDescriptor(
     /// (e.g. <c>"Direction"</c>, <c>"FillColor"</c>); a nested-record property would carry a dotted path
     /// (e.g. <c>"Style.ForeColor"</c>).</summary>
     public string Path => PropertyPath ?? Name;
+
+    /// <summary>Whether the property can hold null — a nullable value type (e.g. <c>Color?</c>) or any
+    /// reference type. Editors use it to offer a "clear" affordance back to null (e.g. a chart series
+    /// colour reverting to the auto palette).</summary>
+    public bool IsNullable => Nullable.GetUnderlyingType(Type) is not null || !Type.IsValueType;
 }
 
 /// <summary>
