@@ -100,6 +100,31 @@ public class PropertyExpressionRenderTests
     }
 
     [Fact]
+    public async Task Binds_a_numeric_leaf_from_a_dot_decimal_string_without_a_10x_error()
+    {
+        // A STRING numeric ("2.5") bound to a double leaf must be 2.5, not 25 — the same pt-BR thousands
+        // trap Unit had, now fixed for double/decimal/float too (the generic Convert.ChangeType used culture).
+        var text = await RenderTextBox(new StyledRow("A", "#000000", 10), ("Style.Font.Size", "'2.5'"));
+        text.Style.Font.Size.Should().BeApproximately(2.5, 0.001, "the dot stays a decimal point, not grouping");
+    }
+
+    [Fact]
+    public async Task A_numeric_result_bound_to_a_colour_is_rejected_keeping_the_static()
+    {
+        // 160000 must NOT be silently mis-read as the hex colour #160000 — a non-string result is no colour.
+        var text = await RenderTextBox(new StyledRow("A", "#000000", 10), ("Style.ForeColor", "160000"));
+        text.Style.ForeColor.Should().Be(Color.Black, "a numeric result is not a hex colour; static black survives");
+    }
+
+    [Fact]
+    public async Task A_comma_list_bound_to_a_single_value_enum_is_rejected()
+    {
+        // "Left,Right" is only valid for a [Flags] enum; for HorizontalAlignment it must be rejected.
+        var text = await RenderTextBox(new StyledRow("A", "#000000", 10), ("Style.HorizontalAlignment", "'Left,Right'"));
+        Enum.IsDefined(text.Style.HorizontalAlignment).Should().BeTrue("a comma-list is invalid for a non-[Flags] enum; static value survives");
+    }
+
+    [Fact]
     public async Task An_unknown_path_is_ignored_and_the_static_value_is_kept()
     {
         var text = await RenderTextBox(new StyledRow("A", "#CC0000", 10), ("Style.NaoExiste", "Fields.Cor"));
