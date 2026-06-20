@@ -298,8 +298,10 @@ public sealed class ReportExpressionContext : IReportExpressionContext
         return all ? matches!.ToArray() : null;
     }
 
-    // Lookup keys match on value equality, with an invariant string fallback so an int id in one dataset
-    // matches a string id in another (datasets often differ in column types). null never matches null here.
+    // Lookup keys match on value equality first. The cross-type fallback is restricted to NUMERIC pairs
+    // (number/number across int↔double, or number↔numeric-string) so an int id in one dataset matches a
+    // string id in another — the documented case — WITHOUT bool/DateTime/etc. false-matching via ToString
+    // (e.g. true vs "True", or two distinct dates that format alike). null never matches.
     private static bool LookupKeyEquals(object? a, object? b)
     {
         if (a is null || b is null)
@@ -310,7 +312,21 @@ public sealed class ReportExpressionContext : IReportExpressionContext
         {
             return true;
         }
-        var inv = CultureInfo.InvariantCulture;
-        return string.Equals(Convert.ToString(a, inv), Convert.ToString(b, inv), StringComparison.Ordinal);
+        return TryAsLookupNumber(a, out var na) && TryAsLookupNumber(b, out var nb) && na == nb;
+    }
+
+    private static bool TryAsLookupNumber(object value, out decimal number)
+    {
+        switch (value)
+        {
+            case byte or sbyte or short or ushort or int or uint or long or ulong or float or double or decimal:
+                number = Convert.ToDecimal(value, CultureInfo.InvariantCulture);
+                return true;
+            case string s:
+                return decimal.TryParse(s, System.Globalization.NumberStyles.Any, CultureInfo.InvariantCulture, out number);
+            default:
+                number = 0m;
+                return false;
+        }
     }
 }

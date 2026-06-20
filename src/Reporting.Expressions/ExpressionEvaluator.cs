@@ -208,7 +208,9 @@ public sealed class ExpressionEvaluator
         var source = args.Parameters.Evaluate(0);
         var destExpr = ExtractRawExpression(args.Parameters[1]);
         var resultExpr = ExtractRawExpression(args.Parameters[2]);
-        var dataset = Convert.ToString(args.Parameters.Evaluate(3), context.Culture) ?? string.Empty;
+        // The dataset name is an identifier, not a display value — convert invariantly so a non-string
+        // arg never picks up culture-specific formatting that wouldn't match the registered key.
+        var dataset = Convert.ToString(args.Parameters.Evaluate(3), System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty;
         result = context.EvaluateLookup(source, destExpr, resultExpr, dataset, all);
         return true;
     }

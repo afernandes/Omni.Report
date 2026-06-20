@@ -90,6 +90,14 @@ Todos os datasets registrados no relatório ficam disponíveis para `Lookup` (o 
 materializa as linhas de cada um). Funciona igual nos 3 modos de autoria, já que é uma
 função de expressão: use a mesma string em code-first, low-level e no Designer.
 
+**Atenção:** `destino` e `resultado` são **expressões**, não aspas — escreva `Fields.Id`,
+não `'Id'` (uma string literal vira a constante `"Id"` em toda linha e nada casa, igual aos
+agregadores). Só o nome do **dataset** (4º argumento) é string literal.
+
+Custo: `Lookup` varre as linhas do dataset alvo a cada chamada — O(linhas-alvo) por linha
+de detalhe, sem índice/hash (o SSRS mantém hash). Para tabelas de apoio pequenas é
+irrelevante; para datasets grandes em loops longos, considere pré-juntar os dados.
+
 ## Templates de formatação
 
 Para textos compostos, use `{expression:format}` dentro de strings:
