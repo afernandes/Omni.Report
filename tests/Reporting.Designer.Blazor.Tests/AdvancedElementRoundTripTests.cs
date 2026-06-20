@@ -310,4 +310,32 @@ public class AdvancedElementRoundTripTests
         reloaded.TablixRowGroupsText.Should().Be("Fields.Regiao\nFields.Cidade");
         reloaded.TablixColumnGroupsText.Should().Be("Fields.Ano\nFields.Mes");
     }
+
+    [Fact]
+    public void Tablix_group_sort_is_editable_and_text_editor_preserves_it()
+    {
+        var tablix = new TablixElement
+        {
+            Id = "t1",
+            Bounds = new Rectangle(Unit.Zero, Unit.Zero, Unit.FromMm(150), Unit.FromMm(40)),
+            RowGroups = new EquatableArray<TablixGroup>([new TablixGroup("Rows0", "Fields.Regiao")]),
+            ColumnGroups = new EquatableArray<TablixGroup>([new TablixGroup("Cols0", "Fields.Mes")]),
+            Cells = new EquatableArray<TablixCell>(
+                [new TablixCell(1, 1, new TextBoxElement { Expression = "Fields.Total", Bounds = Rectangle.Empty })]),
+        };
+        var vm = ElementViewModel.FromElement(tablix);
+
+        vm.TablixRowGroupSort = "Fields.Total";
+        vm.TablixRowGroupSortDescending = true;
+
+        var back = (TablixElement)vm.ToElement();
+        back.RowGroups[0].SortExpression.Should().Be("Fields.Total");
+        back.RowGroups[0].SortDescending.Should().BeTrue();
+
+        // Editing the group expressions via the multi-line editor must NOT wipe the configured sort.
+        vm.TablixRowGroupsText = "Fields.Regiao";
+        var back2 = (TablixElement)vm.ToElement();
+        back2.RowGroups[0].SortExpression.Should().Be("Fields.Total", "the text editor preserves the sort by index");
+        back2.RowGroups[0].SortDescending.Should().BeTrue();
+    }
 }

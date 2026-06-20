@@ -563,7 +563,7 @@ public sealed class ElementViewModel : Notifying
     public string TablixRowGroupsText
     {
         get { var t = Src<TablixElement>(); return t is null ? string.Empty : string.Join("\n", t.RowGroups.Select(g => g.GroupExpression ?? string.Empty)); }
-        set => Mutate<TablixElement>(e => e with { RowGroups = GroupsFromText("Rows", value) });
+        set => Mutate<TablixElement>(e => e with { RowGroups = GroupsFromText("Rows", value, e.RowGroups) });
     }
 
     /// <summary>All column-group levels (top axis), one expression per line, outer→inner. Maps to the
@@ -571,7 +571,36 @@ public sealed class ElementViewModel : Notifying
     public string TablixColumnGroupsText
     {
         get { var t = Src<TablixElement>(); return t is null ? string.Empty : string.Join("\n", t.ColumnGroups.Select(g => g.GroupExpression ?? string.Empty)); }
-        set => Mutate<TablixElement>(e => e with { ColumnGroups = GroupsFromText("Cols", value) });
+        set => Mutate<TablixElement>(e => e with { ColumnGroups = GroupsFromText("Cols", value, e.ColumnGroups) });
+    }
+
+    /// <summary>SortExpression of the primary (outermost) row group — orders the group instances down the
+    /// left axis. Empty = data order. Maps to <c>RowGroups[0].SortExpression</c>.</summary>
+    public string TablixRowGroupSort
+    {
+        get { var t = Src<TablixElement>(); return t is { RowGroups.Count: > 0 } ? t.RowGroups[0].SortExpression ?? string.Empty : string.Empty; }
+        set => Mutate<TablixElement>(e => e with { RowGroups = WithSort(e.RowGroups, 0, value, null) });
+    }
+
+    /// <summary>Whether the primary row group sorts descending.</summary>
+    public bool TablixRowGroupSortDescending
+    {
+        get { var t = Src<TablixElement>(); return t is { RowGroups.Count: > 0 } && t.RowGroups[0].SortDescending; }
+        set => Mutate<TablixElement>(e => e with { RowGroups = WithSort(e.RowGroups, 0, null, value) });
+    }
+
+    /// <summary>SortExpression of the primary (outermost) column group. Maps to <c>ColumnGroups[0].SortExpression</c>.</summary>
+    public string TablixColumnGroupSort
+    {
+        get { var t = Src<TablixElement>(); return t is { ColumnGroups.Count: > 0 } ? t.ColumnGroups[0].SortExpression ?? string.Empty : string.Empty; }
+        set => Mutate<TablixElement>(e => e with { ColumnGroups = WithSort(e.ColumnGroups, 0, value, null) });
+    }
+
+    /// <summary>Whether the primary column group sorts descending.</summary>
+    public bool TablixColumnGroupSortDescending
+    {
+        get { var t = Src<TablixElement>(); return t is { ColumnGroups.Count: > 0 } && t.ColumnGroups[0].SortDescending; }
+        set => Mutate<TablixElement>(e => e with { ColumnGroups = WithSort(e.ColumnGroups, 0, null, value) });
     }
 
     /// <summary>Top-left corner label of the matrix (cell 0,0).</summary>
@@ -622,15 +651,39 @@ public sealed class ElementViewModel : Notifying
             : new Reporting.Common.EquatableArray<TablixGroup>([new TablixGroup(name, expr)]);
 
     /// <summary>Parses a multi-line group editor (one expression per line, blanks skipped) into an
-    /// ordered <c>RowGroups</c>/<c>ColumnGroups</c> array — outer level first.</summary>
-    private static Reporting.Common.EquatableArray<TablixGroup> GroupsFromText(string prefix, string? text)
+    /// ordered <c>RowGroups</c>/<c>ColumnGroups</c> array — outer level first. Any SortExpression already
+    /// set at a level is preserved <b>by line index</b> (editing the expressions in place keeps the sort;
+    /// reordering the lines reassigns the sort to whatever now sits at that position).</summary>
+    private static Reporting.Common.EquatableArray<TablixGroup> GroupsFromText(
+        string prefix, string? text, Reporting.Common.EquatableArray<TablixGroup> existing)
     {
         var levels = (text ?? string.Empty).Replace("\r\n", "\n").Split('\n')
             .Select(s => s.Trim()).Where(s => s.Length > 0).ToArray();
         return levels.Length == 0
             ? Reporting.Common.EquatableArray<TablixGroup>.Empty
             : new Reporting.Common.EquatableArray<TablixGroup>(
-                levels.Select((e, i) => new TablixGroup($"{prefix}{i}", e)).ToArray());
+                levels.Select((e, i) => new TablixGroup($"{prefix}{i}", e,
+                    i < existing.Count ? existing[i].SortExpression : null,
+                    i < existing.Count && existing[i].SortDescending)).ToArray());
+    }
+
+    /// <summary>Returns the groups with the level at <paramref name="index"/> rebuilt to carry a new
+    /// SortExpression and/or descending flag (preserving its GroupExpression). No-op if out of range.</summary>
+    private static Reporting.Common.EquatableArray<TablixGroup> WithSort(
+        Reporting.Common.EquatableArray<TablixGroup> groups, int index, string? sortExpr, bool? descending)
+    {
+        if (index < 0 || index >= groups.Count)
+        {
+            return groups;
+        }
+        var arr = groups.ToArray();
+        var g = arr[index];
+        arr[index] = g with
+        {
+            SortExpression = sortExpr is null ? g.SortExpression : (string.IsNullOrWhiteSpace(sortExpr) ? null : sortExpr),
+            SortDescending = descending ?? g.SortDescending,
+        };
+        return new Reporting.Common.EquatableArray<TablixGroup>(arr);
     }
 
     private ReportElement? TablixCellAt(int row, int col)

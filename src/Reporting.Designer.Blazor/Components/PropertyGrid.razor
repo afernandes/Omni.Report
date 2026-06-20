@@ -272,10 +272,24 @@ else
                     <textarea value="@Element.TablixRowGroupsText" placeholder="Fields.Regiao&#10;Fields.Cidade (aninhar: 1 por linha)" rows="2"
                               @onchange="@(e => Element.TablixRowGroupsText = e.Value?.ToString() ?? string.Empty)"
                               style="flex:1;font-family:var(--font-mono);font-size:11.5px;resize:vertical;"></textarea></div></div>
+                <div class="prop-row"><div class="p-label">Ordenar linha</div><div class="p-editor" style="gap:4px;">
+                    <input type="text" value="@Element.TablixRowGroupSort" placeholder="(SortExpression do grupo linha)"
+                           @onchange="@(e => Element.TablixRowGroupSort = e.Value?.ToString() ?? string.Empty)"
+                           style="flex:1;font-size:11.5px;" />
+                    <label style="display:flex;align-items:center;gap:3px;font-size:11px;white-space:nowrap;"><input type="checkbox"
+                           checked="@Element.TablixRowGroupSortDescending"
+                           @onchange="@(e => Element.TablixRowGroupSortDescending = (bool)(e.Value ?? false))" /> desc</label></div></div>
                 <div class="prop-row"><div class="p-label">Grupos coluna</div><div class="p-editor">
                     <textarea value="@Element.TablixColumnGroupsText" placeholder="Fields.Ano&#10;Fields.Mes (aninhar: 1 por linha)" rows="2"
                               @onchange="@(e => Element.TablixColumnGroupsText = e.Value?.ToString() ?? string.Empty)"
                               style="flex:1;font-family:var(--font-mono);font-size:11.5px;resize:vertical;"></textarea></div></div>
+                <div class="prop-row"><div class="p-label">Ordenar coluna</div><div class="p-editor" style="gap:4px;">
+                    <input type="text" value="@Element.TablixColumnGroupSort" placeholder="(SortExpression do grupo coluna)"
+                           @onchange="@(e => Element.TablixColumnGroupSort = e.Value?.ToString() ?? string.Empty)"
+                           style="flex:1;font-size:11.5px;" />
+                    <label style="display:flex;align-items:center;gap:3px;font-size:11px;white-space:nowrap;"><input type="checkbox"
+                           checked="@Element.TablixColumnGroupSortDescending"
+                           @onchange="@(e => Element.TablixColumnGroupSortDescending = (bool)(e.Value ?? false))" /> desc</label></div></div>
                 <div class="prop-row"><div class="p-label">Canto</div><div class="p-editor">
                     <input type="text" value="@Element.TablixCorner" placeholder="(rótulo do canto)"
                            @onchange="@(e => Element.TablixCorner = e.Value?.ToString() ?? string.Empty)"

@@ -32,19 +32,29 @@ public sealed class TablixBuilder
         return this;
     }
 
-    private readonly List<string> _rowGroups = [];
-    private readonly List<string> _columnGroups = [];
+    private readonly List<(string Expr, string? Sort, bool Desc)> _rowGroups = [];
+    private readonly List<(string Expr, string? Sort, bool Desc)> _columnGroups = [];
     private string? _corner;
     private string? _cellExpression;
 
     /// <summary>Turns the Tablix into a matrix/crosstab: groups data rows by this expression down
     /// the left axis. Call more than once to <b>nest</b> row groups (outer→inner). Pair with
-    /// <see cref="ColumnGroup"/> and <see cref="Cell"/>.</summary>
-    public TablixBuilder RowGroup(string expression) { _rowGroups.Add(expression); return this; }
+    /// <see cref="ColumnGroup"/> and <see cref="Cell"/>. Pass <paramref name="sortExpression"/> to order
+    /// the group instances (e.g. <c>"Fields.total"</c>) ascending, or set <paramref name="descending"/>.</summary>
+    public TablixBuilder RowGroup(string expression, string? sortExpression = null, bool descending = false)
+    {
+        _rowGroups.Add((expression, sortExpression, descending));
+        return this;
+    }
 
     /// <summary>Groups data rows by this expression across the top axis of a matrix. Call more than
-    /// once to <b>nest</b> column groups (outer→inner).</summary>
-    public TablixBuilder ColumnGroup(string expression) { _columnGroups.Add(expression); return this; }
+    /// once to <b>nest</b> column groups (outer→inner). Optionally order the group instances by
+    /// <paramref name="sortExpression"/> (<paramref name="descending"/> to reverse).</summary>
+    public TablixBuilder ColumnGroup(string expression, string? sortExpression = null, bool descending = false)
+    {
+        _columnGroups.Add((expression, sortExpression, descending));
+        return this;
+    }
 
     /// <summary>Top-left corner label of a matrix (optional).</summary>
     public TablixBuilder Corner(string label) { _corner = label; return this; }
@@ -64,9 +74,9 @@ public sealed class TablixBuilder
                 Bounds = Rectangle.Empty,
                 DataSetName = _dataSet,
                 RowGroups = new EquatableArray<TablixGroup>(
-                    _rowGroups.Select((e, i) => new TablixGroup($"Rows{i}", e)).ToArray()),
+                    _rowGroups.Select((g, i) => new TablixGroup($"Rows{i}", g.Expr, g.Sort, g.Desc)).ToArray()),
                 ColumnGroups = new EquatableArray<TablixGroup>(
-                    _columnGroups.Select((e, i) => new TablixGroup($"Cols{i}", e)).ToArray()),
+                    _columnGroups.Select((g, i) => new TablixGroup($"Cols{i}", g.Expr, g.Sort, g.Desc)).ToArray()),
                 Cells = new EquatableArray<TablixCell>(
                 [
                     new TablixCell(0, 0, new LabelElement { Text = _corner ?? string.Empty, Bounds = Rectangle.Empty }),
