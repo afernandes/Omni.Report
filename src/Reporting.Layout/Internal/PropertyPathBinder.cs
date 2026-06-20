@@ -17,7 +17,14 @@ namespace Reporting.Layout.Internal;
 /// </summary>
 internal static class PropertyPathBinder
 {
-    private sealed record Plan(PropertyInfo[] Chain, MethodInfo[] Clones, Type LeafType);
+    // One level of the path. The owner at this level is rebuilt immutably with <see cref="Prop"/> changed:
+    // a record CLASS via its synthesized <c>&lt;Clone&gt;$</c> + init-only set; a record STRUCT (Rectangle,
+    // Thickness, …) — which has no <c>&lt;Clone&gt;$</c> — by re-invoking its positional constructor with
+    // every component copied except the one being navigated. That makes struct-segment paths such as
+    // <c>"Bounds.Width"</c> and <c>"Style.Padding.Left"</c> actually bind instead of silently no-op'ing.
+    private sealed record Level(PropertyInfo Prop, MethodInfo? CloneFn, ConstructorInfo? Ctor, PropertyInfo[]? CtorProps);
+
+    private sealed record Plan(Level[] Levels, Type LeafType);
 
     private static readonly ConcurrentDictionary<(Type Type, string Path), Plan?> Cache = new();
 
@@ -38,39 +45,76 @@ internal static class PropertyPathBinder
         {
             return null;
         }
-        var chain = new PropertyInfo[segments.Length];
-        var clones = new MethodInfo[segments.Length];
+        var levels = new Level[segments.Length];
         var cur = rootType;
         for (int i = 0; i < segments.Length; i++)
         {
-            var p = cur.GetProperty(segments[i], BindingFlags.Public | BindingFlags.Instance);
-            var clone = cur.GetMethod("<Clone>$", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-            if (p is null || clone is null) // unknown segment, or a non-record on the path → no plan
+            // Navigate through a Nullable<T> intermediate by its underlying type (e.g. Style.Padding is Thickness?).
+            var owner = Nullable.GetUnderlyingType(cur) ?? cur;
+            var p = owner.GetProperty(segments[i], BindingFlags.Public | BindingFlags.Instance);
+            if (p is null)
             {
-                return null;
+                return null; // unknown segment
             }
-            chain[i] = p;
-            clones[i] = clone;
+            var clone = owner.GetMethod("<Clone>$", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            if (clone is not null)
+            {
+                levels[i] = new Level(p, clone, null, null); // record class
+            }
+            else if (owner.IsValueType)
+            {
+                // record struct → rebuild via its positional constructor (ctor param name = property name).
+                var ctor = owner.GetConstructors()
+                    .OrderByDescending(c => c.GetParameters().Length)
+                    .FirstOrDefault(c => c.GetParameters().Length > 0);
+                var props = ctor?.GetParameters()
+                    .Select(par => owner.GetProperty(par.Name!, BindingFlags.Public | BindingFlags.Instance))
+                    .ToArray();
+                if (ctor is null || props is null || Array.IndexOf(props, null) >= 0)
+                {
+                    return null; // not a positional record struct we can reconstruct
+                }
+                levels[i] = new Level(p, null, ctor, props!);
+            }
+            else
+            {
+                return null; // neither a record class nor a reconstructible value type
+            }
             cur = p.PropertyType;
         }
-        return new Plan(chain, clones, chain[^1].PropertyType);
+        return new Plan(levels, levels[^1].Prop.PropertyType);
     }
 
     private static object? SetRecursive(object obj, Plan plan, int i, object? leafValue)
     {
-        var copy = plan.Clones[i].Invoke(obj, null)!; // record `with`-clone of this level
-        if (i == plan.Chain.Length - 1)
+        var level = plan.Levels[i];
+        object? newComponent;
+        if (i == plan.Levels.Length - 1)
         {
-            plan.Chain[i].SetValue(copy, leafValue); // init-only set is allowed via reflection on the copy
+            newComponent = leafValue;
+        }
+        else
+        {
+            var child = level.Prop.GetValue(obj);
+            if (child is null)
+            {
+                return obj; // can't navigate into an absent nested record/struct
+            }
+            newComponent = SetRecursive(child, plan, i + 1, leafValue);
+        }
+        if (level.CloneFn is not null)
+        {
+            var copy = level.CloneFn.Invoke(obj, null)!; // record `with`-clone of this level
+            level.Prop.SetValue(copy, newComponent); // init-only set is allowed via reflection on the copy
             return copy;
         }
-        var child = plan.Chain[i].GetValue(obj);
-        if (child is null)
+        // record struct: rebuild via its positional ctor, swapping only the navigated component.
+        var args = new object?[level.CtorProps!.Length];
+        for (int j = 0; j < args.Length; j++)
         {
-            return obj; // can't navigate into a null nested record
+            args[j] = level.CtorProps[j].Name == level.Prop.Name ? newComponent : level.CtorProps[j].GetValue(obj);
         }
-        plan.Chain[i].SetValue(copy, SetRecursive(child, plan, i + 1, leafValue));
-        return copy;
+        return level.Ctor!.Invoke(args);
     }
 
     /// <summary>Coerces an expression result to the target property type. Handles the domain types
@@ -99,9 +143,14 @@ internal static class PropertyPathBinder
             }
             if (u == typeof(Unit))
             {
+                // A bare number = millimetres. Try invariant FIRST (an expression result typically uses a
+                // '.' decimal) and WITHOUT AllowThousands — NumberStyles.Any would read "2.5" under pt-BR
+                // as the grouping separator (2.5 → 25), a silent 10× corruption.
                 var s = Convert.ToString(raw, culture);
-                if (double.TryParse(s, NumberStyles.Any, culture, out var mm)
-                    || double.TryParse(s, NumberStyles.Any, CultureInfo.InvariantCulture, out mm))
+                const NumberStyles styles = NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint
+                    | NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite;
+                if (double.TryParse(s, styles, CultureInfo.InvariantCulture, out var mm)
+                    || double.TryParse(s, styles, culture, out mm))
                 {
                     value = Unit.FromMm(mm);
                     return true;
@@ -110,7 +159,25 @@ internal static class PropertyPathBinder
             }
             if (u.IsEnum)
             {
-                value = Enum.Parse(u, Convert.ToString(raw, culture)!, ignoreCase: true);
+                var parsed = Enum.Parse(u, Convert.ToString(raw, culture)!, ignoreCase: true);
+                if (u.IsDefined(typeof(FlagsAttribute), inherit: false))
+                {
+                    // [Flags] (e.g. FontStyle): accept any combination of defined bits, reject the rest.
+                    long mask = 0;
+                    foreach (var v in Enum.GetValues(u))
+                    {
+                        mask |= Convert.ToInt64(v, culture);
+                    }
+                    if ((Convert.ToInt64(parsed, culture) & ~mask) != 0)
+                    {
+                        return false;
+                    }
+                }
+                else if (!Enum.IsDefined(u, parsed))
+                {
+                    return false; // an out-of-range number (e.g. "99") is a coercion failure → keep the static value
+                }
+                value = parsed;
                 return true;
             }
             value = Convert.ChangeType(raw, u, culture);

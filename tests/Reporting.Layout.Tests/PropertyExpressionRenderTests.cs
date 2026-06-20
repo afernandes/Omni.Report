@@ -71,6 +71,35 @@ public class PropertyExpressionRenderTests
     }
 
     [Fact]
+    public async Task Binds_bounds_width_through_a_struct_segment()
+    {
+        // Bounds is a record STRUCT (Rectangle) with no <Clone>$ — the binder must reconstruct it via its
+        // positional ctor. Before the fix this path produced no plan and silently kept the static 60mm.
+        var text = await RenderTextBox(new StyledRow("A", "#000000", 10), ("Bounds.Width", "30"));
+        text.Bounds.Width.ToMm().Should().BeApproximately(30, 0.01, "a path through a struct segment now binds (Bounds.Width)");
+    }
+
+    [Fact]
+    public async Task Binds_a_unit_with_a_dot_decimal_under_pt_BR_without_a_10x_error()
+    {
+        // Under pt-BR (the default expression culture) "2.5" must be 2.5mm, not 25 — NumberStyles.Any used
+        // to read the '.' as a thousands separator. Invariant-first + no AllowThousands fixes the 10× bug.
+        var text = await RenderTextBox(new StyledRow("A", "#000000", 10), ("Bounds.Width", "2.5"));
+        // ~2.5mm (Unit's mil rounding makes it 2.489), the point being it is NOT 25mm (the old 10× bug).
+        text.Bounds.Width.ToMm().Should().BeApproximately(2.5, 0.05, "the dot stays a decimal point, not grouping");
+    }
+
+    [Fact]
+    public async Task An_out_of_range_enum_number_is_rejected_keeping_the_static_value()
+    {
+        // Enum.Parse accepts "99" without throwing; the binder must treat an undefined value as a coercion
+        // failure (graceful fallback) instead of persisting a garbage enum that renders as the switch default.
+        var text = await RenderTextBox(new StyledRow("A", "#000000", 10), ("Style.HorizontalAlignment", "99"));
+        ((int)text.Style.HorizontalAlignment).Should().NotBe(99);
+        Enum.IsDefined(text.Style.HorizontalAlignment).Should().BeTrue("an undefined enum number falls back to the static value");
+    }
+
+    [Fact]
     public async Task An_unknown_path_is_ignored_and_the_static_value_is_kept()
     {
         var text = await RenderTextBox(new StyledRow("A", "#CC0000", 10), ("Style.NaoExiste", "Fields.Cor"));
