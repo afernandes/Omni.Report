@@ -10,10 +10,13 @@ namespace Reporting.Serialization.Internal;
 /// </summary>
 internal static partial class RdlExpression
 {
-    [GeneratedRegex(@"Fields!([A-Za-z_][A-Za-z0-9_]*)\.\w+")]
+    // Match only the `.Value` member, not any `.Member` — otherwise `Parameters!P.Count` / `.Label`
+    // would be silently rewritten dropping the member. Other members are left intact (and will surface
+    // as a visible expression error rather than wrong data).
+    [GeneratedRegex(@"Fields!([A-Za-z_][A-Za-z0-9_]*)\.Value")]
     private static partial Regex FieldRef();
 
-    [GeneratedRegex(@"Parameters!([A-Za-z_][A-Za-z0-9_]*)(?:\.\w+)?")]
+    [GeneratedRegex(@"Parameters!([A-Za-z_][A-Za-z0-9_]*)\.Value")]
     private static partial Regex ParameterRef();
 
     [GeneratedRegex(@"Globals!(\w+)")]

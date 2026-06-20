@@ -172,8 +172,9 @@ public sealed class RdlImporter
         var nullable = string.Equals(Val(el, "Nullable"), "true", StringComparison.OrdinalIgnoreCase);
         var multiValue = string.Equals(Val(el, "MultiValue"), "true", StringComparison.OrdinalIgnoreCase);
 
+        var defaultEl = El(el, "DefaultValue");
         object? defaultValue = null;
-        var defaultRaw = El(El(El(el, "DefaultValue"), "Values"), "Value")?.Value;
+        var defaultRaw = El(El(defaultEl, "Values"), "Value")?.Value;
         if (!string.IsNullOrEmpty(defaultRaw) && !RdlExpression.IsExpression(defaultRaw))
         {
             try { defaultValue = System.Convert.ChangeType(defaultRaw, type, Inv); }
@@ -183,7 +184,9 @@ public sealed class RdlImporter
 
         ParameterAvailableValues? available = ReadAvailableValues(El(el, "ValidValues"));
 
-        return new ReportParameter(name, type, prompt, defaultValue, multiValue, Required: !nullable, available);
+        // RDL: a parameter is required only when it's neither nullable nor has a default supplied.
+        var required = !nullable && defaultEl is null;
+        return new ReportParameter(name, type, prompt, defaultValue, multiValue, required, available);
     }
 
     private static ParameterAvailableValues? ReadAvailableValues(XElement? validValues)
@@ -245,8 +248,9 @@ public sealed class RdlImporter
     }
 
     /// <summary>Parses an RDL size string (e.g. "2.5in", "21cm", "10mm", "20pt", "96px") into a
-    /// <see cref="Unit"/>. Returns null when the input is empty/unparseable; defaults to mm when the
-    /// number carries no unit suffix.</summary>
+    /// <see cref="Unit"/>. Returns null when the input is empty/unparseable OR carries no/unknown unit
+    /// suffix — the RDL schema mandates a unit, so a bare/odd value is treated as unspecified (the caller
+    /// falls back) rather than silently guessed.</summary>
     internal static Unit? ParseSize(string? raw)
     {
         if (string.IsNullOrWhiteSpace(raw))
@@ -265,11 +269,11 @@ public sealed class RdlImporter
         {
             "in" => Unit.FromInch(value),
             "cm" => Unit.FromCm(value),
-            "mm" or "" => Unit.FromMm(value),
+            "mm" => Unit.FromMm(value),
             "pt" => Unit.FromPoint(value),
             "pc" => Unit.FromPoint(value * 12.0),
             "px" => Unit.FromPixels(value),
-            _ => Unit.FromMm(value),
+            _ => null, // no/unknown unit — RDL requires one; let the caller's fallback decide
         };
     }
 }

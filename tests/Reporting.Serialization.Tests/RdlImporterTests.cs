@@ -142,9 +142,29 @@ public class RdlImporterTests
     }
 
     [Fact]
-    public void ParseSize_returns_null_for_blank()
+    public void ParseSize_returns_null_for_blank_or_unitless()
     {
         RdlImporter.ParseSize("").Should().BeNull();
         RdlImporter.ParseSize(null).Should().BeNull();
+        RdlImporter.ParseSize("5").Should().BeNull("RDL mandates a unit; a bare value is unspecified");
+        RdlImporter.ParseSize("5furlongs").Should().BeNull("unknown unit is unspecified, not guessed");
+    }
+
+    [Theory]
+    [InlineData("=Fields!Nome.Value", "Fields.Nome")]
+    [InlineData("=Parameters!P.Value", "Parameters.P")]
+    [InlineData("=Globals!PageNumber", "PageNumber")]
+    [InlineData("Texto literal", "Texto literal")]
+    public void Expression_conversion_maps_common_refs(string raw, string expected)
+    {
+        Reporting.Serialization.Internal.RdlExpression.Convert(raw).Should().Be(expected);
+    }
+
+    [Fact]
+    public void Expression_conversion_does_not_silently_drop_non_value_members()
+    {
+        // Only `.Value` is rewritten; `.Count`/`.Label` survive (a visible error beats wrong data).
+        Reporting.Serialization.Internal.RdlExpression.Convert("=Parameters!P.Count").Should().Contain("Count");
+        Reporting.Serialization.Internal.RdlExpression.Convert("=Parameters!P.Label").Should().Contain("Label");
     }
 }
