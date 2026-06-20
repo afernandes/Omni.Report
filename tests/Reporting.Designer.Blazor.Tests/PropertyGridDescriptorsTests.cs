@@ -52,6 +52,14 @@ public class PropertyGridDescriptorsTests
         PropertyGridDescriptors.InferEditor(typeof(Unit)).Should().Be("unit-spinner");
         PropertyGridDescriptors.InferEditor(typeof(double)).Should().Be("number");
         PropertyGridDescriptors.InferEditor(typeof(string)).Should().Be("text");
+
+        // Every numeric scalar — not just int/long/double — must map to the number editor (so it parses
+        // safely on edit AND is expression-bindable), not silently fall through to a raw text box.
+        foreach (var t in new[] { typeof(short), typeof(byte), typeof(sbyte), typeof(ushort), typeof(uint), typeof(ulong), typeof(decimal), typeof(float) })
+        {
+            PropertyGridDescriptors.InferEditor(t).Should().Be("number", $"{t.Name} is a numeric scalar");
+            PropertyGridDescriptors.IsBindableByDefault(PropertyGridDescriptors.InferEditor(t)).Should().BeTrue($"{t.Name} is bindable");
+        }
     }
 
     // A nested-record property (like the shared Style) flattened into the element grid.
