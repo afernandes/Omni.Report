@@ -56,7 +56,9 @@ public sealed record TablixElement : ReportElement
 
     /// <summary>When <c>true</c>, the matrix renders a <b>subtotal row</b> at the end of each outer row
     /// group (summing the inner leaves per column) plus a <b>grand total</b> row at the bottom — SSRS-style
-    /// group totals. No-op for a flat single-level row group beyond the grand total. Default <c>false</c>.</summary>
+    /// group totals. No-op for a flat single-level row group beyond the grand total. Default <c>false</c>.
+    /// <para>Total labels are fixed pt-BR text ("Total {grupo}" / "Total geral"); configurable labels and
+    /// column subtotals are follow-ups. The extra rows grow the element's rendered height (the band adapts).</para></summary>
     public bool RowSubtotals { get; init; }
 }
 
