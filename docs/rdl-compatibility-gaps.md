@@ -15,7 +15,7 @@ Das features RDL avaliadas: **96 completas · 18 parciais · 32 ausentes** (~66%
 |---|---|---|---|---|---|
 | 1 | **Import `.rdl` (SSRS XML → ReportDefinition)** | ausente | Desbloqueia migração SSRS→OmniReport. É a "compatibilidade RDL" literal (hoje só `.repx`/`.repjson`). | M | Importador produz o mesmo `ReportDefinition` que code-first/low-level criariam; abre no Designer |
 | 2 | **Parameters: Available Values** (lista estática + query-driven) | ausente | Feature de UX mais crítica do prompt — dropdowns com domínio validado. Hoje todo parâmetro é texto livre. | M | Modelar no record + API code-first + editor no Designer |
-| 3 | **`Lookup`/`LookupSet`/`MultiLookup`** | ausente | Buscar valor em outro dataset (tax por código, nome por id) sem join prévio. ~30% dos casos avançados. | M | Função no avaliador (vale p/ os 3 modos automaticamente) |
+| 3 | **`Lookup`/`LookupSet`**/`MultiLookup` | ✅ Lookup+LookupSet (#85) · MultiLookup pendente | Buscar valor em outro dataset (tax por código, nome por id) sem join prévio. ~30% dos casos avançados. | M | Função no avaliador (vale p/ os 3 modos automaticamente) |
 | 4 | **Parameters: Cascading / dependentes** + default-como-expressão + validação | ausente | Parâmetros dependentes (Estado→Cidade) e defaults dinâmicos. Cluster que falta inteiro. | M | record + code-first + Designer |
 
 ## Tier 2 — relatórios ricos (alto valor)

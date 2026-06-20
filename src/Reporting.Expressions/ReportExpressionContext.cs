@@ -25,6 +25,9 @@ public sealed class ReportExpressionContext : IReportExpressionContext
     /// field references <c>Fields.SourceName.X</c> can resolve to <em>any</em> source's
     /// current record, not just the iterated one.</summary>
     private readonly Dictionary<string, DictionaryLookup> _sources = new(StringComparer.OrdinalIgnoreCase);
+    // All rows of each named dataset, for cross-dataset Lookup/LookupSet (SSRS-style). Distinct from
+    // _sources, which holds only the current row of each source for qualified field references.
+    private readonly Dictionary<string, List<DictionaryLookup>> _datasets = new(StringComparer.OrdinalIgnoreCase);
 
     public ReportExpressionContext(ExpressionEvaluator? evaluator = null, CultureInfo? culture = null)
     {
@@ -235,5 +238,79 @@ public sealed class ReportExpressionContext : IReportExpressionContext
             _ => _reportScopeOverride ?? _reportRows,
         };
         return AggregateCalculator.Calculate(function, expression, rows, _evaluator, this);
+    }
+
+    /// <summary>Registers all rows of a named dataset so cross-dataset <c>Lookup</c>/<c>LookupSet</c> can
+    /// scan them. Snapshots each row (decoupled from the live source). Re-registering replaces.</summary>
+    public void RegisterDataset(string name, IEnumerable<IEnumerable<KeyValuePair<string, object?>>> rows)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+        ArgumentNullException.ThrowIfNull(rows);
+        var buffer = new List<DictionaryLookup>();
+        foreach (var row in rows)
+        {
+            var snapshot = new DictionaryLookup();
+            foreach (var kv in row)
+            {
+                snapshot.Set(kv.Key, kv.Value);
+            }
+            buffer.Add(snapshot);
+        }
+        _datasets[name] = buffer;
+    }
+
+    public object? EvaluateLookup(object? source, string destExpression, string resultExpression, string datasetName, bool all)
+    {
+        if (!_datasets.TryGetValue(datasetName, out var rows) || rows.Count == 0)
+        {
+            return all ? Array.Empty<object?>() : null;
+        }
+        // Swap the live Fields with each target row to evaluate dest/result in its scope, then restore —
+        // the same row-walking contract aggregates use, so it nests safely inside an outer evaluation.
+        var live = _fieldsLookup.Keys.Select(k => new KeyValuePair<string, object?>(k, _fieldsLookup[k])).ToList();
+        var matches = all ? new List<object?>() : null;
+        try
+        {
+            foreach (var row in rows)
+            {
+                SetCurrentRowNoSnapshot(row);
+                object? dest;
+                try { dest = _evaluator.Evaluate(destExpression, this); }
+                catch { continue; }
+                if (!LookupKeyEquals(source, dest))
+                {
+                    continue;
+                }
+                object? result;
+                try { result = _evaluator.Evaluate(resultExpression, this); }
+                catch { result = null; }
+                if (!all)
+                {
+                    return result;
+                }
+                matches!.Add(result);
+            }
+        }
+        finally
+        {
+            SetCurrentRowNoSnapshot(live);
+        }
+        return all ? matches!.ToArray() : null;
+    }
+
+    // Lookup keys match on value equality, with an invariant string fallback so an int id in one dataset
+    // matches a string id in another (datasets often differ in column types). null never matches null here.
+    private static bool LookupKeyEquals(object? a, object? b)
+    {
+        if (a is null || b is null)
+        {
+            return false;
+        }
+        if (Equals(a, b))
+        {
+            return true;
+        }
+        var inv = CultureInfo.InvariantCulture;
+        return string.Equals(Convert.ToString(a, inv), Convert.ToString(b, inv), StringComparison.Ordinal);
     }
 }

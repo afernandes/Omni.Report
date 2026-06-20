@@ -434,6 +434,12 @@ public sealed partial class ReportPaginator : IReportPaginator
         ApplyParameters(ctx, request);
         ctx.TotalPages = totalPagesHint;
 
+        // Expose every dataset's full rows for cross-dataset Lookup/LookupSet (SSRS-style).
+        foreach (var (sourceName, sourceRows) in allSources)
+        {
+            ctx.RegisterDataset(sourceName, sourceRows);
+        }
+
         // Resolve the primary-source name so we can also expose its current row via the
         // qualified-source lookup ({Fields.SourceName.X}). Resolution mirrors MaterializeRowsAsync.
         var primarySourceName = request.PrimaryDataSource
