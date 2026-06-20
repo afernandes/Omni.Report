@@ -351,7 +351,10 @@ internal static class RepJsonReader
                 CategoryExpression = (string?)o["category"],
             },
             "Indicator" => ReadIndicator(o, bounds),
-            _ => throw new FormatException($"Unknown element kind: '{kind}'."),
+            // Convention-based fallback: a kind with no explicit arm resolves to a registered all-scalar type.
+            _ => ElementSerializationRegistry.TryGetType(kind, out var genType)
+                ? ElementSerializationRegistry.Construct(genType, bounds, m => o[m.JsonName]?.ToString())
+                : throw new FormatException($"Unknown element kind: '{kind}'."),
         };
 
         return element with

@@ -380,7 +380,11 @@ internal static class RepxWriter
             DataBarElement bar => ("DataBar", WriteDataBarContent(bar)),
             SparklineElement spark => ("Sparkline", WriteSparklineContent(spark)),
             IndicatorElement ind => ("Indicator", WriteIndicatorContent(ind)),
-            _ => throw new InvalidOperationException($"Unsupported element type: {element.GetType().Name}"),
+            // Convention-based fallback: a new all-scalar element serializes without a hand-written arm.
+            // TagFor throws the same "unsupported element type" error for a non-auto-serializable type.
+            _ => (ElementSerializationRegistry.TagFor(element),
+                  ElementSerializationRegistry.WriteScalars(element)
+                      .Select(s => new XElement(s.Member.XmlName, s.Text)).ToArray()),
         };
 
         var el = new XElement(tag,
