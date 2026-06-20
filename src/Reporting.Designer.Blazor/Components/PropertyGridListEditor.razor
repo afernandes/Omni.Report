@@ -32,9 +32,16 @@
 
                     case "color-picker":
                         var col = val as Color?;
+                        <span title="@field.Label"
+                              style="width:14px;height:14px;border-radius:2px;border:1px solid var(--border);flex:0 0 auto;background:@(col is { } c ? c.ToHex() : "transparent");@(col is null ? "border-style:dashed;" : null)"></span>
                         <input type="color" value="@ColorHexUtil.ToRgbHex(col ?? Color.Black)" title="@field.Label"
                                @onchange="@(e => EditField(r, field, ColorHexUtil.WithRgb(col ?? Color.Black, e.Value?.ToString())))"
                                style="width:28px;height:18px;padding:0;cursor:pointer;flex:0 0 auto;" />
+                        @if (col is not null && field.IsNullable)
+                        {
+                            <button class="icon-btn" type="button" title="Limpar (paleta automática)" @onclick="@(() => EditField(r, field, null))"
+                                    style="width:16px;height:16px;color:var(--text-tertiary);flex:0 0 auto;">×</button>
+                        }
                         break;
 
                     case "enum":
