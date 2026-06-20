@@ -582,17 +582,8 @@ else
         return h.Length == 9 ? "#" + h[3..] : h; // strip alpha for HTML color picker
     }
 
-    private static string KindIcon(ElementViewModel e) => e.Kind switch
-    {
-        DesignerElementKind.Label     => "hash",
-        DesignerElementKind.TextBox   => "type",
-        DesignerElementKind.Line      => "minus",
-        DesignerElementKind.Rectangle => "square",
-        DesignerElementKind.Ellipse   => "circle",
-        DesignerElementKind.Image     => "image",
-        DesignerElementKind.Barcode   => "barcode",
-        _ => "type",
-    };
+    // Single per-element source (the [ToolboxElement] annotation via ToolboxCatalog) drives the header icon.
+    private static string KindIcon(ElementViewModel e) => ToolboxCatalog.For(e.Kind).Icon;
 
     private static Unit? ParseMm(string? raw)
     {

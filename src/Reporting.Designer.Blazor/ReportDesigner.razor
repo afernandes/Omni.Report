@@ -559,51 +559,20 @@
     }
 
     private static ElementViewModel NewElement(DesignerElementKind kind, Unit x, Unit y)
-        => new(kind, Guid.NewGuid().ToString("n"))
+    {
+        // Per-kind creation defaults (size, placeholder text/expression) live on the [ToolboxElement]
+        // annotation — see ToolboxCatalog. A new element only needs that one annotation, not edits here.
+        var spec = ToolboxCatalog.For(kind);
+        return new(kind, Guid.NewGuid().ToString("n"))
         {
             X = x,
             Y = y,
-            // Per-kind defaults: lines are zero-height (just a stroke); QR is square (25 mm);
-            // barcodes default to 50×15 mm (industry-standard label-friendly size); everything
-            // else gets a 40×6 mm placeholder the user usually resizes.
-            Width  = kind switch
-            {
-                DesignerElementKind.Line    => Unit.FromMm(50),
-                DesignerElementKind.QrCode  => Unit.FromMm(25),
-                DesignerElementKind.Barcode => Unit.FromMm(50),
-                DesignerElementKind.Chart   => Unit.FromMm(80),
-                DesignerElementKind.Tablix  => Unit.FromMm(120),
-                DesignerElementKind.Gauge   => Unit.FromMm(50),
-                DesignerElementKind.Sparkline => Unit.FromMm(40),
-                DesignerElementKind.Indicator => Unit.FromMm(14),
-                DesignerElementKind.Map     => Unit.FromMm(80),
-                _ => Unit.FromMm(40),
-            },
-            Height = kind switch
-            {
-                DesignerElementKind.Line    => Unit.Zero,
-                DesignerElementKind.QrCode  => Unit.FromMm(25),
-                DesignerElementKind.Barcode => Unit.FromMm(15),
-                DesignerElementKind.Chart   => Unit.FromMm(55),
-                DesignerElementKind.Tablix  => Unit.FromMm(30),
-                DesignerElementKind.Gauge   => Unit.FromMm(40),
-                DesignerElementKind.Sparkline => Unit.FromMm(15),
-                DesignerElementKind.Indicator => Unit.FromMm(14),
-                DesignerElementKind.Map     => Unit.FromMm(60),
-                _ => Unit.FromMm(6),
-            },
-            Text   = kind == DesignerElementKind.Label ? "Texto" : string.Empty,
-            // TextBox gets a template placeholder; barcode/QR start with a friendly hint so
-            // the preview doesn't blow up on empty input — the user immediately sees the
-            // shape of the symbol and can replace it with a real expression.
-            Expression = kind switch
-            {
-                DesignerElementKind.TextBox => "{Fields.X}",
-                DesignerElementKind.Barcode => "1234567890",
-                DesignerElementKind.QrCode  => "https://example.com",
-                _ => string.Empty,
-            },
+            Width = Unit.FromMm(spec.DefaultWidthMm),
+            Height = Unit.FromMm(spec.DefaultHeightMm),
+            Text = spec.DefaultText ?? string.Empty,
+            Expression = spec.DefaultExpression ?? string.Empty,
         };
+    }
 
     private void OnDeleteSelected()
     {
