@@ -86,6 +86,7 @@ public class AdvancedElementsRoundTripTests
             ColumnGroups = EquatableArray.Create(
                 new TablixGroup("Categoria", "Fields.Categoria")),
             ColumnWidths = EquatableArray.Create(1.0, 2.5, 1.25),
+            RowSubtotals = true,
             Cells = EquatableArray.Create(
                 new TablixCell(0, 0, new TextBoxElement
                 {

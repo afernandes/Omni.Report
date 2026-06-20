@@ -509,6 +509,7 @@ internal static class RepxReader
             ColumnGroups = new EquatableArray<TablixGroup>(colGroups),
             Cells = new EquatableArray<TablixCell>(cells),
             ColumnWidths = new EquatableArray<double>(columnWidths),
+            RowSubtotals = string.Equals(el.Element("RowSubtotals")?.Value, "true", StringComparison.OrdinalIgnoreCase),
         };
     }
 

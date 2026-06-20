@@ -92,6 +92,42 @@ public class TablixMatrixTests
         texts.Should().Contain(t => t.Contains("40"), "Sul→Curitiba→Jan");
     }
 
+    [Fact]
+    public async Task Row_subtotals_emit_group_totals_and_a_grand_total()
+    {
+        VendaDetalhada[] rows =
+        [
+            new("Sul",   "Porto Alegre", "Jan", 100m),
+            new("Sul",   "Curitiba",     "Jan",  40m),
+            new("Sul",   "Porto Alegre", "Fev",  60m),
+            new("Norte", "Manaus",       "Jan",  30m),
+        ];
+
+        Report Build(bool subtotals) => ReportBuilder.Create("Subtotais")
+            .Page(p => p.A4().Portrait().Margins(10))
+            .DataSource("Vendas", rows)
+            .ReportHeader(h => h.Height(90)
+                .Tablix(t => t
+                    .RowGroup("Fields.Regiao")
+                    .RowGroup("Fields.Cidade")
+                    .ColumnGroup("Fields.Mes")
+                    .Corner("Local")
+                    .Cell("Fields.Total")
+                    .RowSubtotals(subtotals))
+                .At(0, 0).Size(170, 80))
+            .Build();
+
+        // Without subtotals there are no total rows.
+        var plain = await TextsOf(Build(false));
+        plain.Should().NotContain(t => t.Contains("Total geral"));
+
+        var withTotals = await TextsOf(Build(true));
+        withTotals.Should().Contain("Total Sul").And.Contain("Total Norte").And.Contain("Total geral");
+        // Sul subtotal: Jan = 100 + 40 = 140; grand total Jan = 140 + 30 = 170.
+        withTotals.Should().Contain(t => t.Contains("140"), "Sul subtotal sums its cities for Jan");
+        withTotals.Should().Contain(t => t.Contains("170"), "grand total sums all regions for Jan");
+    }
+
     private static Report SortedMatrix(string? sort, bool descending) =>
         ReportBuilder.Create("Sorted")
             .Page(p => p.A4().Portrait().Margins(10))

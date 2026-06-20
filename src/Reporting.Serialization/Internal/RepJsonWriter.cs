@@ -507,6 +507,10 @@ internal static class RepJsonWriter
                 {
                     o["dataSetName"] = tablix.DataSetName;
                 }
+                if (tablix.RowSubtotals)
+                {
+                    o["rowSubtotals"] = true;
+                }
                 if (tablix.ColumnWidths.Count > 0)
                 {
                     o["columnWidths"] = new JsonArray(tablix.ColumnWidths.Select(wt => (JsonNode?)wt).ToArray());

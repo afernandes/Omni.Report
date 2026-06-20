@@ -53,6 +53,11 @@ public sealed record TablixElement : ReportElement
     /// proportionally — e.g. <c>[1, 2, 1]</c> makes the middle column twice as wide as its
     /// neighbours. A partial list (or zero entries) falls back to the average weight per column.</summary>
     public EquatableArray<double> ColumnWidths { get; init; } = EquatableArray<double>.Empty;
+
+    /// <summary>When <c>true</c>, the matrix renders a <b>subtotal row</b> at the end of each outer row
+    /// group (summing the inner leaves per column) plus a <b>grand total</b> row at the bottom — SSRS-style
+    /// group totals. No-op for a flat single-level row group beyond the grand total. Default <c>false</c>.</summary>
+    public bool RowSubtotals { get; init; }
 }
 
 /// <summary>One axis of a Tablix grouping — name + group-key expression + sort.</summary>

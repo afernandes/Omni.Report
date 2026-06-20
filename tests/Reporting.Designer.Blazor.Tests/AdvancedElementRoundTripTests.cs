@@ -338,4 +338,24 @@ public class AdvancedElementRoundTripTests
         back2.RowGroups[0].SortExpression.Should().Be("Fields.Total", "the text editor preserves the sort by index");
         back2.RowGroups[0].SortDescending.Should().BeTrue();
     }
+
+    [Fact]
+    public void Tablix_row_subtotals_are_editable()
+    {
+        var tablix = new TablixElement
+        {
+            Id = "t1",
+            Bounds = new Rectangle(Unit.Zero, Unit.Zero, Unit.FromMm(150), Unit.FromMm(40)),
+            RowGroups = new EquatableArray<TablixGroup>([new TablixGroup("Rows0", "Fields.Regiao")]),
+            ColumnGroups = new EquatableArray<TablixGroup>([new TablixGroup("Cols0", "Fields.Mes")]),
+            Cells = new EquatableArray<TablixCell>(
+                [new TablixCell(1, 1, new TextBoxElement { Expression = "Fields.Total", Bounds = Rectangle.Empty })]),
+        };
+        var vm = ElementViewModel.FromElement(tablix);
+        vm.TablixRowSubtotals.Should().BeFalse();
+
+        vm.TablixRowSubtotals = true;
+        ((TablixElement)vm.ToElement()).RowSubtotals.Should().BeTrue();
+        ElementViewModel.FromElement((TablixElement)vm.ToElement()).TablixRowSubtotals.Should().BeTrue();
+    }
 }
