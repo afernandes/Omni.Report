@@ -67,8 +67,8 @@
                             case "color-picker":
                                 var col = current as Color?;
                                 <span class="color-swatch" style="background:@(col is { } c ? c.ToHex() : "transparent");@(col is null ? "border-style:dashed;" : null)"></span>
-                                <input type="color" value="@((col ?? Color.Black).ToHex())"
-                                       @onchange="@(e => Element.ApplyMetaSet(d, Color.FromHex(e.Value?.ToString() ?? "#000000")))"
+                                <input type="color" value="@ToRgbHex(col ?? Color.Black)"
+                                       @onchange="@(e => Element.ApplyMetaSet(d, WithRgb(col ?? Color.Black, e.Value?.ToString())))"
                                        style="width:36px;height:16px;cursor:pointer;" />
                                 @if (col is not null && IsNullable(d))
                                 {
@@ -143,6 +143,7 @@
                                     <option value="Solid" selected="@(bside?.Style == BorderLineStyle.Solid)">Solid</option>
                                     <option value="Dashed" selected="@(bside?.Style == BorderLineStyle.Dashed)">Dashed</option>
                                     <option value="Dotted" selected="@(bside?.Style == BorderLineStyle.Dotted)">Dotted</option>
+                                    <option value="DashDot" selected="@(bside?.Style == BorderLineStyle.DashDot)">DashDot</option>
                                     <option value="Double" selected="@(bside?.Style == BorderLineStyle.Double)">Double</option>
                                 </select>
                                 @if (bside is not null && bside.Style != BorderLineStyle.None)
@@ -151,7 +152,7 @@
                                            @onchange="@(e => Element.ApplyMetaSet(d, WithBorderThickness(border!, ParseDouble(e.Value))))"
                                            style="width:52px;font-family:var(--font-mono);font-size:11.5px;" />
                                     <span class="p-unit">pt</span>
-                                    <input type="color" value="@bside.Color.ToHex()"
+                                    <input type="color" value="@ToRgbHex(bside.Color)"
                                            @onchange="@(e => Element.ApplyMetaSet(d, WithBorderColor(border!, e.Value?.ToString())))"
                                            style="width:36px;height:16px;cursor:pointer;" />
                                 }
@@ -167,9 +168,9 @@
 
                             case "format-preset":
                                 var fmt = current as string ?? string.Empty;
-                                var isCustom = !string.IsNullOrEmpty(fmt) && !KnownFormats.Contains(fmt);
+                                var isCustom = _customFormat.Contains(d.Path) || (!string.IsNullOrEmpty(fmt) && !KnownFormats.Contains(fmt));
                                 <select style="flex:1;font-size:11.5px;font-family:var(--font-mono);"
-                                        @onchange="@(e => Element.ApplyMetaSet(d, FormatFromPreset(e.Value?.ToString())))">
+                                        @onchange="@(e => OnFormatPreset(d, e.Value?.ToString()))">
                                     <option value="" selected="@(string.IsNullOrEmpty(fmt))">— sem formato —</option>
                                     <option value="C" selected="@(fmt == "C")">C — Moeda (R$ 1.234,56)</option>
                                     <option value="N0" selected="@(fmt == "N0")">N0 — Inteiro (1.234)</option>
@@ -259,8 +260,26 @@
         "C", "N0", "N2", "P", "dd/MM/yyyy", "HH:mm", "dd/MM/yyyy HH:mm",
     };
 
-    private static object? FormatFromPreset(string? value)
-        => value == "__custom__" ? "custom" : (string.IsNullOrEmpty(value) ? null : value);
+    // Paths whose format-preset dropdown is in "Custom…" mode — kept in local UI state so selecting Custom
+    // opens the text input WITHOUT persisting a bogus literal format ("custom" was being written as the
+    // .NET format string, corrupting the rendered value). Typing a real value persists it.
+    private readonly HashSet<string> _customFormat = new();
+
+    private void OnFormatPreset(PropertyGridDescriptor d, string? value)
+    {
+        if (value == "__custom__")
+        {
+            _customFormat.Add(d.Path);
+            return;
+        }
+        _customFormat.Remove(d.Path);
+        Element.ApplyMetaSet(d, string.IsNullOrEmpty(value) ? null : value);
+    }
+
+    private static string ToRgbHex(Color c) => string.Create(CultureInfo.InvariantCulture, $"#{c.R:X2}{c.G:X2}{c.B:X2}");
+
+    // <input type=color> only round-trips #RRGGBB; preserve the element's existing alpha instead of forcing opaque.
+    private static object WithRgb(Color old, string? hex) => Color.FromHex(hex ?? "#000000") with { A = old.A };
 
     // ── Border / Padding: edit the box uniformly (all four sides the same), matching the previous
     //    hand-coded editors. A "None" style clears the border; a non-positive padding clears it.
@@ -288,7 +307,8 @@
         }
         try
         {
-            var side = current.Top with { Color = Color.FromHex(hex) };
+            // Keep the existing alpha — the colour input only provides #RRGGBB.
+            var side = current.Top with { Color = Color.FromHex(hex) with { A = current.Top.Color.A } };
             return new Border(side, side, side, side);
         }
         catch (FormatException)

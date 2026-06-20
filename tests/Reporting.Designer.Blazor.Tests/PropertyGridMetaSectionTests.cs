@@ -3,6 +3,7 @@ using FluentAssertions;
 using Microsoft.AspNetCore.Components;
 using Reporting.Designer.Blazor.Components;
 using Reporting.Designer.Blazor.ViewModels;
+using Reporting.Elements;
 using Xunit;
 
 namespace Reporting.Designer.Blazor.Tests;
@@ -36,6 +37,27 @@ public class PropertyGridMetaSectionTests : Bunit.BunitContext
 
         cut.Markup.Should().Contain("Orientação");
         cut.Markup.Should().Contain("TopLeftToBottomRight", "the enum editor lists the LineDirection values");
+    }
+
+    [Fact]
+    public void Border_dropdown_offers_every_style_including_DashDot()
+    {
+        var cut = Render<PropertyGridMetaSection>(p =>
+            p.Add(x => x.Element, new ElementViewModel(DesignerElementKind.TextBox, "t1") { Expression = "x" }));
+
+        cut.Markup.Should().Contain("DashDot", "the border dropdown must offer every BorderLineStyle, not just 5 of 6");
+    }
+
+    [Fact]
+    public void Selecting_custom_format_opens_the_input_without_persisting_a_bogus_format()
+    {
+        var vm = new ElementViewModel(DesignerElementKind.TextBox, "t1") { Expression = "x" };
+        var cut = Render<PropertyGridMetaSection>(p => p.Add(x => x.Element, vm));
+
+        cut.FindAll("select").First(s => s.TextContent.Contains("Custom")).Change("__custom__");
+
+        ((TextBoxElement)vm.ToElement()).Style.Format.Should().NotBe("custom", "selecting Custom must not persist a bogus .NET format string");
+        cut.FindAll("input[placeholder='ex: #,##0.00']").Should().NotBeEmpty("the custom format input opens");
     }
 
     [Fact]
