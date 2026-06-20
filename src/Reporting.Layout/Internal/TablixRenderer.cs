@@ -371,15 +371,35 @@ internal static class TablixRenderer
         => content switch
         {
             LabelElement lbl => lbl.Text ?? string.Empty,
-            TextBoxElement tb => Resolve(ev, templates, tb.Expression, ctx),
+            TextBoxElement tb => Resolve(ev, templates, tb.Expression, ctx, tb.Style.Format),
             _ => string.Empty,
         };
 
-    private static string Resolve(ExpressionEvaluator ev, TemplateRenderer templates, string expr, IReportExpressionContext ctx)
+    private static string Resolve(ExpressionEvaluator ev, TemplateRenderer templates, string expr, IReportExpressionContext ctx, string? elementFormat = null)
     {
         if (string.IsNullOrEmpty(expr))
         {
             return string.Empty;
+        }
+        // SSRS-style Format property: a single-value cell ("{Fields.preco}" or a lone expression) with no
+        // inline ":format" honours the cell's Format. Mirrors BandRenderer.ResolveText so a flat Tablix
+        // cell formats the same as a band textbox.
+        if (!string.IsNullOrEmpty(elementFormat))
+        {
+            var single = TemplateRenderer.TryGetSingleExpression(expr, out var inner) ? inner
+                : !TemplateRenderer.HasPlaceholders(expr) ? expr
+                : null;
+            if (single is not null)
+            {
+                try
+                {
+                    return ValueFormatter.Format(ev.Evaluate(single, ctx), elementFormat, ctx.Culture);
+                }
+                catch (ExpressionParseException)
+                {
+                    return expr;
+                }
+            }
         }
         if (TemplateRenderer.HasPlaceholders(expr))
         {
