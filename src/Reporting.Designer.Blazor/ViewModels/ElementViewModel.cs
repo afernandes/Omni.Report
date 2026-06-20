@@ -895,11 +895,16 @@ public sealed class ElementViewModel : Notifying
             };
         }
 
+        // Opaque-advanced elements have NO appearance editor, so the flat Style fields are just defaults
+        // (Arial/10/Black). Keep the source element's real Style — which may carry null = inherit — instead
+        // of materialising it and corrupting the inherited appearance on every metadata edit.
+        var effectiveStyle = IsOpaqueAdvanced(Kind) ? element.Style : style;
+
         return element with
         {
             Id = Id,
             Name = Name,
-            Style = style,
+            Style = effectiveStyle,
             Visible = IsVisible,
             VisibleExpression = string.IsNullOrWhiteSpace(VisibleExpr) ? null : VisibleExpr,
             ConditionalFormats = conditionalFormats,
@@ -971,6 +976,9 @@ public sealed class ElementViewModel : Notifying
                 CategoryExpression = s.CategoryExpression,
                 ValueExpression = s.ValueExpression,
                 Color = s.Color,
+                SizeExpression = s.SizeExpression,
+                HighExpression = s.HighExpression,
+                LowExpression = s.LowExpression,
             });
         }
 
