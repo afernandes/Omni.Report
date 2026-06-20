@@ -244,6 +244,38 @@ public class PropertyExpressionRenderTests
         cell.Style.HorizontalAlignment.Should().Be(HorizontalAlignment.Right, "and its alignment, not a hardcoded default");
     }
 
+    [Fact]
+    public async Task A_flat_tablix_cell_applies_a_matching_conditional_format()
+    {
+        var detailCell = new TextBoxElement
+        {
+            Id = "c",
+            Expression = "{Fields.Nome}",
+            ConditionalFormats = new EquatableArray<ConditionalFormat>(new[]
+            {
+                new ConditionalFormat("Fields.Tamanho > 5",
+                    Style.Default with { ForeColor = Color.Red, BackColor = Color.FromHex("#FFFF00") }),
+            }),
+        };
+        var tablix = new TablixElement
+        {
+            Id = "t",
+            Bounds = new Rectangle(0.Mm(), 0.Mm(), 80.Mm(), 16.Mm()),
+            Cells = new EquatableArray<TablixCell>(new[] { new TablixCell(1, 0, detailCell) }),
+        };
+        var detail2 = new DetailBand(20.Mm(), new EquatableArray<ReportElement>(new ReportElement[] { tablix }));
+        var def = new ReportDefinition("e", PageSetup.A4Portrait, detail2);
+        var registry = new DataSourceRegistry();
+        registry.Register(new EnumerableDataSource<StyledRow>("Dados", [new StyledRow("Ana", "#000000", 9)]));
+        var report = await new ReportPaginator().PaginateAsync(new PaginationRequest { Definition = def, DataSources = registry });
+
+        var cell = report.Pages[0].Primitives.OfType<DrawTextPrimitive>().First(t => t.Text == "Ana");
+        cell.Style.ForeColor.Should().Be(Color.Red, "the matching conditional format colours the cell text");
+        report.Pages[0].Primitives.OfType<DrawRectanglePrimitive>()
+            .Should().Contain(r => r.Fill != null && r.Fill.Color == Color.FromHex("#FFFF00"),
+                "and emits a background highlight fill for the conditional BackColor");
+    }
+
     private static async Task<DrawTextPrimitive> RenderCustom(TextBoxElement tb, StyledRow row)
     {
         var detail = new DetailBand(20.Mm(), new EquatableArray<ReportElement>(new ReportElement[] { tb }));

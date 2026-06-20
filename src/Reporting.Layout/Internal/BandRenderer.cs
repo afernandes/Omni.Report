@@ -450,17 +450,7 @@ internal sealed class BandRenderer
     // The effective Core style after applying any matching conditional formats. Carries Format (the
     // value-format spec), which the drawing-only TextStyle drops — so the textbox value can honour it.
     private Style ResolveEffectiveStyle(ReportElement element, IReportExpressionContext ctx)
-    {
-        var style = element.Style;
-        foreach (var cf in element.ConditionalFormats)
-        {
-            if (_evaluator.Evaluate<bool>(cf.Condition, ctx))
-            {
-                style = Merge(style, cf.Style);
-            }
-        }
-        return style;
-    }
+        => StyleResolver.Resolve(element, _evaluator, ctx);
 
     private static TextStyle BuildTextStyle(Style style)
         => new(
@@ -470,20 +460,6 @@ internal sealed class BandRenderer
             style.VerticalAlignment,
             style.WordWrap,
             style.Padding ?? Thickness.Zero);
-
-    private static Style Merge(Style baseStyle, Style overlay)
-        => baseStyle with
-        {
-            Font = overlay.Font ?? baseStyle.Font,
-            ForeColor = overlay.ForeColor ?? baseStyle.ForeColor,
-            BackColor = overlay.BackColor ?? baseStyle.BackColor,
-            Border = overlay.Border ?? baseStyle.Border,
-            Padding = overlay.Padding ?? baseStyle.Padding,
-            HorizontalAlignment = overlay.HorizontalAlignment,
-            VerticalAlignment = overlay.VerticalAlignment,
-            WordWrap = overlay.WordWrap,
-            Format = overlay.Format ?? baseStyle.Format,
-        };
 
     private static Unit MaxHeight(Unit current, Rectangle bounds, Point origin, Rectangle? growsTo)
     {
