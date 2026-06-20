@@ -108,6 +108,31 @@ public class PropertyGridDescriptorsTests
     }
 
     [Fact]
+    public void Scalar_value_properties_are_expression_bindable_by_default_strings_are_not()
+    {
+        // SSRS-style "bind any property": colour / unit / enum / alignment / bool / number props get an fx
+        // toggle inferred from the editor — NO explicit [PropertyGrid(Bindable=true)] needed, so a new
+        // component's scalar props are ALL expression-bindable for free (the binder coerces + falls back).
+        foreach (var e in new[] { "color-picker", "color-hex", "unit-spinner", "enum", "h-align", "v-align", "toggle", "number" })
+        {
+            PropertyGridDescriptors.IsBindableByDefault(e).Should().BeTrue($"'{e}' is a scalar value editor");
+        }
+
+        // Strings (text/textarea — incl. the *Expression props that ALREADY are expressions), collections
+        // (list/dict) and composite editors (font/border/padding) are NOT auto-bindable.
+        foreach (var e in new[] { "text", "textarea", "list", "dict", "font", "border", "padding", "format-preset" })
+        {
+            PropertyGridDescriptors.IsBindableByDefault(e).Should().BeFalse($"'{e}' is not a scalar value editor");
+        }
+
+        // Flows through to real descriptors with NO explicit Bindable annotation (MapElement sets none):
+        var map = PropertyGridDescriptors.For(typeof(MapElement));
+        map.Single(d => d.Name == "ShowGraticule").Bindable.Should().BeTrue("a bool toggle is bindable");
+        map.Single(d => d.Name == "ShapeFill").Bindable.Should().BeTrue("a colour is bindable");
+        map.Single(d => d.Name == "LatitudeExpression").Bindable.Should().BeFalse("a *Expression string already IS an expression");
+    }
+
+    [Fact]
     public void Databar_and_sparkline_scalars_flatten_with_their_editors()
     {
         var bar = PropertyGridDescriptors.For(typeof(DataBarElement));
