@@ -175,6 +175,28 @@ public class PropertyExpressionRenderTests
         texts.Should().Contain(t => t.Contains("R$"), "a flat Tablix cell formats via its Format property, like a band textbox");
     }
 
+    [Fact]
+    public async Task A_gauge_value_label_honours_the_Format_property()
+    {
+        var gauge = new GaugeElement
+        {
+            Id = "g",
+            Bounds = new Rectangle(0.Mm(), 0.Mm(), 50.Mm(), 40.Mm()),
+            ValueExpression = "Fields.Tamanho",
+            MinimumExpression = "0",
+            MaximumExpression = "2000",
+            Style = Style.Default with { Format = "C" },
+        };
+        var detail = new DetailBand(45.Mm(), new EquatableArray<ReportElement>(new ReportElement[] { gauge }));
+        var def = new ReportDefinition("e", PageSetup.A4Portrait, detail);
+        var registry = new DataSourceRegistry();
+        registry.Register(new EnumerableDataSource<StyledRow>("Dados", [new StyledRow("A", "#000000", 1234.5)]));
+        var report = await new ReportPaginator().PaginateAsync(new PaginationRequest { Definition = def, DataSources = registry });
+
+        var texts = report.Pages[0].Primitives.OfType<DrawTextPrimitive>().Select(t => t.Text).ToList();
+        texts.Should().Contain(t => t.Contains("R$"), "the gauge value label formats via its Format property");
+    }
+
     private static async Task<DrawTextPrimitive> RenderCustom(TextBoxElement tb, StyledRow row)
     {
         var detail = new DetailBand(20.Mm(), new EquatableArray<ReportElement>(new ReportElement[] { tb }));
