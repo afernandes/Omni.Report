@@ -183,7 +183,9 @@ else
          Replaces the hand-coded Line/Shape sections: each [PropertyGrid]-annotated property
          renders its type's editor automatically (inherited props included), with an fx toggle
          to bind it to an expression. A new derived element gets all of this for free. *@
-    <PropertyGridMetaSection Element="Element" OnEditExpression="@(path => OnOpenExpressionEditor.InvokeAsync(path))" />
+    @* @key=Element recreates the section (and its per-property UI state, e.g. the format "Custom…" flag)
+       on every selection, so transient editor state never leaks from one element to the next. *@
+    <PropertyGridMetaSection @key="Element" Element="Element" OnEditExpression="@(path => OnOpenExpressionEditor.InvokeAsync(path))" />
 
     @* ── Barcode editor (symbology / ECC / text strip) ───────────────────────── *@
     @if (Element.Kind is DesignerElementKind.Barcode or DesignerElementKind.QrCode)

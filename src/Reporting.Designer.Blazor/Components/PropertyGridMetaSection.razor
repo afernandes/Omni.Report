@@ -190,15 +190,15 @@
                                 break;
 
                             case "textarea":
-                                <textarea @onchange="@(e => Element.ApplyMetaSet(d, e.Value?.ToString()))" rows="3"
+                                <textarea @onchange="@(e => Element.ApplyMetaSet(d, EmptyToNull(e.Value?.ToString())))" rows="3"
                                           placeholder="@d.Placeholder"
                                           style="flex:1;font-family:var(--font-mono);font-size:11px;resize:vertical;">@Convert.ToString(current)</textarea>
                                 break;
 
                             case "color-hex":
                                 var hex = current as string ?? "#000000";
-                                <input type="color" value="@hex"
-                                       @onchange="@(e => Element.ApplyMetaSet(d, e.Value?.ToString() ?? hex))"
+                                <input type="color" value="@ToRgbHexString(hex)"
+                                       @onchange="@(e => Element.ApplyMetaSet(d, MergeHexAlpha(hex, e.Value?.ToString())))"
                                        style="width:36px;height:16px;cursor:pointer;" />
                                 <span class="mono" style="font-size:11px;">@hex</span>
                                 break;
@@ -281,6 +281,19 @@
     // <input type=color> only round-trips #RRGGBB; preserve the element's existing alpha instead of forcing opaque.
     private static object WithRgb(Color old, string? hex) => Color.FromHex(hex ?? "#000000") with { A = old.A };
 
+    // Nullable string editors write null (not "") for an empty box — null = "inherit/absent" by convention.
+    private static object? EmptyToNull(string? s) => string.IsNullOrEmpty(s) ? null : s;
+
+    // color-hex stores a hex STRING. Strip an #AARRGGBB to #RRGGBB for the colour input, and on change
+    // re-attach the original 8-digit alpha so a translucent colour-hex isn't silently forced opaque.
+    private static string ToRgbHexString(string hex) => hex.Length == 9 ? "#" + hex.Substring(3) : hex;
+
+    private static object MergeHexAlpha(string oldHex, string? newRgb)
+    {
+        var rgb = string.IsNullOrEmpty(newRgb) ? "#000000" : newRgb;
+        return oldHex.Length == 9 ? "#" + oldHex.Substring(1, 2) + rgb.TrimStart('#') : rgb;
+    }
+
     // Show the first VISIBLE side so a non-uniform border (e.g. bottom-only, built code-first / loaded from
     // a file) doesn't read as "Nenhuma". Editing still applies uniformly to all four sides (see below).
     private static BorderSide? FirstVisibleSide(Border? b)
@@ -301,19 +314,21 @@
 
     // ── Border / Padding: edit the box uniformly (all four sides the same), matching the previous
     //    hand-coded editors. A "None" style clears the border; a non-positive padding clears it.
+    //    The base side is the SAME first-visible side the editor displays — using current.Top instead
+    //    would, on a non-uniform border whose Top is None, rebuild every side as None and ERASE the border.
     private static Border? WithBorderStyle(Border? current, string? styleName)
     {
         if (string.IsNullOrEmpty(styleName) || !Enum.TryParse<BorderLineStyle>(styleName, out var style) || style == BorderLineStyle.None)
         {
             return null;
         }
-        var side = (current?.Top ?? new BorderSide(BorderLineStyle.Solid, Unit.FromPoint(0.5), Color.Black)) with { Style = style };
+        var side = (FirstVisibleSide(current) ?? new BorderSide(BorderLineStyle.Solid, Unit.FromPoint(0.5), Color.Black)) with { Style = style };
         return new Border(side, side, side, side);
     }
 
     private static Border WithBorderThickness(Border current, double points)
     {
-        var side = current.Top with { Thickness = Unit.FromPoint(points) };
+        var side = (FirstVisibleSide(current) ?? current.Top) with { Thickness = Unit.FromPoint(points) };
         return new Border(side, side, side, side);
     }
 
@@ -325,8 +340,9 @@
         }
         try
         {
+            var baseSide = FirstVisibleSide(current) ?? current.Top;
             // Keep the existing alpha — the colour input only provides #RRGGBB.
-            var side = current.Top with { Color = Color.FromHex(hex) with { A = current.Top.Color.A } };
+            var side = baseSide with { Color = Color.FromHex(hex) with { A = baseSide.Color.A } };
             return new Border(side, side, side, side);
         }
         catch (FormatException)
