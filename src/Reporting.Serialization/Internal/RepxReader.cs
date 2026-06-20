@@ -105,7 +105,21 @@ internal static class RepxReader
         {
             defaultValue = Convert.ChangeType(v, type, Inv);
         }
-        return new ReportParameter(name, type, prompt, defaultValue, allowMultiple, required);
+        ParameterAvailableValues? available = null;
+        if (el.Element("AvailableValues") is { } ave)
+        {
+            var values = ave.Elements("Value")
+                .Select(ve => new ParameterValue(Attr(ve, "Value") ?? string.Empty, Attr(ve, "Label")))
+                .ToArray();
+            available = new ParameterAvailableValues
+            {
+                Values = new EquatableArray<ParameterValue>(values),
+                DataSet = Attr(ave, "DataSet"),
+                ValueField = Attr(ave, "ValueField"),
+                LabelField = Attr(ave, "LabelField"),
+            };
+        }
+        return new ReportParameter(name, type, prompt, defaultValue, allowMultiple, required, available);
     }
 
     private static ReportVariable ReadVariable(XElement el)

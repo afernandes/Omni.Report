@@ -110,6 +110,20 @@ internal static class RepxWriter
             el.Add(new XElement("DefaultValue",
                 new XAttribute("Value", Convert.ToString(p.DefaultValue, Inv) ?? string.Empty)));
         }
+        if (p.AvailableValues is { } av)
+        {
+            var ave = new XElement("AvailableValues");
+            if (av.DataSet is not null) { ave.SetAttributeValue("DataSet", av.DataSet); }
+            if (av.ValueField is not null) { ave.SetAttributeValue("ValueField", av.ValueField); }
+            if (av.LabelField is not null) { ave.SetAttributeValue("LabelField", av.LabelField); }
+            foreach (var v in av.Values)
+            {
+                var ve = new XElement("Value", new XAttribute("Value", v.Value));
+                if (v.Label is not null) { ve.SetAttributeValue("Label", v.Label); }
+                ave.Add(ve);
+            }
+            el.Add(ave);
+        }
         return el;
     }
 

@@ -47,6 +47,30 @@ public class ReportBuilderTests
     }
 
     [Fact]
+    public void Parameter_available_values_flow_through_the_builder()
+    {
+        var report = ReportBuilder.Create("Test")
+            .Parameters(p => p
+                .Add<string>("Status", availableValues: Reporting.Parameters.ParameterAvailableValues.FromList(
+                    new Reporting.Parameters.ParameterValue("A", "Ativo"),
+                    new Reporting.Parameters.ParameterValue("I", "Inativo")))
+                .Add<string>("Cliente", availableValues: Reporting.Parameters.ParameterAvailableValues.FromQuery(
+                    "Clientes", "Id", "Nome")))
+            .Build();
+
+        var status = report.Definition.Parameters[0].AvailableValues;
+        status.Should().NotBeNull();
+        status!.Values.Select(v => v.Value).Should().Equal("A", "I");
+        status.Values[0].Label.Should().Be("Ativo");
+
+        var cliente = report.Definition.Parameters[1].AvailableValues;
+        cliente!.IsQuery.Should().BeTrue();
+        cliente.DataSet.Should().Be("Clientes");
+        cliente.ValueField.Should().Be("Id");
+        cliente.LabelField.Should().Be("Nome");
+    }
+
+    [Fact]
     public void Datasource_registers_and_exposes_fields()
     {
         var rows = new[] { new Venda("Ana", 10m), new Venda("Beto", 20m) };

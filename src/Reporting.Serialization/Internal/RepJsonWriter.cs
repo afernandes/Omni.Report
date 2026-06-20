@@ -101,6 +101,23 @@ internal static class RepJsonWriter
         {
             o["defaultValue"] = Convert.ToString(p.DefaultValue, Inv);
         }
+        if (p.AvailableValues is { } av)
+        {
+            var avo = new JsonObject();
+            if (av.Values.Count > 0)
+            {
+                avo["values"] = new JsonArray(av.Values.Select(v =>
+                {
+                    var vo = new JsonObject { ["value"] = v.Value };
+                    if (v.Label is not null) { vo["label"] = v.Label; }
+                    return (JsonNode?)vo;
+                }).ToArray());
+            }
+            if (av.DataSet is not null) { avo["dataSet"] = av.DataSet; }
+            if (av.ValueField is not null) { avo["valueField"] = av.ValueField; }
+            if (av.LabelField is not null) { avo["labelField"] = av.LabelField; }
+            o["availableValues"] = avo;
+        }
         return o;
     }
 

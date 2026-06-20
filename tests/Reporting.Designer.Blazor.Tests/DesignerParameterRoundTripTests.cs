@@ -47,4 +47,38 @@ public class DesignerParameterRoundTripTests
         back.Required.Should().BeTrue();
         back.DefaultValue.Should().Be("2026");
     }
+
+    [Fact]
+    public void Parameter_available_values_persist_through_designer_and_repx()
+    {
+        var state = new DesignerState();
+        state.Parameters.Clear();
+        state.Parameters.Add(new DesignerParameter("status", DesignerFieldType.Text, "A")
+        {
+            Prompt = "Situação",
+            AvailableValuesText = "A|Ativo\nI|Inativo", // static "value|label" lines
+        });
+        state.Parameters.Add(new DesignerParameter("cliente", DesignerFieldType.Text)
+        {
+            AvailableValuesDataSet = "Clientes", // query-driven
+            AvailableValuesValueField = "Id",
+            AvailableValuesLabelField = "Nome",
+        });
+
+        var definition = state.BuildDefinition();
+        definition.Parameters[0].AvailableValues!.Values.Select(v => v.Value).Should().Equal("A", "I");
+        definition.Parameters[0].AvailableValues!.Values[1].Label.Should().Be("Inativo");
+        definition.Parameters[1].AvailableValues!.IsQuery.Should().BeTrue();
+
+        // Through .repx and back into a fresh designer, every Available Values field surfaces again.
+        var reloaded = new DesignerState();
+        reloaded.Load(new RepxSerializer().SaveToBytes(definition));
+
+        var status = reloaded.Parameters[0];
+        status.AvailableValuesText.Should().Be("A|Ativo\nI|Inativo");
+        var cliente = reloaded.Parameters[1];
+        cliente.AvailableValuesDataSet.Should().Be("Clientes");
+        cliente.AvailableValuesValueField.Should().Be("Id");
+        cliente.AvailableValuesLabelField.Should().Be("Nome");
+    }
 }

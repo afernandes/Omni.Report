@@ -195,7 +195,14 @@ internal static class Fixtures
             SchemaVersion = SchemaVersion.Current.ToString(),
             Parameters = EquatableArray.Create(
                 new ReportParameter("DataInicio", typeof(DateTime), "Data inicial", new DateTime(2026, 1, 1)),
-                new ReportParameter("Limite", typeof(decimal), DefaultValue: 100m, Required: false)),
+                new ReportParameter("Limite", typeof(decimal), DefaultValue: 100m, Required: false),
+                // Static Available Values (value + label) — exercises the dropdown-domain round-trip.
+                new ReportParameter("Status", typeof(string), "Situação", "A", Required: false,
+                    AvailableValues: ParameterAvailableValues.FromList(
+                        new ParameterValue("A", "Ativo"), new ParameterValue("I", "Inativo"))),
+                // Query-driven Available Values — exercises the dataset/field round-trip.
+                new ReportParameter("Cliente", typeof(string), "Cliente", Required: false,
+                    AvailableValues: ParameterAvailableValues.FromQuery("Clientes", "Id", "Nome"))),
             Variables = EquatableArray.Create(
                 new ReportVariable("AccVendas", "Sum(Fields.Total)", VariableScope.Report),
                 new ReportVariable("Linha", "Count(Fields.Total)", VariableScope.Row)),
