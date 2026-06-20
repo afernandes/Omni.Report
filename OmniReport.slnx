@@ -30,6 +30,7 @@
     <Project Path="src/Reporting.Output.Csv/Reporting.Output.Csv.csproj" />
     <Project Path="src/Reporting.Output.Excel/Reporting.Output.Excel.csproj" />
     <Project Path="src/Reporting.Output.Html/Reporting.Output.Html.csproj" />
+    <Project Path="src/Reporting.Output.Image/Reporting.Output.Image.csproj" />
     <Project Path="src/Reporting.Output.Json/Reporting.Output.Json.csproj" />
     <Project Path="src/Reporting.Output.Markdown/Reporting.Output.Markdown.csproj" />
     <Project Path="src/Reporting.Output.Pdf/Reporting.Output.Pdf.csproj" />

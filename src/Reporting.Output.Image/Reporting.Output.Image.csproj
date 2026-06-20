@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Reporting.Output.Image</RootNamespace>
+    <AssemblyName>Reporting.Output.Image</AssemblyName>
+    <Description>OmniReport — raster image (PNG) exporter via SkiaSharp. Pages are rasterised with the same primitive renderer as the PDF/SVG backends; the IReportExporter output stacks all pages into one tall PNG, and RenderPages returns one PNG per page.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Reporting.Core\Reporting.Core.csproj" />
+    <ProjectReference Include="..\Reporting.Layout\Reporting.Layout.csproj" />
+    <ProjectReference Include="..\Reporting.Rendering\Reporting.Rendering.csproj" />
+    <ProjectReference Include="..\Reporting.Rendering.Skia\Reporting.Rendering.Skia.csproj" />
+    <ProjectReference Include="..\Reporting.Output.Pdf\Reporting.Output.Pdf.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SkiaSharp" />
+  </ItemGroup>
+
+</Project>
