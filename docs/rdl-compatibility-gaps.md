@@ -14,7 +14,7 @@ Das features RDL avaliadas: **96 completas · 18 parciais · 32 ausentes** (~66%
 | # | Gap | Status | Impacto | Esforço | Paridade a garantir |
 |---|---|---|---|---|---|
 | 1 | **Import `.rdl` (SSRS XML → ReportDefinition)** | ausente | Desbloqueia migração SSRS→OmniReport. É a "compatibilidade RDL" literal (hoje só `.repx`/`.repjson`). | M | Importador produz o mesmo `ReportDefinition` que code-first/low-level criariam; abre no Designer |
-| 2 | **Parameters: Available Values** (lista estática + query-driven) | ausente | Feature de UX mais crítica do prompt — dropdowns com domínio validado. Hoje todo parâmetro é texto livre. | M | Modelar no record + API code-first + editor no Designer |
+| 2 | **Parameters: Available Values** (lista estática + query-driven) | ✅ (#87) | `ParameterAvailableValues` (estático + query) + `ParameterValueResolver`; 3 modos + 4 serializers + dropdown no prompt (estático). Follow-up: dropdown query no prompt (host chama o resolver), cascading. | M | Modelar no record + API code-first + editor no Designer |
 | 3 | **`Lookup`/`LookupSet`**/`MultiLookup` | ✅ Lookup+LookupSet (#85) · MultiLookup pendente | Buscar valor em outro dataset (tax por código, nome por id) sem join prévio. ~30% dos casos avançados. | M | Função no avaliador (vale p/ os 3 modos automaticamente) |
 | 4 | **Parameters: Cascading / dependentes** + default-como-expressão + validação | ausente | Parâmetros dependentes (Estado→Cidade) e defaults dinâmicos. Cluster que falta inteiro. | M | record + code-first + Designer |
 
@@ -46,7 +46,7 @@ Das features RDL avaliadas: **96 completas · 18 parciais · 32 ausentes** (~66%
 ## Recomendação de sequência
 
 1. **Quick wins primeiro** (model já existe, só falta wirar): **#5 Tablix SortExpression** e **#19 exporter PNG público** — baixo risco, fecham gaps reais rápido.
-2. **Núcleo RDL**: **#2 Available Values** → **#3 Lookup** → **#1 Import .rdl**. Esta ordem porque Available Values e Lookup também beneficiam relatórios nativos (não só import), e o importador se apoia no modelo já enriquecido.
+2. **Núcleo RDL**: ✅ **#3 Lookup** (#85) · ✅ **#2 Available Values** (#87). Resta **#1 Import .rdl** (XML → ReportDefinition), que se apoia no modelo já enriquecido (Lookup, Available Values, subtotais).
 3. **Riqueza visual**: **#7 cell span** + **#6 subtotais** (Tablix de verdade) e **#9 drill-down runtime** (o maior salto de interatividade, mas exige o pipeline DOM).
 
 Cada item entra com o ciclo padrão: implementar nos 3 modos de autoria → testes → revisão adversarial → PR.

@@ -108,7 +108,22 @@ internal static class RepJsonReader
         object? defaultValue = (string?)o["defaultValue"] is { } dv
             ? Convert.ChangeType(dv, type, Inv)
             : null;
-        return new ReportParameter(name, type, prompt, defaultValue, allowMultiple, required);
+        ParameterAvailableValues? available = null;
+        if (o["availableValues"] is JsonObject avo)
+        {
+            var values = avo["values"] is JsonArray va
+                ? va.Where(n => n is JsonObject).Select(n => new ParameterValue(
+                    (string?)n!["value"] ?? string.Empty, (string?)n["label"])).ToArray()
+                : Array.Empty<ParameterValue>();
+            available = new ParameterAvailableValues
+            {
+                Values = new EquatableArray<ParameterValue>(values),
+                DataSet = (string?)avo["dataSet"],
+                ValueField = (string?)avo["valueField"],
+                LabelField = (string?)avo["labelField"],
+            };
+        }
+        return new ReportParameter(name, type, prompt, defaultValue, allowMultiple, required, available);
     }
 
     private static ReportVariable ReadVariable(JsonObject o)

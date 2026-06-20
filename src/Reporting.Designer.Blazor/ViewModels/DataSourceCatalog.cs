@@ -491,6 +491,25 @@ public sealed class DesignerParameter : Notifying
     /// <summary>RDL <c>&lt;MultiValue&gt;</c>: the parameter accepts a list of values.</summary>
     public bool AllowMultiple { get => _allowMultiple; set => Set(ref _allowMultiple, value); }
 
+    private string? _availableValuesText;
+    /// <summary>Static allowed values (SSRS Available Values), one per line as <c>value</c> or
+    /// <c>value|label</c> (split on the first <c>|</c>; values/labels containing <c>|</c> aren't
+    /// representable here — use code-first/low-level for those). Empty = no static domain. Combined with
+    /// the query fields below.</summary>
+    public string? AvailableValuesText { get => _availableValuesText; set => Set(ref _availableValuesText, value); }
+
+    private string? _availableValuesDataSet;
+    /// <summary>Query-driven Available Values: dataset to pull the domain from. Empty = static only.</summary>
+    public string? AvailableValuesDataSet { get => _availableValuesDataSet; set => Set(ref _availableValuesDataSet, value); }
+
+    private string? _availableValuesValueField;
+    /// <summary>Field providing the value, when <see cref="AvailableValuesDataSet"/> is set.</summary>
+    public string? AvailableValuesValueField { get => _availableValuesValueField; set => Set(ref _availableValuesValueField, value); }
+
+    private string? _availableValuesLabelField;
+    /// <summary>Field providing the display label (falls back to the value), when query-driven.</summary>
+    public string? AvailableValuesLabelField { get => _availableValuesLabelField; set => Set(ref _availableValuesLabelField, value); }
+
     /// <summary>CLR type the runtime coerces prompted input to (maps from <see cref="Type"/>).</summary>
     public System.Type ClrType => Type switch
     {
@@ -508,7 +527,57 @@ public sealed class DesignerParameter : Notifying
             Prompt: string.IsNullOrWhiteSpace(Prompt) ? null : Prompt,
             DefaultValue: CoercedDefault(),
             AllowMultiple: AllowMultiple,
-            Required: Required);
+            Required: Required,
+            AvailableValues: BuildAvailableValues());
+
+    /// <summary>Builds the core <see cref="Reporting.Parameters.ParameterAvailableValues"/> from the
+    /// editor's static text + query fields, or <c>null</c> when neither is configured.</summary>
+    private Reporting.Parameters.ParameterAvailableValues? BuildAvailableValues()
+    {
+        var values = ParseValueLines(AvailableValuesText);
+        bool hasQuery = !string.IsNullOrWhiteSpace(AvailableValuesDataSet)
+                        && !string.IsNullOrWhiteSpace(AvailableValuesValueField);
+        if (values.Length == 0 && !hasQuery)
+        {
+            return null;
+        }
+        return new Reporting.Parameters.ParameterAvailableValues
+        {
+            Values = new Reporting.Common.EquatableArray<Reporting.Parameters.ParameterValue>(values),
+            DataSet = hasQuery ? AvailableValuesDataSet : null,
+            ValueField = hasQuery ? AvailableValuesValueField : null,
+            LabelField = hasQuery && !string.IsNullOrWhiteSpace(AvailableValuesLabelField) ? AvailableValuesLabelField : null,
+        };
+    }
+
+    // Parses one "value" or "value|label" per line into static parameter values. Blank lines and lines
+    // whose value part is empty (e.g. "|orphan") are skipped; an empty label ("X|") collapses to null so
+    // it canonicalizes back to plain "X" on reload. The value/label split is on the FIRST '|'.
+    private static Reporting.Parameters.ParameterValue[] ParseValueLines(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return Array.Empty<Reporting.Parameters.ParameterValue>();
+        }
+        var result = new List<Reporting.Parameters.ParameterValue>();
+        foreach (var raw in text.Replace("\r\n", "\n").Split('\n'))
+        {
+            var line = raw.Trim();
+            if (line.Length == 0)
+            {
+                continue;
+            }
+            int bar = line.IndexOf('|');
+            var value = (bar >= 0 ? line[..bar] : line).Trim();
+            if (value.Length == 0)
+            {
+                continue;
+            }
+            var label = bar >= 0 ? line[(bar + 1)..].Trim() : string.Empty;
+            result.Add(new Reporting.Parameters.ParameterValue(value, label.Length > 0 ? label : null));
+        }
+        return result.ToArray();
+    }
 
     /// <summary>Coerces the editor's string <see cref="DefaultValue"/> into the parameter's CLR type
     /// so the serializer (which round-trips <c>object</c> defaults) gets a typed value. An empty or
@@ -545,6 +614,12 @@ public sealed class DesignerParameter : Notifying
             Prompt = p.Prompt,
             Required = p.Required,
             AllowMultiple = p.AllowMultiple,
+            AvailableValuesText = p.AvailableValues is { Values.Count: > 0 } av
+                ? string.Join("\n", av.Values.Select(v => v.Label is null ? v.Value : $"{v.Value}|{v.Label}"))
+                : null,
+            AvailableValuesDataSet = p.AvailableValues?.DataSet,
+            AvailableValuesValueField = p.AvailableValues?.ValueField,
+            AvailableValuesLabelField = p.AvailableValues?.LabelField,
         };
 
     private static DesignerFieldType ClassifyClr(System.Type t)

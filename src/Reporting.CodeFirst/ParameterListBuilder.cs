@@ -8,9 +8,10 @@ public sealed class ParameterListBuilder
 {
     private readonly List<ReportParameter> _parameters = [];
 
-    public ParameterListBuilder Add<T>(string name, string? prompt = null, T? defaultValue = default, bool required = true)
+    public ParameterListBuilder Add<T>(string name, string? prompt = null, T? defaultValue = default, bool required = true,
+        ParameterAvailableValues? availableValues = null)
     {
-        _parameters.Add(new ReportParameter(name, typeof(T), prompt, defaultValue, AllowMultiple: false, required));
+        _parameters.Add(new ReportParameter(name, typeof(T), prompt, defaultValue, AllowMultiple: false, required, availableValues));
         return this;
     }
 

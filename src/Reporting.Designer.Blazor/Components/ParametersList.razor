@@ -39,6 +39,23 @@
                         <input type="checkbox" checked="@p.AllowMultiple"
                                @onchange="@(e => p.AllowMultiple = (bool)(e.Value ?? false))" /> Multi</label>
                 </div>
+                <div style="margin-top:4px;">
+                    <div style="font-size:10px;color:var(--text-secondary);margin-bottom:2px;">Valores permitidos (1 por linha: <code>valor</code> ou <code>valor|rótulo</code>)</div>
+                    <textarea value="@p.AvailableValuesText" placeholder="1|Ativo&#10;0|Inativo" rows="2"
+                              @onchange="@(e => p.AvailableValuesText = e.Value?.ToString())"
+                              style="width:100%;font-family:var(--font-mono);font-size:11px;background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--r-1);padding:2px 4px;resize:vertical;box-sizing:border-box;"></textarea>
+                    <div style="display:flex;gap:4px;align-items:center;margin-top:3px;">
+                        <input type="text" value="@p.AvailableValuesDataSet" placeholder="…ou dataset"
+                               @onchange="@(e => p.AvailableValuesDataSet = e.Value?.ToString())"
+                               style="flex:1;font-size:10.5px;background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--r-1);padding:2px 4px;" />
+                        <input type="text" value="@p.AvailableValuesValueField" placeholder="campo valor"
+                               @onchange="@(e => p.AvailableValuesValueField = e.Value?.ToString())"
+                               style="flex:1;font-size:10.5px;background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--r-1);padding:2px 4px;" />
+                        <input type="text" value="@p.AvailableValuesLabelField" placeholder="campo rótulo"
+                               @onchange="@(e => p.AvailableValuesLabelField = e.Value?.ToString())"
+                               style="flex:1;font-size:10.5px;background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--r-1);padding:2px 4px;" />
+                    </div>
+                </div>
             </div>
         }
     }

@@ -22,6 +22,26 @@
                         @captured.Name
                         <span class="pp-type">@captured.Type</span>
                     </label>
+                    @{ var allowed = ParseAvailable(captured.AvailableValuesText); }
+                    @if (allowed.Count > 0)
+                    {
+                        @* Static Available Values → validated dropdown (SSRS-style). Query-driven values
+                           are resolved by the host at run time via ParameterValueResolver. *@
+                        <select id="@($"pp-{captured.Name}")"
+                                value="@_values.GetValueOrDefault(captured.Name)"
+                                @onchange="@(e => _values[captured.Name] = e.Value?.ToString() ?? string.Empty)">
+                            @if (!captured.Required)
+                            {
+                                <option value="">(nenhum)</option>
+                            }
+                            @foreach (var (val, label) in allowed)
+                            {
+                                <option value="@val" selected="@(_values.GetValueOrDefault(captured.Name) == val)">@label</option>
+                            }
+                        </select>
+                    }
+                    else
+                    {
                     @switch (captured.Type)
                     {
                         case DesignerFieldType.Number:
@@ -48,6 +68,7 @@
                                    value="@_values.GetValueOrDefault(captured.Name)"
                                    @oninput="@(e => _values[captured.Name] = e.Value?.ToString() ?? string.Empty)" />
                             break;
+                    }
                     }
                 </div>
             }
@@ -77,6 +98,27 @@
     private readonly Dictionary<string, string?> _values = new(StringComparer.Ordinal);
     private bool _remember = true;
     private bool _initialized;
+
+    // Parses the editor's static "value" / "value|label" lines into dropdown options (blanks skipped).
+    private static IReadOnlyList<(string Value, string Label)> ParseAvailable(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return Array.Empty<(string, string)>();
+        }
+        var list = new List<(string, string)>();
+        foreach (var raw in text.Replace("\r\n", "\n").Split('\n'))
+        {
+            var line = raw.Trim();
+            if (line.Length == 0) { continue; }
+            int bar = line.IndexOf('|');
+            var value = (bar >= 0 ? line[..bar] : line).Trim();
+            if (value.Length == 0) { continue; } // skip "|orphan" lines with no value
+            var label = bar >= 0 ? line[(bar + 1)..].Trim() : string.Empty;
+            list.Add((value, label.Length > 0 ? label : value)); // empty label → show the value
+        }
+        return list;
+    }
 
     protected override void OnParametersSet()
     {
