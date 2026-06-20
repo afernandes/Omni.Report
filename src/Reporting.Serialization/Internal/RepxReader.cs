@@ -316,7 +316,7 @@ internal static class RepxReader
             "Indicator" => ReadIndicatorElement(el, bounds),
             // Convention-based fallback: a tag with no explicit arm resolves to a registered all-scalar type.
             _ => ElementSerializationRegistry.TryGetType(el.Name.LocalName, out var genType)
-                ? ElementSerializationRegistry.Construct(genType, bounds, m => el.Element(m.XmlName)?.Value)
+                ? ElementSerializationRegistry.ReadXml(genType, bounds, el)
                 : throw new FormatException($"Unknown element tag: <{el.Name.LocalName}>"),
         };
 

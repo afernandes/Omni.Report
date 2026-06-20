@@ -353,7 +353,7 @@ internal static class RepJsonReader
             "Indicator" => ReadIndicator(o, bounds),
             // Convention-based fallback: a kind with no explicit arm resolves to a registered all-scalar type.
             _ => ElementSerializationRegistry.TryGetType(kind, out var genType)
-                ? ElementSerializationRegistry.Construct(genType, bounds, m => o[m.JsonName]?.ToString())
+                ? ElementSerializationRegistry.ReadJson(genType, bounds, o)
                 : throw new FormatException($"Unknown element kind: '{kind}'."),
         };
 

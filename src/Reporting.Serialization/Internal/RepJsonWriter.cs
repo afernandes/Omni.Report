@@ -614,9 +614,9 @@ internal static class RepJsonWriter
             // Convention-based fallback: a new all-scalar element (its tag came from ElementKindFor above)
             // emits its declared scalars as camelCase string values.
             default:
-                foreach (var (member, _, json) in ElementSerializationRegistry.WriteScalars(element))
+                foreach (var (name, node) in ElementSerializationRegistry.WriteJson(element))
                 {
-                    o[member.JsonName] = json;
+                    o[name] = node;
                 }
                 break;
         }
