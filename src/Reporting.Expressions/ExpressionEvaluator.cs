@@ -307,6 +307,48 @@ public sealed class ExpressionEvaluator
             case "year": result = n > 0 ? Dt(0).Year : 0; return true;
             case "month": result = n > 0 ? Dt(0).Month : 0; return true;
             case "day": result = n > 0 ? Dt(0).Day : 0; return true;
+            case "hour": result = n > 0 ? Dt(0).Hour : 0; return true;
+            case "minute": result = n > 0 ? Dt(0).Minute : 0; return true;
+            case "second": result = n > 0 ? Dt(0).Second : 0; return true;
+            case "weekday": result = n > 0 ? (int)Dt(0).DayOfWeek + 1 : 0; return true; // VB: Sunday = 1
+
+            // ── Date math (VB-style interval strings) ──
+            case "dateadd":
+                if (n < 3) return false;
+                result = AddInterval(S(0), Int(1), Dt(2));
+                return true;
+            case "datediff":
+                if (n < 3) return false;
+                result = DiffInterval(S(0), Dt(1), Dt(2));
+                return true;
+
+            // ── More text ──
+            case "instr": // VB: 1-based position, 0 if not found. InStr(s, sub) or InStr(start, s, sub).
+                if (n == 2) { result = S(0).IndexOf(S(1), StringComparison.Ordinal) + 1; return true; }
+                if (n >= 3)
+                {
+                    var from = Math.Max(1, Int(0)) - 1;
+                    var hay = S(1);
+                    result = from >= hay.Length ? 0 : hay.IndexOf(S(2), from, StringComparison.Ordinal) + 1;
+                    return true;
+                }
+                return false;
+
+            // ── Conversions (VB Cxxx) ──
+            // Numeric/date parsing uses InvariantCulture so a string literal means the same as the
+            // equivalent NCalc literal (the expression language is invariant — '1.5' == 1.5, never 15).
+            // CStr formats with the report culture (the display side); already-typed values pass through.
+            case "cstr": result = n > 0 ? S(0) : string.Empty; return true;
+            case "cint": // parse as double then round (VB CInt; "2.5" → 2), banker's rounding like VB
+                result = n > 0 ? (int)Math.Round(Convert.ToDouble(p.Evaluate(0), CultureInfo.InvariantCulture), MidpointRounding.ToEven) : 0;
+                return true;
+            case "cdbl": result = n > 0 ? Convert.ToDouble(p.Evaluate(0), CultureInfo.InvariantCulture) : 0d; return true;
+            case "cdec": result = n > 0 ? Convert.ToDecimal(p.Evaluate(0), CultureInfo.InvariantCulture) : 0m; return true;
+            case "cbool": result = n > 0 && Bool(0); return true;
+            case "cdate":
+                if (n == 0) { result = default(DateTime); return true; }
+                { var v = p.Evaluate(0); result = v is DateTime cd ? cd : Convert.ToDateTime(v, CultureInfo.InvariantCulture); }
+                return true;
 
             default:
                 return false;
@@ -317,6 +359,40 @@ public sealed class ExpressionEvaluator
             result = null;
             return true;
         }
+    }
+
+    // VB-style DateAdd: the interval is a short string ("yyyy"/"m"/"d"/"h"/"n"/"s"/"ww"/"q", with long
+    // aliases). An unknown interval returns the date unchanged.
+    private static DateTime AddInterval(string interval, int number, DateTime date) => interval.ToLowerInvariant() switch
+    {
+        "yyyy" or "year" => date.AddYears(number),
+        "q" or "quarter" => date.AddMonths(number * 3),
+        "m" or "month" => date.AddMonths(number),
+        "d" or "day" or "y" or "dy" => date.AddDays(number),
+        "ww" or "week" or "wk" => date.AddDays(number * 7),
+        "h" or "hour" => date.AddHours(number),
+        "n" or "minute" or "mi" => date.AddMinutes(number),
+        "s" or "second" => date.AddSeconds(number),
+        _ => date,
+    };
+
+    // VB-style DateDiff: count of interval boundaries between d1 and d2 (year/month/quarter are
+    // boundary-based like VB; day/week/hour/minute/second are elapsed).
+    private static int DiffInterval(string interval, DateTime d1, DateTime d2)
+    {
+        var span = d2 - d1;
+        return interval.ToLowerInvariant() switch
+        {
+            "yyyy" or "year" => d2.Year - d1.Year,
+            "q" or "quarter" => (d2.Year - d1.Year) * 4 + ((d2.Month - 1) / 3 - (d1.Month - 1) / 3),
+            "m" or "month" => (d2.Year - d1.Year) * 12 + (d2.Month - d1.Month),
+            "d" or "day" or "y" or "dy" => (int)(d2.Date - d1.Date).TotalDays,
+            "ww" or "week" or "wk" => (int)((d2.Date - d1.Date).TotalDays / 7),
+            "h" or "hour" => (int)span.TotalHours,
+            "n" or "minute" or "mi" => (int)span.TotalMinutes,
+            "s" or "second" => (int)span.TotalSeconds,
+            _ => 0,
+        };
     }
 
     private static AggregateScope ParseScope(object? value)

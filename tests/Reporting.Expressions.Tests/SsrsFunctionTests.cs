@@ -91,4 +91,45 @@ public class SsrsFunctionTests
         // Year of a non-date text → null (SSRS-style #Error), not an exception that kills the cell.
         ev.Evaluate("Year(Fields.T)", ctx).Should().BeNull();
     }
+
+    [Fact]
+    public void DateAdd_and_DateDiff_with_vb_intervals()
+    {
+        var (ctx, ev) = NewContext();
+        ctx.SetCurrentRow(new Dictionary<string, object?>
+        {
+            ["A"] = new DateTime(2026, 1, 10),
+            ["B"] = new DateTime(2026, 3, 15),
+        });
+        ev.Evaluate("DateAdd('d', 5, Fields.A)", ctx).Should().Be(new DateTime(2026, 1, 15));
+        ev.Evaluate("DateAdd('m', 2, Fields.A)", ctx).Should().Be(new DateTime(2026, 3, 10));
+        ev.Evaluate("DateAdd('yyyy', 1, Fields.A)", ctx).Should().Be(new DateTime(2027, 1, 10));
+        ev.Evaluate("DateDiff('d', Fields.A, Fields.B)", ctx).Should().Be(64);
+        ev.Evaluate("DateDiff('m', Fields.A, Fields.B)", ctx).Should().Be(2);
+    }
+
+    [Theory]
+    [InlineData("InStr('abcdef', 'cd')", 3)]
+    [InlineData("InStr('abc', 'z')", 0)] // not found → 0
+    [InlineData("InStr('abcabc', 'bc')", 2)]
+    public void InStr_is_1_based(string expr, int expected)
+    {
+        var (ctx, ev) = NewContext();
+        ev.Evaluate(expr, ctx).Should().Be(expected);
+    }
+
+    [Fact]
+    public void Conversions_and_more_date_parts()
+    {
+        var (ctx, ev) = NewContext();
+        ctx.SetCurrentRow(new Dictionary<string, object?> { ["D"] = new DateTime(2026, 6, 20, 14, 30, 45) });
+        ev.Evaluate("CStr(123)", ctx).Should().Be("123");
+        ev.Evaluate("CInt('5')", ctx).Should().Be(5);
+        ev.Evaluate("CInt('2.5')", ctx).Should().Be(2);        // parses + rounds, never crashes to null
+        ev.Evaluate("CDbl('1.5')", ctx).Should().Be(1.5);      // invariant parse — '1.5' is 1.5, not 15 under pt-BR
+        ev.Evaluate("CBool('true')", ctx).Should().Be(true);
+        ev.Evaluate("Hour(Fields.D)", ctx).Should().Be(14);
+        ev.Evaluate("Minute(Fields.D)", ctx).Should().Be(30);
+        ev.Evaluate("Second(Fields.D)", ctx).Should().Be(45);
+    }
 }
