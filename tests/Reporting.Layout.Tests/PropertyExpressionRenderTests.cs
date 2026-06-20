@@ -197,6 +197,27 @@ public class PropertyExpressionRenderTests
         texts.Should().Contain(t => t.Contains("R$"), "the gauge value label formats via its Format property");
     }
 
+    [Fact]
+    public async Task A_chart_value_axis_honours_the_Format_property()
+    {
+        var chart = new ChartElement
+        {
+            Id = "ch",
+            Bounds = new Rectangle(0.Mm(), 0.Mm(), 80.Mm(), 50.Mm()),
+            Kind = ChartKind.Bar,
+            Series = new EquatableArray<ChartSeries>(new[] { new ChartSeries("S", "Fields.Nome", "Fields.Tamanho") }),
+            Style = Style.Default with { Format = "C" },
+        };
+        var detail = new DetailBand(55.Mm(), new EquatableArray<ReportElement>(new ReportElement[] { chart }));
+        var def = new ReportDefinition("e", PageSetup.A4Portrait, detail);
+        var registry = new DataSourceRegistry();
+        registry.Register(new EnumerableDataSource<StyledRow>("Dados", [new StyledRow("A", "#000000", 1000)]));
+        var report = await new ReportPaginator().PaginateAsync(new PaginationRequest { Definition = def, DataSources = registry });
+
+        var texts = report.Pages[0].Primitives.OfType<DrawTextPrimitive>().Select(t => t.Text).ToList();
+        texts.Should().Contain(t => t.Contains("R$"), "the chart value-axis labels format via the Format property");
+    }
+
     private static async Task<DrawTextPrimitive> RenderCustom(TextBoxElement tb, StyledRow row)
     {
         var detail = new DetailBand(20.Mm(), new EquatableArray<ReportElement>(new ReportElement[] { tb }));

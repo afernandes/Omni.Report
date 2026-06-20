@@ -251,7 +251,7 @@ internal static class ChartRenderer
             double v = top * i / divs;
             double y = YOf(v);
             list.Add(Line(ax, y, ax + aw, y, gridPen, chart.Id));
-            list.Add(Text(FormatValue(v), px, y - 2.5, leftGutter - 1.5, 5, 6, false, HorizontalAlignment.Right, chart.Id));
+            list.Add(Text(FormatValue(v, chart.Style.Format), px, y - 2.5, leftGutter - 1.5, 5, 6, false, HorizontalAlignment.Right, chart.Id));
         }
 
         // Axes (drawn after gridlines so they sit on top).
@@ -660,8 +660,12 @@ internal static class ChartRenderer
         return nice * mag;
     }
 
-    private static string FormatValue(double v)
-        => Math.Abs(v) >= 1000 ? v.ToString("#,0", PtBr) : v.ToString("0.##", CultureInfo.InvariantCulture);
+    // The chart's Format property (when set) drives the value-axis labels — e.g. a revenue chart's
+    // Y axis in currency — consistent with every other value display. Heuristic fallback when unset.
+    private static string FormatValue(double v, string? format = null)
+        => !string.IsNullOrEmpty(format)
+            ? ValueFormatter.Format(v, format, PtBr)
+            : Math.Abs(v) >= 1000 ? v.ToString("#,0", PtBr) : v.ToString("0.##", CultureInfo.InvariantCulture);
 
     private static DrawTextPrimitive Text(
         string text, double xMm, double yMm, double wMm, double hMm,
