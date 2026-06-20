@@ -41,6 +41,10 @@ internal sealed class RowScopedContext : IReportExpressionContext
     public object? EvaluateAggregate(string function, string expression, AggregateScope scope)
         => _inner.EvaluateAggregate(function, expression, scope);
 
+    // Lookup scans whole datasets registered on the root context, independent of the row scope.
+    public object? EvaluateLookup(object? source, string destExpression, string resultExpression, string datasetName, bool all)
+        => _inner.EvaluateLookup(source, destExpression, resultExpression, datasetName, all);
+
     public IValueLookup? GetSource(string sourceName) => _inner.GetSource(sourceName);
 
     public bool TryResolveUnqualifiedField(string fieldName, out object? value)

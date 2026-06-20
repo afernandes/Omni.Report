@@ -43,6 +43,13 @@ public interface IReportExpressionContext
     /// <summary>Computes an aggregate (Sum, Avg, Count, Min, Max, RunningTotal).</summary>
     object? EvaluateAggregate(string function, string expression, AggregateScope scope);
 
+    /// <summary>SSRS-style cross-dataset lookup: scans the rows of <paramref name="datasetName"/> for ones
+    /// whose <paramref name="destExpression"/> equals <paramref name="source"/> (evaluated in the caller's
+    /// scope), returning <paramref name="resultExpression"/> from the matched row's scope. When
+    /// <paramref name="all"/> is false returns the first match (or <c>null</c>); when true returns an
+    /// <c>object?[]</c> of every match (LookupSet). Returns empty/null if the dataset isn't registered.</summary>
+    object? EvaluateLookup(object? source, string destExpression, string resultExpression, string datasetName, bool all);
+
     /// <summary>Returns the current-row lookup of the data source named <paramref name="sourceName"/>,
     /// or <c>null</c> when the source is unknown OR has no current row in scope.</summary>
     /// <remarks>

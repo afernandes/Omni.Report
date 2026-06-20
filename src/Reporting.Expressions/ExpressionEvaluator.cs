@@ -134,6 +134,12 @@ public sealed class ExpressionEvaluator
                 return;
             }
 
+            if (TryEvaluateLookup(name, args, context, out var lookup))
+            {
+                args.Result = lookup;
+                return;
+            }
+
             if (TryEvaluateBuiltin(name, args, context, out var builtin))
             {
                 args.Result = builtin;
@@ -182,6 +188,30 @@ public sealed class ExpressionEvaluator
             scope = ParseScope(scopeValue);
         }
         result = context.EvaluateAggregate(name, expressionText, scope);
+        return true;
+    }
+
+    // SSRS Lookup(source, dest, result, "Dataset") / LookupSet(...). dest & result are kept as RAW
+    // expression text (like aggregates) so they evaluate per target row, not eagerly in the caller scope;
+    // source IS evaluated in the caller scope and matched against each row's dest.
+    private static bool TryEvaluateLookup(string name, FunctionEventArgs args, IReportExpressionContext context, out object? result)
+    {
+        result = null;
+        bool all;
+        if (string.Equals(name, "Lookup", StringComparison.OrdinalIgnoreCase)) { all = false; }
+        else if (string.Equals(name, "LookupSet", StringComparison.OrdinalIgnoreCase)) { all = true; }
+        else { return false; }
+        if (args.Parameters.Count < 4)
+        {
+            return false;
+        }
+        var source = args.Parameters.Evaluate(0);
+        var destExpr = ExtractRawExpression(args.Parameters[1]);
+        var resultExpr = ExtractRawExpression(args.Parameters[2]);
+        // The dataset name is an identifier, not a display value — convert invariantly so a non-string
+        // arg never picks up culture-specific formatting that wouldn't match the registered key.
+        var dataset = Convert.ToString(args.Parameters.Evaluate(3), System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty;
+        result = context.EvaluateLookup(source, destExpr, resultExpr, dataset, all);
         return true;
     }
 

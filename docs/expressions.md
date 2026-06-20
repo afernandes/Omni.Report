@@ -66,6 +66,38 @@ escopo até a linha corrente). A função `RunningTotal(...)` é o atalho para o
 Internamente, `AggregateCalculator` mantém pilhas de acumuladores indexadas pelo
 escopo. A paginação reseta o escopo apropriado entre páginas / grupos.
 
+## Lookup entre datasets
+
+No estilo SSRS, `Lookup` / `LookupSet` cruzam **outro** dataset sem um join prévio —
+útil para "puxar" um nome, uma taxa ou uma descrição a partir de um id:
+
+```text
+Lookup(Fields.ClienteId, Fields.Id, Fields.Nome, 'Clientes')
+// para o ClienteId da linha corrente, acha a 1ª linha de "Clientes"
+// onde Id == ClienteId e devolve Nome (ou null se nada casar)
+
+LookupSet(Fields.Categoria, Fields.Cat, Fields.Nome, 'Itens')
+// devolve um object?[] com TODOS os Nome cujo Cat == Categoria
+```
+
+Assinatura: `Lookup(origem, destino, resultado, "Dataset")`. A **origem** é avaliada no
+escopo da linha corrente; **destino** e **resultado** são avaliados em cada linha do
+dataset alvo (são mantidos como texto de expressão, igual aos agregadores, não avaliados
+de imediato). A comparação casa por igualdade de valor, com _fallback_ para string
+invariante — então um `Id` inteiro num dataset casa com um id string em outro.
+
+Todos os datasets registrados no relatório ficam disponíveis para `Lookup` (o paginator
+materializa as linhas de cada um). Funciona igual nos 3 modos de autoria, já que é uma
+função de expressão: use a mesma string em code-first, low-level e no Designer.
+
+**Atenção:** `destino` e `resultado` são **expressões**, não aspas — escreva `Fields.Id`,
+não `'Id'` (uma string literal vira a constante `"Id"` em toda linha e nada casa, igual aos
+agregadores). Só o nome do **dataset** (4º argumento) é string literal.
+
+Custo: `Lookup` varre as linhas do dataset alvo a cada chamada — O(linhas-alvo) por linha
+de detalhe, sem índice/hash (o SSRS mantém hash). Para tabelas de apoio pequenas é
+irrelevante; para datasets grandes em loops longos, considere pré-juntar os dados.
+
 ## Templates de formatação
 
 Para textos compostos, use `{expression:format}` dentro de strings:
