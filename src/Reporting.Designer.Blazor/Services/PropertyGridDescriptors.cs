@@ -128,9 +128,11 @@ public static class PropertyGridDescriptors
         if (u.IsEnum) return "enum";
         if (u == typeof(Color)) return "color-picker";
         if (u == typeof(Unit)) return "unit-spinner";
-        if (u == typeof(int) || u == typeof(long) || u == typeof(double) || u == typeof(decimal) || u == typeof(float))
+        if (u == typeof(int) || u == typeof(long) || u == typeof(short) || u == typeof(byte)
+            || u == typeof(sbyte) || u == typeof(uint) || u == typeof(ulong) || u == typeof(ushort)
+            || u == typeof(double) || u == typeof(decimal) || u == typeof(float))
         {
-            return "number";
+            return "number"; // every numeric scalar → number editor (so it's also bindable, not a raw text box)
         }
         if (u.IsGenericType && u.GetGenericTypeDefinition() == typeof(EquatableArray<>))
         {

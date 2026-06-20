@@ -136,7 +136,7 @@
 
                             case "border":
                                 var border = current as Border;
-                                var bside = border?.Top;
+                                var bside = FirstVisibleSide(border);
                                 <select style="flex:1;font-size:11.5px;"
                                         @onchange="@(e => Element.ApplyMetaSet(d, WithBorderStyle(border, e.Value?.ToString())))">
                                     <option value="None" selected="@(bside is null || bside.Style == BorderLineStyle.None)">— Nenhuma —</option>
@@ -280,6 +280,24 @@
 
     // <input type=color> only round-trips #RRGGBB; preserve the element's existing alpha instead of forcing opaque.
     private static object WithRgb(Color old, string? hex) => Color.FromHex(hex ?? "#000000") with { A = old.A };
+
+    // Show the first VISIBLE side so a non-uniform border (e.g. bottom-only, built code-first / loaded from
+    // a file) doesn't read as "Nenhuma". Editing still applies uniformly to all four sides (see below).
+    private static BorderSide? FirstVisibleSide(Border? b)
+    {
+        if (b is null)
+        {
+            return null;
+        }
+        foreach (var side in new[] { b.Top, b.Right, b.Bottom, b.Left })
+        {
+            if (side.Style != BorderLineStyle.None)
+            {
+                return side;
+            }
+        }
+        return b.Top;
+    }
 
     // ── Border / Padding: edit the box uniformly (all four sides the same), matching the previous
     //    hand-coded editors. A "None" style clears the border; a non-positive padding clears it.
