@@ -218,6 +218,32 @@ public class PropertyExpressionRenderTests
         texts.Should().Contain(t => t.Contains("R$"), "the chart value-axis labels format via the Format property");
     }
 
+    [Fact]
+    public async Task A_flat_tablix_cell_honours_its_content_style()
+    {
+        var detailCell = new TextBoxElement
+        {
+            Id = "c",
+            Expression = "{Fields.Nome}",
+            Style = Style.Default with { ForeColor = Color.Red, HorizontalAlignment = HorizontalAlignment.Right },
+        };
+        var tablix = new TablixElement
+        {
+            Id = "t",
+            Bounds = new Rectangle(0.Mm(), 0.Mm(), 80.Mm(), 16.Mm()),
+            Cells = new EquatableArray<TablixCell>(new[] { new TablixCell(1, 0, detailCell) }),
+        };
+        var detail = new DetailBand(20.Mm(), new EquatableArray<ReportElement>(new ReportElement[] { tablix }));
+        var def = new ReportDefinition("e", PageSetup.A4Portrait, detail);
+        var registry = new DataSourceRegistry();
+        registry.Register(new EnumerableDataSource<StyledRow>("Dados", [new StyledRow("Ana", "#000000", 1)]));
+        var report = await new ReportPaginator().PaginateAsync(new PaginationRequest { Definition = def, DataSources = registry });
+
+        var cell = report.Pages[0].Primitives.OfType<DrawTextPrimitive>().First(t => t.Text == "Ana");
+        cell.Style.ForeColor.Should().Be(Color.Red, "the flat cell honours its content's ForeColor");
+        cell.Style.HorizontalAlignment.Should().Be(HorizontalAlignment.Right, "and its alignment, not a hardcoded default");
+    }
+
     private static async Task<DrawTextPrimitive> RenderCustom(TextBoxElement tb, StyledRow row)
     {
         var detail = new DetailBand(20.Mm(), new EquatableArray<ReportElement>(new ReportElement[] { tb }));
