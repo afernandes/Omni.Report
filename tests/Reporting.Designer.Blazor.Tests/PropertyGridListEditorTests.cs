@@ -76,4 +76,21 @@ public class PropertyGridListEditorTests : Bunit.BunitContext
 
         ((GaugeElement)vm.ToElement()).Ranges[0].StartExpression.Should().Be("10");
     }
+
+    [Fact]
+    public void Removing_the_first_item_keeps_the_seconds_data_intact()
+    {
+        // With stable @key rows, removing the first row leaves the SECOND range untouched — not re-bound by
+        // shifted position. Distinct start values (0 vs 60) make any mix-up visible.
+        var (vm, desc) = GaugeWithTwoRanges();
+        var cut = Render<PropertyGridListEditor>(p => p
+            .Add(x => x.Element, vm)
+            .Add(x => x.Descriptor, desc));
+
+        cut.FindAll("button").First(b => b.TextContent.Trim() == "×").Click();
+
+        var ranges = ((GaugeElement)vm.ToElement()).Ranges;
+        ranges.Should().ContainSingle();
+        ranges[0].StartExpression.Should().Be("60", "the survivor is the original second range, intact");
+    }
 }

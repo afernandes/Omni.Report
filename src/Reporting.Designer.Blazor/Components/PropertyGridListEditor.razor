@@ -7,20 +7,17 @@
 @*
     Generic editor for an EquatableArray<T> property. Each item T is itself rendered from its
     [PropertyGrid]-annotated fields (recursive metadata) — so a new element with a list of annotated
-    records gets add/remove + per-field editing for free, with no hand-coded list UI.
+    records gets add/remove + per-field editing for free, with no hand-coded list UI. Items live in
+    LOCAL component state with a stable @key, so add/remove never re-binds an input to the wrong row.
 *@
 
-@{
-    var items = GetItems();
-    var fields = ItemFields;
-}
 <div style="display:flex;flex-direction:column;gap:3px;width:100%;">
-    @for (var i = 0; i < items.Count; i++)
+    @foreach (var row in _rows)
     {
-        var index = i;
-        var item = items[index];
-        <div style="display:flex;align-items:center;gap:3px;flex-wrap:wrap;">
-            @foreach (var f in fields)
+        var r = row;
+        var item = r.Item;
+        <div @key="r.Id" style="display:flex;align-items:center;gap:3px;flex-wrap:wrap;">
+            @foreach (var f in ItemFields)
             {
                 var field = f;
                 var val = field.Get(item);
@@ -29,20 +26,20 @@
                     case "color-hex":
                         var hex = val as string is { Length: > 0 } s ? s : "#000000";
                         <input type="color" value="@hex" title="@field.Label"
-                               @onchange="@(e => EditField(index, field, e.Value?.ToString() ?? hex))"
+                               @onchange="@(e => EditField(r, field, e.Value?.ToString() ?? hex))"
                                style="width:28px;height:18px;padding:0;cursor:pointer;flex:0 0 auto;" />
                         break;
 
                     case "color-picker":
                         var col = val as Color?;
                         <input type="color" value="@((col ?? Color.Black).ToHex())" title="@field.Label"
-                               @onchange="@(e => EditField(index, field, Color.FromHex(e.Value?.ToString() ?? "#000000")))"
+                               @onchange="@(e => EditField(r, field, Color.FromHex(e.Value?.ToString() ?? "#000000")))"
                                style="width:28px;height:18px;padding:0;cursor:pointer;flex:0 0 auto;" />
                         break;
 
                     case "enum":
                         <select title="@field.Label" style="flex:1;font-size:11px;"
-                                @onchange="@(e => EditField(index, field, Enum.Parse(EnumType(field), e.Value?.ToString() ?? string.Empty, ignoreCase: true)))">
+                                @onchange="@(e => EditField(r, field, Enum.Parse(EnumType(field), e.Value?.ToString() ?? string.Empty, ignoreCase: true)))">
                             @foreach (var v in Enum.GetValues(EnumType(field)))
                             {
                                 <option value="@v" selected="@(Equals(val, v))">@v</option>
@@ -53,23 +50,23 @@
                     case "number":
                         <input type="number" step="0.1" title="@field.Label"
                                value="@Convert.ToString(val, CultureInfo.InvariantCulture)"
-                               @onchange="@(e => EditField(index, field, ConvertNumber(field, e.Value)))"
+                               @onchange="@(e => EditField(r, field, ConvertNumber(field, e.Value)))"
                                style="width:54px;font-size:11px;" />
                         break;
 
                     default:
                         <input type="text" placeholder="@field.Label" title="@field.Label"
                                value="@Convert.ToString(val)"
-                               @onchange="@(e => EditField(index, field, e.Value?.ToString()))"
+                               @onchange="@(e => EditField(r, field, e.Value?.ToString()))"
                                style="flex:1;font-family:var(--font-mono);font-size:11px;" />
                         break;
                 }
             }
-            <button class="icon-btn" type="button" title="Remover" @onclick="@(() => RemoveItem(index))"
+            <button class="icon-btn" type="button" title="Remover" @onclick="@(() => RemoveRow(r))"
                     style="width:18px;height:18px;color:var(--text-tertiary);flex:0 0 auto;">×</button>
         </div>
     }
-    <button class="icon-btn" type="button" @onclick="AddItem"
+    <button class="icon-btn" type="button" @onclick="AddRow"
             style="align-self:flex-start;font-size:10.5px;padding:2px 8px;">+ Adicionar</button>
 </div>
 
@@ -77,11 +74,38 @@
     [Parameter, EditorRequired] public ElementViewModel Element { get; set; } = default!;
     [Parameter, EditorRequired] public PropertyGridDescriptor Descriptor { get; set; } = default!;
 
+    private sealed class Row
+    {
+        public string Id { get; } = Guid.NewGuid().ToString("N");
+        public object Item { get; set; } = default!;
+    }
+
+    private readonly List<Row> _rows = new();
+    private ElementViewModel? _seededElement;
+    private string? _seededPath;
+
     private Type ItemType => Descriptor.Type.GetGenericArguments()[0];
     private IReadOnlyList<PropertyGridDescriptor> ItemFields => PropertyGridDescriptors.For(ItemType);
 
-    private List<object> GetItems()
-        => (Descriptor.Get(Element.ToElement()) as IEnumerable)?.Cast<object>().ToList() ?? new();
+    // Seed local rows once per (element, descriptor) — NOT on our own commits (same Element reference) —
+    // so add/remove never re-derives identity-less items and re-binds an input to a shifted row.
+    protected override void OnParametersSet()
+    {
+        if (ReferenceEquals(_seededElement, Element) && _seededPath == Descriptor.Path)
+        {
+            return;
+        }
+        _seededElement = Element;
+        _seededPath = Descriptor.Path;
+        _rows.Clear();
+        if (Descriptor.Get(Element.ToElement()) is IEnumerable items)
+        {
+            foreach (var it in items)
+            {
+                _rows.Add(new Row { Item = it });
+            }
+        }
+    }
 
     private static Type EnumType(PropertyGridDescriptor d) => Nullable.GetUnderlyingType(d.Type) ?? d.Type;
 
@@ -94,37 +118,32 @@
         return Convert.ChangeType(parsed, Nullable.GetUnderlyingType(d.Type) ?? d.Type, CultureInfo.InvariantCulture);
     }
 
-    private void EditField(int index, PropertyGridDescriptor field, object? value)
+    private void EditField(Row row, PropertyGridDescriptor field, object? value)
     {
-        var items = GetItems();
-        if (index < 0 || index >= items.Count) return;
-        items[index] = field.Set(items[index], value);
-        Commit(items);
+        row.Item = field.Set(row.Item, value);
+        Commit();
     }
 
-    private void RemoveItem(int index)
+    private void RemoveRow(Row row)
     {
-        var items = GetItems();
-        if (index < 0 || index >= items.Count) return;
-        items.RemoveAt(index);
-        Commit(items);
+        _rows.Remove(row);
+        Commit();
     }
 
-    private void AddItem()
+    private void AddRow()
     {
-        var items = GetItems();
-        items.Add(CreateDefaultItem(ItemType));
-        Commit(items);
+        _rows.Add(new Row { Item = CreateDefaultItem(ItemType) });
+        Commit();
     }
 
-    /// <summary>Rebuilds the immutable EquatableArray&lt;T&gt; from the working list and pushes it back
+    /// <summary>Rebuilds the immutable EquatableArray&lt;T&gt; from the working rows and pushes it back
     /// through the metadata setter (which re-hydrates the element, opaque-advanced included).</summary>
-    private void Commit(List<object> items)
+    private void Commit()
     {
         var typed = (IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(ItemType))!;
-        foreach (var it in items)
+        foreach (var r in _rows)
         {
-            typed.Add(it);
+            typed.Add(r.Item);
         }
         var newArray = Activator.CreateInstance(Descriptor.Type, typed)!;
         Element.ApplyMetaSet(Descriptor, newArray);
