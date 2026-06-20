@@ -88,12 +88,12 @@
             <Icon Name="align-end-horizontal" Size="16" CssClass="icon icon-16" />
         </button>
         <span class="tb-sep"></span>
-        <button class="tb-btn" type="button" title="Distribuir horizontalmente"
-                disabled="@(!MultiSelected)" @onclick="@(() => OnDistributeH.InvokeAsync())">
+        <button class="tb-btn" type="button" title="Distribuir horizontalmente (3+ elementos)"
+                disabled="@(!CanDistribute)" @onclick="@(() => OnDistributeH.InvokeAsync())">
             <Icon Name="columns-3" Size="16" CssClass="icon icon-16" />
         </button>
-        <button class="tb-btn" type="button" title="Distribuir verticalmente"
-                disabled="@(!MultiSelected)" @onclick="@(() => OnDistributeV.InvokeAsync())">
+        <button class="tb-btn" type="button" title="Distribuir verticalmente (3+ elementos)"
+                disabled="@(!CanDistribute)" @onclick="@(() => OnDistributeV.InvokeAsync())">
             <Icon Name="rows-3" Size="16" CssClass="icon icon-16" />
         </button>
     </div>
@@ -207,6 +207,7 @@
     [Parameter] public EventCallback OnBringToFront{ get; set; }
     [Parameter] public EventCallback OnSendToBack  { get; set; }
     [Parameter] public bool MultiSelected { get; set; }
+    [Parameter] public bool CanDistribute { get; set; } // distribute needs 3+ elements to space the middle ones
     [Parameter] public EventCallback<DesignerElementKind> OnInsert { get; set; }
     [Parameter] public EventCallback<bool> OnToggleGrid { get; set; }
     [Parameter] public EventCallback<bool> OnToggleSnap { get; set; }

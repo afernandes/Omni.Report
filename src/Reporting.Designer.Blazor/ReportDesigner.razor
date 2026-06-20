@@ -24,6 +24,7 @@
                  HasSelection="@(State.SelectedElement is not null)"
                  HasClipboard="@(State.Clipboard is not null)"
                  MultiSelected="@(State.SelectedElements.Count > 1)"
+                 CanDistribute="@(State.SelectedElements.Count >= 3)"
                  GridVisible="State.GridVisible"
                  SnapEnabled="State.SnapToGrid"
                  RulersVisible="State.RulersVisible"
@@ -737,42 +738,57 @@
     {
         var sel = State.SelectedElements.ToList();
         if (sel.Count < 2) return;
+
+        // Build the moves/resizes as commands (each captures the element's CURRENT position as "old"
+        // before anything is applied), then push ONE composite so the whole operation is a single
+        // undoable Ctrl+Z — matching every other designer mutation. Without this, align/distribute/
+        // same-size silently bypassed history and could not be undone.
+        var commands = new List<IDesignerCommand>();
+        void Move(ElementViewModel e, Unit x, Unit y)
+        {
+            if (e.X != x || e.Y != y) commands.Add(new MoveElementCommand(e, x, y));
+        }
+        void Resize(ElementViewModel e, Unit w, Unit h)
+        {
+            if (e.Width != w || e.Height != h) commands.Add(new ResizeElementCommand(e, w, h));
+        }
+
         switch (op)
         {
             case AlignOp.Left:
             {
                 var x = sel.Min(e => e.X);
-                foreach (var e in sel) e.X = x;
+                foreach (var e in sel) Move(e, x, e.Y);
                 break;
             }
             case AlignOp.Right:
             {
                 var right = sel.Max(e => e.X + e.Width);
-                foreach (var e in sel) e.X = right - e.Width;
+                foreach (var e in sel) Move(e, right - e.Width, e.Y);
                 break;
             }
             case AlignOp.CenterH:
             {
                 var centerMm = sel.Average(e => (e.X + e.Width / 2).ToMm());
-                foreach (var e in sel) e.X = Unit.FromMm(centerMm) - e.Width / 2;
+                foreach (var e in sel) Move(e, Unit.FromMm(centerMm) - e.Width / 2, e.Y);
                 break;
             }
             case AlignOp.Top:
             {
                 var y = sel.Min(e => e.Y);
-                foreach (var e in sel) e.Y = y;
+                foreach (var e in sel) Move(e, e.X, y);
                 break;
             }
             case AlignOp.Bottom:
             {
                 var bottom = sel.Max(e => e.Y + e.Height);
-                foreach (var e in sel) e.Y = bottom - e.Height;
+                foreach (var e in sel) Move(e, e.X, bottom - e.Height);
                 break;
             }
             case AlignOp.MiddleV:
             {
                 var middleMm = sel.Average(e => (e.Y + e.Height / 2).ToMm());
-                foreach (var e in sel) e.Y = Unit.FromMm(middleMm) - e.Height / 2;
+                foreach (var e in sel) Move(e, e.X, Unit.FromMm(middleMm) - e.Height / 2);
                 break;
             }
             case AlignOp.DistributeH when sel.Count >= 3:
@@ -786,7 +802,7 @@
                 var cursor = first.X;
                 foreach (var e in ordered)
                 {
-                    e.X = cursor;
+                    Move(e, cursor, e.Y);
                     cursor += e.Width + Unit.FromMm(gap);
                 }
                 break;
@@ -802,7 +818,7 @@
                 var cursor = first.Y;
                 foreach (var e in ordered)
                 {
-                    e.Y = cursor;
+                    Move(e, e.X, cursor);
                     cursor += e.Height + Unit.FromMm(gap);
                 }
                 break;
@@ -813,22 +829,27 @@
             case AlignOp.SameWidth:
             {
                 var w = sel[0].Width;
-                foreach (var e in sel) e.Width = w;
+                foreach (var e in sel) Resize(e, w, e.Height);
                 break;
             }
             case AlignOp.SameHeight:
             {
                 var h = sel[0].Height;
-                foreach (var e in sel) e.Height = h;
+                foreach (var e in sel) Resize(e, e.Width, h);
                 break;
             }
             case AlignOp.SameBoth:
             {
                 var w = sel[0].Width;
                 var h = sel[0].Height;
-                foreach (var e in sel) { e.Width = w; e.Height = h; }
+                foreach (var e in sel) Resize(e, w, h);
                 break;
             }
+        }
+
+        if (commands.Count > 0)
+        {
+            State.History.Push(new CompositeCommand($"Align {op}", commands));
         }
     }
 
