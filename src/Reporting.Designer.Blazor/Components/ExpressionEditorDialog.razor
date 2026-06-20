@@ -4,10 +4,12 @@
 <DesignerModal Visible="Visible" Title="Editor de Expressões" HeadIcon="function-square" OnClose="OnCancel">
     <ChildContent>
         @* Wider dialog frame — 3-column layout: catalog | editor | snippets/preview *@
-        <div style="width:1000px;max-width:90vw;display:grid;grid-template-columns:240px 1fr 260px;gap:12px;min-height:440px;">
+        @* Bounded height so the side panels scroll INTERNALLY (their content has overflow:auto) instead
+           of growing the whole modal — keeping the centre editor panel always visible. *@
+        <div style="width:1000px;max-width:90vw;display:grid;grid-template-columns:240px 1fr 260px;gap:12px;height:min(78vh, 640px);">
 
             @* ╔════ LEFT: Catalog with search + collapsible categories ════════ *@
-            <div style="display:flex;flex-direction:column;min-width:0;border:1px solid var(--border);border-radius:var(--r-2);background:var(--bg-panel);">
+            <div style="display:flex;flex-direction:column;min-width:0;min-height:0;border:1px solid var(--border);border-radius:var(--r-2);background:var(--bg-panel);">
                 <div style="display:flex;align-items:center;gap:6px;padding:6px 8px;border-bottom:1px solid var(--border);">
                     <Icon Name="search" Size="12" CssClass="icon icon-12" />
                     <input type="text" value="@_filter"
@@ -97,7 +99,7 @@
             </div>
 
             @* ╔════ RIGHT: Snippet patterns ══════════════════════════════════ *@
-            <div style="display:flex;flex-direction:column;min-width:0;border:1px solid var(--border);border-radius:var(--r-2);background:var(--bg-panel);">
+            <div style="display:flex;flex-direction:column;min-width:0;min-height:0;border:1px solid var(--border);border-radius:var(--r-2);background:var(--bg-panel);">
                 <div style="padding:6px 8px;border-bottom:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text-tertiary);letter-spacing:var(--tracked);text-transform:uppercase;">
                     Padrões prontos
                 </div>
@@ -374,8 +376,17 @@
                     if (_expandedCategories.Contains(category)) _expandedCategories.Remove(category);
                     else _expandedCategories.Add(category);
                 }));
+            // Each of the 3 grid columns needs its OWN element. The chevron + name were adjacent text
+            // nodes that merged into a SINGLE grid item (crammed into the 14px column, overflowing on top
+            // of the count). Wrap each so they land in their own column.
+            builder.OpenElement(seq++, "span");
             builder.AddContent(seq++, expanded ? "▾" : "▸");
+            builder.CloseElement();
+
+            builder.OpenElement(seq++, "span");
+            builder.AddAttribute(seq++, "style", "overflow:hidden;text-overflow:ellipsis;white-space:nowrap;");
             builder.AddContent(seq++, category);
+            builder.CloseElement();
 
             builder.OpenElement(seq++, "span");
             builder.AddAttribute(seq++, "style", "font-family:var(--font-mono);font-size:10px;color:var(--text-tertiary);text-transform:none;letter-spacing:0;");
