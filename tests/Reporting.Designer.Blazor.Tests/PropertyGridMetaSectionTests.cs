@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Components;
 using Reporting.Designer.Blazor.Components;
 using Reporting.Designer.Blazor.ViewModels;
 using Reporting.Elements;
+using Reporting.Geometry;
+using Reporting.Styling;
 using Xunit;
 
 namespace Reporting.Designer.Blazor.Tests;
@@ -46,6 +48,24 @@ public class PropertyGridMetaSectionTests : Bunit.BunitContext
             p.Add(x => x.Element, new ElementViewModel(DesignerElementKind.TextBox, "t1") { Expression = "x" }));
 
         cut.Markup.Should().Contain("DashDot", "the border dropdown must offer every BorderLineStyle, not just 5 of 6");
+    }
+
+    [Fact]
+    public void Editing_a_non_uniform_border_does_not_erase_it()
+    {
+        // Regression: a bottom-only border shows its visible Bottom side; editing the thickness used to
+        // rebuild every side from Top (= None) and ERASE the border. The write now bases off the same
+        // first-visible side it displays.
+        var vm = new ElementViewModel(DesignerElementKind.TextBox, "t1") { Expression = "x" };
+        var none = new BorderSide(BorderLineStyle.None, Unit.Zero, Color.Black);
+        vm.Border = new Border(none, none, none, new BorderSide(BorderLineStyle.Solid, Unit.FromPoint(1), Color.Red));
+        var cut = Render<PropertyGridMetaSection>(p => p.Add(x => x.Element, vm));
+
+        cut.FindAll("input[type=number][max='10']").First().Change("2");
+
+        var border = ((TextBoxElement)vm.ToElement()).Style.Border!;
+        new[] { border.Top, border.Right, border.Bottom, border.Left }
+            .Should().Contain(s => s.Style != BorderLineStyle.None, "editing the thickness must not erase the border");
     }
 
     [Fact]
