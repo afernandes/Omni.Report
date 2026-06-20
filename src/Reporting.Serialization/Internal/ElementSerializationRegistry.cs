@@ -1,8 +1,11 @@
+using System.Collections;
 using System.Collections.Concurrent;
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Nodes;
+using System.Xml.Linq;
+using Reporting.Common;
 using Reporting.Elements;
 using Reporting.Geometry;
 using Reporting.Styling;
@@ -11,20 +14,23 @@ namespace Reporting.Serialization.Internal;
 
 /// <summary>
 /// Convention-based serialization for <see cref="ReportElement"/> subtypes that are NOT hand-wired in the
-/// format switches. A new all-scalar element gets repx + repjson round-trip for free: its tag is derived
-/// from the type name (minus the <c>Element</c> suffix) and its declared scalar properties are written as
-/// child nodes (sparse) / read back via reflection. The hand-wired elements never reach this path — their
-/// explicit switch arms take precedence; this only backs the <c>_ =&gt;</c> fallthrough.
+/// format switches. A new element gets repx + repjson round-trip for free: its tag is derived from the type
+/// name (minus the <c>Element</c> suffix) and its declared properties are serialized recursively. The
+/// hand-wired elements never reach this path — their explicit switch arms take precedence; this only backs
+/// the <c>_ =&gt;</c> fallthrough.
 ///
-/// Scope (PR 1): scalar leaf properties only (<c>string</c>/<c>bool</c>/<c>int</c>/<c>long</c>/<c>double</c>/
-/// enum/<see cref="Unit"/>/<see cref="Color"/> and their nullable forms). A type with a non-scalar declared
-/// property is NOT auto-serializable yet and still throws the original "unsupported" error (nested records /
-/// collections / nested elements are a later increment). See docs/serialization-auto-wiring-design.md.
+/// Supported member shapes (recursive): scalar leaves (<c>string</c>/<c>bool</c>/<c>int</c>/<c>long</c>/
+/// <c>double</c>/enum/<see cref="Unit"/>/<see cref="Color"/> and nullable forms), nested records (init or
+/// positional — built via constructor-parameter matching), and <see cref="EquatableArray{T}"/> collections
+/// (T scalar or record). A NESTED <see cref="ReportElement"/> (e.g. a cell holding an element) is the one
+/// remaining shape not yet covered and keeps its type on the hand-wired path. See
+/// docs/serialization-auto-wiring-design.md.
 /// </summary>
 internal static class ElementSerializationRegistry
 {
     private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
     private static readonly PropertyInfo BoundsProp = typeof(ReportElement).GetProperty(nameof(ReportElement.Bounds))!;
+    private const string ItemTag = "Item"; // repx wrapper for a collection element
 
     /// <summary>Wire names owned by the base envelope. A subtype declaring a property with one of these
     /// names would clash on the wire, so such a type is excluded from the generic path.</summary>
@@ -34,9 +40,9 @@ internal static class ElementSerializationRegistry
         "PropertyExpressions", "Bookmark", "DocumentMapLabel", "Action", "ToggleItemId", "InitiallyHidden",
     };
 
-    /// <summary>One element-specific scalar property, with its wire names (PascalCase for repx, camelCase
-    /// for repjson), its value on a default instance (for sparse omission), and whether it is required.</summary>
-    internal sealed class Scalar
+    /// <summary>One element-specific property, with its wire names (PascalCase for repx, camelCase for
+    /// repjson), its value on a default instance (for sparse omission), and whether it is required.</summary>
+    internal sealed class Member
     {
         public required PropertyInfo Prop { get; init; }
         public required string XmlName { get; init; }
@@ -45,13 +51,13 @@ internal static class ElementSerializationRegistry
         public required bool Required { get; init; }
     }
 
-    private sealed record Schema(string Tag, IReadOnlyList<Scalar> Scalars);
+    private sealed record Schema(string Tag, IReadOnlyList<Member> Members);
 
-    // null = type is not auto-serializable (hand-wired, has a non-scalar prop, or an envelope-name clash).
+    // null = type is not auto-serializable (hand-wired, an unsupported member shape, or an envelope clash).
     private static readonly ConcurrentDictionary<Type, Schema?> _schemas = new();
     private static readonly Lazy<Dictionary<string, Type>> _tagToType = new(BuildTagMap);
 
-    // ── Write side (has the live element) ────────────────────────────────────────
+    // ── Tag dispatch ─────────────────────────────────────────────────────────────
 
     /// <summary>The convention tag for an auto-serializable element, else throws (mirrors the original
     /// "unsupported element type" failure of the format switches).</summary>
@@ -59,18 +65,36 @@ internal static class ElementSerializationRegistry
         => SchemaFor(element.GetType())?.Tag
            ?? throw new InvalidOperationException($"Unsupported element type: {element.GetType().Name}");
 
-    public static bool IsAutoSerializable(ReportElement element) => SchemaFor(element.GetType()) is not null;
+    public static bool TryGetType(string tag, out Type type) => _tagToType.Value.TryGetValue(tag, out type!);
 
-    /// <summary>The element-specific scalars to emit, sparse: a non-required property equal to its default
-    /// is omitted (read back as that default); required properties always emit. <c>null</c> values are
-    /// omitted (a missing required value then surfaces on read via post-construction validation). Each
-    /// scalar is given both its repx text form and its native repjson node (bool/number stay typed in JSON
-    /// for parity with the hand-wired elements).</summary>
-    public static IEnumerable<(Scalar Member, string Text, JsonNode Json)> WriteScalars(ReportElement element)
+    // ── Write ────────────────────────────────────────────────────────────────────
+
+    /// <summary>The element-specific member nodes for repx, sparse (a non-required member equal to its
+    /// default is omitted, read back as that default; <c>null</c> is always omitted).</summary>
+    public static IEnumerable<XElement> WriteXml(ReportElement element)
+    {
+        foreach (var (m, value) in EmittedMembers(element))
+        {
+            var node = new XElement(m.XmlName);
+            WriteValueXml(node, value, m.Prop.PropertyType);
+            yield return node;
+        }
+    }
+
+    /// <summary>The element-specific members for repjson, same sparse policy, with native JSON nodes.</summary>
+    public static IEnumerable<KeyValuePair<string, JsonNode>> WriteJson(ReportElement element)
+    {
+        foreach (var (m, value) in EmittedMembers(element))
+        {
+            yield return new(m.JsonName, WriteValueJson(value, m.Prop.PropertyType));
+        }
+    }
+
+    private static IEnumerable<(Member Member, object Value)> EmittedMembers(ReportElement element)
     {
         var schema = SchemaFor(element.GetType())
             ?? throw new InvalidOperationException($"Unsupported element type: {element.GetType().Name}");
-        foreach (var m in schema.Scalars)
+        foreach (var m in schema.Members)
         {
             var value = m.Prop.GetValue(element);
             if (value is null)
@@ -81,41 +105,192 @@ internal static class ElementSerializationRegistry
             {
                 continue;
             }
-            var text = ToText(value, m.Prop.PropertyType);
-            yield return (m, text, ToJson(value, m.Prop.PropertyType, text));
+            yield return (m, value);
         }
     }
 
-    // ── Read side (has the tag string) ───────────────────────────────────────────
+    // ── Read ─────────────────────────────────────────────────────────────────────
 
-    public static bool TryGetType(string tag, out Type type) => _tagToType.Value.TryGetValue(tag, out type!);
+    /// <summary>Materialise an element from its repx node: construct it, apply the bounds, then read each
+    /// member sub-tree (absent → keep the record default). A missing required member throws.</summary>
+    public static ReportElement ReadXml(Type type, Rectangle bounds, XElement source)
+        => ReadElement(type, bounds, m => source.Element(m.XmlName) is { } child ? () => ReadValueXml(child, m.Prop.PropertyType) : null);
 
-    /// <summary>Materialise an element of <paramref name="type"/>: construct it, apply the bounds, then set
-    /// each scalar whose wire value the <paramref name="lookup"/> returns (absent → keep the record default).
-    /// Reflection ignores <c>required</c>/<c>init</c>, so a forgotten required value is caught explicitly.</summary>
-    public static ReportElement Construct(Type type, Rectangle bounds, Func<Scalar, string?> lookup)
+    /// <summary>Materialise an element from its repjson object.</summary>
+    public static ReportElement ReadJson(Type type, Rectangle bounds, JsonObject source)
+        => ReadElement(type, bounds, m => source[m.JsonName] is { } node ? () => ReadValueJson(node, m.Prop.PropertyType) : null);
+
+    private static ReportElement ReadElement(Type type, Rectangle bounds, Func<Member, Func<object>?> reader)
     {
         var schema = SchemaFor(type)
             ?? throw new FormatException($"No generic serialization schema for '{type.Name}'.");
         var element = (ReportElement)Activator.CreateInstance(type)!;
         BoundsProp.SetValue(element, bounds);
-        foreach (var m in schema.Scalars)
+        foreach (var m in schema.Members)
         {
-            var text = lookup(m);
-            if (text is null)
+            var read = reader(m);
+            if (read is null)
             {
                 if (m.Required)
                 {
                     throw new FormatException($"Required '{m.XmlName}' missing for element <{schema.Tag}>.");
                 }
-                continue;
+                continue; // keep the record default
             }
-            m.Prop.SetValue(element, FromText(text, m.Prop.PropertyType));
+            m.Prop.SetValue(element, read());
         }
         return element;
     }
 
-    public static IReadOnlyList<Scalar> ScalarsOf(Type type) => SchemaFor(type)?.Scalars ?? Array.Empty<Scalar>();
+    // ── Recursive value (de)serialization ────────────────────────────────────────
+
+    private static void WriteValueXml(XElement target, object value, Type type)
+    {
+        if (IsScalar(type))
+        {
+            target.Add(ToText(value, type));
+        }
+        else if (IsEquatableArray(type, out var elem))
+        {
+            foreach (var item in (IEnumerable)value)
+            {
+                if (item is null)
+                {
+                    continue;
+                }
+                var itemNode = new XElement(ItemTag);
+                WriteValueXml(itemNode, item, elem);
+                target.Add(itemNode);
+            }
+        }
+        else // nested record
+        {
+            foreach (var p in RecordProps(type))
+            {
+                var pv = p.GetValue(value);
+                if (pv is null)
+                {
+                    continue;
+                }
+                var child = new XElement(p.Name);
+                WriteValueXml(child, pv, p.PropertyType);
+                target.Add(child);
+            }
+        }
+    }
+
+    private static object ReadValueXml(XElement source, Type type)
+    {
+        if (IsScalar(type))
+        {
+            return FromText(source.Value, type);
+        }
+        if (IsEquatableArray(type, out var elem))
+        {
+            var items = source.Elements(ItemTag).Select(i => ReadValueXml(i, elem)).ToList();
+            return BuildEquatableArray(elem, items);
+        }
+        var values = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+        foreach (var p in RecordProps(type))
+        {
+            if (source.Element(p.Name) is { } child)
+            {
+                values[p.Name] = ReadValueXml(child, p.PropertyType);
+            }
+        }
+        return ConstructRecord(type, values);
+    }
+
+    private static JsonNode WriteValueJson(object value, Type type)
+    {
+        if (IsScalar(type))
+        {
+            return ToJson(value, type, ToText(value, type));
+        }
+        if (IsEquatableArray(type, out var elem))
+        {
+            var arr = new JsonArray();
+            foreach (var item in (IEnumerable)value)
+            {
+                if (item is not null)
+                {
+                    arr.Add(WriteValueJson(item, elem));
+                }
+            }
+            return arr;
+        }
+        var o = new JsonObject();
+        foreach (var p in RecordProps(type))
+        {
+            var pv = p.GetValue(value);
+            if (pv is not null)
+            {
+                o[char.ToLowerInvariant(p.Name[0]) + p.Name[1..]] = WriteValueJson(pv, p.PropertyType);
+            }
+        }
+        return o;
+    }
+
+    private static object ReadValueJson(JsonNode node, Type type)
+    {
+        if (IsScalar(type))
+        {
+            return FromText(node.ToString(), type);
+        }
+        if (IsEquatableArray(type, out var elem))
+        {
+            var items = node.AsArray().Where(n => n is not null).Select(n => ReadValueJson(n!, elem)).ToList();
+            return BuildEquatableArray(elem, items);
+        }
+        var obj = node.AsObject();
+        var values = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+        foreach (var p in RecordProps(type))
+        {
+            if (obj[char.ToLowerInvariant(p.Name[0]) + p.Name[1..]] is { } child)
+            {
+                values[p.Name] = ReadValueJson(child, p.PropertyType);
+            }
+        }
+        return ConstructRecord(type, values);
+    }
+
+    // ── Record construction (init or positional) ─────────────────────────────────
+
+    private static object ConstructRecord(Type type, IReadOnlyDictionary<string, object?> values)
+    {
+        var ctor = type.GetConstructors().OrderByDescending(c => c.GetParameters().Length).First();
+        var args = ctor.GetParameters()
+            .Select(p => values.TryGetValue(p.Name!, out var v) ? v
+                       : p.HasDefaultValue ? p.DefaultValue
+                       : DefaultOf(p.ParameterType))
+            .ToArray();
+        var obj = ctor.Invoke(args)!;
+        var ctorNames = ctor.GetParameters().Select(p => p.Name!).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var p in RecordProps(type))
+        {
+            if (!ctorNames.Contains(p.Name) && values.TryGetValue(p.Name, out var v))
+            {
+                p.SetValue(obj, v);
+            }
+        }
+        return obj;
+    }
+
+    private static object BuildEquatableArray(Type elem, IReadOnlyList<object> items)
+    {
+        var typed = Array.CreateInstance(elem, items.Count);
+        for (int i = 0; i < items.Count; i++)
+        {
+            typed.SetValue(items[i], i);
+        }
+        return Activator.CreateInstance(typeof(EquatableArray<>).MakeGenericType(elem), new object[] { typed })!;
+    }
+
+    private static object? DefaultOf(Type t) => t.IsValueType ? Activator.CreateInstance(t) : null;
+
+    private static IEnumerable<PropertyInfo> RecordProps(Type type) =>
+        type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+            .Where(p => p.CanRead && p.CanWrite);
 
     // ── Schema discovery ─────────────────────────────────────────────────────────
 
@@ -123,36 +298,27 @@ internal static class ElementSerializationRegistry
 
     private static Schema? BuildSchema(Type type)
     {
-        if (!type.IsSubclassOf(typeof(ReportElement)) || type.IsAbstract)
+        if (!type.IsSubclassOf(typeof(ReportElement)) || type.IsAbstract || type.BaseType != typeof(ReportElement))
         {
-            return null;
+            return null; // not a direct, concrete ReportElement subtype (DeclaredOnly would drop intermediate props)
         }
-        // Only a direct subtype of ReportElement is auto-serializable: DeclaredOnly (below) would silently
-        // drop the properties of an intermediate base, so a multi-level hierarchy stays on the hand-wired
-        // path until that increment lands.
-        if (type.BaseType != typeof(ReportElement))
-        {
-            return null;
-        }
-        // The generic reader constructs via the parameterless ctor (records have one unless positional;
-        // positional records are a later increment).
         if (type.GetConstructor(Type.EmptyTypes) is null)
         {
-            return null;
+            return null; // the element is built via the parameterless ctor (positional elements: a later increment)
         }
         var defaultInstance = Activator.CreateInstance(type)!;
-        var scalars = new List<Scalar>();
+        var members = new List<Member>();
         foreach (var p in type.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
         {
             if (!p.CanRead || !p.CanWrite)
             {
                 continue; // computed/get-only — not round-tripped
             }
-            if (EnvelopeNames.Contains(p.Name) || !IsSupportedScalar(p.PropertyType))
+            if (EnvelopeNames.Contains(p.Name) || !IsSerializable(p.PropertyType, new HashSet<Type>()))
             {
-                return null; // clash with the envelope, or a non-scalar property → defer to the hand-wired path
+                return null; // clash with the envelope, or an unsupported member shape → defer to the hand-wired path
             }
-            scalars.Add(new Scalar
+            members.Add(new Member
             {
                 Prop = p,
                 XmlName = p.Name,
@@ -161,7 +327,49 @@ internal static class ElementSerializationRegistry
                 Required = p.IsDefined(typeof(RequiredMemberAttribute), inherit: false),
             });
         }
-        return new Schema(ConventionTag(type), scalars);
+        return new Schema(ConventionTag(type), members);
+    }
+
+    // A member type the recursive (de)serializer can handle: a scalar, an EquatableArray of one, or a
+    // constructible record whose own members are all serializable. A nested ReportElement is intentionally
+    // rejected (kept on the hand-wired path for now).
+    private static bool IsSerializable(Type t, HashSet<Type> visiting)
+    {
+        if (IsScalar(t))
+        {
+            return true;
+        }
+        if (IsEquatableArray(t, out var elem))
+        {
+            return IsSerializable(elem, visiting);
+        }
+        if (typeof(ReportElement).IsAssignableFrom(t) || t.IsAbstract || t.IsInterface || t.IsArray || t.IsPrimitive)
+        {
+            return false;
+        }
+        // Any other collection shape (dictionaries, lists, …) is unsupported and must NOT slip through the
+        // record branch: e.g. EquatableDictionary exposes only get-only members, so RecordProps is empty and
+        // All(...) would be vacuously true — silently dropping the data. Reject it outright.
+        if (typeof(IEnumerable).IsAssignableFrom(t))
+        {
+            return false;
+        }
+        if (!visiting.Add(t))
+        {
+            return true; // recursive type — assume serializable to break the cycle
+        }
+        try
+        {
+            // A round-trippable record needs a public ctor AND at least one writable property whose own type
+            // is serializable. The Count > 0 guard is what stops a zero-writable-property type passing vacuously.
+            var props = RecordProps(t).ToList();
+            return t.GetConstructors().Length > 0 && props.Count > 0
+                && props.All(p => IsSerializable(p.PropertyType, visiting));
+        }
+        finally
+        {
+            visiting.Remove(t);
+        }
     }
 
     private static string ConventionTag(Type type)
@@ -198,8 +406,6 @@ internal static class ElementSerializationRegistry
                 }
                 if (SchemaFor(t) is { } schema && !map.TryAdd(schema.Tag, t) && map[schema.Tag] != t)
                 {
-                    // Two distinct types deriving the same convention tag would resolve non-deterministically
-                    // by assembly load order — fail loudly so one is given a distinct type name.
                     throw new InvalidOperationException(
                         $"Serialization tag '{schema.Tag}' is claimed by both '{map[schema.Tag].Name}' and " +
                         $"'{t.Name}'. Rename one element type so their tags differ.");
@@ -211,12 +417,23 @@ internal static class ElementSerializationRegistry
 
     // ── Scalar leaf conversion ───────────────────────────────────────────────────
 
-    private static bool IsSupportedScalar(Type t)
+    private static bool IsScalar(Type t)
     {
         var u = Nullable.GetUnderlyingType(t) ?? t;
         return u.IsEnum
             || u == typeof(string) || u == typeof(bool) || u == typeof(int) || u == typeof(long)
             || u == typeof(double) || u == typeof(Unit) || u == typeof(Color);
+    }
+
+    private static bool IsEquatableArray(Type t, out Type elem)
+    {
+        if (t.IsGenericType && t.GetGenericTypeDefinition() == typeof(EquatableArray<>))
+        {
+            elem = t.GetGenericArguments()[0];
+            return true;
+        }
+        elem = typeof(object);
+        return false;
     }
 
     private static string ToText(object value, Type declaredType)

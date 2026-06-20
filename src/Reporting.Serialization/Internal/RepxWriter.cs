@@ -383,8 +383,7 @@ internal static class RepxWriter
             // Convention-based fallback: a new all-scalar element serializes without a hand-written arm.
             // TagFor throws the same "unsupported element type" error for a non-auto-serializable type.
             _ => (ElementSerializationRegistry.TagFor(element),
-                  ElementSerializationRegistry.WriteScalars(element)
-                      .Select(s => new XElement(s.Member.XmlName, s.Text)).ToArray()),
+                  ElementSerializationRegistry.WriteXml(element).ToArray()),
         };
 
         var el = new XElement(tag,
