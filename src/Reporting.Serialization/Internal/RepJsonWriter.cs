@@ -611,6 +611,14 @@ internal static class RepJsonWriter
                     }).ToArray());
                 }
                 break;
+            // Convention-based fallback: a new all-scalar element (its tag came from ElementKindFor above)
+            // emits its declared scalars as camelCase string values.
+            default:
+                foreach (var (member, _, json) in ElementSerializationRegistry.WriteScalars(element))
+                {
+                    o[member.JsonName] = json;
+                }
+                break;
         }
         return o;
     }
@@ -654,7 +662,8 @@ internal static class RepJsonWriter
             DataBarElement => "DataBar",
             SparklineElement => "Sparkline",
             IndicatorElement => "Indicator",
-            _ => throw new InvalidOperationException($"Unsupported element type: {element.GetType().Name}"),
+            // Convention-based fallback: a new all-scalar element's tag is derived from its type name.
+            _ => ElementSerializationRegistry.TagFor(element),
         };
 
     private static JsonObject WriteAction(ElementAction action)

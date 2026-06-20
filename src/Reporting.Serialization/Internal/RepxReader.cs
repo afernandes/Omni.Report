@@ -314,7 +314,10 @@ internal static class RepxReader
             "DataBar"   => ReadDataBarElement(el, bounds),
             "Sparkline" => ReadSparklineElement(el, bounds),
             "Indicator" => ReadIndicatorElement(el, bounds),
-            _ => throw new FormatException($"Unknown element tag: <{el.Name.LocalName}>"),
+            // Convention-based fallback: a tag with no explicit arm resolves to a registered all-scalar type.
+            _ => ElementSerializationRegistry.TryGetType(el.Name.LocalName, out var genType)
+                ? ElementSerializationRegistry.Construct(genType, bounds, m => el.Element(m.XmlName)?.Value)
+                : throw new FormatException($"Unknown element tag: <{el.Name.LocalName}>"),
         };
 
         // The init-only Id/Visible/Style/etc. on the abstract base must be applied via 'with'.
