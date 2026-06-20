@@ -60,6 +60,34 @@ public sealed class TemplateRenderer
         return sb.ToString();
     }
 
+    /// <summary>If the template is a SINGLE placeholder spanning the whole (trimmed) string with no inline
+    /// <c>:format</c> — e.g. <c>"{Fields.preco}"</c> — returns true and yields the inner expression. This
+    /// lets a caller evaluate it to a typed value and apply the ELEMENT's own Format property (SSRS-style:
+    /// a textbox bound to a single value is formatted by its Format property). Returns false for mixed
+    /// templates, multiple placeholders, or a placeholder that already carries an inline format (which wins).</summary>
+    public static bool TryGetSingleExpression(string template, out string expression)
+    {
+        ArgumentNullException.ThrowIfNull(template);
+        expression = string.Empty;
+        var trimmed = template.Trim();
+        if (trimmed.Length < 2 || trimmed[0] != '{' || trimmed[1] == '{' || trimmed[^1] != '}')
+        {
+            return false;
+        }
+        var end = FindClosing(trimmed, 1);
+        if (end != trimmed.Length - 1) // the lone placeholder must close exactly at the end
+        {
+            return false;
+        }
+        var body = trimmed.AsSpan(1, end - 1);
+        if (FindFormatSeparator(body) >= 0) // an inline :format is present → it takes precedence
+        {
+            return false;
+        }
+        expression = body.Trim().ToString();
+        return expression.Length > 0;
+    }
+
     /// <summary>Returns <c>true</c> if the input contains at least one placeholder.</summary>
     public static bool HasPlaceholders(string template)
     {

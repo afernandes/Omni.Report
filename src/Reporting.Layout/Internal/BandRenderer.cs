@@ -74,7 +74,8 @@ internal sealed class BandRenderer
                 element.Bounds.Width,
                 element.Bounds.Height);
 
-            var style = ResolveStyle(element, ctx);
+            var effectiveStyle = ResolveEffectiveStyle(element, ctx);
+            var style = BuildTextStyle(effectiveStyle);
 
             int linkFrom = primitives.Count;
             switch (element)
@@ -85,7 +86,7 @@ internal sealed class BandRenderer
                     break;
 
                 case TextBoxElement tb:
-                    var text = ResolveText(tb.Expression, ctx);
+                    var text = ResolveText(tb.Expression, ctx, effectiveStyle.Format);
                     var rendered = EmitText(text, elementBounds, style, tb.Id, tb.CanGrow, tb.CanShrink);
                     primitives.Add(rendered);
                     actualHeight = MaxHeight(actualHeight, rendered.Bounds, origin, growsTo: tb.CanGrow ? rendered.Bounds : null);
@@ -318,8 +319,31 @@ internal sealed class BandRenderer
 
     private readonly ConcurrentDictionary<string, bool> _knownLiteral = new(StringComparer.Ordinal);
 
-    private string ResolveText(string expression, IReportExpressionContext ctx)
+    private string ResolveText(string expression, IReportExpressionContext ctx, string? elementFormat = null)
     {
+        // SSRS-style Format property: when the element carries a Format and the expression is a single
+        // bare value — "{Fields.preco}" or a lone expression — with no inline ":format", evaluate it to a
+        // typed value and apply that Format. This is why "{Fields.preco}" + Format "Moeda" now formats as
+        // currency without needing the inline "{Fields.preco:C}". An inline format always wins.
+        if (!string.IsNullOrEmpty(elementFormat))
+        {
+            var single = TemplateRenderer.TryGetSingleExpression(expression, out var inner) ? inner
+                : !TemplateRenderer.HasPlaceholders(expression) && !_knownLiteral.ContainsKey(expression) ? expression
+                : null;
+            if (single is not null)
+            {
+                try
+                {
+                    var v = _evaluator.Evaluate(single, ctx);
+                    return ValueFormatter.Format(v, elementFormat, ctx.Culture);
+                }
+                catch (ExpressionParseException)
+                {
+                    _knownLiteral[expression] = true;
+                    return expression;
+                }
+            }
+        }
         if (TemplateRenderer.HasPlaceholders(expression))
         {
             return _templates.Render(expression, ctx);
@@ -423,7 +447,9 @@ internal sealed class BandRenderer
         return PenStyle.FromBorderSide(border.Top);
     }
 
-    private TextStyle ResolveStyle(ReportElement element, IReportExpressionContext ctx)
+    // The effective Core style after applying any matching conditional formats. Carries Format (the
+    // value-format spec), which the drawing-only TextStyle drops — so the textbox value can honour it.
+    private Style ResolveEffectiveStyle(ReportElement element, IReportExpressionContext ctx)
     {
         var style = element.Style;
         foreach (var cf in element.ConditionalFormats)
@@ -433,7 +459,7 @@ internal sealed class BandRenderer
                 style = Merge(style, cf.Style);
             }
         }
-        return BuildTextStyle(style);
+        return style;
     }
 
     private static TextStyle BuildTextStyle(Style style)

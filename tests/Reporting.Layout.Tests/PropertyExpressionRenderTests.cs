@@ -125,6 +125,46 @@ public class PropertyExpressionRenderTests
     }
 
     [Fact]
+    public async Task The_Format_property_formats_a_single_value_textbox()
+    {
+        // "{Fields.Tamanho}" + Style.Format "C" must render as currency WITHOUT needing the inline {:C}.
+        var tb = new TextBoxElement
+        {
+            Id = "t",
+            Expression = "{Fields.Tamanho}",
+            Bounds = new Rectangle(0.Mm(), 0.Mm(), 60.Mm(), 8.Mm()),
+            Style = Style.Default with { Format = "C" },
+        };
+        var text = await RenderCustom(tb, new StyledRow("A", "#000000", 1234.5));
+        text.Text.Should().Contain("R$", "the Format property formats the bound value as currency");
+        text.Text.Should().NotBe("1234,5", "it is not the raw, unformatted number");
+    }
+
+    [Fact]
+    public async Task An_inline_format_wins_over_the_Format_property()
+    {
+        var tb = new TextBoxElement
+        {
+            Id = "t",
+            Expression = "{Fields.Tamanho:N0}",
+            Bounds = new Rectangle(0.Mm(), 0.Mm(), 60.Mm(), 8.Mm()),
+            Style = Style.Default with { Format = "C" },
+        };
+        var text = await RenderCustom(tb, new StyledRow("A", "#000000", 1234.5));
+        text.Text.Should().NotContain("R$", "an inline :N0 takes precedence over the element Format");
+    }
+
+    private static async Task<DrawTextPrimitive> RenderCustom(TextBoxElement tb, StyledRow row)
+    {
+        var detail = new DetailBand(20.Mm(), new EquatableArray<ReportElement>(new ReportElement[] { tb }));
+        var def = new ReportDefinition("e", PageSetup.A4Portrait, detail);
+        var registry = new DataSourceRegistry();
+        registry.Register(new EnumerableDataSource<StyledRow>("Dados", [row]));
+        var report = await new ReportPaginator().PaginateAsync(new PaginationRequest { Definition = def, DataSources = registry });
+        return report.Pages[0].Primitives.OfType<DrawTextPrimitive>().First();
+    }
+
+    [Fact]
     public async Task An_unknown_path_is_ignored_and_the_static_value_is_kept()
     {
         var text = await RenderTextBox(new StyledRow("A", "#CC0000", 10), ("Style.NaoExiste", "Fields.Cor"));
