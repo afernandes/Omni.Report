@@ -1,7 +1,14 @@
 # Auto-wiring de serialização para novos elementos
 
-**Status:** proposta · **Escopo:** reduzir o boilerplate ao adicionar um `ReportElement`
+**Status:** implementado (PR 1 #75 + PR 2 #76) · **Escopo:** reduzir o boilerplate ao adicionar um `ReportElement`
 **Relacionado:** [property-grid-metadata-design.md](property-grid-metadata-design.md) (mesma filosofia: metadados dirigem o genérico)
+
+> **Estado (jun/2026):** um `ReportElement` novo cujos membros sejam **escalares, records (init ou
+> posicionais) e/ou coleções `EquatableArray<T>`** faz round-trip em `.repx` e `.repjson` **sem editar
+> switch nenhum** — o `ElementSerializationRegistry` (`src/Reporting.Serialization/Internal/`) o serializa por
+> convenção. Os 18 elementos existentes seguem hand-wired (formato byte-a-byte intacto). O **único** membro
+> ainda não coberto é um `ReportElement` aninhado (ex.: célula que contém outro elemento) — esses tipos
+> permanecem no caminho hand-wired. Adicionar um componente das formas comuns deixou de tocar os 4 switches.
 
 ## Problema
 
@@ -143,18 +150,19 @@ o caminho genérico cobrir TODOS:
 
 ## Rollout incremental
 
-- **PR 1** — `ElementSerializationRegistry` (descoberta + tag↔Type por convenção, com exclusão de
+- **PR 1 ✅ (#75)** — `ElementSerializationRegistry` (descoberta + tag↔Type por convenção, com exclusão de
   nomes-de-envelope) + write/read genérico para props **escalares só-`init`**
-  (string/bool/enum/Unit/Color/Color?/numérico) + conversor `Color?` de primeira classe + validação
-  pós-construção, wired no `_ =>` dos 4 switches **e** no `ElementKindFor`. Decide a relação com
-  `[PropertyGrid]`. **Prova: round-trip (save→load nos dois formatos) de um `record _ProbeElement` de teste
-  nascido na convenção, com zero edição de switch** — NÃO byte-identidade contra existente (impossível, ver
-  §Validação). Os 18 switches/cases existentes permanecem intactos.
-- **PR 2** — records aninhados + **construtores posicionais** (casamento por nome) + coleções
-  `EquatableArray<T>` + Base64 + `ReportElement` aninhado (recursão). É aqui que o casamento de ctor
-  posicional é exercido de verdade.
-- **PR 3** — um elemento **genuinamente novo e útil** adicionado com **zero** edição de switch, provando a
-  meta end-to-end; doc "como adicionar um componente" reduzido a: definir o record (+ atributos opcionais).
+  (string/bool/enum/Unit/Color/Color?/numérico), wired no `_ =>` dos 4 switches **e** no `ElementKindFor`.
+  Provado por round-trip de um `ProbeElement` de teste nascido na convenção, com zero edição de switch. Os
+  18 switches/cases existentes permanecem intactos. (Convenção: a relação com `[PropertyGrid]` ficou como
+  evolução futura — PR 1 usa convenção pura, sem atributos novos.)
+- **PR 2 ✅ (#76)** — modelo **recursivo** de serialização de valor: records aninhados + **construtores
+  posicionais** (casamento por nome) + coleções `EquatableArray<T>` (`<Item>` no XML / array no JSON).
+  `ReportElement` aninhado é **rejeitado** (fica hand-wired). Provado por um elemento de teste com coleção
+  de record posicional + coleção escalar + record aninhado nullable.
+- **PR 3 (opcional, não realizada)** — suporte a `ReportElement` aninhado (cell-content-style) seria o
+  último incremento, mas é niche: os únicos tipos que o usam (Tablix/Subreport) já são hand-wired, e não há
+  elemento novo concreto que precise dele. Fica em aberto até surgir necessidade real.
 
 ## Riscos
 
