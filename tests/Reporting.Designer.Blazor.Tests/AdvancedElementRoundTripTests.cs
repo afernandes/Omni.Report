@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Reporting.Common;
+using Reporting.Designer.Blazor.Services;
 using Reporting.Designer.Blazor.ViewModels;
 using Reporting.Elements;
 using Reporting.Geometry;
@@ -40,6 +41,30 @@ public class AdvancedElementRoundTripTests
         g.MaximumExpression.Should().Be("1000");
         g.Ranges.Should().HaveCount(1);
         g.Bounds.X.Should().Be(Unit.FromMm(10));
+    }
+
+    [Fact]
+    public void Editing_an_opaque_elements_metadata_preserves_its_inherited_style()
+    {
+        // A Gauge with the default Style has Font/ForeColor = null (inherit). Opaque elements have NO
+        // appearance editor, so a metadata edit must not materialise Arial/10/Black over the inherited look.
+        var gauge = new GaugeElement
+        {
+            Id = "g1",
+            Bounds = new Rectangle(Unit.Zero, Unit.Zero, Unit.FromMm(50), Unit.FromMm(40)),
+            MaximumExpression = "100",
+        };
+        gauge.Style.Font.Should().BeNull("precondition: inherited (null) font");
+        gauge.Style.ForeColor.Should().BeNull("precondition: inherited fore colour");
+
+        var vm = ElementViewModel.FromElement(gauge);
+        var maxDesc = PropertyGridDescriptors.For(typeof(GaugeElement)).Single(d => d.Name == "MaximumExpression");
+        vm.ApplyMetaSet(maxDesc, "200");
+
+        var back = (GaugeElement)vm.ToElement();
+        back.MaximumExpression.Should().Be("200");
+        back.Style.Font.Should().BeNull("the inherited font must survive a metadata edit on an opaque element");
+        back.Style.ForeColor.Should().BeNull("the inherited fore colour must survive");
     }
 
     [Fact]

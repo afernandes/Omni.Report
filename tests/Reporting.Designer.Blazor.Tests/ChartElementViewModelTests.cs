@@ -63,7 +63,13 @@ public class ChartElementViewModelTests
             ChartKind = ChartKind.Line,
             ChartTitle = "T",
         };
-        vm.ChartSeries.Add(new ChartSeriesRule { Name = "A" });
+        vm.ChartSeries.Add(new ChartSeriesRule
+        {
+            Name = "A",
+            SizeExpression = "Fields.size",
+            HighExpression = "Fields.hi",
+            LowExpression = "Fields.lo",
+        });
 
         var clone = vm.Clone();
 
@@ -71,6 +77,10 @@ public class ChartElementViewModelTests
         clone.ChartKind.Should().Be(ChartKind.Line);
         clone.ChartSeries.Should().ContainSingle();
         clone.ChartSeries[0].Name.Should().Be("A");
+        // Bubble/Stock expressions must survive the clone — they were silently dropped before the fix.
+        clone.ChartSeries[0].SizeExpression.Should().Be("Fields.size");
+        clone.ChartSeries[0].HighExpression.Should().Be("Fields.hi");
+        clone.ChartSeries[0].LowExpression.Should().Be("Fields.lo");
 
         // Independent copies — mutating the clone must not touch the original.
         clone.ChartSeries[0].Name = "B";
