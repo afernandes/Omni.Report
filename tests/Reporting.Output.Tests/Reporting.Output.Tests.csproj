@@ -10,6 +10,7 @@
     <ProjectReference Include="..\..\src\Reporting.CodeFirst\Reporting.CodeFirst.csproj" />
     <ProjectReference Include="..\..\src\Reporting.Output.Pdf\Reporting.Output.Pdf.csproj" />
     <ProjectReference Include="..\..\src\Reporting.Output.Svg\Reporting.Output.Svg.csproj" />
+    <ProjectReference Include="..\..\src\Reporting.Output.Image\Reporting.Output.Image.csproj" />
     <ProjectReference Include="..\..\src\Reporting.Output.Html\Reporting.Output.Html.csproj" />
     <ProjectReference Include="..\..\src\Reporting.Output.Csv\Reporting.Output.Csv.csproj" />
     <ProjectReference Include="..\..\src\Reporting.Output.Json\Reporting.Output.Json.csproj" />
