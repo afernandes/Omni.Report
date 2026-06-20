@@ -112,7 +112,10 @@
             var line = raw.Trim();
             if (line.Length == 0) { continue; }
             int bar = line.IndexOf('|');
-            list.Add(bar >= 0 ? (line[..bar].Trim(), line[(bar + 1)..].Trim()) : (line, line));
+            var value = (bar >= 0 ? line[..bar] : line).Trim();
+            if (value.Length == 0) { continue; } // skip "|orphan" lines with no value
+            var label = bar >= 0 ? line[(bar + 1)..].Trim() : string.Empty;
+            list.Add((value, label.Length > 0 ? label : value)); // empty label → show the value
         }
         return list;
     }

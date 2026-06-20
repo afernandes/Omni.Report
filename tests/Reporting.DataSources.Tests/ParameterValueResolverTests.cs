@@ -8,7 +8,7 @@ namespace Reporting.DataSources.Tests;
 
 public class ParameterValueResolverTests
 {
-    private sealed record Cliente(int Id, string Nome);
+    private sealed record Cliente(int Id, string? Nome);
 
     private static DataSourceRegistry WithClientes(params Cliente[] clientes)
     {
@@ -66,6 +66,19 @@ public class ParameterValueResolverTests
         var result = await ParameterValueResolver.ResolveAsync(available, registry);
 
         result.Select(v => v.Value).Should().Equal("(todos)", "Ana");
+    }
+
+    [Fact]
+    public async Task Query_label_falls_back_to_null_when_the_label_cell_is_empty()
+    {
+        var available = ParameterAvailableValues.FromQuery("Clientes", "Id", "Nome");
+        var registry = WithClientes(new Cliente(1, null)); // label cell is null
+
+        var result = await ParameterValueResolver.ResolveAsync(available, registry);
+
+        result.Should().ContainSingle();
+        result[0].Value.Should().Be("1");
+        result[0].Label.Should().BeNull("a null label cell falls back to the value downstream");
     }
 
     [Fact]

@@ -493,7 +493,9 @@ public sealed class DesignerParameter : Notifying
 
     private string? _availableValuesText;
     /// <summary>Static allowed values (SSRS Available Values), one per line as <c>value</c> or
-    /// <c>value|label</c>. Empty = no static domain. Combined with the query fields below.</summary>
+    /// <c>value|label</c> (split on the first <c>|</c>; values/labels containing <c>|</c> aren't
+    /// representable here — use code-first/low-level for those). Empty = no static domain. Combined with
+    /// the query fields below.</summary>
     public string? AvailableValuesText { get => _availableValuesText; set => Set(ref _availableValuesText, value); }
 
     private string? _availableValuesDataSet;
@@ -548,24 +550,33 @@ public sealed class DesignerParameter : Notifying
         };
     }
 
-    // Parses one "value" or "value|label" per line into static parameter values (blanks skipped).
+    // Parses one "value" or "value|label" per line into static parameter values. Blank lines and lines
+    // whose value part is empty (e.g. "|orphan") are skipped; an empty label ("X|") collapses to null so
+    // it canonicalizes back to plain "X" on reload. The value/label split is on the FIRST '|'.
     private static Reporting.Parameters.ParameterValue[] ParseValueLines(string? text)
     {
         if (string.IsNullOrWhiteSpace(text))
         {
             return Array.Empty<Reporting.Parameters.ParameterValue>();
         }
-        return text.Replace("\r\n", "\n").Split('\n')
-            .Select(l => l.Trim())
-            .Where(l => l.Length > 0)
-            .Select(l =>
+        var result = new List<Reporting.Parameters.ParameterValue>();
+        foreach (var raw in text.Replace("\r\n", "\n").Split('\n'))
+        {
+            var line = raw.Trim();
+            if (line.Length == 0)
             {
-                int bar = l.IndexOf('|');
-                return bar >= 0
-                    ? new Reporting.Parameters.ParameterValue(l[..bar].Trim(), l[(bar + 1)..].Trim())
-                    : new Reporting.Parameters.ParameterValue(l);
-            })
-            .ToArray();
+                continue;
+            }
+            int bar = line.IndexOf('|');
+            var value = (bar >= 0 ? line[..bar] : line).Trim();
+            if (value.Length == 0)
+            {
+                continue;
+            }
+            var label = bar >= 0 ? line[(bar + 1)..].Trim() : string.Empty;
+            result.Add(new Reporting.Parameters.ParameterValue(value, label.Length > 0 ? label : null));
+        }
+        return result.ToArray();
     }
 
     /// <summary>Coerces the editor's string <see cref="DefaultValue"/> into the parameter's CLR type

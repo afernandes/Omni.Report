@@ -44,9 +44,14 @@ public static class ParameterValueResolver
                 {
                     continue;
                 }
-                string? label = string.IsNullOrWhiteSpace(available.LabelField)
-                    ? null
-                    : Convert.ToString(record[available.LabelField!], CultureInfo.InvariantCulture);
+                string? label = null;
+                if (!string.IsNullOrWhiteSpace(available.LabelField))
+                {
+                    var rawLabel = Convert.ToString(record[available.LabelField!], CultureInfo.InvariantCulture);
+                    // Null/empty label cell → leave the label null so consumers fall back to the value
+                    // (honoring the LabelField "falls back to the value" contract).
+                    label = string.IsNullOrEmpty(rawLabel) ? null : rawLabel;
+                }
                 result.Add(new ParameterValue(value, label));
             }
         }

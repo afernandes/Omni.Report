@@ -101,7 +101,7 @@ internal static class RepJsonWriter
         {
             o["defaultValue"] = Convert.ToString(p.DefaultValue, Inv);
         }
-        if (p.AvailableValues is { } av)
+        if (p.AvailableValues is { } av && (av.Values.Count > 0 || av.IsQuery))
         {
             var avo = new JsonObject();
             if (av.Values.Count > 0)
