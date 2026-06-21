@@ -19,7 +19,8 @@ var pdf = await new ReportEngine().RenderAsync(def, dataSources);
 
 ## O que é importado (1º corte)
 
-- **Página**: `PageWidth`/`PageHeight` + margens. Tamanhos RDL (`21cm`, `2.5in`, `20pt`, `10mm`,
+- **Página**: `PageWidth`/`PageHeight` + margens + `<Columns>`/`<ColumnSpacing>` (layout em colunas
+  jornal/snake; o paginador flui o detalhe coluna-a-coluna). Tamanhos RDL (`21cm`, `2.5in`, `20pt`, `10mm`,
   `96px`) são convertidos; um valor **sem unidade** é tratado como não-especificado (a engine usa o
   default) — o schema RDL exige unidade.
 - **Parâmetros**: nome, `DataType`→tipo CLR, `Prompt`, `Nullable`→`Required` (um parâmetro com
