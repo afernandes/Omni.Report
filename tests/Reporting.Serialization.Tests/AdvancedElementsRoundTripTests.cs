@@ -92,11 +92,13 @@ public class AdvancedElementsRoundTripTests
             GrandTotalLabel = "Geral",
             NoRowsMessage = "Sem dados para o período.",
             Cells = EquatableArray.Create(
-                new TablixCell(0, 0, new TextBoxElement
+                // A merged header (ColumnSpan=2) + a normal body cell — exercises span round-trip in all 4 serializers.
+                new TablixCell(0, 0, new LabelElement { Text = "Resumo", Bounds = Rectangle.Empty }, ColumnSpan: 2),
+                new TablixCell(1, 0, new TextBoxElement
                 {
                     Expression = "{Sum(Fields.Total)}",
                     Bounds = new Rectangle(Unit.Zero, Unit.Zero, Unit.FromMm(30), Unit.FromMm(6)),
-                })),
+                }, RowSpan: 2)),
         };
         AssertRoundTrip(Wrap(tablix));
     }

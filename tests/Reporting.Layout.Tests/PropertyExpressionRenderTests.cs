@@ -222,6 +222,35 @@ public class PropertyExpressionRenderTests
     }
 
     [Fact]
+    public async Task A_flat_tablix_header_cell_honours_ColumnSpan()
+    {
+        // Header row: a single merged cell (ColumnSpan=2) over two detail columns.
+        var tablix = new TablixElement
+        {
+            Id = "t",
+            Bounds = new Rectangle(0.Mm(), 0.Mm(), 80.Mm(), 16.Mm()),
+            Cells = new EquatableArray<TablixCell>(new[]
+            {
+                new TablixCell(0, 0, new LabelElement { Text = "Resumo" }, ColumnSpan: 2),
+                new TablixCell(1, 0, new TextBoxElement { Id = "a", Expression = "Fields.Nome" }),
+                new TablixCell(1, 1, new TextBoxElement { Id = "b", Expression = "Fields.Cor" }),
+            }),
+        };
+        var detail = new DetailBand(20.Mm(), new EquatableArray<ReportElement>(new ReportElement[] { tablix }));
+        var def = new ReportDefinition("e", PageSetup.A4Portrait, detail);
+        var registry = new DataSourceRegistry();
+        registry.Register(new EnumerableDataSource<StyledRow>("Dados", [new StyledRow("A", "azul", 1)]));
+        var report = await new ReportPaginator().PaginateAsync(new PaginationRequest { Definition = def, DataSources = registry });
+
+        var prims = report.Pages[0].Primitives;
+        var header = prims.OfType<DrawTextPrimitive>().Single(t => t.Text == "Resumo");
+        var detailA = prims.OfType<DrawTextPrimitive>().Single(t => t.Text == "A");
+        // The merged header spans both columns → wider than a single detail cell.
+        header.Bounds.Width.Should().BeGreaterThan(detailA.Bounds.Width * 1.5,
+            "the ColumnSpan=2 header cell covers two columns");
+    }
+
+    [Fact]
     public async Task A_gauge_value_label_honours_the_Format_property()
     {
         var gauge = new GaugeElement
