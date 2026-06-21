@@ -451,6 +451,51 @@ public class RdlImporterTests
     }
 
     [Fact]
+    public void Tablix_flat_table_is_imported_with_header_and_detail_cells()
+    {
+        var rdl = """
+            <Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition">
+              <Body><Height>3cm</Height><ReportItems>
+                <Tablix Name="Tabela1">
+                  <Top>0cm</Top><Left>0cm</Left><Width>6cm</Width><Height>2cm</Height>
+                  <DataSetName>Vendas</DataSetName>
+                  <TablixBody>
+                    <TablixColumns><TablixColumn><Width>4cm</Width></TablixColumn><TablixColumn><Width>2cm</Width></TablixColumn></TablixColumns>
+                    <TablixRows>
+                      <TablixRow><TablixCells>
+                        <TablixCell><CellContents><Textbox><Paragraphs><Paragraph><TextRuns><TextRun><Value>Produto</Value></TextRun></TextRuns></Paragraph></Paragraphs></Textbox></CellContents></TablixCell>
+                        <TablixCell><CellContents><Textbox><Paragraphs><Paragraph><TextRuns><TextRun><Value>Total</Value></TextRun></TextRuns></Paragraph></Paragraphs></Textbox></CellContents></TablixCell>
+                      </TablixCells></TablixRow>
+                      <TablixRow><TablixCells>
+                        <TablixCell><CellContents><Textbox><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!Produto.Value</Value></TextRun></TextRuns></Paragraph></Paragraphs></Textbox></CellContents></TablixCell>
+                        <TablixCell><CellContents><Textbox><Style><Format>C</Format></Style><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!Total.Value</Value></TextRun></TextRuns></Paragraph></Paragraphs></Textbox></CellContents></TablixCell>
+                      </TablixCells></TablixRow>
+                    </TablixRows>
+                  </TablixBody>
+                  <TablixColumnHierarchy><TablixMembers><TablixMember /><TablixMember /></TablixMembers></TablixColumnHierarchy>
+                  <TablixRowHierarchy><TablixMembers><TablixMember /><TablixMember><Group Name="Details" /></TablixMember></TablixMembers></TablixRowHierarchy>
+                </Tablix>
+              </ReportItems></Body>
+            </Report>
+            """;
+        var def = new RdlImporter().ImportXml(rdl);
+        var t = def.ReportHeader!.Elements.OfType<Reporting.Elements.TablixElement>().Single();
+
+        t.DataSetName.Should().Be("Vendas");
+        t.RowGroups.Should().BeEmpty("a flat table has no dynamic row groups");
+        t.ColumnGroups.Should().BeEmpty("a flat table has no dynamic column groups");
+        // Header row 0 → labels; detail row 1 → text boxes, indexed by column.
+        ((Reporting.Elements.LabelElement)t.Cells.Single(c => c.RowIndex == 0 && c.ColumnIndex == 0).Content!).Text.Should().Be("Produto");
+        ((Reporting.Elements.LabelElement)t.Cells.Single(c => c.RowIndex == 0 && c.ColumnIndex == 1).Content!).Text.Should().Be("Total");
+        ((Reporting.Elements.TextBoxElement)t.Cells.Single(c => c.RowIndex == 1 && c.ColumnIndex == 0).Content!).Expression.Should().Be("Fields.Produto");
+        var d1 = (Reporting.Elements.TextBoxElement)t.Cells.Single(c => c.RowIndex == 1 && c.ColumnIndex == 1).Content!;
+        d1.Expression.Should().Be("Fields.Total");
+        d1.Style.Format.Should().Be("C", "the detail cell keeps its RDL Format");
+        t.ColumnWidths.Count.Should().Be(2, "the two RDL column widths become relative weights");
+        def.Metadata.ContainsKey("ImportWarnings").Should().BeFalse("a clean flat table imports fully");
+    }
+
+    [Fact]
     public void Tablix_matrix_is_imported_with_groups_corner_and_body_value()
     {
         var rdl = """
@@ -491,12 +536,13 @@ public class RdlImporterTests
     }
 
     [Fact]
-    public void Tablix_without_both_hierarchies_records_a_warning()
+    public void Tablix_flat_table_with_no_body_cells_warns_empty()
     {
+        // Details row member but no <TablixBody> → flat-table branch yields zero cells → "vazia" warning.
         var rdl = """
             <Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition">
               <Body><Height>3cm</Height><ReportItems>
-                <Tablix Name="FlatTable">
+                <Tablix Name="Vazia">
                   <Top>0cm</Top><Left>0cm</Left><Width>8cm</Width><Height>2cm</Height>
                   <TablixRowHierarchy><TablixMembers><TablixMember><Group Name="Det" /></TablixMember></TablixMembers></TablixRowHierarchy>
                 </Tablix>
@@ -504,7 +550,25 @@ public class RdlImporterTests
             </Report>
             """;
         var def = new RdlImporter().ImportXml(rdl);
-        def.Metadata["ImportWarnings"].Should().Contain("FlatTable");
+        def.Metadata["ImportWarnings"].Should().Contain("vazia");
+    }
+
+    [Fact]
+    public void Tablix_hybrid_table_matrix_records_a_warning()
+    {
+        // One dynamic axis (row group) + a static other axis → table+matrix hybrid is a follow-up → warns.
+        var rdl = """
+            <Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition">
+              <Body><Height>3cm</Height><ReportItems>
+                <Tablix Name="Hibrido">
+                  <Top>0cm</Top><Left>0cm</Left><Width>8cm</Width><Height>2cm</Height>
+                  <TablixRowHierarchy><TablixMembers><TablixMember><Group Name="G"><GroupExpressions><GroupExpression>=Fields!Regiao.Value</GroupExpression></GroupExpressions></Group></TablixMember></TablixMembers></TablixRowHierarchy>
+                </Tablix>
+              </ReportItems></Body>
+            </Report>
+            """;
+        var def = new RdlImporter().ImportXml(rdl);
+        def.Metadata["ImportWarnings"].Should().Contain("híbrido");
     }
 
     [Fact]
