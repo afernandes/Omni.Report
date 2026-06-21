@@ -527,6 +527,9 @@ internal static class RepxReader
             Cells = new EquatableArray<TablixCell>(cells),
             ColumnWidths = new EquatableArray<double>(columnWidths),
             RowSubtotals = string.Equals(el.Element("RowSubtotals")?.Value, "true", StringComparison.OrdinalIgnoreCase),
+            ColumnSubtotals = string.Equals(el.Element("ColumnSubtotals")?.Value, "true", StringComparison.OrdinalIgnoreCase),
+            SubtotalLabel = el.Element("SubtotalLabel")?.Value,
+            GrandTotalLabel = el.Element("GrandTotalLabel")?.Value,
         };
     }
 

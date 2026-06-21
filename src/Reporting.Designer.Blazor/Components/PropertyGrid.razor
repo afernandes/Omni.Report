@@ -301,6 +301,17 @@ else
                 <div class="prop-row"><div class="p-label">Subtotais</div><div class="p-editor">
                     <label style="font-size:11px;"><input type="checkbox" checked="@Element.TablixRowSubtotals"
                            @onchange="@(e => Element.TablixRowSubtotals = (bool)(e.Value ?? false))" /> Total por grupo + total geral</label></div></div>
+                <div class="prop-row"><div class="p-label">Subtotais (col.)</div><div class="p-editor">
+                    <label style="font-size:11px;"><input type="checkbox" checked="@Element.TablixColumnSubtotals"
+                           @onchange="@(e => Element.TablixColumnSubtotals = (bool)(e.Value ?? false))" /> Total por coluna + total geral</label></div></div>
+                <div class="prop-row"><div class="p-label">Label subtotal</div><div class="p-editor">
+                    <input type="text" value="@Element.TablixSubtotalLabel" placeholder="Total {0}"
+                           @onchange="@(e => Element.TablixSubtotalLabel = e.Value?.ToString() ?? string.Empty)"
+                           style="flex:1;font-size:11.5px;" /></div></div>
+                <div class="prop-row"><div class="p-label">Label total geral</div><div class="p-editor">
+                    <input type="text" value="@Element.TablixGrandTotalLabel" placeholder="Total geral"
+                           @onchange="@(e => Element.TablixGrandTotalLabel = e.Value?.ToString() ?? string.Empty)"
+                           style="flex:1;font-size:11.5px;" /></div></div>
             }
             else
             {

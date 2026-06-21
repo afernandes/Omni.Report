@@ -582,6 +582,30 @@ public sealed class ElementViewModel : Notifying
         set => Mutate<TablixElement>(e => e with { RowSubtotals = value });
     }
 
+    /// <summary>Column-axis group totals: a subtotal column after each outer column-group block plus a grand
+    /// total column at the right. Maps to <c>TablixElement.ColumnSubtotals</c>.</summary>
+    public bool TablixColumnSubtotals
+    {
+        get => Src<TablixElement>()?.ColumnSubtotals ?? false;
+        set => Mutate<TablixElement>(e => e with { ColumnSubtotals = value });
+    }
+
+    /// <summary>Subtotal label template — <c>{0}</c> is the group value (e.g. "Total {0}"). Empty = default.
+    /// Maps to <c>TablixElement.SubtotalLabel</c>.</summary>
+    public string TablixSubtotalLabel
+    {
+        get => Src<TablixElement>()?.SubtotalLabel ?? string.Empty;
+        set => Mutate<TablixElement>(e => e with { SubtotalLabel = string.IsNullOrWhiteSpace(value) ? null : value });
+    }
+
+    /// <summary>Grand-total label. Empty = default ("Total geral"). Maps to
+    /// <c>TablixElement.GrandTotalLabel</c>.</summary>
+    public string TablixGrandTotalLabel
+    {
+        get => Src<TablixElement>()?.GrandTotalLabel ?? string.Empty;
+        set => Mutate<TablixElement>(e => e with { GrandTotalLabel = string.IsNullOrWhiteSpace(value) ? null : value });
+    }
+
     /// <summary>SortExpression of the primary (outermost) row group — orders the group instances down the
     /// left axis. Empty = data order. Maps to <c>RowGroups[0].SortExpression</c>.</summary>
     public string TablixRowGroupSort

@@ -57,9 +57,25 @@ public sealed record TablixElement : ReportElement
     /// <summary>When <c>true</c>, the matrix renders a <b>subtotal row</b> at the end of each outer row
     /// group (summing the inner leaves per column) plus a <b>grand total</b> row at the bottom — SSRS-style
     /// group totals. No-op for a flat single-level row group beyond the grand total. Default <c>false</c>.
-    /// <para>Total labels are fixed pt-BR text ("Total {grupo}" / "Total geral"); configurable labels and
-    /// column subtotals are follow-ups. The extra rows grow the element's rendered height (the band adapts).</para></summary>
+    /// The extra rows grow the element's rendered height (the band adapts).</summary>
     public bool RowSubtotals { get; init; }
+
+    /// <summary>When <c>true</c>, the matrix renders a <b>subtotal column</b> after each outer column group
+    /// (summing the inner leaves per row) plus a <b>grand total</b> column at the right — the column-axis
+    /// mirror of <see cref="RowSubtotals"/>. No-op for a flat single-level column group beyond the grand
+    /// total. Default <c>false</c>. The extra columns shrink the per-column width (the element width is
+    /// fixed). Combines with <see cref="RowSubtotals"/> — the grand-total row × grand-total column cell is
+    /// the overall sum.</summary>
+    public bool ColumnSubtotals { get; init; }
+
+    /// <summary>Label for a <b>group subtotal</b> row/column. The placeholder <c>{0}</c> is replaced by the
+    /// group's value (e.g. <c>"Total {0}"</c> → "Total Sul"). When null, the default <c>"Total {0}"</c> is
+    /// used. Applies to both row and column subtotals.</summary>
+    public string? SubtotalLabel { get; init; }
+
+    /// <summary>Label for the <b>grand total</b> row/column. When null, the default <c>"Total geral"</c> is
+    /// used. Applies to both row and column grand totals.</summary>
+    public string? GrandTotalLabel { get; init; }
 }
 
 /// <summary>One axis of a Tablix grouping — name + group-key expression + sort.</summary>

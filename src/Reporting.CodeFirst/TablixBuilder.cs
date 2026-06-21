@@ -37,6 +37,9 @@ public sealed class TablixBuilder
     private string? _corner;
     private string? _cellExpression;
     private bool _rowSubtotals;
+    private bool _columnSubtotals;
+    private string? _subtotalLabel;
+    private string? _grandTotalLabel;
 
     /// <summary>Turns the Tablix into a matrix/crosstab: groups data rows by this expression down
     /// the left axis. Call more than once to <b>nest</b> row groups (outer→inner). Pair with
@@ -67,6 +70,21 @@ public sealed class TablixBuilder
     /// grand total row at the bottom (each summing the body per column). Matrix mode only.</summary>
     public TablixBuilder RowSubtotals(bool enabled = true) { _rowSubtotals = enabled; return this; }
 
+    /// <summary>Enables column-axis group totals: a subtotal column after each outer column-group block plus
+    /// a grand total column at the right (each summing the body per row) — the mirror of
+    /// <see cref="RowSubtotals"/>. Matrix mode only.</summary>
+    public TablixBuilder ColumnSubtotals(bool enabled = true) { _columnSubtotals = enabled; return this; }
+
+    /// <summary>Overrides the total labels. <paramref name="subtotal"/> uses <c>{0}</c> for the group value
+    /// (default <c>"Total {0}"</c>); <paramref name="grandTotal"/> is the overall total (default
+    /// <c>"Total geral"</c>). Pass null to keep a default. Applies to both row and column totals.</summary>
+    public TablixBuilder TotalLabels(string? subtotal = null, string? grandTotal = null)
+    {
+        _subtotalLabel = subtotal;
+        _grandTotalLabel = grandTotal;
+        return this;
+    }
+
     internal TablixElement Build()
     {
         // Matrix mode: one or more row groups + column groups (nested outer→inner) + a body value
@@ -83,6 +101,9 @@ public sealed class TablixBuilder
                 ColumnGroups = new EquatableArray<TablixGroup>(
                     _columnGroups.Select((g, i) => new TablixGroup($"Cols{i}", g.Expr, g.Sort, g.Desc)).ToArray()),
                 RowSubtotals = _rowSubtotals,
+                ColumnSubtotals = _columnSubtotals,
+                SubtotalLabel = _subtotalLabel,
+                GrandTotalLabel = _grandTotalLabel,
                 Cells = new EquatableArray<TablixCell>(
                 [
                     new TablixCell(0, 0, new LabelElement { Text = _corner ?? string.Empty, Bounds = Rectangle.Empty }),
