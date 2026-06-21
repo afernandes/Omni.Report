@@ -1,0 +1,56 @@
+@namespace Reporting.Designer.Blazor.Components
+@using Reporting.Designer.Blazor.ViewModels
+@using Reporting.Parameters
+
+@* Editor for report-level computed variables (RDL <Variables>): name + expression + scope. *@
+<div style="padding:8px;">
+    <div style="font-size:11px;color:var(--text-secondary);margin-bottom:6px;">
+        Variáveis do relatório — avaliadas e referenciadas como <code>Variables.Nome</code>.
+    </div>
+    @if (Variables.Count == 0)
+    {
+        <div style="font-size:11px;color:var(--text-tertiary);padding:4px 0;">Nenhuma variável.</div>
+    }
+    else
+    {
+        @foreach (var v in Variables)
+        {
+            var captured = v;
+            <div style="border:1px solid var(--border-soft);padding:6px;margin-bottom:6px;border-radius:var(--r-2);background:var(--bg-panel);">
+                <div style="display:flex;gap:6px;align-items:center;">
+                    <input type="text" value="@captured.Name" placeholder="Nome"
+                           @onchange="@(e => captured.Name = e.Value?.ToString() ?? string.Empty)"
+                           style="flex:1;font-size:11px;background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--r-1);padding:2px 4px;" />
+                    <select value="@captured.Scope"
+                            @onchange="@(e => captured.Scope = ParseScope(e.Value?.ToString()))"
+                            style="font-size:11px;background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--r-1);padding:2px 4px;">
+                        @* Report-level variables have no group context — offer only Report/Row. *@
+                        @foreach (var s in new[] { VariableScope.Report, VariableScope.Row })
+                        {
+                            <option value="@s" selected="@(captured.Scope == s)">@s</option>
+                        }
+                    </select>
+                    <button class="icon-btn" type="button" title="Remover"
+                            @onclick="@(() => OnRemove.InvokeAsync(captured))"
+                            style="width:18px;height:18px;color:var(--danger);cursor:pointer;">×</button>
+                </div>
+                <input type="text" value="@captured.Expression" placeholder="Expressão (ex.: Sum(Fields.Total))"
+                       @onchange="@(e => captured.Expression = e.Value?.ToString() ?? string.Empty)"
+                       style="width:100%;margin-top:4px;font-family:var(--font-mono);font-size:11px;background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--r-1);padding:2px 4px;box-sizing:border-box;" />
+            </div>
+        }
+    }
+    <button class="btn" type="button" @onclick="@(() => OnAdd.InvokeAsync())"
+            style="margin-top:4px;width:100%;padding:5px;border:1px dashed var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:11px;border-radius:var(--r-2);">
+        + Adicionar variável
+    </button>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<DesignerVariable> Variables { get; set; } = default!;
+    [Parameter] public EventCallback OnAdd { get; set; }
+    [Parameter] public EventCallback<DesignerVariable> OnRemove { get; set; }
+
+    private static VariableScope ParseScope(string? v)
+        => Enum.TryParse<VariableScope>(v, out var s) ? s : VariableScope.Report;
+}

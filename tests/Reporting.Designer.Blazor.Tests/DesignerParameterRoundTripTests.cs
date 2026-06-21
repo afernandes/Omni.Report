@@ -83,6 +83,26 @@ public class DesignerParameterRoundTripTests
     }
 
     [Fact]
+    public void Report_variables_persist_through_designer_and_repx()
+    {
+        var state = new DesignerState();
+        state.Variables.Clear();
+        state.Variables.Add(new DesignerVariable("Acumulado", "Sum(Fields.Total)",
+            Reporting.Parameters.VariableScope.Report));
+
+        var definition = state.BuildDefinition();
+        definition.Variables.Should().ContainSingle();
+        definition.Variables[0].Name.Should().Be("Acumulado");
+        definition.Variables[0].Expression.Should().Be("Sum(Fields.Total)");
+
+        var reloaded = new DesignerState();
+        reloaded.Load(new RepxSerializer().SaveToBytes(definition));
+        reloaded.Variables.Should().ContainSingle();
+        reloaded.Variables[0].Expression.Should().Be("Sum(Fields.Total)");
+        reloaded.Variables[0].Scope.Should().Be(Reporting.Parameters.VariableScope.Report);
+    }
+
+    [Fact]
     public void Parameter_metadata_flags_persist_through_designer_and_repx()
     {
         var state = new DesignerState();

@@ -37,6 +37,12 @@
                 <ParametersList Parameters="Parameters"
                                 OnAdd="OnAddParameter"
                                 OnRemove="OnRemoveParameter" />
+                @if (Variables is not null)
+                {
+                    <VariablesList Variables="Variables"
+                                   OnAdd="OnAddVariable"
+                                   OnRemove="OnRemoveVariable" />
+                }
                 break;
         }
     </div>
@@ -52,6 +58,9 @@
     [Parameter] public EventCallback<ElementToolbox.SystemFieldDescriptor> OnAddSystemField { get; set; }
     [Parameter] public EventCallback OnAddParameter { get; set; }
     [Parameter] public EventCallback<DesignerParameter> OnRemoveParameter { get; set; }
+    [Parameter] public IReadOnlyList<DesignerVariable>? Variables { get; set; }
+    [Parameter] public EventCallback OnAddVariable { get; set; }
+    [Parameter] public EventCallback<DesignerVariable> OnRemoveVariable { get; set; }
     [Parameter] public EventCallback OnAddDataSource { get; set; }
     [Parameter] public EventCallback<DesignerDataSource> OnEditDataSource { get; set; }
 

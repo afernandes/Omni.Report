@@ -55,10 +55,12 @@ public sealed class ReportDefinitionViewModel : Notifying
     /// <param name="relations">Optional master-detail relationships between data sources.</param>
     /// <param name="parameters">Optional report parameters to persist on the definition (prompt,
     /// type, default, required, multi-value) so a <c>.repx</c> round-trips them.</param>
+    /// <param name="variables">Optional report-level computed variables (RDL <c>&lt;Variables&gt;</c>).</param>
     public ReportDefinition Build(
         IEnumerable<DesignerDataSource>? dataSources = null,
         IEnumerable<DesignerRelation>? relations = null,
-        IEnumerable<DesignerParameter>? parameters = null)
+        IEnumerable<DesignerParameter>? parameters = null,
+        IEnumerable<DesignerVariable>? variables = null)
     {
         // Build the Detail band, then attach any SubDetail bands that appear in the strip
         // immediately AFTER it (and before the first GroupFooter / PageFooter). This mirrors
@@ -122,6 +124,9 @@ public sealed class ReportDefinitionViewModel : Notifying
             PageFooter   = FindBand(DesignerBandKind.PageFooter)?.BuildReportBand(BandKind.PageFooter),
             ReportFooter = FindBand(DesignerBandKind.ReportFooter)?.BuildReportBand(BandKind.ReportFooter),
             DataSources  = dsArray,
+            Variables    = variables is null
+                ? EquatableArray<Reporting.Parameters.ReportVariable>.Empty
+                : new EquatableArray<Reporting.Parameters.ReportVariable>(variables.Select(v => v.ToVariable()).ToArray()),
         };
     }
 

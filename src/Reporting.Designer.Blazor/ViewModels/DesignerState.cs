@@ -31,6 +31,8 @@ public sealed class DesignerState : Notifying
         };
         Relations = new ObservableCollection<DesignerRelation>();
         Relations.CollectionChanged += (_, _) => RaiseChanged();
+        Variables = new ObservableCollection<DesignerVariable>();
+        Variables.CollectionChanged += (_, _) => RaiseChanged();
     }
 
     public ObservableCollection<DocumentTab> Tabs { get; } = [];
@@ -59,6 +61,10 @@ public sealed class DesignerState : Notifying
     /// in the data tree and is consumed by the runtime to filter child rows for each parent.</summary>
     public ObservableCollection<DesignerRelation> Relations { get; }
     public ObservableCollection<DesignerParameter>  Parameters  { get; }
+
+    /// <summary>Report-level computed variables (RDL <c>&lt;Variables&gt;</c>). Edited in the left panel
+    /// and built into <see cref="ReportDefinition.Variables"/>.</summary>
+    public ObservableCollection<DesignerVariable> Variables { get; }
 
     public IEnumerable<DesignerField> ActiveFields
         => DataSources.SelectMany(ds => ds.Fields);
@@ -265,6 +271,13 @@ public sealed class DesignerState : Notifying
         {
             Parameters.Add(DesignerParameter.From(p));
         }
+
+        // Report-level variables (RDL <Variables>) round-trip into the editor.
+        Variables.Clear();
+        foreach (var v in definition.Variables)
+        {
+            Variables.Add(DesignerVariable.From(v));
+        }
     }
 
     /// <summary>Serializes the active tab to a .repx byte array — embeds the current data
@@ -279,7 +292,7 @@ public sealed class DesignerState : Notifying
 
     /// <summary>Builds the immutable <see cref="ReportDefinition"/> with the designer's
     /// current data sources and master-detail relations attached.</summary>
-    public ReportDefinition BuildDefinition() => Report.Build(DataSources, Relations, Parameters);
+    public ReportDefinition BuildDefinition() => Report.Build(DataSources, Relations, Parameters, Variables);
 
     private void SubscribeTab(DocumentTab tab)
     {
