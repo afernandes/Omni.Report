@@ -32,6 +32,10 @@ public sealed class RdlImporter
 {
     private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
+    // Name → bytes of the report's <EmbeddedImages>, resolved per Import() and consumed by embedded
+    // <Image> references. Reset at the start of every Import.
+    private IReadOnlyDictionary<string, byte[]> _embeddedImages = new Dictionary<string, byte[]>();
+
     public ReportDefinition Import(Stream stream, string? reportName = null)
     {
         ArgumentNullException.ThrowIfNull(stream);
@@ -52,6 +56,8 @@ public sealed class RdlImporter
         {
             throw new FormatException($"Root element must be <Report>, found <{report.Name.LocalName}>.");
         }
+
+        _embeddedImages = ReadEmbeddedImages(report);
 
         var page = El(report, "Page");
         var marginHost = page ?? report;
@@ -83,10 +89,51 @@ public sealed class RdlImporter
             ReportHeader = reportHeader,
             PageHeader = pageHeader,
             PageFooter = pageFooter,
+            Metadata = new EquatableDictionary<string, string>(ReadMetadata(report)),
         };
     }
 
-    private static ReportBand? BandFrom(XElement? reportItems, string? heightRaw, BandKind kind)
+    // RDL <EmbeddedImages><EmbeddedImage Name><ImageData>base64 → name→bytes map (bad base64 skipped).
+    private static Dictionary<string, byte[]> ReadEmbeddedImages(XElement report)
+    {
+        var map = new Dictionary<string, byte[]>(StringComparer.OrdinalIgnoreCase);
+        foreach (var img in El(report, "EmbeddedImages")?.Elements().Where(e => e.Name.LocalName == "EmbeddedImage")
+                 ?? Enumerable.Empty<XElement>())
+        {
+            var name = img.Attribute("Name")?.Value;
+            var data = Val(img, "ImageData");
+            if (string.IsNullOrEmpty(name) || string.IsNullOrWhiteSpace(data))
+            {
+                continue;
+            }
+            try { map[name] = Convert.FromBase64String(data.Trim()); }
+            catch (FormatException) { }
+        }
+        return map;
+    }
+
+    // RDL <CustomProperties> → Metadata; report-level <Code> is preserved under "RdlCode" (a VB function
+    // module — executing it is a follow-up, but the source must not be lost on import).
+    private static Dictionary<string, string> ReadMetadata(XElement report)
+    {
+        var meta = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var cp in El(report, "CustomProperties")?.Elements().Where(e => e.Name.LocalName == "CustomProperty")
+                 ?? Enumerable.Empty<XElement>())
+        {
+            var name = Val(cp, "Name");
+            if (!string.IsNullOrEmpty(name))
+            {
+                meta[name] = Val(cp, "Value") ?? string.Empty;
+            }
+        }
+        if (Val(report, "Code") is { Length: > 0 } code)
+        {
+            meta["RdlCode"] = code;
+        }
+        return meta;
+    }
+
+    private ReportBand? BandFrom(XElement? reportItems, string? heightRaw, BandKind kind)
     {
         if (reportItems is null)
         {
@@ -107,7 +154,7 @@ public sealed class RdlImporter
 
     // Maps one RDL report item to OmniReport element(s), offsetting by (dx, dy) so nested items inside a
     // Rectangle become absolute. Unknown item kinds are skipped (structural import never fails on them).
-    private static void AddItem(XElement item, Unit dx, Unit dy, List<ReportElement> into)
+    private void AddItem(XElement item, Unit dx, Unit dy, List<ReportElement> into)
     {
         var bounds = Bounds(item, dx, dy);
         switch (item.Name.LocalName)
@@ -201,7 +248,7 @@ public sealed class RdlImporter
         return Val(run, "Value") ?? Val(textbox, "Value");
     }
 
-    private static ReportElement ImageItem(XElement item, Rectangle bounds)
+    private ReportElement ImageItem(XElement item, Rectangle bounds)
     {
         var source = Val(item, "Source");
         var value = Val(item, "Value");
@@ -211,7 +258,12 @@ public sealed class RdlImporter
                 ? new ImageElement { Source = ImageSourceKind.Expression, Expression = RdlExpression.Convert(value), Bounds = bounds }
                 : new ImageElement { Source = ImageSourceKind.Path, Path = value, Bounds = bounds };
         }
-        // Embedded/Database image bytes are a follow-up — keep the reference name as the path.
+        if (string.Equals(source, "Embedded", StringComparison.OrdinalIgnoreCase)
+            && value is { Length: > 0 } && _embeddedImages.TryGetValue(value, out var bytes))
+        {
+            return new ImageElement { Source = ImageSourceKind.Inline, InlineData = new EquatableArray<byte>(bytes), Bounds = bounds };
+        }
+        // Database images (or an unresolved embedded name) are a follow-up — keep the name as the path.
         return new ImageElement { Source = ImageSourceKind.Path, Path = value, Bounds = bounds };
     }
 
