@@ -292,8 +292,9 @@ public class RdlImporterTests
                   <TablixCorner><TablixCornerRows><TablixCornerRow><TablixCornerCell><CellContents>
                     <Textbox><Paragraphs><Paragraph><TextRuns><TextRun><Value>Região</Value></TextRun></TextRuns></Paragraph></Paragraphs></Textbox>
                   </CellContents></TablixCornerCell></TablixCornerRow></TablixCornerRows></TablixCorner>
+                  <Visibility><Hidden>=Fields!Oculto.Value</Hidden></Visibility>
                   <TablixBody><TablixRows><TablixRow><TablixCells><TablixCell><CellContents>
-                    <Textbox><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Sum(Fields!Total.Value)</Value></TextRun></TextRuns></Paragraph></Paragraphs></Textbox>
+                    <Textbox><Style><Format>C</Format></Style><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Sum(Fields!Total.Value)</Value></TextRun></TextRuns></Paragraph></Paragraphs></Textbox>
                   </CellContents></TablixCell></TablixCells></TablixRow></TablixRows></TablixBody>
                   <TablixColumnHierarchy><TablixMembers><TablixMember><Group Name="Mes">
                     <GroupExpressions><GroupExpression>=Fields!Mes.Value</GroupExpression></GroupExpressions></Group></TablixMember></TablixMembers></TablixColumnHierarchy>
@@ -311,8 +312,11 @@ public class RdlImporterTests
         t.ColumnGroups.Select(g => g.GroupExpression).Should().Equal("Fields.Mes");
         t.Cells.Should().Contain(c => c.RowIndex == 0 && c.ColumnIndex == 0
             && ((Reporting.Elements.LabelElement)c.Content!).Text == "Região");
-        var body = t.Cells.Single(c => c.RowIndex == 1 && c.ColumnIndex == 1).Content;
-        ((Reporting.Elements.TextBoxElement)body!).Expression.Should().Be("Sum(Fields.Total)");
+        var body = (Reporting.Elements.TextBoxElement)t.Cells.Single(c => c.RowIndex == 1 && c.ColumnIndex == 1).Content!;
+        body.Expression.Should().Be("Sum(Fields.Total)");
+        body.Style.Format.Should().Be("C", "the body cell keeps its RDL Format instead of the N2 default");
+        // Common props on the Tablix itself are applied (the ApplyCommon TablixElement arm).
+        t.VisibleExpression.Should().Be("!(Fields.Oculto)");
         def.Metadata.ContainsKey("ImportWarnings").Should().BeFalse("a clean matrix has nothing to warn about");
     }
 

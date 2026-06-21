@@ -381,10 +381,18 @@ public sealed class RdlImporter
         {
             cells.Add(new TablixCell(0, 0, new LabelElement { Text = cornerRaw, Bounds = Rectangle.Empty }));
         }
-        var bodyRaw = TextboxValue(FirstTextbox(El(item, "TablixBody")));
+        var bodyTextbox = FirstTextbox(El(item, "TablixBody"));
+        var bodyRaw = TextboxValue(bodyTextbox);
         if (!string.IsNullOrEmpty(bodyRaw))
         {
-            cells.Add(new TablixCell(1, 1, new TextBoxElement { Expression = RdlExpression.Convert(bodyRaw), Bounds = Rectangle.Empty }));
+            // Carry the body textbox's <Style> so the matrix value cell keeps its RDL Format (currency,
+            // percent, …) instead of falling back to the renderer's N2 default.
+            cells.Add(new TablixCell(1, 1, new TextBoxElement
+            {
+                Expression = RdlExpression.Convert(bodyRaw),
+                Bounds = Rectangle.Empty,
+                Style = bodyTextbox is null ? Style.Default : ReadStyle(bodyTextbox) ?? Style.Default,
+            }));
         }
 
         if (rowGroups.Count == 0 || colGroups.Count == 0)
@@ -450,6 +458,7 @@ public sealed class RdlImporter
             ImageElement im => im with { Style = style ?? im.Style, Visible = visible, VisibleExpression = visExpr, Bookmark = bookmark, DocumentMapLabel = docMap, Action = action },
             // A line's color/width come from its style border; map the first visible side to the Pen.
             LineElement ln => ln with { Pen = StyleBorderToPen(style) ?? ln.Pen, Visible = visible, VisibleExpression = visExpr, Bookmark = bookmark, DocumentMapLabel = docMap, Action = action },
+            TablixElement tx => tx with { Style = style ?? tx.Style, Visible = visible, VisibleExpression = visExpr, Bookmark = bookmark, DocumentMapLabel = docMap, Action = action },
             // INVARIANT: every element type AddItem can produce must have an arm above — otherwise its
             // Style/Visibility/Bookmark/Action would be silently dropped. Keep this in sync with AddItem.
             _ => el,
