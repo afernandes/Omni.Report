@@ -167,4 +167,60 @@ public class RdlImporterTests
         Reporting.Serialization.Internal.RdlExpression.Convert("=Parameters!P.Count").Should().Contain("Count");
         Reporting.Serialization.Internal.RdlExpression.Convert("=Parameters!P.Label").Should().Contain("Label");
     }
+
+    private const string Styled = """
+        <Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition">
+          <Body>
+            <Height>5cm</Height>
+            <ReportItems>
+              <Textbox Name="Total">
+                <Top>0cm</Top><Left>0cm</Left><Width>4cm</Width><Height>0.6cm</Height>
+                <CanGrow>true</CanGrow>
+                <Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!Total.Value</Value></TextRun></TextRuns></Paragraph></Paragraphs>
+                <Visibility><Hidden>=Fields!Oculto.Value</Hidden></Visibility>
+                <Bookmark>bm-total</Bookmark>
+                <Action><Hyperlink>=Fields!Url.Value</Hyperlink></Action>
+                <Style>
+                  <FontFamily>Calibri</FontFamily>
+                  <FontSize>14pt</FontSize>
+                  <FontWeight>Bold</FontWeight>
+                  <Color>#FF0000</Color>
+                  <BackgroundColor>Yellow</BackgroundColor>
+                  <TextAlign>Right</TextAlign>
+                  <VerticalAlign>Middle</VerticalAlign>
+                  <Border><Color>Black</Color><Style>Solid</Style><Width>1pt</Width></Border>
+                </Style>
+              </Textbox>
+            </ReportItems>
+          </Body>
+        </Report>
+        """;
+
+    [Fact]
+    public void Item_style_is_imported()
+    {
+        var def = new RdlImporter().ImportXml(Styled);
+        var tb = def.ReportHeader!.Elements.OfType<TextBoxElement>().Single();
+        tb.Style.Font!.Family.Should().Be("Calibri");
+        tb.Style.Font.Size.Should().Be(14);
+        tb.Style.Font.Style.Should().HaveFlag(Reporting.Styling.FontStyle.Bold);
+        tb.Style.ForeColor.Should().Be(Reporting.Styling.Color.FromHex("#FF0000"));
+        tb.Style.BackColor.Should().Be(Reporting.Styling.Color.FromRgb(255, 255, 0));
+        tb.Style.HorizontalAlignment.Should().Be(Reporting.Styling.HorizontalAlignment.Right);
+        tb.Style.VerticalAlignment.Should().Be(Reporting.Styling.VerticalAlignment.Middle);
+        tb.Style.Border!.Top.IsVisible.Should().BeTrue();
+        tb.CanGrow.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Item_visibility_bookmark_and_action_are_imported()
+    {
+        var def = new RdlImporter().ImportXml(Styled);
+        var tb = def.ReportHeader!.Elements.OfType<TextBoxElement>().Single();
+        // RDL Hidden=expr → VisibleExpression = !(converted).
+        tb.VisibleExpression.Should().Be("!(Fields.Oculto)");
+        tb.Bookmark.Should().Be("bm-total");
+        tb.Action.Should().NotBeNull();
+        tb.Action!.Hyperlink.Should().Be("Fields.Url");
+    }
 }
