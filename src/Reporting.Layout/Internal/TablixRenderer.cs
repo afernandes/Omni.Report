@@ -188,58 +188,114 @@ internal static class TablixRenderer
         }
 
         double x0 = bounds.X.ToMm(), y0 = bounds.Y.ToMm(), w = bounds.Width.ToMm();
-        int totalCols = nRowLevels + colLeaves.Count;
+
+        // Configurable total labels (SSRS-style): "{0}" in the subtotal label is the group value.
+        string subLabelFmt = tablix.SubtotalLabel ?? "Total {0}";
+        string grandLabel = tablix.GrandTotalLabel ?? "Total geral";
+
+        // Visual columns: leaf data columns, optionally interleaved with a subtotal column after each outer
+        // column-group block and a grand-total column at the right (the column-axis mirror of subtotal rows).
+        bool colSub = tablix.ColumnSubtotals;
+        var vcols = new List<VCol>();
+        for (int j = 0; j < colLeaves.Count; j++)
+        {
+            vcols.Add(VCol.LeafCol(j));
+            if (colSub && nColLevels >= 2)
+            {
+                for (int level = nColLevels - 2; level >= 0; level--)
+                {
+                    string pfx = string.Join(Sep, colLeaves[j].Take(level + 1));
+                    bool boundary = j == colLeaves.Count - 1
+                        || string.Join(Sep, colLeaves[j + 1].Take(level + 1)) != pfx;
+                    if (!boundary)
+                    {
+                        continue;
+                    }
+                    int start = j;
+                    while (start > 0 && string.Join(Sep, colLeaves[start - 1].Take(level + 1)) == pfx)
+                    {
+                        start--;
+                    }
+                    vcols.Add(VCol.Subtotal(start, j, SafeLabel(subLabelFmt, colLeaves[j][level], baseCtx.Culture)));
+                }
+            }
+        }
+        if (colSub)
+        {
+            vcols.Add(VCol.Subtotal(0, colLeaves.Count - 1, grandLabel)); // grand-total column
+        }
+
+        int totalCols = nRowLevels + vcols.Count;
         double colW = w / totalCols;
         double headerH = nColLevels * RowHeightMm;
+
+        // Value of one visual column over a block of row leaves [rStart..rEnd] — a single leaf×leaf cell, a
+        // row block × column block (subtotal), or the whole grid (grand total), all via the same sum.
+        double CellValue(int rStart, int rEnd, VCol vc)
+        {
+            double t = 0;
+            for (int r = rStart; r <= rEnd; r++)
+            {
+                string rKey = string.Join(Sep, rowLeaves[r]);
+                for (int c = vc.Start; c <= vc.End; c++)
+                {
+                    sums.TryGetValue((rKey, string.Join(Sep, colLeaves[c])), out var s);
+                    t += s;
+                }
+            }
+            return t;
+        }
 
         // Header band (corner + column-header rows) gets the header fill.
         list.Add(Fill(x0, y0, w, headerH, HeaderBg, tablix.Id));
         list.Add(CellText(cornerText, x0, y0, colW, bold: true, HeaderText, tablix.Id));
 
-        // Column headers: each level's value spans the columns it covers (true cell span, not blank-filled).
-        for (int cl = 0; cl < nColLevels; cl++)
+        // Column headers: leaf columns get each level's value spanning the columns it covers (true span);
+        // a subtotal/grand column gets one label across the whole header band.
+        int vh = 0;
+        while (vh < vcols.Count)
         {
-            int j = 0;
-            while (j < colLeaves.Count)
+            if (vcols[vh].IsSubtotal)
             {
-                string prefix = string.Join(Sep, colLeaves[j].Take(cl + 1));
-                int span = 1;
-                while (j + span < colLeaves.Count && string.Join(Sep, colLeaves[j + span].Take(cl + 1)) == prefix)
+                list.Add(CellText(vcols[vh].Label, x0 + (nRowLevels + vh) * colW, y0, colW, bold: true, HeaderText, tablix.Id));
+                vh++;
+                continue;
+            }
+            int runEnd = vh; // a maximal run of consecutive leaf columns, spanned per level
+            while (runEnd + 1 < vcols.Count && !vcols[runEnd + 1].IsSubtotal) runEnd++;
+            for (int cl = 0; cl < nColLevels; cl++)
+            {
+                int k = vh;
+                while (k <= runEnd)
                 {
-                    span++;
+                    string prefix = string.Join(Sep, colLeaves[vcols[k].Leaf].Take(cl + 1));
+                    int span = 1;
+                    while (k + span <= runEnd && string.Join(Sep, colLeaves[vcols[k + span].Leaf].Take(cl + 1)) == prefix)
+                    {
+                        span++;
+                    }
+                    list.Add(CellText(colLeaves[vcols[k].Leaf][cl], x0 + (nRowLevels + k) * colW, y0 + cl * RowHeightMm,
+                        span * colW, bold: true, HeaderText, tablix.Id));
+                    k += span;
                 }
-                list.Add(CellText(colLeaves[j][cl], x0 + (nRowLevels + j) * colW, y0 + cl * RowHeightMm,
-                    span * colW, bold: true, HeaderText, tablix.Id));
-                j += span;
             }
-        }
-
-        // Sums a contiguous block of row leaves [start..end] for one column key (subtotals / grand total).
-        double SumBlock(int start, int end, string cKey)
-        {
-            double t = 0;
-            for (int k = start; k <= end; k++)
-            {
-                sums.TryGetValue((string.Join(Sep, rowLeaves[k]), cKey), out var s);
-                t += s;
-            }
-            return t;
+            vh = runEnd + 1;
         }
 
         // Emits one total row (subtotal of a group block, or the grand total): a spanning label over the
-        // row-header columns + the per-column block sums, all bold on the header fill.
+        // row-header columns + each visual column's block sum, all bold on the header fill.
         void TotalRow(double yy, string label, int start, int end)
         {
             list.Add(Fill(x0, yy, w, RowHeightMm, HeaderBg, tablix.Id));
             list.Add(CellText(label, x0, yy, nRowLevels * colW, bold: true, HeaderText, tablix.Id));
-            for (int j = 0; j < colLeaves.Count; j++)
+            for (int vIdx = 0; vIdx < vcols.Count; vIdx++)
             {
-                list.Add(CellText(FormatNumber(SumBlock(start, end, string.Join(Sep, colLeaves[j])), format, baseCtx.Culture),
-                    x0 + (nRowLevels + j) * colW, yy, colW, bold: true, HeaderText, tablix.Id));
+                list.Add(CellText(FormatNumber(CellValue(start, end, vcols[vIdx]), format, baseCtx.Culture),
+                    x0 + (nRowLevels + vIdx) * colW, yy, colW, bold: true, HeaderText, tablix.Id));
             }
         }
 
-        // Data rows: nested row headers (merged look) + the intersection sums, optionally with SSRS-style
+        // Data rows: nested row headers (merged look) + each visual column's value, optionally with SSRS-style
         // subtotal rows after each outer group block and a grand total at the bottom.
         bool rowSub = tablix.RowSubtotals;
         double y = y0 + headerH;
@@ -257,13 +313,11 @@ internal static class TablixRenderer
                     for (int d = rl + 1; d < nRowLevels; d++) prevRowPrefix[d] = null; // deeper levels restart
                 }
             }
-            string rKey = string.Join(Sep, rowLeaves[i]);
-            for (int j = 0; j < colLeaves.Count; j++)
+            for (int vIdx = 0; vIdx < vcols.Count; vIdx++)
             {
-                string cKey = string.Join(Sep, colLeaves[j]);
-                sums.TryGetValue((rKey, cKey), out var s);
-                list.Add(CellText(FormatNumber(s, format, baseCtx.Culture),
-                    x0 + (nRowLevels + j) * colW, y, colW, bold: false, BodyText, tablix.Id));
+                bool sub = vcols[vIdx].IsSubtotal;
+                list.Add(CellText(FormatNumber(CellValue(i, i, vcols[vIdx]), format, baseCtx.Culture),
+                    x0 + (nRowLevels + vIdx) * colW, y, colW, bold: sub, sub ? HeaderText : BodyText, tablix.Id));
             }
             y += RowHeightMm;
             bodyRows++;
@@ -285,7 +339,7 @@ internal static class TablixRenderer
                     {
                         start--;
                     }
-                    TotalRow(y, "Total " + rowLeaves[i][level], start, i);
+                    TotalRow(y, SafeLabel(subLabelFmt, rowLeaves[i][level], baseCtx.Culture), start, i);
                     y += RowHeightMm;
                     bodyRows++;
                     for (int d = level; d < nRowLevels; d++) prevRowPrefix[d] = null; // next block redraws headers
@@ -294,7 +348,7 @@ internal static class TablixRenderer
         }
         if (rowSub)
         {
-            TotalRow(y, "Total geral", 0, rowLeaves.Count - 1);
+            TotalRow(y, grandLabel, 0, rowLeaves.Count - 1);
             y += RowHeightMm;
             bodyRows++;
         }
@@ -315,6 +369,16 @@ internal static class TablixRenderer
 
         actualHeight = Unit.FromMm(totalH);
         return list;
+    }
+
+    /// <summary>A rendered matrix column: either a single leaf data column (<c>Leaf</c> ≥ 0, summing just
+    /// that column-leaf), or a subtotal/grand-total column (<see cref="IsSubtotal"/>, summing the column-leaf
+    /// block <c>[Start..End]</c> per row). Built once so headers, data rows and total rows all iterate the
+    /// same column list.</summary>
+    private readonly record struct VCol(int Leaf, int Start, int End, string Label, bool IsSubtotal)
+    {
+        public static VCol LeafCol(int j) => new(j, j, j, string.Empty, false);
+        public static VCol Subtotal(int start, int end, string label) => new(-1, start, end, label, true);
     }
 
     /// <summary>An ordered prefix tree of group-key paths: children keep first-seen insertion order so
@@ -467,6 +531,22 @@ internal static class TablixRenderer
         catch
         {
             return v.ToString(culture);
+        }
+    }
+
+    /// <summary>Formats a user-supplied total label ("Total {0}") with the group value. A malformed
+    /// template ("Total {1}", "Total {") would otherwise make <see cref="string.Format(IFormatProvider,
+    /// string, object?)"/> throw and abort the whole render — so we fall back to the raw template, mirroring
+    /// <see cref="FormatNumber"/>'s defensive guard.</summary>
+    private static string SafeLabel(string format, string arg, System.Globalization.CultureInfo culture)
+    {
+        try
+        {
+            return string.Format(culture, format, arg);
+        }
+        catch (FormatException)
+        {
+            return format;
         }
     }
 

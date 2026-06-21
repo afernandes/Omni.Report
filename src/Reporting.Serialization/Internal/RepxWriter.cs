@@ -695,6 +695,9 @@ internal static class RepxWriter
         var content = new List<XElement>();
         if (t.DataSetName is not null) content.Add(new XElement("DataSetName", t.DataSetName));
         if (t.RowSubtotals) content.Add(new XElement("RowSubtotals", "true"));
+        if (t.ColumnSubtotals) content.Add(new XElement("ColumnSubtotals", "true"));
+        if (t.SubtotalLabel is not null) content.Add(new XElement("SubtotalLabel", t.SubtotalLabel));
+        if (t.GrandTotalLabel is not null) content.Add(new XElement("GrandTotalLabel", t.GrandTotalLabel));
         if (t.ColumnWidths.Count > 0)
         {
             content.Add(new XElement("ColumnWidths",

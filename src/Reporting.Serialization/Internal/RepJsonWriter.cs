@@ -531,6 +531,18 @@ internal static class RepJsonWriter
                 {
                     o["rowSubtotals"] = true;
                 }
+                if (tablix.ColumnSubtotals)
+                {
+                    o["columnSubtotals"] = true;
+                }
+                if (tablix.SubtotalLabel is not null)
+                {
+                    o["subtotalLabel"] = tablix.SubtotalLabel;
+                }
+                if (tablix.GrandTotalLabel is not null)
+                {
+                    o["grandTotalLabel"] = tablix.GrandTotalLabel;
+                }
                 if (tablix.ColumnWidths.Count > 0)
                 {
                     o["columnWidths"] = new JsonArray(tablix.ColumnWidths.Select(wt => (JsonNode?)wt).ToArray());

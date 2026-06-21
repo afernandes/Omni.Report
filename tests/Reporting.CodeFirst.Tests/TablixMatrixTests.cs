@@ -190,6 +190,88 @@ public class TablixMatrixTests
         texts.IndexOf("Total RS").Should().BeLessThan(texts.IndexOf("Total Sul"));
     }
 
+    public sealed record VendaAnoMes(string Regiao, string Ano, string Mes, decimal Total);
+
+    [Fact]
+    public async Task Column_subtotals_emit_per_group_and_grand_total_columns()
+    {
+        VendaAnoMes[] rows =
+        [
+            new("Sul",   "2023", "Jan", 100m),
+            new("Sul",   "2023", "Fev",  40m),
+            new("Sul",   "2024", "Jan",  60m),
+            new("Norte", "2023", "Jan",  30m),
+        ];
+
+        Report Build(bool colSub) => ReportBuilder.Create("ColSub")
+            .Page(p => p.A4().Portrait().Margins(10))
+            .DataSource("Vendas", rows)
+            .ReportHeader(h => h.Height(90)
+                .Tablix(t => t
+                    .RowGroup("Fields.Regiao")
+                    .ColumnGroup("Fields.Ano")
+                    .ColumnGroup("Fields.Mes")
+                    .Corner("Região")
+                    .Cell("Fields.Total")
+                    .ColumnSubtotals(colSub))
+                .At(0, 0).Size(180, 80))
+            .Build();
+
+        // Without column subtotals, no total columns are added.
+        var plain = await TextsOf(Build(false));
+        plain.Should().NotContain(t => t.Contains("Total geral"));
+
+        var withTotals = await TextsOf(Build(true));
+        // Subtotal column header per outer (Ano) block + a grand-total column header.
+        withTotals.Should().Contain("Total 2023").And.Contain("Total 2024").And.Contain("Total geral");
+        // Sul: 2023 subtotal = 100 + 40 = 140; grand = 140 + 60 = 200.
+        withTotals.Should().Contain(t => t.Contains("140"), "Sul 2023 subtotal sums its months");
+        withTotals.Should().Contain(t => t.Contains("200"), "Sul grand total sums all years");
+    }
+
+    [Fact]
+    public async Task Custom_total_labels_replace_the_defaults()
+    {
+        var report = ReportBuilder.Create("Labels")
+            .Page(p => p.A4().Portrait().Margins(10))
+            .DataSource("Vendas", Rows)
+            .ReportHeader(h => h.Height(80)
+                .Tablix(t => t
+                    .RowGroup("Fields.Regiao")
+                    .ColumnGroup("Fields.Mes")
+                    .Corner("Região")
+                    .Cell("Fields.Total")
+                    .RowSubtotals()
+                    .TotalLabels(subtotal: "Soma {0}", grandTotal: "Geral"))
+                .At(0, 0).Size(150, 70))
+            .Build();
+
+        var texts = await TextsOf(report);
+        texts.Should().Contain("Geral").And.NotContain("Total geral");
+    }
+
+    [Fact]
+    public async Task Malformed_subtotal_label_does_not_crash_the_render()
+    {
+        // A bad format template ("Total {1}") must not abort rendering — it falls back to the raw template.
+        var report = ReportBuilder.Create("BadLabel")
+            .Page(p => p.A4().Portrait().Margins(10))
+            .DataSource("Vendas", Rows)
+            .ReportHeader(h => h.Height(70)
+                .Tablix(t => t
+                    .RowGroup("Fields.Regiao")
+                    .ColumnGroup("Fields.Mes")
+                    .Corner("Região")
+                    .Cell("Fields.Total")
+                    .RowSubtotals()
+                    .TotalLabels(subtotal: "Total {1}")) // {1} is out of range → would throw if unguarded
+                .At(0, 0).Size(150, 60))
+            .Build();
+
+        var act = async () => await TextsOf(report);
+        await act.Should().NotThrowAsync();
+    }
+
     private static Report SortedMatrix(string? sort, bool descending) =>
         ReportBuilder.Create("Sorted")
             .Page(p => p.A4().Portrait().Margins(10))
