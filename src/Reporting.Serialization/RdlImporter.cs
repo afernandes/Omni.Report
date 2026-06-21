@@ -629,6 +629,9 @@ public sealed class RdlImporter
 
     private static bool ParseBool(string? raw) => bool.TryParse(raw, out var b) && b;
 
+    // Doubles braces so literal RDL text renders verbatim through the template renderer ({ → {{, } → }}).
+    private static string EscapeBraces(string? literal) => (literal ?? string.Empty).Replace("{", "{{").Replace("}", "}}");
+
     // Reads every <Paragraph>/<TextRun> of an RDL Textbox into model TextRuns (Value + per-run Style +
     // per-run inline Action), plus a fallback Expression that concatenates the runs as a template (literal
     // runs verbatim, expression runs as "{expr}") so a non-run-aware consumer still renders the whole text.
@@ -650,10 +653,14 @@ public sealed class RdlImporter
                 ?? Enumerable.Empty<XElement>())
             {
                 var rawVal = Val(run, "Value");
-                var value = RdlExpression.Convert(rawVal);
+                var isExpr = RdlExpression.IsExpression(rawVal);
+                // A run's Value carries template semantics (same as Expression), so an RDL *literal* with a
+                // brace must be escaped ({{ }}) or it would be mis-read as a placeholder — both in the per-run
+                // render path and in the fallback template. Expression runs keep their converted form.
+                var value = isExpr ? RdlExpression.Convert(rawVal) : EscapeBraces(rawVal);
                 var action = ReadAction(El(El(El(run, "ActionInfo"), "Actions"), "Action"));
                 runs.Add(new TextRun(value, ReadStyle(run), action));
-                fb.Append(RdlExpression.IsExpression(rawVal) ? "{" + value + "}" : value);
+                fb.Append(isExpr ? "{" + value + "}" : value);
                 if (string.Equals(Val(run, "MarkupType"), "HTML", StringComparison.OrdinalIgnoreCase))
                 {
                     _warnings.Add($"Textbox '{textbox.Attribute("Name")?.Value}': TextRun MarkupType=HTML importado como texto plano (rich text HTML é follow-up).");

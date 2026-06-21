@@ -86,14 +86,7 @@ internal sealed class BandRenderer
                     break;
 
                 case TextBoxElement tb:
-                    // Multi-run (RDL F1.8): resolve each run's value and concatenate, rendered with the
-                    // TextBox's Style. Per-run style/action round-trips in the model but the mixed-font
-                    // drawing path (distinct font/colour per segment) is a follow-up — single-style for now.
-                    // Format's single-expression shortcut doesn't apply to a concatenation, so runs resolve
-                    // without it.
-                    var text = tb.TextRuns.Count > 0
-                        ? string.Concat(tb.TextRuns.Select(r => ResolveText(r.Value, ctx)))
-                        : ResolveText(tb.Expression, ctx, effectiveStyle.Format);
+                    var text = ResolveTextBoxText(tb, ctx, effectiveStyle.Format);
                     var rendered = EmitText(text, elementBounds, style, tb.Id, tb.CanGrow, tb.CanShrink);
                     primitives.Add(rendered);
                     actualHeight = MaxHeight(actualHeight, rendered.Bounds, origin, growsTo: tb.CanGrow ? rendered.Bounds : null);
@@ -277,7 +270,7 @@ internal sealed class BandRenderer
             if (element is TextBoxElement tb && tb.CanGrow && IsVisible(element, ctx))
             {
                 var style = BuildTextStyle(element.Style);
-                var text = ResolveText(tb.Expression, ctx);
+                var text = ResolveTextBoxText(tb, ctx, element.Style.Format);
                 var size = _measurer.Measure(text, style, element.Bounds.Width);
                 var bottom = element.Bounds.Y + size.Height;
                 if (bottom > height)
@@ -372,6 +365,17 @@ internal sealed class BandRenderer
             return expression;
         }
     }
+
+    /// <summary>Resolves a TextBox's display text. Multi-run (RDL F1.8): resolve each run's value and
+    /// concatenate, drawn with the TextBox's Style (per-run style/action round-trips in the model but the
+    /// mixed-font drawing path is a follow-up — single-style for now). Format's single-expression shortcut
+    /// doesn't apply to a concatenation, so runs resolve without it. Empty runs → the legacy single
+    /// <see cref="TextBoxElement.Expression"/> path. Used by both render and <see cref="Measure"/> so the two
+    /// never diverge (a divergence would crash on / mis-measure a multi-run textbox).</summary>
+    private string ResolveTextBoxText(TextBoxElement tb, IReportExpressionContext ctx, string? elementFormat)
+        => tb.TextRuns.Count > 0
+            ? string.Concat(tb.TextRuns.Select(r => ResolveText(r.Value, ctx)))
+            : ResolveText(tb.Expression, ctx, elementFormat);
 
     /// <summary>Resolves the rows a data-bound element (chart, sparkline) iterates: the named
     /// data source when <paramref name="dataSetName"/> matches a registered source, otherwise

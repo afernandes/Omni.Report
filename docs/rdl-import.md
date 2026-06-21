@@ -66,7 +66,8 @@ sucesso**, nunca lança nem descarta em silêncio):
 - **Tablix** não-matrix (tabelas planas / colunas estáticas / span por-célula); **Map** e
   **CustomReportItem** (DataBar/Sparkline/Indicator) — avisados.
 - **TextRun** com `MarkupType=HTML` (achatado p/ texto, avisado); estilo visual por-run e hotspot de ação
-  por-run no render (preservados no modelo, desenho é follow-up).
+  por-run no render (preservados no modelo, desenho é follow-up). Células de **Tablix** (corner/body) ainda
+  achatam para o 1º run (multi-run só nos Textboxes livres por ora).
 - **defaults multi-valor** (só o 1º valor); record `Query` dedicado (CommandText/QueryParameters hoje vivem
   em `DataSourceDefinition.Parameters`); operador infixo VB `Like` (use a função `Like()`).
 - Botão "Importar .rdl" no Designer (a API pública já existe; falta o wiring de UI).
