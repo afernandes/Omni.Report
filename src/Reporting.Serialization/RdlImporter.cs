@@ -39,6 +39,10 @@ public sealed class RdlImporter
     // <Image> references. Reset at the start of every Import.
     private IReadOnlyDictionary<string, byte[]> _embeddedImages = new Dictionary<string, byte[]>();
 
+    // Non-fatal import warnings (e.g. partially-mapped Tablix) collected per Import and surfaced in
+    // Metadata["ImportWarnings"] — import never fails silently.
+    private readonly List<string> _warnings = new();
+
     public ReportDefinition Import(Stream stream, string? reportName = null)
     {
         ArgumentNullException.ThrowIfNull(stream);
@@ -61,6 +65,7 @@ public sealed class RdlImporter
         }
 
         _embeddedImages = ReadEmbeddedImages(report);
+        _warnings.Clear();
 
         var page = El(report, "Page");
         var marginHost = page ?? report;
@@ -92,7 +97,7 @@ public sealed class RdlImporter
             ReportHeader = reportHeader,
             PageHeader = pageHeader,
             PageFooter = pageFooter,
-            Metadata = new EquatableDictionary<string, string>(ReadMetadata(report)),
+            Metadata = new EquatableDictionary<string, string>(MetadataWithWarnings(report)),
             Variables = new EquatableArray<ReportVariable>(ReadVariables(report)),
             DataSources = new EquatableArray<DataSourceDefinition>(ReadDataSets(report)),
         };
@@ -260,6 +265,17 @@ public sealed class RdlImporter
             .ToArray()
             ?? Array.Empty<ReportVariable>();
 
+    // Report metadata + any non-fatal import warnings accumulated while building the bands.
+    private Dictionary<string, string> MetadataWithWarnings(XElement report)
+    {
+        var meta = ReadMetadata(report);
+        if (_warnings.Count > 0)
+        {
+            meta["ImportWarnings"] = string.Join(" | ", _warnings);
+        }
+        return meta;
+    }
+
     // RDL <EmbeddedImages><EmbeddedImage Name><ImageData>base64 → name→bytes map (bad base64 skipped).
     private static Dictionary<string, byte[]> ReadEmbeddedImages(XElement report)
     {
@@ -343,9 +359,79 @@ public sealed class RdlImporter
                     AddItem(child, bounds.X, bounds.Y, into);
                 }
                 break;
-            // Tablix, Chart, Subreport, … — follow-ups; skipped, not errored.
+            case "Tablix":
+                into.Add(ApplyCommon(TablixItem(item, bounds), item));
+                break;
+            // Chart, Gauge, Map, Subreport, … — follow-ups; skipped, not errored.
         }
     }
+
+    // Maps an RDL <Tablix> to OmniReport's TablixElement. First cut: the matrix/crosstab path — dynamic
+    // row + column group hierarchies + the body value cell + corner. Static-column tables and per-cell
+    // spans are follow-ups; a warning is recorded (never silent) when the Tablix isn't a clean matrix.
+    private ReportElement TablixItem(XElement item, Rectangle bounds)
+    {
+        var name = item.Attribute("Name")?.Value ?? "Tablix";
+        var rowGroups = ReadTablixGroups(El(El(item, "TablixRowHierarchy"), "TablixMembers"), "Rows");
+        var colGroups = ReadTablixGroups(El(El(item, "TablixColumnHierarchy"), "TablixMembers"), "Cols");
+
+        var cells = new List<TablixCell>();
+        var cornerRaw = TextboxValue(FirstTextbox(El(item, "TablixCorner")));
+        if (!string.IsNullOrEmpty(cornerRaw))
+        {
+            cells.Add(new TablixCell(0, 0, new LabelElement { Text = cornerRaw, Bounds = Rectangle.Empty }));
+        }
+        var bodyRaw = TextboxValue(FirstTextbox(El(item, "TablixBody")));
+        if (!string.IsNullOrEmpty(bodyRaw))
+        {
+            cells.Add(new TablixCell(1, 1, new TextBoxElement { Expression = RdlExpression.Convert(bodyRaw), Bounds = Rectangle.Empty }));
+        }
+
+        if (rowGroups.Count == 0 || colGroups.Count == 0)
+        {
+            _warnings.Add($"Tablix '{name}': importado parcialmente — sem hierarquia dinâmica de linha E coluna (tabelas planas/colunas estáticas são follow-up).");
+        }
+
+        return new TablixElement
+        {
+            Bounds = bounds,
+            DataSetName = Val(item, "DataSetName"),
+            RowGroups = new EquatableArray<TablixGroup>(rowGroups),
+            ColumnGroups = new EquatableArray<TablixGroup>(colGroups),
+            Cells = new EquatableArray<TablixCell>(cells),
+        };
+    }
+
+    // Walks a TablixMembers tree (outer→inner), collecting each member that carries a <Group> with a
+    // <GroupExpression> into a TablixGroup (with the member's optional first SortExpression). Static
+    // members (no Group) are skipped. Nested <TablixMembers> become deeper group levels.
+    private static List<TablixGroup> ReadTablixGroups(XElement? members, string prefix)
+    {
+        var list = new List<TablixGroup>();
+        Walk(members);
+        return list;
+
+        void Walk(XElement? ms)
+        {
+            foreach (var m in ms?.Elements().Where(e => e.Name.LocalName == "TablixMember") ?? Enumerable.Empty<XElement>())
+            {
+                var group = El(m, "Group");
+                var expr = Val(El(group, "GroupExpressions"), "GroupExpression");
+                if (group is not null && !string.IsNullOrEmpty(expr))
+                {
+                    var sortEl = El(El(m, "SortExpressions"), "SortExpression");
+                    var sortRaw = Val(sortEl, "Value");
+                    var sort = string.IsNullOrEmpty(sortRaw) ? null : RdlExpression.Convert(sortRaw);
+                    var desc = string.Equals(Val(sortEl, "Direction"), "Descending", StringComparison.OrdinalIgnoreCase);
+                    list.Add(new TablixGroup($"{prefix}{list.Count}", RdlExpression.Convert(expr), sort, desc));
+                }
+                Walk(El(m, "TablixMembers")); // nested member → deeper group level
+            }
+        }
+    }
+
+    private static XElement? FirstTextbox(XElement? scope)
+        => scope?.Descendants().FirstOrDefault(e => e.Name.LocalName == "Textbox");
 
     // Applies the report-item attributes common to every element — the RDL <Style>, Visibility/Hidden,
     // Bookmark, DocumentMapLabel and Action — that the model already supports but the importer ignored.
@@ -409,8 +495,12 @@ public sealed class RdlImporter
 
     // RDL 2016 nests the value under Paragraphs/Paragraph/TextRuns/TextRun/Value; RDL 2008 uses a direct
     // <Value>. Returns the first value found.
-    private static string? TextboxValue(XElement textbox)
+    private static string? TextboxValue(XElement? textbox)
     {
+        if (textbox is null)
+        {
+            return null;
+        }
         var run = El(El(El(El(textbox, "Paragraphs"), "Paragraph"), "TextRuns"), "TextRun");
         return Val(run, "Value") ?? Val(textbox, "Value");
     }
