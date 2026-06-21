@@ -281,6 +281,63 @@ public class RdlImporterTests
     }
 
     [Fact]
+    public void Tablix_matrix_is_imported_with_groups_corner_and_body_value()
+    {
+        var rdl = """
+            <Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition">
+              <Body><Height>3cm</Height><ReportItems>
+                <Tablix Name="Matrix1">
+                  <Top>0cm</Top><Left>0cm</Left><Width>12cm</Width><Height>3cm</Height>
+                  <DataSetName>Vendas</DataSetName>
+                  <TablixCorner><TablixCornerRows><TablixCornerRow><TablixCornerCell><CellContents>
+                    <Textbox><Paragraphs><Paragraph><TextRuns><TextRun><Value>Região</Value></TextRun></TextRuns></Paragraph></Paragraphs></Textbox>
+                  </CellContents></TablixCornerCell></TablixCornerRow></TablixCornerRows></TablixCorner>
+                  <Visibility><Hidden>=Fields!Oculto.Value</Hidden></Visibility>
+                  <TablixBody><TablixRows><TablixRow><TablixCells><TablixCell><CellContents>
+                    <Textbox><Style><Format>C</Format></Style><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Sum(Fields!Total.Value)</Value></TextRun></TextRuns></Paragraph></Paragraphs></Textbox>
+                  </CellContents></TablixCell></TablixCells></TablixRow></TablixRows></TablixBody>
+                  <TablixColumnHierarchy><TablixMembers><TablixMember><Group Name="Mes">
+                    <GroupExpressions><GroupExpression>=Fields!Mes.Value</GroupExpression></GroupExpressions></Group></TablixMember></TablixMembers></TablixColumnHierarchy>
+                  <TablixRowHierarchy><TablixMembers><TablixMember><Group Name="Regiao">
+                    <GroupExpressions><GroupExpression>=Fields!Regiao.Value</GroupExpression></GroupExpressions></Group></TablixMember></TablixMembers></TablixRowHierarchy>
+                </Tablix>
+              </ReportItems></Body>
+            </Report>
+            """;
+        var def = new RdlImporter().ImportXml(rdl);
+        var t = def.ReportHeader!.Elements.OfType<Reporting.Elements.TablixElement>().Single();
+
+        t.DataSetName.Should().Be("Vendas");
+        t.RowGroups.Select(g => g.GroupExpression).Should().Equal("Fields.Regiao");
+        t.ColumnGroups.Select(g => g.GroupExpression).Should().Equal("Fields.Mes");
+        t.Cells.Should().Contain(c => c.RowIndex == 0 && c.ColumnIndex == 0
+            && ((Reporting.Elements.LabelElement)c.Content!).Text == "Região");
+        var body = (Reporting.Elements.TextBoxElement)t.Cells.Single(c => c.RowIndex == 1 && c.ColumnIndex == 1).Content!;
+        body.Expression.Should().Be("Sum(Fields.Total)");
+        body.Style.Format.Should().Be("C", "the body cell keeps its RDL Format instead of the N2 default");
+        // Common props on the Tablix itself are applied (the ApplyCommon TablixElement arm).
+        t.VisibleExpression.Should().Be("!(Fields.Oculto)");
+        def.Metadata.ContainsKey("ImportWarnings").Should().BeFalse("a clean matrix has nothing to warn about");
+    }
+
+    [Fact]
+    public void Tablix_without_both_hierarchies_records_a_warning()
+    {
+        var rdl = """
+            <Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition">
+              <Body><Height>3cm</Height><ReportItems>
+                <Tablix Name="FlatTable">
+                  <Top>0cm</Top><Left>0cm</Left><Width>8cm</Width><Height>2cm</Height>
+                  <TablixRowHierarchy><TablixMembers><TablixMember><Group Name="Det" /></TablixMember></TablixMembers></TablixRowHierarchy>
+                </Tablix>
+              </ReportItems></Body>
+            </Report>
+            """;
+        var def = new RdlImporter().ImportXml(rdl);
+        def.Metadata["ImportWarnings"].Should().Contain("FlatTable");
+    }
+
+    [Fact]
     public void DataSets_are_imported_with_fields_calculated_filter_sort_and_query()
     {
         var rdl = """

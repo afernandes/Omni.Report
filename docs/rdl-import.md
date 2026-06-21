@@ -30,6 +30,11 @@ var pdf = await new ReportEngine().RenderAsync(def, dataSources);
   - `Textbox` → `TextBox` (se o valor for expressão `=…`) ou `Label` (texto literal);
   - `Line`, `Rectangle` (a forma + itens aninhados, deslocados para coordenadas absolutas),
   - `Image` externa (`Source=External`).
+- **Tablix matrix/crosstab** (`<Tablix>` com hierarquias dinâmicas de linha **e** coluna) → `TablixElement`:
+  `TablixRowHierarchy`/`TablixColumnHierarchy` (membros com `<Group><GroupExpression>`, recursivo p/ níveis
+  aninhados, + sort do membro) → `RowGroups`/`ColumnGroups`; `<TablixCorner>` → célula `(0,0)`;
+  valor do `<TablixBody>` → célula de corpo `(1,1)`; `DataSetName`. Tabelas planas / colunas estáticas e
+  span por-célula são follow-up — um aviso vai em `Metadata["ImportWarnings"]` (nunca silencioso).
 - **DataSets** (`<DataSets><DataSet>`) → `DataSourceDefinition` (metadados de binding; a execução da query
   fica delegada ao host `IReportDataSource`): `<Fields>` → `DataField` (campos com `<Value>` viram
   `CalculatedField`); `<Filters>` estruturado → `FilterExpression` booleano; `<SortExpressions>`;
