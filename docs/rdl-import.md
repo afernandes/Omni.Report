@@ -30,6 +30,10 @@ var pdf = await new ReportEngine().RenderAsync(def, dataSources);
   - `Textbox` → `TextBox` (se o valor for expressão `=…`) ou `Label` (texto literal);
   - `Line`, `Rectangle` (a forma + itens aninhados, deslocados para coordenadas absolutas),
   - `Image` externa (`Source=External`).
+- **Data viz**: `<Chart>` → `ChartElement` (tipo da 1ª série, categoria da hierarquia, uma `ChartSeries`
+  por série com valor do 1º DataValue); `<GaugePanel>` → `GaugeElement` (Radial/Linear + valor do 1º
+  ponteiro); `<Subreport>` → `SubreportElement` (ReportName→ReportId + Parameters→ParameterBindings).
+  `<Map>` e `<CustomReportItem>` (DataBar/Sparkline/Indicator) → aviso em `Metadata["ImportWarnings"]`.
 - **Tablix matrix/crosstab** (`<Tablix>` com hierarquias dinâmicas de linha **e** coluna) → `TablixElement`:
   `TablixRowHierarchy`/`TablixColumnHierarchy` (membros com `<Group><GroupExpression>`, recursivo p/ níveis
   aninhados, + sort do membro) → `RowGroups`/`ColumnGroups`; `<TablixCorner>` → célula `(0,0)`;
