@@ -775,6 +775,33 @@ public class RdlImporterTests
     }
 
     [Fact]
+    public void Style_properties_valued_by_expression_import_as_PropertyExpressions()
+    {
+        // Conditional formatting (negative-in-red, threshold colouring) is expressed as =expr in RDL <Style>.
+        // ReadStyle only parses literals, so these were silently dropped; now they become PropertyExpressions.
+        var rdl = """
+            <Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition">
+              <Body><Height>3cm</Height><ReportItems>
+                <Textbox Name="t"><Top>0cm</Top><Left>0cm</Left><Width>5cm</Width><Height>1cm</Height>
+                  <Style>
+                    <Color>=IIf(Fields!Saldo.Value &lt; 0, "#FF0000", "#000000")</Color>
+                    <Format>=IIf(Fields!Pct.Value &gt; 1, "P2", "N2")</Format>
+                    <FontFamily>Arial</FontFamily>
+                  </Style>
+                  <Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!Saldo.Value</Value></TextRun></TextRuns></Paragraph></Paragraphs>
+                </Textbox>
+              </ReportItems></Body>
+            </Report>
+            """;
+        var el = new RdlImporter().ImportXml(rdl).ReportHeader!.Elements.Single();
+        // The two expression-valued style props became bindings; the literal FontFamily did NOT.
+        el.PropertyExpressions.Should().ContainKey("Style.ForeColor");
+        el.PropertyExpressions["Style.ForeColor"].Should().Contain("IIf").And.Contain("Fields.Saldo");
+        el.PropertyExpressions.Should().ContainKey("Style.Format");
+        el.PropertyExpressions.Should().NotContainKey("Style.Font.Family", "a literal style value stays literal, not a binding");
+    }
+
+    [Fact]
     public void Gauge_scale_ranges_and_min_max_are_imported()
     {
         var rdl = """
