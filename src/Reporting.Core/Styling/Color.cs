@@ -45,4 +45,26 @@ public readonly record struct Color(byte R, byte G, byte B, byte A)
             : string.Create(CultureInfo.InvariantCulture, $"#{A:X2}{R:X2}{G:X2}{B:X2}");
 
     public override string ToString() => ToHex();
+
+    /// <summary>Resolves a CSS/RDL named colour (case-insensitive) to a <see cref="Color"/>, or null when the
+    /// name is unknown. Covers the common RDL palette; <c>#hex</c> literals go through <see cref="FromHex"/>.
+    /// Shared so the RDL importer and the expression-binding coercion agree on the same names.</summary>
+    public static Color? FromName(string? name) => name?.Trim().ToLowerInvariant() switch
+    {
+        "black" => new(0, 0, 0, 255),
+        "white" => new(255, 255, 255, 255),
+        "red" => new(255, 0, 0, 255),
+        "green" => new(0, 128, 0, 255),
+        "lime" => new(0, 255, 0, 255),
+        "blue" => new(0, 0, 255, 255),
+        "yellow" => new(255, 255, 0, 255),
+        "gray" or "grey" => new(128, 128, 128, 255),
+        "silver" => new(192, 192, 192, 255),
+        "lightgray" or "lightgrey" => new(211, 211, 211, 255),
+        "navy" => new(0, 0, 128, 255),
+        "orange" => new(255, 165, 0, 255),
+        "purple" => new(128, 0, 128, 255),
+        "transparent" => Transparent,
+        _ => null,
+    };
 }

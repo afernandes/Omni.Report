@@ -138,14 +138,24 @@ internal static class PropertyPathBinder
         {
             if (u == typeof(Color))
             {
-                // Only a #hex STRING is a colour. A numeric result (e.g. 160000) must NOT be silently
-                // mis-read as "#160000" — reject it so the static colour stays the fallback.
-                if (raw is not string hex)
+                // A colour result is a STRING: a #hex literal, or a known CSS/RDL name (e.g. the ubiquitous
+                // negative-in-red expression =IIf(x<0,"Red","Black")). A numeric result (e.g. 160000) must
+                // NOT be mis-read as "#160000" — reject it so the static colour stays the fallback.
+                if (raw is not string colorText)
                 {
                     return false;
                 }
-                value = Color.FromHex(hex);
-                return true;
+                if (colorText.TrimStart().StartsWith('#'))
+                {
+                    value = Color.FromHex(colorText.Trim());
+                    return true;
+                }
+                if (Color.FromName(colorText) is { } named)
+                {
+                    value = named;
+                    return true;
+                }
+                return false;
             }
             if (u == typeof(Unit))
             {
