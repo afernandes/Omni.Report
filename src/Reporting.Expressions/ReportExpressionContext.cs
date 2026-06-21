@@ -251,7 +251,7 @@ public sealed class ReportExpressionContext : IReportExpressionContext
                 // Total rows in scope (complete for Report via the primed override).
                 return ScopeRows(scope).Count;
             case "PREVIOUS":
-                return PreviousValue(expression);
+                return PreviousValue(expression, scope);
             default:
                 return null;
         }
@@ -273,14 +273,16 @@ public sealed class ReportExpressionContext : IReportExpressionContext
         _ => _reportRows,
     };
 
-    private object? PreviousValue(string expression)
+    private object? PreviousValue(string expression, AggregateScope scope)
     {
-        // Evaluate the expression against the row before the current one (report scope, incremental).
-        if (_reportRows.Count < 2)
+        // Evaluate the expression against the row before the current one within the scope (incremental
+        // list). At the first row of the scope (e.g. a group's first row) there's no previous → null.
+        var rows = PositionList(scope);
+        if (rows.Count < 2)
         {
             return null;
         }
-        var prev = _reportRows[_reportRows.Count - 2];
+        var prev = rows[rows.Count - 2];
         var live = _fieldsLookup.Keys.Select(k => new KeyValuePair<string, object?>(k, _fieldsLookup[k])).ToList();
         try
         {

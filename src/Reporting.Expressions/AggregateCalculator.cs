@@ -33,11 +33,20 @@ internal static class AggregateCalculator
         {
             if (value is not null)
             {
-                seen.Add(value);
+                // Normalize numerics to decimal so int 1 / long 1 / double 1.0 / decimal 1m count as one
+                // distinct value (consistent with SumRows/Compare, which also funnel through decimal).
+                seen.Add(NormalizeDistinctKey(value));
             }
         }
         return seen.Count;
     }
+
+    private static object NormalizeDistinctKey(object value) => value switch
+    {
+        byte or sbyte or short or ushort or int or uint or long or ulong or float or double or decimal
+            => Convert.ToDecimal(value, CultureInfo.InvariantCulture),
+        _ => value,
+    };
 
     private static int CountRows(string expression, IReadOnlyList<DictionaryLookup> rows, ExpressionEvaluator evaluator, ReportExpressionContext owner)
     {

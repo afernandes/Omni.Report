@@ -59,4 +59,33 @@ public class PositionalFunctionsTests
         var (ctx, ev) = WithRows(10, 20, 10, 30, 20);
         ev.Evaluate("CountDistinct(Fields.V)", ctx).Should().Be(3); // {10,20,30}
     }
+
+    [Fact]
+    public void CountDistinct_treats_equal_numerics_across_types_as_one()
+    {
+        var ev = new ExpressionEvaluator();
+        var ctx = new ReportExpressionContext(ev);
+        ctx.SetCurrentRow(new Dictionary<string, object?> { ["V"] = 1 });    // int
+        ctx.SetCurrentRow(new Dictionary<string, object?> { ["V"] = 1m });   // decimal — same value
+        ctx.SetCurrentRow(new Dictionary<string, object?> { ["V"] = 2.0 });  // double
+        ev.Evaluate("CountDistinct(Fields.V)", ctx).Should().Be(2);          // {1, 2}
+    }
+
+    [Fact]
+    public void Previous_respects_group_scope()
+    {
+        var ev = new ExpressionEvaluator();
+        var ctx = new ReportExpressionContext(ev);
+        ctx.SetCurrentRow(new Dictionary<string, object?> { ["V"] = 10 });
+        ctx.SetCurrentRow(new Dictionary<string, object?> { ["V"] = 20 });
+        ctx.ResetGroup(); // a new group starts
+        ctx.SetCurrentRow(new Dictionary<string, object?> { ["V"] = 30 });
+
+        // At the first row of the new group there's no previous IN-GROUP, but report scope still has one.
+        ev.Evaluate("Previous(Fields.V, 'Group')", ctx).Should().BeNull();
+        ev.Evaluate("Previous(Fields.V, 'Report')", ctx).Should().Be(20);
+
+        ctx.SetCurrentRow(new Dictionary<string, object?> { ["V"] = 40 });
+        ev.Evaluate("Previous(Fields.V, 'Group')", ctx).Should().Be(30); // previous within the group
+    }
 }
