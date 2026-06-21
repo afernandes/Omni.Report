@@ -92,8 +92,20 @@ public sealed class RdlImporter
             PageHeader = pageHeader,
             PageFooter = pageFooter,
             Metadata = new EquatableDictionary<string, string>(ReadMetadata(report)),
+            Variables = new EquatableArray<ReportVariable>(ReadVariables(report)),
         };
     }
+
+    // RDL <Variables><Variable Name><Value>=expr → report-level ReportVariable (Report scope).
+    private static ReportVariable[] ReadVariables(XElement report)
+        => El(report, "Variables")?.Elements().Where(e => e.Name.LocalName == "Variable")
+            .Where(v => v.Attribute("Name")?.Value is { Length: > 0 })
+            .Select(v => new ReportVariable(
+                v.Attribute("Name")!.Value,
+                RdlExpression.Convert(Val(v, "Value")),
+                VariableScope.Report))
+            .ToArray()
+            ?? Array.Empty<ReportVariable>();
 
     // RDL <EmbeddedImages><EmbeddedImage Name><ImageData>base64 → name→bytes map (bad base64 skipped).
     private static Dictionary<string, byte[]> ReadEmbeddedImages(XElement report)

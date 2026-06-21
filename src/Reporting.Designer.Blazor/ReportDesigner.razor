@@ -67,6 +67,9 @@
                        OnAdd="OnInsert"
                        OnAddParameter="OnAddParameter"
                        OnRemoveParameter="OnRemoveParameter"
+                       Variables="State.Variables"
+                       OnAddVariable="OnAddVariable"
+                       OnRemoveVariable="OnRemoveVariable"
                        OnAddDataSource="OnAddDataSource" />
 
             <CanvasRegion Report="State.Report"
@@ -606,6 +609,14 @@
     }
 
     private void OnRemoveParameter(DesignerParameter p) => State.Parameters.Remove(p);
+
+    private void OnAddVariable()
+    {
+        var name = $"Var{State.Variables.Count + 1}";
+        State.Variables.Add(new DesignerVariable(name));
+    }
+
+    private void OnRemoveVariable(DesignerVariable v) => State.Variables.Remove(v);
 
     /// <summary>Inserts a TextBox pre-bound to a system expression (page number, today,
     /// report name, etc.). Triggered by the new "Sistema" section in the toolbox. Goes

@@ -71,6 +71,18 @@ public class ReportBuilderTests
     }
 
     [Fact]
+    public void Report_variable_flows_through_the_builder()
+    {
+        var report = ReportBuilder.Create("Test")
+            .Variable("Acumulado", "Sum(Fields.Total)")
+            .Build();
+        var v = report.Definition.Variables[0];
+        v.Name.Should().Be("Acumulado");
+        v.Expression.Should().Be("Sum(Fields.Total)");
+        v.Scope.Should().Be(Reporting.Parameters.VariableScope.Report);
+    }
+
+    [Fact]
     public void Parameter_metadata_flags_flow_through_the_builder()
     {
         var report = ReportBuilder.Create("Test")

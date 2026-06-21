@@ -266,6 +266,22 @@ public class RdlImporterTests
     }
 
     [Fact]
+    public void Report_variables_are_imported()
+    {
+        var rdl = """
+            <Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition">
+              <Variables>
+                <Variable Name="Acumulado"><Value>=Sum(Fields!Total.Value)</Value></Variable>
+              </Variables>
+            </Report>
+            """;
+        var v = new RdlImporter().ImportXml(rdl).Variables[0];
+        v.Name.Should().Be("Acumulado");
+        v.Expression.Should().Be("Sum(Fields.Total)");
+        v.Scope.Should().Be(Reporting.Parameters.VariableScope.Report);
+    }
+
+    [Fact]
     public void Parameter_metadata_hidden_nullable_allowblank_are_imported()
     {
         var rdl = """

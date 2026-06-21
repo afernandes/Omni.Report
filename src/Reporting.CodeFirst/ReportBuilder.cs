@@ -25,6 +25,7 @@ public sealed class ReportBuilderRoot
     private readonly List<DataSourceDefinition> _dataSourceDefinitions = [];
     private readonly List<GroupBuilder> _groups = [];
     private readonly Dictionary<string, string> _metadata = [];
+    private readonly List<Reporting.Parameters.ReportVariable> _variables = [];
 
     private BandContent? _reportHeader;
     private BandContent? _pageHeader;
@@ -53,6 +54,16 @@ public sealed class ReportBuilderRoot
     {
         ArgumentNullException.ThrowIfNull(configure);
         configure(_parameters);
+        return this;
+    }
+
+    /// <summary>Declares a report-level computed variable (RDL <c>&lt;Variables&gt;</c>) — evaluated once
+    /// per report (default) and referenced in expressions as <c>Variables.&lt;Name&gt;</c>.</summary>
+    public ReportBuilderRoot Variable(string name, string expression,
+        Reporting.Parameters.VariableScope scope = Reporting.Parameters.VariableScope.Report)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+        _variables.Add(new Reporting.Parameters.ReportVariable(name, expression, scope));
         return this;
     }
 
@@ -313,6 +324,7 @@ public sealed class ReportBuilderRoot
             PageFooter = _pageFooter is null ? null : GroupBuilder.BuildReportBand(_pageFooter, BandKind.PageFooter),
             ReportFooter = _reportFooter is null ? null : GroupBuilder.BuildReportBand(_reportFooter, BandKind.ReportFooter),
             Metadata = new EquatableDictionary<string, string>(_metadata),
+            Variables = new EquatableArray<Reporting.Parameters.ReportVariable>(_variables),
         };
         return new Report(definition, _dataSources);
     }
