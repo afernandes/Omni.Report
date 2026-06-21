@@ -307,6 +307,9 @@ public sealed class ExpressionEvaluator
         int Int(int i) => Convert.ToInt32(p.Evaluate(i), context.Culture);
         DateTime Dt(int i) { var v = p.Evaluate(i); return v is DateTime d ? d : Convert.ToDateTime(v, context.Culture); }
         bool Bool(int i) => Convert.ToBoolean(p.Evaluate(i), context.Culture);
+        // Decimals arg for the Format* helpers: default 2, clamped to [0,15] so a bad count degrades to a
+        // sane format string instead of emitting a literal "C-1" or 99 digits.
+        int FormatDecimals() => n >= 2 ? Math.Clamp(Int(1), 0, 15) : 2;
 
         // A function whose argument can't be coerced (e.g. a text value where a date/number/bool is
         // expected) degrades to null for this cell — SSRS-style #Error — instead of aborting the whole
@@ -448,15 +451,15 @@ public sealed class ExpressionEvaluator
             // ── Formatting (VB Format* helpers → ValueFormatter with a standard .NET format string) ──
             case "formatcurrency": // FormatCurrency(value [, decimals=2])
                 if (n < 1) return false;
-                result = ValueFormatter.Format(p.Evaluate(0), "C" + (n >= 2 ? Int(1) : 2), context.Culture);
+                result = ValueFormatter.Format(p.Evaluate(0), "C" + FormatDecimals(), context.Culture);
                 return true;
             case "formatnumber":
                 if (n < 1) return false;
-                result = ValueFormatter.Format(p.Evaluate(0), "N" + (n >= 2 ? Int(1) : 2), context.Culture);
+                result = ValueFormatter.Format(p.Evaluate(0), "N" + FormatDecimals(), context.Culture);
                 return true;
             case "formatpercent": // VB: 0.25 → "25%"
                 if (n < 1) return false;
-                result = ValueFormatter.Format(p.Evaluate(0), "P" + (n >= 2 ? Int(1) : 2), context.Culture);
+                result = ValueFormatter.Format(p.Evaluate(0), "P" + FormatDecimals(), context.Culture);
                 return true;
             case "formatdatetime": // FormatDateTime(date [, VB DateFormat 0..4])
                 if (n < 1) return false;
@@ -471,15 +474,13 @@ public sealed class ExpressionEvaluator
                   }; }
                 return true;
 
-            // ── More numeric (VB) ──
+            // ── More numeric (VB) ── (Sign is left to NCalc's native function.) InvariantCulture parse
+            // matches the Cxxx conversions: a string literal means the same as the NCalc numeric literal.
             case "fix": // truncate toward zero: Fix(-2.7) = -2
-                result = n > 0 ? Math.Truncate(Convert.ToDouble(p.Evaluate(0), context.Culture)) : 0d;
+                result = n > 0 ? Math.Truncate(Convert.ToDouble(p.Evaluate(0), CultureInfo.InvariantCulture)) : 0d;
                 return true;
             case "int": // VB Int: floor toward -∞: Int(-2.7) = -3
-                result = n > 0 ? Math.Floor(Convert.ToDouble(p.Evaluate(0), context.Culture)) : 0d;
-                return true;
-            case "sign":
-                result = n > 0 ? Math.Sign(Convert.ToDouble(p.Evaluate(0), context.Culture)) : 0;
+                result = n > 0 ? Math.Floor(Convert.ToDouble(p.Evaluate(0), CultureInfo.InvariantCulture)) : 0d;
                 return true;
 
             default:
