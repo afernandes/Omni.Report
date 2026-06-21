@@ -89,4 +89,123 @@ public class DocxExporterTests
         x.FileExtension.Should().Be(".docx");
         x.ContentType.Should().Be("application/vnd.openxmlformats-officedocument.wordprocessingml.document");
     }
+
+    // ── Inline images (camada 2, PR1) ─────────────────────────────────────────────
+
+    // Minimal valid 1x1 PNG.
+    private static readonly byte[] OnePixelPng = Convert.FromBase64String(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M8AAAMBAQDJ/QodAAAAAElFTkSuQmCC");
+    // Minimal JPEG header bytes (FF D8 signature) + EOI; enough for the signature path + a valid image part.
+    private static readonly byte[] TinyJpeg = { 0xFF, 0xD8, 0xFF, 0xD9 };
+
+    private static Reporting.Layout.RenderedReport ReportWith(params Reporting.Layout.Primitives.LayoutPrimitive[] prims)
+    {
+        var page = new Reporting.Layout.RenderedPage(1, Reporting.Paper.PageSetup.A4Portrait,
+            new Reporting.Common.EquatableArray<Reporting.Layout.Primitives.LayoutPrimitive>(prims));
+        return new Reporting.Layout.RenderedReport("imgtest",
+            new Reporting.Common.EquatableArray<Reporting.Layout.RenderedPage>(new[] { page }));
+    }
+
+    private static Reporting.Layout.Primitives.DrawImagePrimitive Image(byte[] bytes) => new()
+    {
+        Bounds = new Reporting.Geometry.Rectangle(
+            Reporting.Geometry.Unit.FromMm(0), Reporting.Geometry.Unit.FromMm(0),
+            Reporting.Geometry.Unit.FromMm(40), Reporting.Geometry.Unit.FromMm(30)),
+        Data = new Reporting.Common.EquatableArray<byte>(bytes),
+    };
+
+    [Fact]
+    public void Inline_png_image_is_embedded_as_an_image_part_and_drawing()
+    {
+        var bytes = new DocxExporter().ExportToBytes(ReportWith(Image(OnePixelPng)));
+        using var ms = new MemoryStream(bytes);
+        using var doc = WordprocessingDocument.Open(ms, false);
+
+        doc.MainDocumentPart!.ImageParts.Should().ContainSingle();
+        var blip = doc.MainDocumentPart.Document.Body!
+            .Descendants<DocumentFormat.OpenXml.Drawing.Blip>().Single();
+        blip.Embed!.Value.Should().NotBeNullOrEmpty();
+        // The relationship id resolves to the embedded image part.
+        doc.MainDocumentPart.GetPartById(blip.Embed!.Value!).Should().BeOfType<ImagePart>();
+        // The inline drawing carries a positive extent within the page clamp.
+        var extent = doc.MainDocumentPart.Document.Body!
+            .Descendants<DocumentFormat.OpenXml.Drawing.Wordprocessing.Extent>().Single();
+        extent.Cx!.Value.Should().BeGreaterThan(0);
+        extent.Cy!.Value.Should().BeGreaterThan(0);
+    }
+
+    [Fact]
+    public void Inline_image_keeps_the_docx_schema_valid()
+    {
+        // Two DISTINCT images (PNG + JPEG, so dedup doesn't collapse them) → two drawings with unique Ids.
+        var bytes = new DocxExporter().ExportToBytes(ReportWith(Image(OnePixelPng), Image(TinyJpeg)));
+        using var ms = new MemoryStream(bytes);
+        using var doc = WordprocessingDocument.Open(ms, false);
+        doc.MainDocumentPart!.ImageParts.Should().HaveCount(2);
+        // Catches wrong CT_Inline child ordering and duplicate DocProperties Ids across the two images.
+        var errors = new OpenXmlValidator(FileFormatVersions.Office2019).Validate(doc).ToList();
+        errors.Should().BeEmpty(string.Join("\n", errors.Select(e => $"{e.Path?.XPath}: {e.Description}")));
+    }
+
+    [Fact]
+    public void Jpeg_bytes_use_a_jpeg_image_part()
+    {
+        var bytes = new DocxExporter().ExportToBytes(ReportWith(Image(TinyJpeg)));
+        using var ms = new MemoryStream(bytes);
+        using var doc = WordprocessingDocument.Open(ms, false);
+        var part = doc.MainDocumentPart!.ImageParts.Single();
+        part.ContentType.Should().Contain("jpeg");
+    }
+
+    [Fact]
+    public void Bmp_bytes_use_a_bmp_part_not_a_mislabelled_png()
+    {
+        // Regression: arbitrary user/RDL bytes (BMP/GIF) must NOT be labelled image/png — Word embeds raw and
+        // would render a broken image. The format is sniffed from the signature.
+        var bmp = new byte[] { 0x42, 0x4D, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00 }; // "BM" + filler
+        var bytes = new DocxExporter().ExportToBytes(ReportWith(Image(bmp)));
+        using var ms = new MemoryStream(bytes);
+        using var doc = WordprocessingDocument.Open(ms, false);
+        doc.MainDocumentPart!.ImageParts.Single().ContentType.Should().Contain("bmp");
+    }
+
+    [Fact]
+    public void Unsupported_format_is_skipped_not_corrupted()
+    {
+        // A format Word can't host raw (WebP "RIFF....WEBP") is dropped, not written as a corrupt png part.
+        var webp = new byte[] { 0x52, 0x49, 0x46, 0x46, 0x00, 0x00, 0x00, 0x00, 0x57, 0x45, 0x42, 0x50 };
+        var bytes = new DocxExporter().ExportToBytes(ReportWith(Image(webp)));
+        using var ms = new MemoryStream(bytes);
+        using var doc = WordprocessingDocument.Open(ms, false);
+        doc.MainDocumentPart!.ImageParts.Should().BeEmpty();
+        new OpenXmlValidator(FileFormatVersions.Office2019).Validate(doc.MainDocumentPart.Document)
+            .Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Repeated_identical_image_is_emitted_once()
+    {
+        // A page-header logo present on every page must collapse to a single embedded image, not N copies.
+        var logo = Image(OnePixelPng);
+        var p1 = new Reporting.Layout.RenderedPage(1, Reporting.Paper.PageSetup.A4Portrait,
+            new Reporting.Common.EquatableArray<Reporting.Layout.Primitives.LayoutPrimitive>(new[] { (Reporting.Layout.Primitives.LayoutPrimitive)logo }));
+        var p2 = new Reporting.Layout.RenderedPage(2, Reporting.Paper.PageSetup.A4Portrait,
+            new Reporting.Common.EquatableArray<Reporting.Layout.Primitives.LayoutPrimitive>(new[] { (Reporting.Layout.Primitives.LayoutPrimitive)logo }));
+        var report = new Reporting.Layout.RenderedReport("dup",
+            new Reporting.Common.EquatableArray<Reporting.Layout.RenderedPage>(new[] { p1, p2 }));
+
+        using var ms = new MemoryStream(new DocxExporter().ExportToBytes(report));
+        using var doc = WordprocessingDocument.Open(ms, false);
+        doc.MainDocumentPart!.ImageParts.Should().ContainSingle("the identical logo is deduped across pages");
+    }
+
+    [Fact]
+    public async Task Report_without_images_emits_no_drawing_and_stays_valid()
+    {
+        var rendered = await Sample01_VendasPorCliente.Build().PaginateAsync();
+        using var ms = new MemoryStream(new DocxExporter().ExportToBytes(rendered));
+        using var doc = WordprocessingDocument.Open(ms, false);
+        doc.MainDocumentPart!.ImageParts.Should().BeEmpty();
+        doc.MainDocumentPart.Document.Body!.Descendants<Drawing>().Should().BeEmpty();
+    }
 }

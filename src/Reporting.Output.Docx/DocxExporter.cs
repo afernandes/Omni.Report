@@ -2,6 +2,7 @@ using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 using Reporting.Layout;
+using Reporting.Layout.Primitives;
 using Reporting.Layout.Tabular;
 using Reporting.Output.Pdf;
 
@@ -60,6 +61,25 @@ public sealed class DocxExporter : IReportExporter
         if (grid.Rows.Count > 0)
         {
             body.AppendChild(BuildTable(grid));
+        }
+
+        // The tabular grid only carries text — images (logo/photo/signature) would be silently dropped.
+        // Emit each as a standalone inline-image paragraph after the table (in-cell positioning is a
+        // follow-up; charts/shapes are vector primitives that need rasterisation — deferred to PR2).
+        // Dedupe by exact bytes so a repeating page-header/footer logo (present on every page) collapses to
+        // a single image instead of N copies; drawingId only advances when an image is actually emitted.
+        var seen = new HashSet<Reporting.Common.EquatableArray<byte>>();
+        uint drawingId = 1;
+        foreach (var page in report.Pages)
+        {
+            foreach (var img in page.Primitives.OfType<DrawImagePrimitive>())
+            {
+                if (img.Data.Count > 0 && seen.Add(img.Data)
+                    && DocxImageWriter.AppendInlineImage(main, body, img, drawingId))
+                {
+                    drawingId++;
+                }
+            }
         }
 
         main.Document.Save();
