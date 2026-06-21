@@ -19,22 +19,6 @@ namespace Reporting.Rendering.Tests;
 /// </summary>
 public class EmojiFallbackTests
 {
-    /// <summary>Counts non-white pixels in a PNG byte buffer. Used as a proxy for "is
-    /// something visible?" without relying on platform-specific font output.</summary>
-    private static int CountInkPixels(byte[] pngBytes)
-    {
-        using var bmp = SKBitmap.Decode(pngBytes);
-        int ink = 0;
-        for (int y = 0; y < bmp.Height; y++)
-            for (int x = 0; x < bmp.Width; x++)
-            {
-                var c = bmp.GetPixel(x, y);
-                // Any pixel darker/coloured than near-white counts as ink.
-                if (c.Red < 240 || c.Green < 240 || c.Blue < 240) ink++;
-            }
-        return ink;
-    }
-
     [Fact]
     public void Emoji_codepoint_renders_visible_ink()
     {
@@ -55,7 +39,7 @@ public class EmojiFallbackTests
             new Rectangle(10.Mm(), 10.Mm(), 60.Mm(), 12.Mm()),
             new TextStyle(new Font("Arial", 18), Color.Black));
         ctxEmoji.EndPage();
-        var inkWithEmoji = CountInkPixels(ctxEmoji.Pages[0].PngBytes);
+        var inkWithEmoji = SkiaTestHelpers.CountInkPixels(ctxEmoji.Pages[0].PngBytes);
 
         using var ctxNoEmoji = new SkiaRenderingContext(dpi: 72);
         ctxNoEmoji.BeginPage(PageSetup.A4Portrait);
@@ -63,7 +47,7 @@ public class EmojiFallbackTests
             new Rectangle(10.Mm(), 10.Mm(), 60.Mm(), 12.Mm()),
             new TextStyle(new Font("Arial", 18), Color.Black));
         ctxNoEmoji.EndPage();
-        var inkLettersOnly = CountInkPixels(ctxNoEmoji.Pages[0].PngBytes);
+        var inkLettersOnly = SkiaTestHelpers.CountInkPixels(ctxNoEmoji.Pages[0].PngBytes);
 
         // The emoji glyph (typically ~16–24 px square at 18 pt) should add at least 50
         // ink pixels over the letters-only baseline. A tofu box would only outline the
@@ -87,7 +71,7 @@ public class EmojiFallbackTests
             new TextStyle(new Font("Arial", 12), Color.Black));
         ctx.EndPage();
 
-        CountInkPixels(ctx.Pages[0].PngBytes).Should().BeGreaterThan(200,
+        SkiaTestHelpers.CountInkPixels(ctx.Pages[0].PngBytes).Should().BeGreaterThan(200,
             "plain text must still render normally after the fallback refactor");
     }
 }

@@ -12,6 +12,14 @@
     <ProjectReference Include="..\Reporting.Rendering\Reporting.Rendering.csproj" />
   </ItemGroup>
 
+  <!-- O test project se chama Reporting.Rendering.Tests (não .Skia.Tests), então a convenção
+       global de Directory.Build.props ($(MSBuildProjectName).Tests) não o cobre. Expomos os
+       internals (SkiaConversions: Px/ToSKFontStyle/ToSKDashEffect) só para esses testes puros
+       de conversão, que não têm como ser cobertos via API pública de pixels. -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="Reporting.Rendering.Tests" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="SkiaSharp" />
     <!-- O metapacote base do SkiaSharp traz os nativos de Windows/macOS, mas NÃO o de
