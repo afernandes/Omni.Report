@@ -26,6 +26,13 @@ public abstract record LayoutPrimitive
     /// Interactive viewers list these as a navigable table of contents linking to
     /// <see cref="BookmarkId"/>. Null = not a document-map entry.</summary>
     public string? DocMapLabel { get; init; }
+
+    /// <summary>Clip rectangle (absolute page coords) this primitive is constrained to — set by the layout
+    /// engine for the children of a container <c>Rectangle</c> so overflow is cut to the container. Null = no
+    /// clip. Backends that support clipping (Skia raster/PDF/PNG/SVG, GDI) honour it; the HTML overlay inherits
+    /// it via the embedded visual; text/data exporters ignore it. Corner-radius clipping is a follow-up (the
+    /// clip is the rounded rect's bounding box).</summary>
+    public Rectangle? ClipBounds { get; init; }
 }
 
 public sealed record DrawTextPrimitive : LayoutPrimitive

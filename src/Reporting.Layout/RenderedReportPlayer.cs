@@ -59,6 +59,15 @@ public static class RenderedReportPlayer
 
     private static void Dispatch(LayoutPrimitive primitive, IRenderingContext context)
     {
+        // Container clip: constrain this primitive to its rectangle (set for container-rect children).
+        // Push/Pop are no-ops on backends that don't clip, so unclipped output is unchanged.
+        bool clipped = primitive.ClipBounds is not null;
+        if (clipped)
+        {
+            context.PushClip(primitive.ClipBounds!.Value);
+        }
+        try
+        {
         switch (primitive)
         {
             case DrawTextPrimitive t:
@@ -93,6 +102,15 @@ public static class RenderedReportPlayer
             case DrawPolygonPrimitive poly:
                 context.DrawPath(poly.BuildPath, poly.Pen, poly.Fill);
                 break;
+        }
+        }
+        finally
+        {
+            // Always balance the clip — a draw that throws must not leak the clip onto later primitives.
+            if (clipped)
+            {
+                context.PopClip();
+            }
         }
     }
 }

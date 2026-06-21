@@ -148,6 +148,15 @@ public sealed class SkiaPdfRenderingContext : IRenderingContext, ITextMeasurer
         SkiaPrimitiveRenderer.DrawPath(_canvas!, build, pen, fill, PdfDpi);
     }
 
+    public void PushClip(Rectangle bounds)
+    {
+        EnsurePage();
+        _canvas!.Save();
+        _canvas.ClipRect(bounds.ToSKRect(PdfDpi));
+    }
+
+    public void PopClip() => _canvas?.Restore();
+
     public Size MeasureText(string text, TextStyle style, Unit? maxWidth = null)
         => SkiaPrimitiveRenderer.MeasureText(text, style, maxWidth, PdfDpi);
 

@@ -124,6 +124,41 @@ public class BandRendererCoverageTests
         // The child sits at the rectangle's top-left + its RELATIVE bounds (5mm, 5mm) — not flattened away.
         (child.Bounds.X - fill.Bounds.X).Should().Be(5.Mm());
         (child.Bounds.Y - fill.Bounds.Y).Should().Be(5.Mm());
+        // The child is clipped to the container; the fill itself carries no clip.
+        child.ClipBounds.Should().Be(fill.Bounds);
+        fill.ClipBounds.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Nested_rectangles_intersect_their_clips()
+    {
+        var req = WithSingleRowDefinition(new RectangleElement
+        {
+            Id = "outer",
+            Bounds = new Rectangle(0.Mm(), 0.Mm(), 100.Mm(), 50.Mm()),
+            Children = EquatableArray.Create<ReportElement>(new RectangleElement
+            {
+                Id = "inner",
+                Bounds = new Rectangle(10.Mm(), 10.Mm(), 200.Mm(), 200.Mm()), // deliberately overflows outer
+                Children = EquatableArray.Create<ReportElement>(new LabelElement
+                {
+                    Id = "leaf",
+                    Text = "fundo",
+                    Bounds = new Rectangle(5.Mm(), 5.Mm(), 20.Mm(), 6.Mm()),
+                }),
+            }),
+        });
+        var report = await new ReportPaginator().PaginateAsync(req);
+        var prims = report.Pages[0].Primitives.ToList();
+
+        var outerFill = prims.OfType<DrawRectanglePrimitive>().Single(r => r.SourceElementId == "outer");
+        var leaf = prims.OfType<DrawTextPrimitive>().Single(t => t.Text == "fundo");
+        // The leaf's clip is the INTERSECTION of inner (origin+10,10 .. huge) and outer (0,0..100,50):
+        // x = max(0, 10) = 10mm; right = min(100, 210) = 100mm; bottom = min(50, 210) = 50mm.
+        var clip = leaf.ClipBounds!.Value;
+        clip.X.Should().Be(outerFill.Bounds.X + 10.Mm());
+        clip.Right.Should().Be(outerFill.Bounds.Right, "the inner overflows, so the outer's right edge wins");
+        clip.Bottom.Should().Be(outerFill.Bounds.Bottom);
     }
 
     [Fact]

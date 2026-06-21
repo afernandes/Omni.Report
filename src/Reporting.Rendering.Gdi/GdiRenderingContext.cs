@@ -37,6 +37,7 @@ public sealed class GdiRenderingContext : IRenderingContext, ITextMeasurer
 {
     private readonly float _dpi;
     private readonly List<GdiBitmap> _pages = [];
+    private readonly Stack<GraphicsState> _clipStack = new();
     private GdiGraphics? _graphics;
     private bool _ownsGraphics;
     private PageSetup? _currentPage;
@@ -83,6 +84,7 @@ public sealed class GdiRenderingContext : IRenderingContext, ITextMeasurer
 
     public void EndPage()
     {
+        _clipStack.Clear(); // defensive: never carry a clip state across pages (balanced flow leaves it empty)
         if (_ownsGraphics && _graphics is not null)
         {
             _graphics.Flush();
@@ -204,6 +206,21 @@ public sealed class GdiRenderingContext : IRenderingContext, ITextMeasurer
         {
             using var gdiPen = CreatePen(pen);
             _graphics!.DrawPath(gdiPen, path);
+        }
+    }
+
+    public void PushClip(ReportingRectangle bounds)
+    {
+        EnsureGraphics();
+        _clipStack.Push(_graphics!.Save());
+        _graphics.SetClip(bounds.ToRectF(_dpi), CombineMode.Intersect);
+    }
+
+    public void PopClip()
+    {
+        if (_graphics is not null && _clipStack.Count > 0)
+        {
+            _graphics.Restore(_clipStack.Pop());
         }
     }
 

@@ -145,7 +145,7 @@ Legenda: ✅ pleno · 🟡 parcial · 🔴 ausente/crítico. (% e dimensões atu
 | Textbox.DataType | 🔴 | 🔴 | n/a | 🔴 | 🔴 | 🔴 | 🔴 | Sem DataType para formatação contextual | M | 2 |
 | Rectangle.CornerRadius | 🟡 | ✅ | ✅ | 🔴 | ✅ | ✅ | ✅ | Import ignora | S | 2 |
 | Rectangle.Fill/Border | 🟡 | 🟡 | ✅ | 🔴 | ✅ | ✅ | ✅ | Import não lê estilo do RDL | M | 2 |
-| Rectangle.NestedReportItems | ✅ | ✅ | n/a | 🟡 | ✅ | ✅ | ✅ | Container real: `Children` (bounds relativos), render recursivo, 4-serial, import preserva hierarquia, code-first (#126); SEM clip (PR2) e Designer só preserva (sem editor aninhado, PR3) | L | 3 |
+| Rectangle.NestedReportItems | ✅ | ✅ | n/a | 🟡 | ✅ | ✅ | ✅ | Container real: `Children` (bounds relativos), render recursivo, 4-serial, import preserva hierarquia, code-first (#126); clip de overflow nos 5 backends (#128, sem CornerRadius); Designer só preserva (editor aninhado = PR3) | L | 3 |
 | Image.Source (Ext/Embed/DB) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | External + Embedded (#90) + Database→Expression (#125) importam | M | 2 |
 | Image.MimeType/Sizing | 🟡 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Sizing honrado no render em todos os backends (#114) + import RDL `<Sizing>` (#115); MimeType não modelado | S | 2 |
 | Line.Direction | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Import infere direção dos bounds (#109) | S | 1 |
