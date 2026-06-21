@@ -41,6 +41,46 @@ public class BandRendererCoverageTests
     }
 
     [Fact]
+    public async Task TextBox_with_TextRuns_renders_the_concatenated_runs()
+    {
+        var req = WithSingleRowDefinition(new TextBoxElement
+        {
+            Id = "tb",
+            Bounds = new Rectangle(0.Mm(), 0.Mm(), 80.Mm(), 6.Mm()),
+            Expression = "ignored when runs are present",
+            TextRuns = EquatableArray.Create(
+                new TextRun("Olá "),
+                new TextRun("Fields.produto"), // expression run → resolved per-run
+                new TextRun("!")),
+        });
+        var report = await new ReportPaginator().PaginateAsync(req);
+        var texts = report.Pages[0].Primitives.OfType<DrawTextPrimitive>().Select(t => t.Text).ToList();
+        // The runs are resolved individually and concatenated; "Fields.produto" evaluates to the row value "p".
+        texts.Should().Contain("Olá p!");
+    }
+
+    [Fact]
+    public async Task CanGrow_multirun_textbox_with_a_literal_brace_measures_without_throwing()
+    {
+        // Regression: Measure() must resolve the runs (not the fallback Expression template). A literal "{"
+        // in a run would make the template path throw FormatException and abort pagination if Measure read
+        // tb.Expression instead of the runs.
+        var req = WithSingleRowDefinition(new TextBoxElement
+        {
+            Id = "tb",
+            Bounds = new Rectangle(0.Mm(), 0.Mm(), 80.Mm(), 6.Mm()),
+            CanGrow = true,
+            Expression = "fallback",
+            // Run values carry template semantics (like Expression): a literal brace is escaped {{ }}. The
+            // key point is Measure resolves the RUNS (not tb.Expression), so CanGrow doesn't crash/mis-size.
+            TextRuns = EquatableArray.Create(new TextRun("a {{literal}} brace "), new TextRun("Fields.produto")),
+        });
+        var report = await new ReportPaginator().PaginateAsync(req);
+        var texts = report.Pages[0].Primitives.OfType<DrawTextPrimitive>().Select(t => t.Text).ToList();
+        texts.Should().Contain(t => t.Contains("a {literal} brace ") && t.Contains("p"));
+    }
+
+    [Fact]
     public async Task Rectangle_with_fill_and_border_emits_primitive()
     {
         var req = WithSingleRowDefinition(new RectangleElement

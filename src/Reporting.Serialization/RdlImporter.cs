@@ -596,23 +596,79 @@ public sealed class RdlImporter
     private static string? ConvertOpt(string? raw)
         => string.IsNullOrEmpty(raw) ? null : RdlExpression.Convert(raw);
 
-    private static ReportElement TextItem(XElement item, Rectangle bounds)
+    private ReportElement TextItem(XElement item, Rectangle bounds)
     {
-        var raw = TextboxValue(item);
-        if (RdlExpression.IsExpression(raw))
+        var (runs, fallback) = ReadTextRuns(item);
+        // A single run (or RDL-2008 direct <Value>) keeps the legacy single-expression / label path,
+        // byte-identical to before. Multiple runs (mixed formatting in one box) populate TextRuns + a
+        // concatenation-template fallback Expression for non-run-aware consumers.
+        if (runs.Count <= 1)
         {
-            return new TextBoxElement
+            var raw = TextboxValue(item);
+            if (RdlExpression.IsExpression(raw))
             {
-                Expression = RdlExpression.Convert(raw),
-                Bounds = bounds,
-                CanGrow = ParseBool(Val(item, "CanGrow")),
-                CanShrink = ParseBool(Val(item, "CanShrink")),
-            };
+                return new TextBoxElement
+                {
+                    Expression = RdlExpression.Convert(raw),
+                    Bounds = bounds,
+                    CanGrow = ParseBool(Val(item, "CanGrow")),
+                    CanShrink = ParseBool(Val(item, "CanShrink")),
+                };
+            }
+            return new LabelElement { Text = raw ?? string.Empty, Bounds = bounds };
         }
-        return new LabelElement { Text = raw ?? string.Empty, Bounds = bounds };
+        return new TextBoxElement
+        {
+            Expression = fallback,
+            Bounds = bounds,
+            CanGrow = ParseBool(Val(item, "CanGrow")),
+            CanShrink = ParseBool(Val(item, "CanShrink")),
+            TextRuns = new EquatableArray<TextRun>(runs),
+        };
     }
 
     private static bool ParseBool(string? raw) => bool.TryParse(raw, out var b) && b;
+
+    // Doubles braces so literal RDL text renders verbatim through the template renderer ({ → {{, } → }}).
+    private static string EscapeBraces(string? literal) => (literal ?? string.Empty).Replace("{", "{{").Replace("}", "}}");
+
+    // Reads every <Paragraph>/<TextRun> of an RDL Textbox into model TextRuns (Value + per-run Style +
+    // per-run inline Action), plus a fallback Expression that concatenates the runs as a template (literal
+    // runs verbatim, expression runs as "{expr}") so a non-run-aware consumer still renders the whole text.
+    // Paragraphs are separated by a newline run. <MarkupType>HTML</MarkupType> is flattened with a warning.
+    private (List<TextRun> Runs, string Fallback) ReadTextRuns(XElement textbox)
+    {
+        var runs = new List<TextRun>();
+        var fb = new System.Text.StringBuilder();
+        var paragraphs = (El(textbox, "Paragraphs")?.Elements().Where(e => e.Name.LocalName == "Paragraph")
+            ?? Enumerable.Empty<XElement>()).ToList();
+        for (int p = 0; p < paragraphs.Count; p++)
+        {
+            if (p > 0)
+            {
+                runs.Add(new TextRun("\n"));
+                fb.Append('\n');
+            }
+            foreach (var run in El(paragraphs[p], "TextRuns")?.Elements().Where(e => e.Name.LocalName == "TextRun")
+                ?? Enumerable.Empty<XElement>())
+            {
+                var rawVal = Val(run, "Value");
+                var isExpr = RdlExpression.IsExpression(rawVal);
+                // A run's Value carries template semantics (same as Expression), so an RDL *literal* with a
+                // brace must be escaped ({{ }}) or it would be mis-read as a placeholder — both in the per-run
+                // render path and in the fallback template. Expression runs keep their converted form.
+                var value = isExpr ? RdlExpression.Convert(rawVal) : EscapeBraces(rawVal);
+                var action = ReadAction(El(El(El(run, "ActionInfo"), "Actions"), "Action"));
+                runs.Add(new TextRun(value, ReadStyle(run), action));
+                fb.Append(isExpr ? "{" + value + "}" : value);
+                if (string.Equals(Val(run, "MarkupType"), "HTML", StringComparison.OrdinalIgnoreCase))
+                {
+                    _warnings.Add($"Textbox '{textbox.Attribute("Name")?.Value}': TextRun MarkupType=HTML importado como texto plano (rich text HTML é follow-up).");
+                }
+            }
+        }
+        return (runs, fb.ToString());
+    }
 
     // RDL 2016 nests the value under Paragraphs/Paragraph/TextRuns/TextRun/Value; RDL 2008 uses a direct
     // <Value>. Returns the first value found.

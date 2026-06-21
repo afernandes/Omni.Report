@@ -211,6 +211,12 @@ public sealed class ElementViewModel : Notifying
     /// losslessly through the designer and can still be moved/resized.</summary>
     private ReportElement? _sourceElement;
 
+    /// <summary>TextBox <c>&lt;TextRuns&gt;</c> (mixed-style runs) preserved across a load→edit→save in the
+    /// designer. The TextBox is a first-class editor (not opaque), so without this mirror an imported report
+    /// with multi-run text would silently lose its runs on any edit. There's no run editor yet — this only
+    /// guarantees the runs round-trip; authoring them is a follow-up.</summary>
+    private Reporting.Common.EquatableArray<TextRun> _textRuns = Reporting.Common.EquatableArray<TextRun>.Empty;
+
     /// <summary>True for kinds rendered as an opaque placeholder — their full domain element is
     /// preserved in <see cref="_sourceElement"/> and re-emitted verbatim by <see cref="ToElement"/>.
     /// Tablix/Gauge/DataBar/Sparkline/Indicator/Map have dedicated PropertyGrid editors;
@@ -939,7 +945,7 @@ public sealed class ElementViewModel : Notifying
         ReportElement element = Kind switch
         {
             DesignerElementKind.Label => new LabelElement { Text = Text, Bounds = Bounds },
-            DesignerElementKind.TextBox => new TextBoxElement { Expression = Expression, Bounds = Bounds, CanGrow = CanGrow, CanShrink = CanShrink },
+            DesignerElementKind.TextBox => new TextBoxElement { Expression = Expression, Bounds = Bounds, CanGrow = CanGrow, CanShrink = CanShrink, TextRuns = _textRuns },
             DesignerElementKind.Line => new LineElement { Bounds = Bounds, Direction = LineDir },
             DesignerElementKind.Rectangle => new RectangleElement { Bounds = Bounds, FillColor = FillColor, CornerRadius = Unit.FromMm(CornerRadiusMm) },
             DesignerElementKind.Ellipse => new EllipseElement { Bounds = Bounds, FillColor = FillColor },
@@ -1077,6 +1083,7 @@ public sealed class ElementViewModel : Notifying
             LineDir = LineDir,
             ImageSizing = ImageSizing, ImagePath = ImagePath, ImageExpression = ImageExpression,
         };
+        c._textRuns = _textRuns; // EquatableArray is immutable → safe to share on clone
         foreach (var rule in ConditionalFormats)
         {
             c.ConditionalFormats.Add(new ConditionalFormatRule
@@ -1207,6 +1214,7 @@ public sealed class ElementViewModel : Notifying
                 Expression = tb.Expression;
                 CanGrow = tb.CanGrow;
                 CanShrink = tb.CanShrink;
+                _textRuns = tb.TextRuns; // preserve mixed-style runs across edit→save (no editor yet)
                 break;
             case BarcodeElement bc:
                 Expression = bc.Expression;

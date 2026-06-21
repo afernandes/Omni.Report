@@ -27,7 +27,11 @@ var pdf = await new ReportEngine().RenderAsync(def, dataSources);
   - estático: `<ValidValues><ParameterValues><ParameterValue><Value>/<Label>`;
   - query: `<ValidValues><DataSetReference><DataSetName>/<ValueField>/<LabelField>`.
 - **Report items** livres em `Body` (→ banda ReportHeader), `PageHeader` e `PageFooter`:
-  - `Textbox` → `TextBox` (se o valor for expressão `=…`) ou `Label` (texto literal);
+  - `Textbox` → `TextBox` (se o valor for expressão `=…`) ou `Label` (texto literal); um Textbox com
+    **vários `<TextRun>`** (formatação mista numa caixa) → `TextBox.TextRuns` (valor + `<Style>` + `<ActionInfo>`
+    por-run; parágrafos separados por quebra de linha; `Expression` de fallback concatena os runs). O render
+    desenha os runs concatenados com o estilo do TextBox — estilo visual por-run e hotspot de ação por-run são
+    follow-up; `MarkupType=HTML` é achatado com aviso;
   - `Line`, `Rectangle` (a forma + itens aninhados, deslocados para coordenadas absolutas),
   - `Image` externa (`Source=External`).
 - **Data viz**: `<Chart>` → `ChartElement` (tipo da 1ª série, categoria da hierarquia, uma `ChartSeries`
@@ -56,11 +60,14 @@ var pdf = await new ReportEngine().RenderAsync(def, dataSources);
 
 ## Ainda não importado (follow-ups)
 
-Pulados silenciosamente (o import **estrutural sempre tem sucesso**, não lança):
+Avisados via `Metadata["ImportWarnings"]` ou parcialmente suportados (o import **estrutural sempre tem
+sucesso**, nunca lança nem descarta em silêncio):
 
-- **Tablix/Matrix** e **Chart** (data regions) — o maior gap restante; precisa do mapeamento de
-  hierarquias/células e do binding de dados (depende dos DataSets, já importados).
-- **Subreports**; **TextRuns** múltiplos (só o 1º run é lido); **defaults multi-valor** (só o 1º valor);
-  record `Query` dedicado (CommandText/QueryParameters hoje vivem em `DataSourceDefinition.Parameters`);
-  operador infixo VB `Like` (use a função `Like()`).
+- **Tablix** não-matrix (tabelas planas / colunas estáticas / span por-célula); **Map** e
+  **CustomReportItem** (DataBar/Sparkline/Indicator) — avisados.
+- **TextRun** com `MarkupType=HTML` (achatado p/ texto, avisado); estilo visual por-run e hotspot de ação
+  por-run no render (preservados no modelo, desenho é follow-up). Células de **Tablix** (corner/body) ainda
+  achatam para o 1º run (multi-run só nos Textboxes livres por ora).
+- **defaults multi-valor** (só o 1º valor); record `Query` dedicado (CommandText/QueryParameters hoje vivem
+  em `DataSourceDefinition.Parameters`); operador infixo VB `Like` (use a função `Like()`).
 - Botão "Importar .rdl" no Designer (a API pública já existe; falta o wiring de UI).
