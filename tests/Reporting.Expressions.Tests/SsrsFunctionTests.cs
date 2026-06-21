@@ -37,6 +37,75 @@ public class SsrsFunctionTests
         ev.Evaluate(expr, ctx).Should().Be(expected);
     }
 
+    private static (ReportExpressionContext ctx, ExpressionEvaluator ev) NewContext(string culture)
+    {
+        var ev = new ExpressionEvaluator();
+        var ctx = new ReportExpressionContext(ev, System.Globalization.CultureInfo.GetCultureInfo(culture));
+        return (ctx, ev);
+    }
+
+    [Fact]
+    public void Vb_format_functions_use_the_context_culture()
+    {
+        var (us, evUs) = NewContext("en-US");
+        evUs.Evaluate("FormatCurrency(1234.5)", us).Should().Be("$1,234.50");
+        evUs.Evaluate("FormatCurrency(1234.56, 0)", us).Should().Be("$1,235"); // no midpoint ambiguity
+        evUs.Evaluate("FormatNumber(1234.5, 2)", us).Should().Be("1,234.50");
+        evUs.Evaluate("FormatPercent(0.25, 1)", us).Should().Be("25.0%");
+        // Non-numeric value: ValueFormatter degrades gracefully to the string itself (never crashes).
+        evUs.Evaluate("FormatCurrency('abc')", us).Should().Be("abc");
+
+        var (br, evBr) = NewContext("pt-BR");
+        evBr.Evaluate("FormatNumber(1234.5, 2)", br).Should().Be("1.234,50");
+    }
+
+    [Fact]
+    public void Vb_FormatDateTime_maps_the_named_formats()
+    {
+        var culture = System.Globalization.CultureInfo.GetCultureInfo("en-US");
+        var (us, ev) = NewContext("en-US");
+        // Assert against the culture's OWN rendering of the mapped .NET specifier — proves the 2→"d"/4→"t"
+        // mapping without hardcoding platform-specific output (ICU on Linux uses U+202F before AM/PM, NLS
+        // a normal space; the date separator is stable, so the date case can stay a literal).
+        ev.Evaluate("FormatDateTime(CDate('2026-06-21'), 2)", us).Should().Be("6/21/2026"); // vbShortDate
+        ev.Evaluate("FormatDateTime(CDate('2026-06-21 14:05:00'), 4)", us)
+            .Should().Be(new DateTime(2026, 6, 21, 14, 5, 0).ToString("t", culture)); // vbShortTime
+        ev.Evaluate("FormatDateTime('nao-data')", us).Should().BeNull(); // #Error → null
+    }
+
+    [Theory]
+    [InlineData("DatePart('yyyy', CDate('2026-06-21'))", 2026)]
+    [InlineData("DatePart('m', CDate('2026-06-21'))", 6)]
+    [InlineData("DatePart('d', CDate('2026-06-21'))", 21)]
+    [InlineData("DatePart('q', CDate('2026-06-21'))", 2)]   // quarter
+    [InlineData("DatePart('y', CDate('2026-01-10'))", 10)]  // day of year
+    [InlineData("Sign(-5)", -1)]
+    [InlineData("Sign(0)", 0)]
+    public void Vb_int_returning_functions(string expr, int expected)
+    {
+        var (ctx, ev) = NewContext();
+        System.Convert.ToInt32(ev.Evaluate(expr, ctx)).Should().Be(expected);
+    }
+
+    [Fact]
+    public void Vb_Fix_and_Int_differ_on_negatives()
+    {
+        var (ctx, ev) = NewContext();
+        System.Convert.ToDouble(ev.Evaluate("Fix(-2.7)", ctx)).Should().Be(-2d); // truncate toward zero
+        System.Convert.ToDouble(ev.Evaluate("Int(-2.7)", ctx)).Should().Be(-3d); // floor toward -inf
+        System.Convert.ToDouble(ev.Evaluate("Fix(2.7)", ctx)).Should().Be(2d);
+    }
+
+    [Fact]
+    public void Vb_MonthName_uses_culture()
+    {
+        var (us, evUs) = NewContext("en-US");
+        evUs.Evaluate("MonthName(6)", us).Should().Be("June");
+        evUs.Evaluate("MonthName(6, true)", us).Should().Be("Jun");
+        var (br, evBr) = NewContext("pt-BR");
+        ((string)evBr.Evaluate("MonthName(6)", br)!).ToLowerInvariant().Should().Be("junho");
+    }
+
     [Theory]
     [InlineData("Len('abcd')", 4)]
     [InlineData("Left('ab', 10)", 2)] // clamps, no overflow

@@ -78,6 +78,23 @@ Like(Fields.Sku, 'A#*')           // padrão VB: * = qualquer, ? = 1 char, # = 1
 O `+` é **numérico** (não concatena strings) — use `Concat`. O import de `.rdl` reescreve o operador
 `&` do VB em `Concat(...)` automaticamente.
 
+## Funções escalares (estilo VB/SSRS)
+
+Vocabulário comum disponível (case-insensitive), além das nativas do NCalc (`Abs`/`Round`/`Sqrt`/…):
+
+- **Condicional/texto:** `IIf`, `Switch`, `Choose`, `IsNothing`/`IsNull`, `Coalesce`; `Len`, `Left`, `Right`,
+  `Mid`, `Trim`/`LTrim`/`RTrim`, `UCase`/`LCase`, `Replace`, `InStr`.
+- **Conversões VB:** `CStr`, `CInt`, `CDbl`, `CDec`, `CBool`, `CDate`.
+- **Data:** `Year`/`Month`/`Day`/`Hour`/`Minute`/`Second`/`Weekday`, `DateAdd`, `DateDiff`,
+  **`DatePart(interval, date)`** (`yyyy`/`q`/`m`/`d`/`y`=dia-do-ano/`ww`/`w`/`h`/`n`/`s`),
+  **`MonthName(n [,abrev])`**, **`WeekdayName(n [,abrev])`** (1 = domingo).
+- **Formatação** (usam a cultura do contexto): `Format(value, fmt)`, **`FormatCurrency(v [,casas])`**,
+  **`FormatNumber(v [,casas])`**, **`FormatPercent(v [,casas])`** (`0.25` → `25%`),
+  **`FormatDateTime(date [,0..4])`** (0 geral, 1 longa, 2 curta, 3 hora-longa, 4 hora-curta).
+- **Numérico VB:** **`Fix(x)`** (trunca p/ zero), **`Int(x)`** (piso p/ −∞), **`Sign(x)`**.
+
+Um argumento não-coercível degrada para `null`/#Error naquela célula (não aborta a expressão).
+
 ## Funções posicionais e de escopo (estilo SSRS)
 
 ```text
