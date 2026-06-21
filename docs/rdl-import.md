@@ -74,7 +74,9 @@ var pdf = await new ReportEngine().RenderAsync(def, dataSources);
   é congelado como literal **com aviso**). `CommandType=TableDirect` é tratado como texto.
 - **Report-level**: `<EmbeddedImages>` → bytes inline (um `<Image Source="Embedded">` resolve a
   `ImageElement` com `InlineData`); `<CustomProperties>` → `Metadata`; `<Code>` (módulo VB report-level)
-  preservado em `Metadata["RdlCode"]` (execução é follow-up).
+  preservado em `Metadata["RdlCode"]` (execução é follow-up); `<Language>` → `Metadata["Language"]` (cultura);
+  `<Description>`/`<Author>`/`<AutoRefresh>` → `Metadata` (round-trip; `AutoRefresh` preservado como string,
+  sem pipeline de auto-refresh na saída estática).
 - **Estilo e atributos** dos itens: nó `<Style>` (fonte/cores/borda/padding/alinhamento/format/`WrapMode`
   →WordWrap, onde `NoWrap` desliga a quebra),
   `Visibility/Hidden`, `Bookmark`, `DocumentMapLabel`, `Action`, `CanGrow`/`CanShrink`.

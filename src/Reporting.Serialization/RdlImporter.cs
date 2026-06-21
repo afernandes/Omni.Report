@@ -377,6 +377,20 @@ public sealed class RdlImporter
         {
             meta["Language"] = lang;
         }
+        // Report-level descriptive metadata — carried in Metadata (round-trips generically); opt-in.
+        // AutoRefresh (seconds) is preserved as-is; static output has no auto-refresh pipeline.
+        if (Val(report, "Description") is { Length: > 0 } desc)
+        {
+            meta["Description"] = desc;
+        }
+        if (Val(report, "Author") is { Length: > 0 } author)
+        {
+            meta["Author"] = author;
+        }
+        if (Val(report, "AutoRefresh") is { Length: > 0 } autoRefresh)
+        {
+            meta["AutoRefresh"] = autoRefresh;
+        }
         return meta;
     }
 
