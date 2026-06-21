@@ -62,10 +62,14 @@ public class SsrsFunctionTests
     [Fact]
     public void Vb_FormatDateTime_maps_the_named_formats()
     {
+        var culture = System.Globalization.CultureInfo.GetCultureInfo("en-US");
         var (us, ev) = NewContext("en-US");
-        // CDate parses ISO via InvariantCulture; assert the named-format branches don't throw and differ.
+        // Assert against the culture's OWN rendering of the mapped .NET specifier — proves the 2→"d"/4→"t"
+        // mapping without hardcoding platform-specific output (ICU on Linux uses U+202F before AM/PM, NLS
+        // a normal space; the date separator is stable, so the date case can stay a literal).
         ev.Evaluate("FormatDateTime(CDate('2026-06-21'), 2)", us).Should().Be("6/21/2026"); // vbShortDate
-        ev.Evaluate("FormatDateTime(CDate('2026-06-21 14:05:00'), 4)", us).Should().Be("2:05 PM"); // vbShortTime
+        ev.Evaluate("FormatDateTime(CDate('2026-06-21 14:05:00'), 4)", us)
+            .Should().Be(new DateTime(2026, 6, 21, 14, 5, 0).ToString("t", culture)); // vbShortTime
         ev.Evaluate("FormatDateTime('nao-data')", us).Should().BeNull(); // #Error → null
     }
 
