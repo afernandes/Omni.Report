@@ -150,6 +150,8 @@ public sealed class RdlImporter
             ImageElement im => im with { Style = style ?? im.Style, Visible = visible, VisibleExpression = visExpr, Bookmark = bookmark, DocumentMapLabel = docMap, Action = action },
             // A line's color/width come from its style border; map the first visible side to the Pen.
             LineElement ln => ln with { Pen = StyleBorderToPen(style) ?? ln.Pen, Visible = visible, VisibleExpression = visExpr, Bookmark = bookmark, DocumentMapLabel = docMap, Action = action },
+            // INVARIANT: every element type AddItem can produce must have an arm above — otherwise its
+            // Style/Visibility/Bookmark/Action would be silently dropped. Keep this in sync with AddItem.
             _ => el,
         };
     }
@@ -301,7 +303,7 @@ public sealed class RdlImporter
             Padding: ReadPadding(s),
             HorizontalAlignment: ParseHAlign(Val(s, "TextAlign")),
             VerticalAlignment: ParseVAlign(Val(s, "VerticalAlign")),
-            Format: Val(s, "Format"));
+            Format: Val(s, "Format") is { Length: > 0 } fmt ? fmt : null);
         return style == Style.Default ? null : style;
     }
 
@@ -391,8 +393,17 @@ public sealed class RdlImporter
     }
 
     private static bool IsBold(string? weight)
-        => weight is not null && (weight is "Bold" or "Bolder"
-            || (int.TryParse(weight, out var w) && w >= 600));
+    {
+        if (weight is null)
+        {
+            return false;
+        }
+        if (int.TryParse(weight, out var w))
+        {
+            return w >= 600; // RDL numeric weights 100–900
+        }
+        return weight.ToLowerInvariant() is "bold" or "bolder" or "semibold" or "demibold" or "extrabold" or "heavy" or "black";
+    }
 
     // Font sizes are kept in points as a double — parse directly (not via Unit, whose integer mils would
     // round 14pt to 13.968). RDL font sizes are virtually always "pt".
