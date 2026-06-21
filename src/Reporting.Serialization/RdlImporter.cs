@@ -1101,7 +1101,13 @@ public sealed class RdlImporter
         {
             return new ImageElement { Source = ImageSourceKind.Inline, InlineData = new EquatableArray<byte>(bytes), Bounds = bounds, Sizing = sizing };
         }
-        // Database images (or an unresolved embedded name) are a follow-up — keep the name as the path.
+        // Database: <Value> is an expression yielding the image bytes (a binary field). Map to an Expression
+        // source — the renderer's ResolveExpression already turns a byte[] result into the drawn image.
+        if (string.Equals(source, "Database", StringComparison.OrdinalIgnoreCase) && value is { Length: > 0 })
+        {
+            return new ImageElement { Source = ImageSourceKind.Expression, Expression = RdlExpression.Convert(value), Bounds = bounds, Sizing = sizing };
+        }
+        // Unresolved embedded name (no matching <EmbeddedImage>) → keep the name as the path.
         return new ImageElement { Source = ImageSourceKind.Path, Path = value, Bounds = bounds, Sizing = sizing };
     }
 

@@ -146,7 +146,7 @@ Legenda: ✅ pleno · 🟡 parcial · 🔴 ausente/crítico. (% e dimensões atu
 | Rectangle.CornerRadius | 🟡 | ✅ | ✅ | 🔴 | ✅ | ✅ | ✅ | Import ignora | S | 2 |
 | Rectangle.Fill/Border | 🟡 | 🟡 | ✅ | 🔴 | ✅ | ✅ | ✅ | Import não lê estilo do RDL | M | 2 |
 | Rectangle.NestedReportItems | 🟡 | 🔴 | n/a | 🟡 | 🔴 | 🔴 | 🔴 | Retângulo é folha; filhos achatados na banda (perde hierarquia) | L | 3 |
-| Image.Source (Ext/Embed/DB) | 🟡 | ✅ | ✅ | 🟡 | ✅ | ✅ | ✅ | External + Embedded (#90) importam; Database vira path-placeholder | M | 2 |
+| Image.Source (Ext/Embed/DB) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | External + Embedded (#90) + Database→Expression (#125) importam | M | 2 |
 | Image.MimeType/Sizing | 🟡 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Sizing honrado no render em todos os backends (#114) + import RDL `<Sizing>` (#115); MimeType não modelado | S | 2 |
 | Line.Direction | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Import infere direção dos bounds (#109) | S | 1 |
 | Line.Pen (style/width/color) | 🟡 | ✅ | ✅ | 🟡 | ✅ | ✅ | ✅ | Pen via `<Style><Border>` (ApplyCommon, #109) | S | 2 |

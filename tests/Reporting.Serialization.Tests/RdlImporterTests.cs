@@ -150,6 +150,25 @@ public class RdlImporterTests
         RdlImporter.ParseSize("5furlongs").Should().BeNull("unknown unit is unspecified, not guessed");
     }
 
+    [Fact]
+    public void Image_Source_Database_imports_as_an_expression()
+    {
+        // <Source>Database</Source><Value>=Fields!Foto.Value</Value> → Expression source; the renderer's
+        // ResolveExpression turns the resulting byte[] into the drawn image.
+        var rdl = """
+            <Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition">
+              <Body><Height>3cm</Height><ReportItems>
+                <Image Name="foto"><Top>0cm</Top><Left>0cm</Left><Width>3cm</Width><Height>3cm</Height>
+                  <Source>Database</Source><Value>=Fields!Foto.Value</Value><MIMEType>image/png</MIMEType>
+                </Image>
+              </ReportItems></Body>
+            </Report>
+            """;
+        var img = new RdlImporter().ImportXml(rdl).ReportHeader!.Elements.OfType<Reporting.Elements.ImageElement>().Single();
+        img.Source.Should().Be(Reporting.Elements.ImageSourceKind.Expression);
+        img.Expression.Should().Be("Fields.Foto");
+    }
+
     [Theory]
     [InlineData("Fit", "Stretch")]              // RDL Fit = stretch to box (distorts)
     [InlineData("FitProportional", "Fit")]      // preserve aspect (letterbox)
