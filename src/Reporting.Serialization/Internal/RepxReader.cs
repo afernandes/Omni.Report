@@ -530,6 +530,7 @@ internal static class RepxReader
             ColumnSubtotals = string.Equals(el.Element("ColumnSubtotals")?.Value, "true", StringComparison.OrdinalIgnoreCase),
             SubtotalLabel = el.Element("SubtotalLabel")?.Value,
             GrandTotalLabel = el.Element("GrandTotalLabel")?.Value,
+            NoRowsMessage = el.Element("NoRowsMessage")?.Value,
         };
     }
 

@@ -67,4 +67,39 @@ public class TablixCodeFirstTests
         // 2 cols + 4 rows (1 header + 3 data) → 3 vertical + 5 horizontal gridlines.
         prims.OfType<DrawLinePrimitive>().Count().Should().BeGreaterThanOrEqualTo(8);
     }
+
+    [Fact]
+    public void Tablix_fluent_carries_NoRowsMessage()
+    {
+        var def = ReportBuilder.Create("t")
+            .DataSource("Produtos", Rows)
+            .ReportHeader(h => h.Height(60)
+                .Tablix(t => t.DataSet("Produtos").Column("Produto", "Fields.Nome")
+                    .NoRowsMessage("Nenhum produto."))
+                .At(0, 0).Size(120, 50))
+            .Build().Definition;
+
+        def.ReportHeader!.Elements.OfType<TablixElement>().Single().NoRowsMessage.Should().Be("Nenhum produto.");
+    }
+
+    [Fact]
+    public async Task Tablix_renders_NoRowsMessage_for_an_empty_dataset()
+    {
+        var report = ReportBuilder.Create("Tabela")
+            .Page(p => p.A4().Portrait().Margins(15))
+            .DataSource("Produtos", System.Array.Empty<Produto>())
+            .ReportHeader(h => h.Height(60)
+                .Tablix(t => t.DataSet("Produtos")
+                    .Column("Produto", "Fields.Nome")
+                    .Column("Preço", "{Fields.Preco:C}")
+                    .NoRowsMessage("Sem produtos cadastrados."))
+                .At(0, 0).Size(120, 50))
+            .Build();
+
+        var texts = (await report.PaginateAsync()).Pages
+            .SelectMany(p => p.Primitives).OfType<DrawTextPrimitive>().Select(t => t.Text).ToList();
+
+        texts.Should().Contain("Sem produtos cadastrados.");
+        texts.Should().NotContain("Produto", "the grid (headers/rows) is replaced by the message");
+    }
 }

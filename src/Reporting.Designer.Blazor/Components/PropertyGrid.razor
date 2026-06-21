@@ -347,6 +347,11 @@ else
                         @onclick="@(() => Element.AddTablixColumn())">+ Adicionar coluna</button>
             </div>
             }
+            <div class="prop-row"><div class="p-label">Sem linhas</div><div class="p-editor">
+                <input type="text" value="@Element.TablixNoRowsMessage" placeholder="(mensagem p/ dataset vazio)"
+                       @onchange="@(e => Element.TablixNoRowsMessage = e.Value?.ToString() ?? string.Empty)"
+                       title="RDL NoRowsMessage — exibida no centro quando o dataset não retorna linhas. Aceita literal ou expressão (=…)."
+                       style="flex:1;font-size:11.5px;" /></div></div>
         </div>
     }
 

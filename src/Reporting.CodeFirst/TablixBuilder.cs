@@ -40,6 +40,7 @@ public sealed class TablixBuilder
     private bool _columnSubtotals;
     private string? _subtotalLabel;
     private string? _grandTotalLabel;
+    private string? _noRowsMessage;
 
     /// <summary>Turns the Tablix into a matrix/crosstab: groups data rows by this expression down
     /// the left axis. Call more than once to <b>nest</b> row groups (outer→inner). Pair with
@@ -85,6 +86,14 @@ public sealed class TablixBuilder
         return this;
     }
 
+    /// <summary>Message shown (centred, in place of the grid) when the bound dataset yields no rows — the
+    /// RDL <c>NoRowsMessage</c>. Accepts a literal or an expression (<c>"=…"</c>). Applies to both modes.</summary>
+    public TablixBuilder NoRowsMessage(string message)
+    {
+        _noRowsMessage = message;
+        return this;
+    }
+
     internal TablixElement Build()
     {
         // Matrix mode: one or more row groups + column groups (nested outer→inner) + a body value
@@ -104,6 +113,7 @@ public sealed class TablixBuilder
                 ColumnSubtotals = _columnSubtotals,
                 SubtotalLabel = _subtotalLabel,
                 GrandTotalLabel = _grandTotalLabel,
+                NoRowsMessage = _noRowsMessage,
                 Cells = new EquatableArray<TablixCell>(
                 [
                     new TablixCell(0, 0, new LabelElement { Text = _corner ?? string.Empty, Bounds = Rectangle.Empty }),
@@ -137,6 +147,7 @@ public sealed class TablixBuilder
             DataSetName = _dataSet,
             Cells = new EquatableArray<TablixCell>(cells),
             ColumnWidths = widths,
+            NoRowsMessage = _noRowsMessage,
         };
     }
 }

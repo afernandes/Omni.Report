@@ -151,6 +151,32 @@ public class RdlImporterTests
     }
 
     [Theory]
+    [InlineData("Sem dados disponíveis.", "Sem dados disponíveis.")]              // literal stays literal
+    [InlineData("=&quot;Nada para &quot; &amp; Parameters!Ano.Value", "Concat(\"Nada para \", Parameters.Ano)")] // expression converted
+    public void Tablix_NoRowsMessage_is_imported(string rdlMessage, string expected)
+    {
+        var rdl = $"""
+            <Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition">
+              <Body><Height>3cm</Height><ReportItems>
+                <Tablix Name="T"><Top>0cm</Top><Left>0cm</Left><Width>8cm</Width><Height>2cm</Height>
+                  <NoRowsMessage>{rdlMessage}</NoRowsMessage>
+                  <TablixBody>
+                    <TablixColumns><TablixColumn><Width>8cm</Width></TablixColumn></TablixColumns>
+                    <TablixRows><TablixRow><Height>1cm</Height><TablixCells><TablixCell><CellContents>
+                      <Textbox Name="c0"><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!X.Value</Value></TextRun></TextRuns></Paragraph></Paragraphs></Textbox>
+                    </CellContents></TablixCell></TablixCells></TablixRow></TablixRows>
+                  </TablixBody>
+                  <TablixColumnHierarchy><TablixMembers><TablixMember /></TablixMembers></TablixColumnHierarchy>
+                  <TablixRowHierarchy><TablixMembers><TablixMember><Group Name="d" /></TablixMember></TablixMembers></TablixRowHierarchy>
+                </Tablix>
+              </ReportItems></Body>
+            </Report>
+            """;
+        var tablix = new RdlImporter().ImportXml(rdl).ReportHeader!.Elements.OfType<Reporting.Elements.TablixElement>().Single();
+        tablix.NoRowsMessage.Should().Be(expected);
+    }
+
+    [Theory]
     [InlineData("=Fields!Nome.Value", "Fields.Nome")]
     [InlineData("=Parameters!P.Value", "Parameters.P")]
     [InlineData("=Globals!PageNumber", "PageNumber")]

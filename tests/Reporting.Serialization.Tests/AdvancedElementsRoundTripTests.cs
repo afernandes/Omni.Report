@@ -90,6 +90,7 @@ public class AdvancedElementsRoundTripTests
             ColumnSubtotals = true,
             SubtotalLabel = "Soma {0}",
             GrandTotalLabel = "Geral",
+            NoRowsMessage = "Sem dados para o período.",
             Cells = EquatableArray.Create(
                 new TablixCell(0, 0, new TextBoxElement
                 {

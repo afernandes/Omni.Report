@@ -612,6 +612,14 @@ public sealed class ElementViewModel : Notifying
         set => Mutate<TablixElement>(e => e with { GrandTotalLabel = string.IsNullOrWhiteSpace(value) ? null : value });
     }
 
+    /// <summary>Message shown (centred) when the bound dataset has no rows — RDL <c>NoRowsMessage</c>. Accepts
+    /// a literal or an expression ("=…"). Empty = nothing rendered. Maps to <c>TablixElement.NoRowsMessage</c>.</summary>
+    public string TablixNoRowsMessage
+    {
+        get => Src<TablixElement>()?.NoRowsMessage ?? string.Empty;
+        set => Mutate<TablixElement>(e => e with { NoRowsMessage = string.IsNullOrWhiteSpace(value) ? null : value });
+    }
+
     /// <summary>SortExpression of the primary (outermost) row group — orders the group instances down the
     /// left axis. Empty = data order. Maps to <c>RowGroups[0].SortExpression</c>.</summary>
     public string TablixRowGroupSort
