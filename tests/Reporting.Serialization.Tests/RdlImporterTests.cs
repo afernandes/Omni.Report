@@ -315,6 +315,26 @@ public class RdlImporterTests
     }
 
     [Theory]
+    [InlineData("0pt", "100pt", "Horizontal")]   // flat height → horizontal ruler
+    [InlineData("50pt", "0pt", "Vertical")]       // flat width → vertical ruler
+    [InlineData("40pt", "60pt", "TopLeftToBottomRight")] // both sized → diagonal
+    public void Line_direction_is_inferred_from_bounds(string height, string width, string expectedDir)
+    {
+        var rdl = $"""
+            <Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition">
+              <Body><Height>3cm</Height><ReportItems>
+                <Line Name="L"><Top>0cm</Top><Left>0cm</Left><Width>{width}</Width><Height>{height}</Height>
+                  <Style><Border><Color>Red</Color><Width>2pt</Width></Border></Style>
+                </Line>
+              </ReportItems></Body>
+            </Report>
+            """;
+        var line = new RdlImporter().ImportXml(rdl).ReportHeader!.Elements.OfType<Reporting.Elements.LineElement>().Single();
+        line.Direction.Should().Be(Enum.Parse<Reporting.Elements.LineDirection>(expectedDir));
+        line.Pen.Should().NotBeNull("a <Style><Border> still maps to the line Pen via ApplyCommon");
+    }
+
+    [Theory]
     [InlineData("NoWrap", false)]
     [InlineData("WordWrap", true)]
     public void Style_WrapMode_is_imported_to_WordWrap(string wrapMode, bool expected)

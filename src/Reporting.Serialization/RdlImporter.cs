@@ -381,7 +381,7 @@ public sealed class RdlImporter
                 into.Add(ApplyCommon(TextItem(item, bounds), item));
                 break;
             case "Line":
-                into.Add(ApplyCommon(new LineElement { Bounds = bounds }, item));
+                into.Add(ApplyCommon(LineItem(bounds), item));
                 break;
             case "Image":
                 into.Add(ApplyCommon(ImageItem(item, bounds), item));
@@ -759,6 +759,20 @@ public sealed class RdlImporter
     }
 
     private static bool ParseBool(string? raw) => bool.TryParse(raw, out var b) && b;
+
+    // RDL <Line> has no Direction element — it's implied by the bounding box: a near-zero height is a
+    // horizontal ruler, a near-zero width a vertical one, otherwise the diagonal (RDL's top-left→bottom-right
+    // for a positive box). Without this every imported line defaults to diagonal. The Pen comes from
+    // ApplyCommon (StyleBorderToPen). The other diagonal (BottomLeftToTopRight) isn't encoded in RDL.
+    private static ReportElement LineItem(Rectangle bounds)
+    {
+        const double flatMm = 0.5; // below this a dimension counts as "zero" for a ruler line
+        double w = bounds.Width.ToMm(), h = bounds.Height.ToMm();
+        var dir = h < flatMm && h <= w ? LineDirection.Horizontal
+            : w < flatMm && w < h ? LineDirection.Vertical
+            : LineDirection.TopLeftToBottomRight;
+        return new LineElement { Bounds = bounds, Direction = dir };
+    }
 
     // Doubles braces so literal RDL text renders verbatim through the template renderer ({ → {{, } → }}).
     private static string EscapeBraces(string? literal) => (literal ?? string.Empty).Replace("{", "{{").Replace("}", "}}");
