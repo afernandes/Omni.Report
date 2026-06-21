@@ -77,6 +77,18 @@ internal sealed class BandRenderer
             var effectiveStyle = ResolveEffectiveStyle(element, ctx);
             var style = BuildTextStyle(effectiveStyle);
 
+            // Style.BackColor paints as a background fill behind the element (previously dropped everywhere
+            // except Tablix cells). Emitted before the content so text/image draws on top.
+            if (effectiveStyle.BackColor is { } backColor)
+            {
+                primitives.Add(new DrawRectanglePrimitive
+                {
+                    Bounds = elementBounds,
+                    SourceElementId = element.Id,
+                    Fill = new BrushStyle(backColor),
+                });
+            }
+
             int linkFrom = primitives.Count;
             switch (element)
             {
