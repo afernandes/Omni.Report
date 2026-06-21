@@ -139,20 +139,24 @@ public sealed class RdlImporter
 
         var query = El(ds, "Query");
         var ps = new Dictionary<string, string>(StringComparer.Ordinal);
+        // Write the DESIGNER's live query convention (_sql / _storedProc / param:@x) — the same keys
+        // DataSourceCatalog.ToDefinition/FromDefinition and the runtime DataSourceFactory consume. The old
+        // CommandText/CommandType/QueryParameter: keys were dead (nothing read them), so an imported query
+        // was silently lost; now it opens in the designer and executes.
         if (Val(query, "CommandText") is { Length: > 0 } sql)
         {
-            ps["CommandText"] = sql;
+            ps["_sql"] = sql;
         }
-        if (Val(query, "CommandType") is { Length: > 0 } ct)
+        if (string.Equals(Val(query, "CommandType"), "StoredProcedure", StringComparison.OrdinalIgnoreCase))
         {
-            ps["CommandType"] = ct;
+            ps["_storedProc"] = "true";
         }
         foreach (var qp in El(query, "QueryParameters")?.Elements().Where(e => e.Name.LocalName == "QueryParameter")
                  ?? Enumerable.Empty<XElement>())
         {
             if (qp.Attribute("Name")?.Value is { Length: > 0 } pn)
             {
-                ps[$"QueryParameter:{pn}"] = RdlExpression.Convert(Val(qp, "Value"));
+                ps[$"param:{pn}"] = QueryParamEncoding(Val(qp, "Value"));
             }
         }
 
@@ -224,6 +228,26 @@ public sealed class RdlImporter
         return double.TryParse(raw, NumberStyles.Float | NumberStyles.AllowLeadingSign, Inv, out _)
             ? raw
             : $"\"{raw}\"";
+    }
+
+    // Encodes an RDL <QueryParameter><Value> into the designer's "reportParam|literal" form. A pure
+    // =Parameters!P.Value binds the SQL parameter to report parameter P; anything else becomes a literal.
+    private static string QueryParamEncoding(string? rawValue)
+    {
+        if (rawValue is not { Length: > 0 })
+        {
+            return "|";
+        }
+        var converted = RdlExpression.Convert(rawValue);
+        const string prefix = "Parameters.";
+        if (RdlExpression.IsExpression(rawValue)
+            && converted.StartsWith(prefix, StringComparison.Ordinal)
+            && converted.Length > prefix.Length
+            && converted.IndexOf('.', prefix.Length) < 0) // exactly "Parameters.P", no further member
+        {
+            return converted[prefix.Length..] + "|"; // report-parameter binding
+        }
+        return "|" + converted; // literal (best-effort for non-parameter values)
     }
 
     private static List<SortDescriptor> ReadDataSetSorts(XElement? sorts)

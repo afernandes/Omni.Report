@@ -19,6 +19,33 @@ namespace Reporting.Designer.Blazor.Tests;
 public class RdlDesignerRoundTripTests
 {
     [Fact]
+    public void Imported_rdl_query_is_live_in_the_designer()
+    {
+        // An imported .rdl DataSet query must land on the designer's live convention (_sql / _storedProc /
+        // param:@x) so it opens in the data-source editor and executes — previously it went to dead keys.
+        var rdl = """
+            <Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition">
+              <DataSets><DataSet Name="Vendas"><Query>
+                <CommandText>EXEC sp_Vendas</CommandText>
+                <CommandType>StoredProcedure</CommandType>
+                <QueryParameters>
+                  <QueryParameter Name="@Ano"><Value>=Parameters!Ano.Value</Value></QueryParameter>
+                  <QueryParameter Name="@Fixo"><Value>42</Value></QueryParameter>
+                </QueryParameters>
+              </Query></DataSet></DataSets>
+              <Body><Height>2cm</Height><ReportItems /></Body>
+            </Report>
+            """;
+        var def = new Reporting.Serialization.RdlImporter().ImportXml(rdl);
+        var ds = DesignerDataSource.FromDefinition(def.DataSources.Single());
+
+        ds.Sql.Should().Be("EXEC sp_Vendas");
+        ds.IsStoredProcedure.Should().BeTrue();
+        ds.SqlParameters.Should().Contain(p => p.SqlName == "@Ano" && p.ReportParameter == "Ano" && p.Literal == null);
+        ds.SqlParameters.Should().Contain(p => p.SqlName == "@Fixo" && p.ReportParameter == null && p.Literal == "42");
+    }
+
+    [Fact]
     public void Hyperlink_action_round_trips_through_designer_save_load()
     {
         var state = NewState();

@@ -546,8 +546,10 @@ public class RdlImporterTests
         ds.FilterExpression.Should().Be("Fields.Total > 0");
         ds.SortExpressions[0].Expression.Should().Be("Fields.Total");
         ds.SortExpressions[0].Direction.Should().Be(Reporting.Data.SortDirection.Descending);
-        ds.Parameters["CommandText"].Should().Be("SELECT * FROM Vendas");
-        ds.Parameters["QueryParameter:@Ano"].Should().Be("Parameters.Ano");
+        // Query maps to the designer's live convention (_sql / param:@x), so it opens in the designer.
+        ds.Parameters["_sql"].Should().Be("SELECT * FROM Vendas");
+        // @Ano bound to report parameter Ano → encoded "Ano|" (reportParam|literal).
+        ds.Parameters["param:@Ano"].Should().Be("Ano|");
     }
 
     [Fact]

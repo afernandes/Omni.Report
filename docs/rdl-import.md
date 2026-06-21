@@ -46,8 +46,10 @@ var pdf = await new ReportEngine().RenderAsync(def, dataSources);
 - **DataSets** (`<DataSets><DataSet>`) → `DataSourceDefinition` (metadados de binding; a execução da query
   fica delegada ao host `IReportDataSource`): `<Fields>` → `DataField` (campos com `<Value>` viram
   `CalculatedField`); `<Filters>` estruturado → `FilterExpression` booleano; `<SortExpressions>`;
-  `<Query>` `CommandText`/`CommandType`/`QueryParameters` preservados em `Parameters` (record `Query`
-  dedicado é follow-up).
+  `<Query>` → a **convenção viva do Designer** (`_sql`/`_storedProc`/`param:@x` em `Parameters`), a mesma
+  que `DesignerDataSource`/`DataSourceFactory` consomem — então a query importada **abre no editor de fonte
+  de dados e executa** (`CommandType=StoredProcedure`→`_storedProc`; `<QueryParameter>` `=Parameters!P.Value`
+  → bind ao parâmetro P, valor literal → literal).
 - **Report-level**: `<EmbeddedImages>` → bytes inline (um `<Image Source="Embedded">` resolve a
   `ImageElement` com `InlineData`); `<CustomProperties>` → `Metadata`; `<Code>` (módulo VB report-level)
   preservado em `Metadata["RdlCode"]` (execução é follow-up).
@@ -68,8 +70,9 @@ sucesso**, nunca lança nem descarta em silêncio):
 - **TextRun** com `MarkupType=HTML` (achatado p/ texto, avisado); estilo visual por-run e hotspot de ação
   por-run no render (preservados no modelo, desenho é follow-up). Células de **Tablix** (corner/body) ainda
   achatam para o 1º run (multi-run só nos Textboxes livres por ora).
-- **defaults multi-valor** (só o 1º valor); record `Query` dedicado (CommandText/QueryParameters hoje vivem
-  em `DataSourceDefinition.Parameters`). O operador infixo VB `Like` **é convertido** (`a Like "X*"` →
+- **defaults multi-valor** (só o 1º valor); record `Query` 1ª-classe dedicado (a query importada já é
+  funcional via as chaves `_sql`/`param:` em `DataSourceDefinition.Parameters`; promover a um record é
+  refino futuro). O operador infixo VB `Like` **é convertido** (`a Like "X*"` →
   `Like(a, "X*")`, honrando a precedência `&` > `Like`); classes de caractere `[...]` no padrão não são
   suportadas pela função `Like()` subjacente (só os curingas `* ? #`).
 - **`ReportItems!X.Value`** é importado e resolve em bandas renderizadas **depois** da referenciada (ex.:
