@@ -50,6 +50,8 @@ var pdf = await new ReportEngine().RenderAsync(def, dataSources);
     reescaladas para caber na largura do Tablix; `<Style>`/Format por célula preservados.
   - caso contrário (Body com outros itens) → `TablixElement` no modo tabela: célula `(0,c)` = header label,
     `(1,c)` = detalhe TextBox, `<TablixColumns>`/`Width` → `ColumnWidths` (pesos relativos).
+    O `<PageBreak><BreakLocation>` (Start/End/StartAndEnd; e o legado RDL 2005 `PageBreakAtStart`/`AtEnd`) do
+    Tablix vira `DetailBand.PageBreak` (quebra de página antes/depois — ex.: "cada grupo em sua página").
   - Header vs detalhe classificados pela hierarquia de linha (o membro com `<Group>` é o detalhe). Híbrido
     tabela+matrix, múltiplas linhas de detalhe, row-group headers/footers e ColSpan são follow-up (com aviso);
     múltiplas DetailBands (várias data regions no Body) também (cai no `TablixElement`).

@@ -172,6 +172,35 @@ public class RdlImporterTests
         img.Sizing.Should().Be(Enum.Parse<Reporting.Elements.ImageSizing>(expected));
     }
 
+    [Theory]
+    [InlineData("<PageBreak><BreakLocation>Start</BreakLocation></PageBreak>", "Start")]
+    [InlineData("<PageBreak><BreakLocation>End</BreakLocation></PageBreak>", "End")]
+    [InlineData("<PageBreak><BreakLocation>StartAndEnd</BreakLocation></PageBreak>", "StartAndEnd")]
+    [InlineData("<PageBreakAtStart>true</PageBreakAtStart>", "Start")]            // RDL 2005 legacy
+    [InlineData("<PageBreakAtEnd>true</PageBreakAtEnd>", "End")]
+    [InlineData("<PageBreakAtStart>true</PageBreakAtStart><PageBreakAtEnd>true</PageBreakAtEnd>", "StartAndEnd")]
+    [InlineData("", "None")]                                                       // absent → None (no regression)
+    public void Tablix_PageBreak_is_imported_to_the_detail_band(string pageBreakXml, string expected)
+    {
+        var rdl = $"""
+            <Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition">
+              <Body><Height>3cm</Height><ReportItems>
+                <Tablix Name="T"><Top>0cm</Top><Left>0cm</Left><Width>6cm</Width><Height>2cm</Height>
+                  <DataSetName>Vendas</DataSetName>{pageBreakXml}
+                  <TablixBody>
+                    <TablixColumns><TablixColumn><Width>6cm</Width></TablixColumn></TablixColumns>
+                    <TablixRows><TablixRow><TablixCells><TablixCell><CellContents><Textbox><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!P.Value</Value></TextRun></TextRuns></Paragraph></Paragraphs></Textbox></CellContents></TablixCell></TablixCells></TablixRow></TablixRows>
+                  </TablixBody>
+                  <TablixColumnHierarchy><TablixMembers><TablixMember /></TablixMembers></TablixColumnHierarchy>
+                  <TablixRowHierarchy><TablixMembers><TablixMember><Group Name="Details" /></TablixMember></TablixMembers></TablixRowHierarchy>
+                </Tablix>
+              </ReportItems></Body>
+            </Report>
+            """;
+        new RdlImporter().ImportXml(rdl).Detail.PageBreak
+            .Should().Be(Enum.Parse<Reporting.Bands.PageBreak>(expected));
+    }
+
     [Fact]
     public void Report_Language_is_imported_into_Metadata()
     {
