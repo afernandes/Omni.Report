@@ -61,10 +61,16 @@ Avg(Fields.Total, 'Group')
 Min(Fields.Data)
 Max(Fields.Total, 'Page')
 Count(Fields.Id, 'Group')       // conta itens do grupo
+Var(Fields.Total)               // variância AMOSTRAL (÷ n-1)
+VarP(Fields.Total)              // variância POPULACIONAL (÷ n)
+StDev(Fields.Total, 'Group')    // desvio-padrão amostral
+StDevP(Fields.Total)            // desvio-padrão populacional
 ```
 
 Escopos válidos: `Report` (default), `Group`, `Page`, `Running` (acumulado do início do
 escopo até a linha corrente). A função `RunningTotal(...)` é o atalho para o caso `Running`.
+`Var`/`StDev` são amostrais (correção de Bessel, ÷ n-1) e `VarP`/`StDevP` populacionais (÷ n),
+casando com o SSRS; com poucas linhas (amostral exige ≥2) retornam 0, como os demais agregadores.
 
 Internamente, `AggregateCalculator` mantém pilhas de acumuladores indexadas pelo
 escopo. A paginação reseta o escopo apropriado entre páginas / grupos.
