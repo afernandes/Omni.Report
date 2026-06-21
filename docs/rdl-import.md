@@ -32,7 +32,9 @@ var pdf = await new ReportEngine().RenderAsync(def, dataSources);
     por-run; parágrafos separados por quebra de linha; `Expression` de fallback concatena os runs). O render
     desenha os runs concatenados com o estilo do TextBox — estilo visual por-run e hotspot de ação por-run são
     follow-up; `MarkupType=HTML` é achatado com aviso;
-  - `Line`, `Rectangle` (a forma + itens aninhados, deslocados para coordenadas absolutas),
+  - `Line` (direção Horizontal/Vertical/diagonal inferida dos bounds — altura ~0 = régua horizontal,
+    largura ~0 = vertical; antes toda linha virava diagonal), `Rectangle` (a forma + itens aninhados,
+    deslocados para coordenadas absolutas),
   - `Image` externa (`Source=External`).
 - **Data viz**: `<Chart>` → `ChartElement` (tipo da 1ª série, categoria da hierarquia, uma `ChartSeries`
   por série com valor do 1º DataValue); `<GaugePanel>` → `GaugeElement` (Radial/Linear + valor do 1º
