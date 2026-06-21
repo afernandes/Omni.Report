@@ -1005,6 +1005,9 @@
     {
         foreach (var p in State.Parameters)
         {
+            // Hidden params are driven by default/query and never prompted, so they don't trigger the
+            // dialog (a report whose only params are Hidden must not open an empty, never-closing prompt).
+            if (p.Hidden) continue;
             if (!_paramValues.ContainsKey(p.Name)) return true;
         }
         return false;
