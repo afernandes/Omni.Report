@@ -281,6 +281,71 @@ public class RdlImporterTests
     }
 
     [Fact]
+    public void Textbox_with_multiple_runs_imports_as_TextRuns()
+    {
+        var rdl = """
+            <Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition">
+              <Body><Height>2cm</Height><ReportItems>
+                <Textbox Name="Saudacao">
+                  <Top>0cm</Top><Left>0cm</Left><Width>8cm</Width><Height>1cm</Height>
+                  <Paragraphs><Paragraph><TextRuns>
+                    <TextRun><Value>Olá </Value></TextRun>
+                    <TextRun><Value>=Fields!Nome.Value</Value><Style><FontWeight>Bold</FontWeight></Style>
+                      <ActionInfo><Actions><Action><Hyperlink>=Fields!Url.Value</Hyperlink></Action></Actions></ActionInfo></TextRun>
+                    <TextRun><Value>!</Value></TextRun>
+                  </TextRuns></Paragraph></Paragraphs>
+                </Textbox>
+              </ReportItems></Body>
+            </Report>
+            """;
+        var tb = new RdlImporter().ImportXml(rdl).ReportHeader!.Elements.OfType<Reporting.Elements.TextBoxElement>().Single();
+
+        tb.TextRuns.Select(r => r.Value).Should().Equal("Olá ", "Fields.Nome", "!");
+        tb.TextRuns[1].Style!.Font!.Style.Should().HaveFlag(Reporting.Styling.FontStyle.Bold);
+        tb.TextRuns[1].Action.Should().NotBeNull("o ActionInfo por-run vira ElementAction");
+        // Fallback Expression = template concatenando os runs (literal verbatim, expressão como {expr}).
+        tb.Expression.Should().Be("Olá {Fields.Nome}!");
+    }
+
+    [Fact]
+    public void Textbox_html_markup_run_warns_and_flattens()
+    {
+        var rdl = """
+            <Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition">
+              <Body><Height>2cm</Height><ReportItems>
+                <Textbox Name="Rico">
+                  <Top>0cm</Top><Left>0cm</Left><Width>8cm</Width><Height>1cm</Height>
+                  <Paragraphs><Paragraph><TextRuns>
+                    <TextRun><Value>a</Value></TextRun>
+                    <TextRun><Value>&lt;b&gt;b&lt;/b&gt;</Value><MarkupType>HTML</MarkupType></TextRun>
+                  </TextRuns></Paragraph></Paragraphs>
+                </Textbox>
+              </ReportItems></Body>
+            </Report>
+            """;
+        var def = new RdlImporter().ImportXml(rdl);
+        def.Metadata["ImportWarnings"].Should().Contain("HTML");
+    }
+
+    [Fact]
+    public void Single_run_textbox_keeps_the_legacy_path()
+    {
+        var rdl = """
+            <Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition">
+              <Body><Height>2cm</Height><ReportItems>
+                <Textbox Name="Simples">
+                  <Top>0cm</Top><Left>0cm</Left><Width>8cm</Width><Height>1cm</Height>
+                  <Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!Total.Value</Value></TextRun></TextRuns></Paragraph></Paragraphs>
+                </Textbox>
+              </ReportItems></Body>
+            </Report>
+            """;
+        var tb = new RdlImporter().ImportXml(rdl).ReportHeader!.Elements.OfType<Reporting.Elements.TextBoxElement>().Single();
+        tb.Expression.Should().Be("Fields.Total");
+        tb.TextRuns.Should().BeEmpty("um único run continua no caminho single-expression");
+    }
+
+    [Fact]
     public void DataViz_chart_gauge_and_subreport_are_imported()
     {
         var rdl = """

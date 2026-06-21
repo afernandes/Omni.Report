@@ -41,6 +41,25 @@ public class BandRendererCoverageTests
     }
 
     [Fact]
+    public async Task TextBox_with_TextRuns_renders_the_concatenated_runs()
+    {
+        var req = WithSingleRowDefinition(new TextBoxElement
+        {
+            Id = "tb",
+            Bounds = new Rectangle(0.Mm(), 0.Mm(), 80.Mm(), 6.Mm()),
+            Expression = "ignored when runs are present",
+            TextRuns = EquatableArray.Create(
+                new TextRun("Olá "),
+                new TextRun("Fields.produto"), // expression run → resolved per-run
+                new TextRun("!")),
+        });
+        var report = await new ReportPaginator().PaginateAsync(req);
+        var texts = report.Pages[0].Primitives.OfType<DrawTextPrimitive>().Select(t => t.Text).ToList();
+        // The runs are resolved individually and concatenated; "Fields.produto" evaluates to the row value "p".
+        texts.Should().Contain("Olá p!");
+    }
+
+    [Fact]
     public async Task Rectangle_with_fill_and_border_emits_primitive()
     {
         var req = WithSingleRowDefinition(new RectangleElement

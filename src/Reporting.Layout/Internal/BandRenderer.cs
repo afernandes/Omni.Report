@@ -86,7 +86,14 @@ internal sealed class BandRenderer
                     break;
 
                 case TextBoxElement tb:
-                    var text = ResolveText(tb.Expression, ctx, effectiveStyle.Format);
+                    // Multi-run (RDL F1.8): resolve each run's value and concatenate, rendered with the
+                    // TextBox's Style. Per-run style/action round-trips in the model but the mixed-font
+                    // drawing path (distinct font/colour per segment) is a follow-up — single-style for now.
+                    // Format's single-expression shortcut doesn't apply to a concatenation, so runs resolve
+                    // without it.
+                    var text = tb.TextRuns.Count > 0
+                        ? string.Concat(tb.TextRuns.Select(r => ResolveText(r.Value, ctx)))
+                        : ResolveText(tb.Expression, ctx, effectiveStyle.Format);
                     var rendered = EmitText(text, elementBounds, style, tb.Id, tb.CanGrow, tb.CanShrink);
                     primitives.Add(rendered);
                     actualHeight = MaxHeight(actualHeight, rendered.Bounds, origin, growsTo: tb.CanGrow ? rendered.Bounds : null);

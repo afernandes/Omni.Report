@@ -16,6 +16,35 @@ namespace Reporting.Designer.Blazor.Tests;
 public class AdvancedElementRoundTripTests
 {
     [Fact]
+    public void TextBox_TextRuns_survive_a_designer_edit_and_clone()
+    {
+        // TextBox is a first-class editor (not opaque). Without the run-mirror, opening a multi-run
+        // textbox and editing any property would silently drop its TextRuns — a data-loss bug.
+        var tb = new TextBoxElement
+        {
+            Id = "tb",
+            Bounds = new Rectangle(Unit.Zero, Unit.Zero, Unit.FromMm(80), Unit.FromMm(6)),
+            Expression = "Olá {Fields.nome}",
+            TextRuns = EquatableArray.Create(
+                new TextRun("Olá "),
+                new TextRun("Fields.nome", new Reporting.Styling.Style { Font = new Reporting.Styling.Font("Arial", 10, Reporting.Styling.FontStyle.Bold) })),
+        };
+
+        var vm = ElementViewModel.FromElement(tb);
+        vm.Kind.Should().Be(DesignerElementKind.TextBox);
+        vm.X = Unit.FromMm(15); // edit a property
+
+        var back = (TextBoxElement)vm.ToElement();
+        back.TextRuns.Should().HaveCount(2, "runs survive an edit");
+        back.TextRuns[1].Value.Should().Be("Fields.nome");
+        back.TextRuns[1].Style!.Font!.Style.Should().HaveFlag(Reporting.Styling.FontStyle.Bold);
+        back.Bounds.X.Should().Be(Unit.FromMm(15));
+
+        var clone = (TextBoxElement)vm.Clone().ToElement();
+        clone.TextRuns.Should().HaveCount(2, "Clone deep-copies the runs");
+    }
+
+    [Fact]
     public void Gauge_round_trips_losslessly_and_stays_movable()
     {
         var gauge = new GaugeElement
