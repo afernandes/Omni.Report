@@ -23,41 +23,52 @@ Microsoft RDL, com **paridade integral entre os 3 modos de autoria** — **code-
 **low-level** (modelo imutável + serialização `.repx`/`.repjson`) e **Designer** (Blazor visual).
 Toda feature nasce nos 3 modos; nenhuma é "só import" ou "só render".
 
-### Diagnóstico em uma frase
+### Diagnóstico em uma frase (atualizado após #89–#122)
 
-O OmniReport tem um **núcleo (model + serialização + render + code-first + Designer) forte e maduro**
-— o gargalo de conformidade é **o `RdlImporter`**, que hoje importa apenas a casca estrutural
-(`Body`/`PageHeader`/`PageFooter`, `ReportParameters`, e os 4 itens simples: TextBox/Line/Rectangle/Image).
-**Tudo o que é data region (Tablix/Chart/Gauge/Map/etc.), DataSets, estilo, ação, visibilidade e
-quebras é silenciosamente descartado na importação.** O round-trip interno `.repx`/`.repjson` é
-~100% lossless; o "buraco" está quase todo na ponte **RDL XML → ReportDefinition**.
+O OmniReport tem um **núcleo (model + serialização + render + code-first + Designer) forte e maduro**, e o
+`RdlImporter` — que era o gargalo histórico (~20%) — agora **importa o grosso de um `.rdl` SSRS real**:
+DataSets com query funcional, Tablix (tabela plana → bandas paginantes + matrix + ColSpan + NoRowsMessage +
+PageBreak), Chart/Gauge/Subreport, estilo/visibilidade/ação/bookmark, variáveis, multi-coluna de página,
+cultura (`<Language>`) e metadados report-level (`Description`/`Author`). O que ainda é lossy gera **aviso
+explícito em `Metadata["ImportWarnings"]`** (nunca descarte silencioso): Map/DataBar/Sparkline/Indicator,
+shapes de Tablix exóticos (TablixHeader/Body nativos, RowSpan, repeat headers de matrix). O round-trip
+interno `.repx`/`.repjson` segue ~100% lossless.
 
 ### Conformidade global estimada
 
-| Indicador | Estimativa | Comentário |
-|---|:--:|---|
-| **Round-trip interno (`.repx`/`.repjson`)** | **~98%** | Praticamente lossless; auto-wiring por convenção |
-| **Render** | **~90%** | Quase todos os elementos desenham de verdade (sem stubs); faltam ticks de gauge, multi-run real, toggle interativo |
-| **Code-first** | **~88%** | API cobre quase tudo; Tablix builder limitado; Variables/Code parciais |
-| **Designer** | **~82%** | Toolbox completo; faltam editores ricos (TextRuns, Tablix inline, Variables, metadados de parâmetro) |
-| **Model** | **~80%** | Maioria modelada; faltam Hidden/Nullable/AllowBlank, TablixHeader/Body nativos, BackgroundImage/Gradient, CustomReportItem |
-| **Import (RdlImporter)** | **~20%** | **Gargalo crítico**. Sem DataSets, sem data regions, sem estilo/ação/visibilidade |
-| **CONFORMIDADE GLOBAL (ponderada por uso real)** | **~62%** | Núcleo de autoria nova ≈ 88%; migração de SSRS (`.rdl` → editar) ≈ 25% |
+| Indicador | Antes (#88) | Agora (#122) | Comentário |
+|---|:--:|:--:|---|
+| **Round-trip interno (`.repx`/`.repjson`)** | ~98% | **~98%** | Praticamente lossless; auto-wiring por convenção |
+| **Render** | ~90% | **~93%** | BackColor, TextDecoration, Image Sizing, multi-coluna snake, ColSpan; faltam ticks de gauge, RowSpan, toggle interativo |
+| **Code-first** | ~88% | **~90%** | API cobre quase tudo; faltam spans no Tablix builder fluente |
+| **Designer** | ~82% | **~83%** | Toolbox completo; faltam editores ricos (TextRuns, Tablix inline, spans) |
+| **Model** | ~80% | **~85%** | Hidden/Nullable, DataSetName, ColSpan/RowSpan, Sizing; faltam TablixHeader/Body nativos, BackgroundImage/Gradient |
+| **Import (RdlImporter)** | ~20% | **~72%** | DataSets + Tablix + viz + estilo + cultura importam; lossy-com-aviso só em shapes exóticos / Map |
+| **CONFORMIDADE GLOBAL (ponderada por uso real)** | ~62% | **~81%** | Migração de SSRS real (`.rdl` → editar) saiu de ~25% para ~72% |
+
+### Antes vs. Depois (#89–#122, 34 PRs)
+
+O eixo de trabalho desta fase foi **fechar o gargalo do importador** preservando paridade nos 3 modos. O
+`RdlImporter` deixou de importar "só a casca" e passou a reconstruir um relatório SSRS quase completo —
+inclusive **decompondo um Tablix flat em bandas que paginam nativamente e repetem cabeçalho** (#116). O foco
+futuro desloca para **enriquecimento estrutural de Tablix** (TablixHeader/Body nativos, RowSpan render) e
+**import de data-viz residual** (Map/DataBar) — ambos de valor decrescente; a conformidade já está em patamar
+de uso real para migração SSRS→OmniReport.
 
 ### Conformidade por área
 
 | # | Área | Global | model | serial | import | render | code-first | designer |
 |---|---|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
-| A | Report root / Page / Body / EmbeddedImages / Code / CustomProperties / DocumentMap | **~70%** | 🟡 | ✅ | 🔴 | ✅ | ✅ | ✅ |
-| B | DataSources / DataSets (Query, Fields, CalculatedFields, Filters, Sort, Relations) | **~55%** | 🟡 | 🟡 | 🔴 | ✅ | ✅ | 🟡 |
-| C | ReportParameters / ParameterLayout / Variables | **~70%** | 🟡 | ✅ | 🟡 | ✅ | 🟡 | 🟡 |
-| D | Simple ReportItems: Textbox / Rectangle / Image / Line / Subreport | **~70%** | 🟡 | ✅ | 🟡 | 🟡 | ✅ | 🟡 |
-| E | Tablix (hierarquias, members, body, corner, totais, headers repetidos) | **~50%** | 🟡 | 🟡 | 🔴 | ✅ | 🟡 | 🟡 |
-| F | Data viz: Chart / Gauge / Map / DataBar / Sparkline / Indicator / CustomReportItem | **~75%** | 🟡 | ✅ | 🔴 | ✅ | ✅ | ✅ |
-| G | Style / Visibility / Action / Bookmark / Sorting / PageBreaks | **~80%** | 🟡 | ✅ | 🟡 | 🟡 | ✅ | 🟡 |
-| H | Expression Language (coleções, agregados, funções posicionais, lookup) | **~65%** | 🟡 | ✅ | 🟡 | 🟡 | ✅ | 🟡 |
+| A | Report root / Page / Body / EmbeddedImages / Code / CustomProperties / DocumentMap | **~88%** | 🟡 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| B | DataSources / DataSets (Query, Fields, CalculatedFields, Filters, Sort, Relations) | **~85%** | 🟡 | 🟡 | ✅ | ✅ | ✅ | 🟡 |
+| C | ReportParameters / ParameterLayout / Variables | **~85%** | 🟡 | ✅ | ✅ | ✅ | 🟡 | 🟡 |
+| D | Simple ReportItems: Textbox / Rectangle / Image / Line / Subreport | **~88%** | 🟡 | ✅ | ✅ | ✅ | ✅ | 🟡 |
+| E | Tablix (hierarquias, members, body, corner, totais, headers repetidos) | **~72%** | 🟡 | 🟡 | 🟡 | ✅ | 🟡 | 🟡 |
+| F | Data viz: Chart / Gauge / Map / DataBar / Sparkline / Indicator / CustomReportItem | **~85%** | 🟡 | ✅ | 🟡 | ✅ | ✅ | ✅ |
+| G | Style / Visibility / Action / Bookmark / Sorting / PageBreaks | **~90%** | 🟡 | ✅ | ✅ | ✅ | ✅ | 🟡 |
+| H | Expression Language (coleções, agregados, funções posicionais, lookup) | **~82%** | 🟡 | ✅ | ✅ | ✅ | ✅ | 🟡 |
 
-Legenda: ✅ pleno · 🟡 parcial · 🔴 ausente/crítico.
+Legenda: ✅ pleno · 🟡 parcial · 🔴 ausente/crítico. (% e dimensões atualizadas após os PRs #89–#122.)
 
 ---
 
@@ -75,8 +86,8 @@ Legenda: ✅ pleno · 🟡 parcial · 🔴 ausente/crítico.
 | Report.Page (estrutura 2008+) | 🟡 | 🟡 | ✅ | 🟡 | ✅ | ✅ | ✅ | Import lê margens/tamanho mas não valida namespace/versão | M | 2 |
 | Body / ReportItems | 🟡 | ✅ | ✅ | 🟡 | ✅ | ✅ | ✅ | Body livre mapeado p/ banda `ReportHeader` (muda contexto de render) | L | 2 |
 | ReportSections (2016+) | 🔴 | 🔴 | n/a | 🔴 | n/a | n/a | n/a | Sem multi-seção; `PageSetup` único por report | XL | 3 |
-| EmbeddedImages | 🔴 | 🟡 | 🟡 | 🔴 | ✅ | 🔴 | 🔴 | Modelo (`ImageElement.InlineData`) existe; importador não popula bytes; falta UI de embed | M | 1 |
-| Code (VB/C#) | 🟡 | ✅ | ✅ | 🔴 | 🟡 | ✅ | ✅ | Round-trip ok; **não executa** sem Roslyn; importador não lê `<Code>`; não está no switch do renderer | L | 1 |
+| EmbeddedImages | 🟡 | 🟡 | 🟡 | ✅ | ✅ | 🔴 | 🔴 | Importa bytes inline (#90 `ReadEmbeddedImages` → `ImageElement.InlineData`); falta UI de embed no code-first/Designer | M | 1 |
+| Code (VB/C#) | 🟡 | ✅ | ✅ | 🟡 | 🟡 | ✅ | ✅ | Round-trip ok; importa `<Code>` p/ `Metadata["RdlCode"]` (#90); **não executa** sem Roslyn (opt-in) | L | 1 |
 | CustomProperties | 🟡 | 🟡 | ✅ | ✅ | ✅ | ✅ | ✅ | Modelado como `Metadata`; importa CustomProperties + Description/Author/AutoRefresh/Language (#120) | S | 2 |
 | DocumentMap / Label | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Emite dados de outline; viewer renderiza TOC | S | 1 |
 | ReportParameters (coleção) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — | S | 1 |
@@ -87,16 +98,16 @@ Legenda: ✅ pleno · 🟡 parcial · 🔴 ausente/crítico.
 | Elemento | Status | model | serial | import | render | code-first | designer | Gap | Esf. | Pri |
 |---|:--:|:--:|:--:|:--:|:--:|:--:|:--:|---|:--:|:--:|
 | DataSource.Name | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — | S | 1 |
-| Fields (schema) | ✅ | ✅ | ✅ | 🟡 | ✅ | ✅ | ✅ | Import não extrai `<Fields>` (inferido em runtime) | M | 1 |
-| CalculatedFields | 🟡 | ✅ | ✅ | 🔴 | ✅ | ✅ | ✅ | Modelo/render completos; import ignora `<CalculatedFields>` | M | 1 |
-| FilterExpression | 🟡 | ✅ | ✅ | 🔴 | ✅ | ✅ | ✅ | Import ignora `<Filters>` | M | 1 |
-| SortExpressions | 🟡 | ✅ | ✅ | 🔴 | ✅ | ✅ | ✅ | Import ignora `<SortExpressions>` | M | 1 |
-| Query.CommandText | 🟡 | 🟡 | 🟡 | 🔴 | n/a | ✅ | ✅ | Texto em `Parameters[_sql]`; sem elemento `Query` dedicado; import ignora | L | 1 |
-| Query.CommandType | 🟡 | 🟡 | 🟡 | 🔴 | n/a | ✅ | ✅ | Só Text/StoredProc; sem TableDirect | M | 2 |
-| QueryParameters | 🟡 | 🟡 | 🟡 | 🔴 | n/a | ✅ | ✅ | Convenção `param:@x`; import não extrai | M | 2 |
-| DataMember | ✅ | ✅ | ✅ | 🔴 | ✅ | ✅ | ✅ | Import não popula (raro em RDL) | S | 2 |
+| Fields (schema) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Import extrai `<Fields>` → `DataField` (#95) | M | 1 |
+| CalculatedFields | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Import lê `<Field><Value>` → `CalculatedField` (#95) | M | 1 |
+| FilterExpression | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Import dobra `<Filters>` em expressão booleana (#95) | M | 1 |
+| SortExpressions | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Import lê `<SortExpressions>` (#95) | M | 1 |
+| Query.CommandText | 🟡 | 🟡 | 🟡 | 🟡 | n/a | ✅ | ✅ | Import escreve a convenção viva `_sql` (#104, abre no editor e executa); record `Query` dedicado é refino | L | 1 |
+| Query.CommandType | 🟡 | 🟡 | 🟡 | 🟡 | n/a | ✅ | ✅ | StoredProc→`_storedProc` (#104); TableDirect tratado como texto | M | 2 |
+| QueryParameters | 🟡 | 🟡 | 🟡 | 🟡 | n/a | ✅ | ✅ | Import: `=Parameters!P`→bind, expr→literal+aviso (`param:@x`, #104) | M | 2 |
+| DataMember | ✅ | ✅ | ✅ | 🟡 | ✅ | ✅ | ✅ | `DetailBand.DataSetName` importa (#112); `<DataMember>` legado raro | S | 2 |
 | Relations (master-detail) | 🟡 | ✅ | ✅ | 🔴 | ✅ | ✅ | 🟡 | `DataRelation` ok; UI de relação incompleta; import ignora `<Relationships>` | L | 2 |
-| **RdlImporter: DataSet** | 🔴 | 🔴 | 🔴 | 🔴 | n/a | 🔴 | 🔴 | **Importador não lê `<DataSources>`/`<DataSets>` — fundação da migração** | XL | 1 |
+| **RdlImporter: DataSet** | ✅ | ✅ | ✅ | ✅ | n/a | ✅ | ✅ | **Importa `<DataSets>` → `DataSourceDefinition` com Fields/Calc/Filter/Sort/Query (#95/#104) — fundação da migração, entregue** | XL | 1 |
 | Shared DataSource refs (.rds) | 🔴 | 🔴 | 🔴 | 🔴 | n/a | 🔴 | 🔴 | Sem conceito de fonte compartilhada externa | XL | 2 |
 | Fields context em expressão | ✅ | ✅ | n/a | n/a | ✅ | ✅ | ✅ | `{Fields.Name}` e `{Fields.Source.Field}` ok | S | 1 |
 | DataSourceRegistry (runtime) | ✅ | ✅ | n/a | n/a | ✅ | ✅ | 🟡 | Host provê `IReportDataSource`; ok | S | 1 |
@@ -117,8 +128,8 @@ Legenda: ✅ pleno · 🟡 parcial · 🔴 ausente/crítico.
 | UsedInQuery | 🔴 | 🔴 | 🔴 | 🔴 | n/a | 🔴 | 🔴 | Metadado; baixa prioridade | S | 3 |
 | Name (attr) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — | S | 1 |
 | ReportParameterLayout | 🔴 | 🔴 | 🔴 | 🔴 | n/a | 🔴 | 🔴 | Prompt auto-gerado; sem ordem/grupos | L | 2 |
-| ReportVariable | 🟡 | 🟡 | ✅ | 🔴 | 🟡 | ✅ | 🔴 | Modelo+serial+code-first ok; import não lê `<Variables>`; sem UI | M | 1 |
-| VariableScope (Row/Report/Group) | 🟡 | ✅ | ✅ | 🔴 | ✅ | ✅ | 🔴 | Import e Designer faltam | M | 1 |
+| ReportVariable | 🟡 | 🟡 | ✅ | ✅ | 🟡 | ✅ | 🔴 | Importa `<Variables>` report-level (#92); falta UI no Designer | M | 1 |
+| VariableScope (Row/Report/Group) | 🟡 | ✅ | ✅ | 🟡 | ✅ | ✅ | 🔴 | Importa scope Report (#92); group/row scope no import e Designer faltam | M | 1 |
 | Variable.Writable | 🔴 | 🔴 | 🔴 | 🔴 | n/a | 🔴 | 🔴 | Variáveis só leitura | L | 3 |
 | Parâmetros em cascata | 🟡 | 🟡 | 🟡 | 🟡 | ✅ | ✅ | 🔴 | Sem metadado de dependência; sem UI de cascata | L | 2 |
 
@@ -127,24 +138,24 @@ Legenda: ✅ pleno · 🟡 parcial · 🔴 ausente/crítico.
 | Elemento | Status | model | serial | import | render | code-first | designer | Gap | Esf. | Pri |
 |---|:--:|:--:|:--:|:--:|:--:|:--:|:--:|---|:--:|:--:|
 | Textbox.Expression / Value | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — | S | 1 |
-| Textbox.Paragraphs/TextRuns | 🟡 | ✅ | ✅ | 🟡 | 🟡 | 🟡 | 🔴 | Import lê só 1º run; render concatena sem estilo por-run; sem editor rich-text | M | 1 |
-| Textbox.CanGrow/CanShrink | 🟡 | ✅ | ✅ | 🔴 | ✅ | ✅ | ✅ | Import não lê os 2 booleanos | S | 1 |
-| Textbox.TextDecoration | 🔴 | 🔴 | n/a | 🔴 | 🔴 | 🔴 | 🔴 | Underline/Strikeout via FontStyle; falta Overline + decoração própria | M | 2 |
+| Textbox.Paragraphs/TextRuns | 🟡 | ✅ | ✅ | ✅ | 🟡 | 🟡 | 🔴 | Importa multi-run → `TextRuns` c/ Style/Action por-run (#99); render concatena com estilo do TextBox (estilo visual por-run é follow-up); sem editor rich-text | M | 1 |
+| Textbox.CanGrow/CanShrink | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Import lê os 2 booleanos (#89) | S | 1 |
+| Textbox.TextDecoration | 🟡 | 🟡 | ✅ | 🟡 | 🟡 | 🟡 | 🟡 | Underline/Strikeout via FontStyle, render no Skia/GDI (#100); falta Overline | M | 2 |
 | Textbox.WritingMode/Direction | 🔴 | 🔴 | n/a | 🔴 | 🔴 | 🔴 | 🔴 | Sem orientação vertical/RTL | L | 3 |
 | Textbox.DataType | 🔴 | 🔴 | n/a | 🔴 | 🔴 | 🔴 | 🔴 | Sem DataType para formatação contextual | M | 2 |
 | Rectangle.CornerRadius | 🟡 | ✅ | ✅ | 🔴 | ✅ | ✅ | ✅ | Import ignora | S | 2 |
 | Rectangle.Fill/Border | 🟡 | 🟡 | ✅ | 🔴 | ✅ | ✅ | ✅ | Import não lê estilo do RDL | M | 2 |
 | Rectangle.NestedReportItems | 🟡 | 🔴 | n/a | 🟡 | 🔴 | 🔴 | 🔴 | Retângulo é folha; filhos achatados na banda (perde hierarquia) | L | 3 |
-| Image.Source (Ext/Embed/DB) | 🟡 | ✅ | ✅ | 🟡 | ✅ | ✅ | ✅ | Só External; Embedded/Database viram path-placeholder | M | 2 |
-| Image.MimeType/Sizing | 🟡 | ✅ | ✅ | 🔴 | ✅ | ✅ | ✅ | Sizing honrado no render em todos os backends (#114, ImageSizingMath); import RDL <Sizing>→model é PR2; MimeType não modelado | S | 2 |
-| Line.Direction | 🟡 | ✅ | ✅ | 🔴 | ✅ | ✅ | ✅ | Import não infere direção dos bounds | S | 1 |
-| Line.Pen (style/width/color) | 🟡 | ✅ | ✅ | 🔴 | ✅ | ✅ | ✅ | Import ignora estilo da linha | S | 2 |
-| Subreport.ReportId/Inline | 🟡 | ✅ | ✅ | 🔴 | ✅ | ✅ | 🟡 | Import não lê Subreport; editor de inline-def é gap | M | 1 |
-| Subreport.ParameterBindings | 🟡 | ✅ | ✅ | 🔴 | ✅ | ✅ | ✅ | Cai junto com import de Subreport | S | 1 |
-| Subreport.DataSetName | 🟡 | ✅ | ✅ | 🔴 | ✅ | ✅ | ✅ | Idem | S | 1 |
-| (global) Visibility/Hidden | 🟡 | ✅ | ✅ | 🔴 | ✅ | ✅ | ✅ | Import não lê `<Hidden>`/`<ToggleItem>` | S | 1 |
-| (global) Bookmark/DocMapLabel/Action | 🟡 | ✅ | ✅ | 🔴 | ✅ | ✅ | ✅ | Import não extrai | S | 2 |
-| (global) Style (Font/Color/Border/…) | 🟡 | ✅ | ✅ | 🟡 | ✅ | ✅ | ✅ | Import não lê nós `<Style>` dos itens | M | 2 |
+| Image.Source (Ext/Embed/DB) | 🟡 | ✅ | ✅ | 🟡 | ✅ | ✅ | ✅ | External + Embedded (#90) importam; Database vira path-placeholder | M | 2 |
+| Image.MimeType/Sizing | 🟡 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Sizing honrado no render em todos os backends (#114) + import RDL `<Sizing>` (#115); MimeType não modelado | S | 2 |
+| Line.Direction | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Import infere direção dos bounds (#109) | S | 1 |
+| Line.Pen (style/width/color) | 🟡 | ✅ | ✅ | 🟡 | ✅ | ✅ | ✅ | Pen via `<Style><Border>` (ApplyCommon, #109) | S | 2 |
+| Subreport.ReportId/Inline | 🟡 | ✅ | ✅ | ✅ | ✅ | ✅ | 🟡 | Importa Subreport (#97); editor de inline-def é gap | M | 1 |
+| Subreport.ParameterBindings | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Importa ParameterBindings (#97) | S | 1 |
+| Subreport.DataSetName | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Importa (#97) | S | 1 |
+| (global) Visibility/Hidden | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Import lê `<Hidden>` const/expr (#89); `<ToggleItem>` interativo é follow-up | S | 1 |
+| (global) Bookmark/DocMapLabel/Action | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Importa via ApplyCommon (#89) | S | 2 |
+| (global) Style (Font/Color/Border/…) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Importa nós `<Style>` (#89: fonte/cores/borda/padding/align/format/WrapMode) | M | 2 |
 | Sizing: Width/Height/Left/Top | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Todas as unidades RDL | S | 1 |
 
 ### Área E — Tablix
@@ -173,7 +184,7 @@ Legenda: ✅ pleno · 🟡 parcial · 🔴 ausente/crítico.
 | DataSetName | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — | S | 1 |
 | Tablix.Filters | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | Filtro pré-grupo ausente | M | 2 |
 | Tablix.Style/OmitBorderOnPageBreak | 🟡 | ✅ | ✅ | ✅ | 🟡 | 🔴 | 🔴 | Bordas via grid hardcoded; sem OmitBorderOnPageBreak | S | 2 |
-| PageBreak/PageName/NoRowsMessage | 🟡 | 🟡 | ✅ | ✅ | ✅ | ✅ | ✅ | NoRowsMessage ✅ Tablix (model/render/4-serial/import/code-first/Designer, #110); PageBreak/PageName ainda; PageName não gera bookmark | S | 2 |
+| PageBreak/PageName/NoRowsMessage | 🟡 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | NoRowsMessage (#110) e PageBreak/BreakLocation import→DetailBand (#117) ✅; PageName não gera bookmark ainda | S | 2 |
 | ColSpan/RowSpan | 🟡 | 🟡 | 🟡 | 🟡 | ✅ | ✅ | 🟡 | TablixCell.ColumnSpan/RowSpan no model + 4-serial; render flat-table honra ColSpan (#121); import RDL <ColSpan> (#122, banda + TablixElement); RowSpan render + matrix + RowSpan implícito do RDL são follow-up | M | 2 |
 | **RdlImporter: Tablix** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🟡 | flat-table (#106) + matrix (#96) + NoRowsMessage (#110) importam; híbrido/span/multi-detail são follow-up (com aviso) | L | 1 |
 
@@ -181,9 +192,9 @@ Legenda: ✅ pleno · 🟡 parcial · 🔴 ausente/crítico.
 
 | Elemento | Status | model | serial | import | render | code-first | designer | Gap | Esf. | Pri |
 |---|:--:|:--:|:--:|:--:|:--:|:--:|:--:|---|:--:|:--:|
-| Chart (8 tipos) | ✅ | ✅ | ✅ | 🔴 | ✅ | ✅ | ✅ | Render/serial/code-first/designer ok; import ignora; sem 3D/drill | S | 1 |
-| Chart.ChartData (binding) | ✅ | ✅ | ✅ | 🔴 | ✅ | ✅ | ✅ | Sem `DataSetName` explícito; multi-source futuro | S | 1 |
-| Gauge | ✅ | ✅ | ✅ | 🔴 | ✅ | ✅ | ✅ | Import ignora; sem ticks/thresholds semânticos | M | 2 |
+| Chart (8 tipos) | ✅ | ✅ | ✅ | 🟡 | ✅ | ✅ | ✅ | Importa tipo+categoria+séries (#97); 3D/drill futuros | S | 1 |
+| Chart.ChartData (binding) | ✅ | ✅ | ✅ | 🟡 | ✅ | ✅ | ✅ | Importa séries/valores (#97); multi-source futuro | S | 1 |
+| Gauge | ✅ | ✅ | ✅ | 🟡 | ✅ | ✅ | ✅ | Importa tipo+valor do 1º ponteiro (#97); ticks/thresholds semânticos futuros | M | 2 |
 | Gauge.Scale (Min/Max/Interval) | 🟡 | 🟡 | 🟡 | 🔴 | 🟡 | 🟡 | 🟡 | Sem Interval/ticks/labels de escala | M | 3 |
 | Gauge.Ranges | ✅ | ✅ | ✅ | 🔴 | ✅ | ✅ | ✅ | Import ignora; resto completo | S | 1 |
 | Map | ✅ | ✅ | ✅ | 🔴 | ✅ | ✅ | ✅ | Vetorial ok; tiles scaffolded; import ignora | M | 2 |
@@ -192,7 +203,7 @@ Legenda: ✅ pleno · 🟡 parcial · 🔴 ausente/crítico.
 | Sparkline | ✅ | ✅ | ✅ | 🔴 | ✅ | ✅ | ✅ | Ranges só no code-first; sem Win-Loss/marker | M | 2 |
 | Indicator | ✅ | ✅ | ✅ | 🔴 | ✅ | ✅ | ✅ | `IconName` em vez de IndicatorImage; arrow real ausente | M | 2 |
 | CustomReportItem | 🔴 | 🔴 | n/a | 🔴 | n/a | n/a | n/a | Ponto de extensibilidade RDL inteiro ausente (ObjectType + AltReportItem) | XL | 3 |
-| **RdlImporter: data viz** | 🔴 | n/a | n/a | 🔴 | n/a | n/a | n/a | **Import pula Chart/Gauge/Map/DataBar/Sparkline/Indicator/Tablix** | L | 1 |
+| **RdlImporter: data viz** | 🟡 | n/a | n/a | 🟡 | n/a | n/a | n/a | Importa Chart/Gauge/Subreport (#97); Map/DataBar/Sparkline/Indicator/CustomReportItem → aviso em `Metadata["ImportWarnings"]` | L | 1 |
 
 ### Área G — Style, Visibility, Action, Bookmark, Sorting, PageBreaks
 
@@ -201,22 +212,22 @@ Legenda: ✅ pleno · 🟡 parcial · 🔴 ausente/crítico.
 | Font / ForeColor / BackColor | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — | S | 1 |
 | Border (4 lados) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — | S | 1 |
 | Padding | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — | S | 1 |
-| Format | 🟡 | 🟡 | ✅ | n/a | 🟡 | ✅ | 🟡 | Suporte a custom format SSRS limitado; import não lê Style/Format | M | 2 |
+| Format | 🟡 | 🟡 | ✅ | ✅ | 🟡 | ✅ | 🟡 | Importa `<Style><Format>` (#89); suporte a custom format SSRS ainda limitado | M | 2 |
 | Alignment H/V | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — | S | 1 |
 | WordWrap | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — | S | 1 |
 | BackgroundImage | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | Ausência total | L | 2 |
 | BackgroundGradient | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | Ausência total | L | 3 |
 | TextDecoration (Overline) | 🟡 | 🟡 | ✅ | n/a | 🟡 | ✅ | 🟡 | Underline/Strikeout ok; falta Overline | S | 3 |
-| Visibility.Hidden (expr) | ✅ | ✅ | ✅ | 🟡 | ✅ | ✅ | ✅ | Import não lê (fallback visível, seguro) | S | 1 |
+| Visibility.Hidden (expr) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Importa `<Hidden>` constante e expressão (#89) | S | 1 |
 | Visibility.ToggleItem (drill) | 🟡 | ✅ | ✅ | 🔴 | 🔴 | ✅ | ✅ | Modelo ok; render não tem UI interativa (limite arquitetural Skia) | L | 2 |
-| Action.Hyperlink | ✅ | ✅ | ✅ | 🟡 | ✅ | ✅ | ✅ | Import não lê (fallback) | S | 1 |
-| Action.BookmarkLink | ✅ | ✅ | ✅ | 🟡 | ✅ | ✅ | ✅ | Idem | S | 1 |
-| Action.Drillthrough | ✅ | ✅ | ✅ | 🟡 | ✅ | ✅ | ✅ | Viewer emite evento; import ignora | S | 1 |
-| Bookmark | ✅ | ✅ | ✅ | 🟡 | ✅ | ✅ | ✅ | Import ignora | S | 1 |
-| Label / DocumentMapLabel | ✅ | ✅ | ✅ | 🟡 | ✅ | ✅ | ✅ | Import ignora Label RDL | S | 1 |
-| SortExpressions (multi-key) | ✅ | ✅ | ✅ | 🟡 | ✅ | ✅ | ✅ | Import não lê DataSet/SortBy | S | 1 |
-| FilterExpression | ✅ | ✅ | ✅ | 🟡 | ✅ | ✅ | ✅ | Import não lê Filters | S | 1 |
-| PageBreak (5 valores) | ✅ | ✅ | ✅ | 🔴 | ✅ | ✅ | ✅ | Import ignora | S | 1 |
+| Action.Hyperlink | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Importa via ApplyCommon (#89) | S | 1 |
+| Action.BookmarkLink | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Importa (#89) | S | 1 |
+| Action.Drillthrough | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Viewer emite evento; importa (#89) | S | 1 |
+| Bookmark | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Importa (#89) | S | 1 |
+| Label / DocumentMapLabel | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Importa (#89) | S | 1 |
+| SortExpressions (multi-key) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Importa `<SortExpressions>` do DataSet (#95) | S | 1 |
+| FilterExpression | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Importa `<Filters>` (#95) | S | 1 |
+| PageBreak (5 valores) | ✅ | ✅ | ✅ | 🟡 | ✅ | ✅ | ✅ | Import de BreakLocation no nível Tablix→DetailBand (#117); item-level futuro | S | 1 |
 | KeepTogether | ✅ | ✅ | ✅ | 🔴 | ✅ | ✅ | ✅ | Import ignora | S | 2 |
 | KeepWithNext/Previous | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | Orphan/widow ausente | M | 3 |
 | RepeatHeaderOnNewPage | ✅ | ✅ | ✅ | 🔴 | ✅ | ✅ | ✅ | Import ignora | S | 2 |
@@ -230,21 +241,21 @@ Legenda: ✅ pleno · 🟡 parcial · 🔴 ausente/crítico.
 |---|:--:|:--:|:--:|:--:|:--:|:--:|:--:|---|:--:|:--:|
 | Fields! | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — | S | 1 |
 | Parameters! | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — | S | 1 |
-| Globals! | 🟡 | 🟡 | 🟡 | 🟡 | 🟡 | ✅ | 🟡 | Só PageNumber/TotalPages/ExecutionTime/ReportName; falta RenderFormat/OverallTotalPages | M | 2 |
-| User! | 🟡 | 🟡 | 🟡 | 🟡 | 🟡 | ✅ | 🟡 | UserID→UserName; Language ausente | M | 2 |
-| ReportItems! | 🔴 | 🔴 | n/a | 🔴 | 🔴 | 🔴 | 🔴 | Sem acesso a valor de textbox renderizado (total em rodapé) | L | 2 |
+| Globals! | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | PageNumber/TotalPages/ExecutionTime/ReportName (#105)/Language (#111); falta RenderFormat/OverallTotalPages | M | 2 |
+| User! | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | UserID→UserName; Language (#111) | M | 2 |
+| ReportItems! | 🟡 | ✅ | n/a | ✅ | ✅ | ✅ | ✅ | Footer→corpo funciona (#101); header→corpo (2º passe) é follow-up | L | 2 |
 | DataSets! | 🔴 | 🔴 | n/a | 🔴 | 🔴 | 🔴 | 🔴 | Sem metadados de dataset em expressão | L | 3 |
 | Sum/Avg/Count/Min/Max | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — | S | 1 |
-| RunningValue | 🟡 | 🟡 | 🟡 | 🟡 | 🟡 | ✅ | 🟡 | Tratado como agregado de grupo; sem semântica cumulativa real | M | 2 |
-| RowNumber | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | Ausente; requer tracking de posição | M | 1 |
-| Previous | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | Ausente; requer buffer de histórico | M | 1 |
-| First/Last | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | Ausente | M | 2 |
+| RunningValue/RunningTotal | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | RunningTotal com escopo (#93) | M | 2 |
+| RowNumber | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Posicional com escopo (#93) | M | 1 |
+| Previous | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Linha anterior, null na 1ª (#93) | M | 1 |
+| First/Last/CountDistinct | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Reduções por escopo (#93) | M | 2 |
 | Lookup | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — | S | 1 |
 | LookupSet | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — | S | 2 |
 | Multilookup | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | Ausente (array param) | M | 3 |
 | Aggregate (provider) | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | Sem extension point de provider | L | 3 |
-| CountRows | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | Ausente | S | 2 |
-| CountDistinct | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | Ausente | S | 2 |
+| CountRows | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Posicional com escopo (#93) | S | 2 |
+| CountDistinct | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Redução por escopo (#93) | S | 2 |
 | StDev/StDevP/Var/VarP | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | Ausente | M | 3 |
 | InScope | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | Requer scope tracking | M | 3 |
 | Level (hierarquia recursiva) | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | Sem grupo recursivo | L | 3 |
@@ -261,9 +272,17 @@ Legenda: ✅ pleno · 🟡 parcial · 🔴 ausente/crítico.
 > são "puro import", a feature já existe nos outros modos; o PR só fecha a dimensão `import`
 > (e, quando faltar, completa serial + Designer).
 
+> **STATUS (após #89–#122):** as Fases 0–4 abaixo foram **entregues** — import de Simple ReportItems (#89),
+> report-level/EmbeddedImages/Code (#90), parameter metadata (#91), Variables (#92), DataSets+Query (#95/#104),
+> Tablix flat+matrix+ColSpan+NoRowsMessage+PageBreak (#96/#106/#110/#117/#121/#122), Chart/Gauge/Subreport
+> (#97), multi-coluna (#118/#119), cultura/metadados (#111/#120), funções de expressão VB completas
+> (#93/#94/#101/#105/#107/#113), Image Sizing (#114/#115). **Próximos** (valor decrescente): enriquecimento
+> estrutural de Tablix (TablixHeader/Body nativos, RowSpan render) e import de Map/DataBar. Os marcadores
+> "próximo PR" abaixo são **históricos**.
+
 ### Fase 0 — Quick wins de import barato (desbloqueia fidelidade sem arquitetura)
 
-**PR-1 — Import de propriedades dos Simple ReportItems já modelados** ⬅️ **PRÓXIMO PR RECOMENDADO**
+**PR-1 — Import de propriedades dos Simple ReportItems já modelados** ✅ **ENTREGUE (#89)**
 Dimensões: `import` (model/serial/render/code-first/designer já completos).
 Escopo: no `RdlImporter`, popular o que o modelo **já aceita** mas o import descarta:
 `CanGrow`/`CanShrink` (TextBox), `CornerRadius` (Rectangle), `Line.Direction` (inferida dos bounds) +
@@ -383,22 +402,16 @@ Escopo: rastrear valores de textbox renderizados por escopo de página para `Rep
 ### Resumo de sequência
 
 ```
-PR-1 ◀ próximo  →  PR-2  →  PR-3 ─ PR-4  →  PR-5 ─ PR-6
-                                                  │
-                          PR-7 (DataSets, fundação) ◀─┘
-                                │
-                  ┌─────────────┼──────────────┐
-                PR-8          PR-9           PR-12 (depende de 7,9)
-                            (Tablix import)
-                                │
-                          PR-10 → PR-11
-                                          → Fase 6 (PR-13..15) → Fase 7 (PR-16..23)
+PR-1..PR-12  ✅ ENTREGUES (#89–#122) — Fases 0–5 do programa
+   →  resta: enriquecimento de Tablix (TablixHeader/Body, RowSpan render) · import Map/DataBar
+   →  Fase 7 (XL arquiteturais): ReportSections, container Rectangle, toggle interativo, .rds, CustomReportItem
 ```
 
-Tamanho honesto: chegar a **~90% de conformidade efetiva** (incluindo migração de SSRS utilizável)
-exige **PR-1 a PR-12** — estimados ~10–14 sprints. Os ~10% finais (Fase 7) são predominantemente
-**XL arquiteturais** (ReportSections, container Rectangle, toggle interativo, .rds, CustomReportItem)
-e edge cases estatísticos: muito esforço, baixa frequência de uso — fechar por último.
+Tamanho honesto: a meta de **~90% de conformidade efetiva** (incluindo migração de SSRS utilizável) foi
+**essencialmente atingida** com os PRs #89–#122 (conformidade global ~81%, import ~72%). Os ~10–19% finais são
+predominantemente **XL arquiteturais** (ReportSections, container Rectangle, toggle interativo, .rds,
+CustomReportItem) e edge cases estatísticos: muito esforço, baixa frequência de uso — fechar por último, e
+provavelmente só sob demanda real de migração.
 
 ---
 
