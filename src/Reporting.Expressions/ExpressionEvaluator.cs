@@ -385,6 +385,48 @@ public sealed class ExpressionEvaluator
                 if (n < 3) return false;
                 result = S(0).Replace(S(1), S(2));
                 return true;
+            case "space": // VB Space(n): n blanks
+                result = new string(' ', n > 0 ? Math.Max(0, Int(0)) : 0);
+                return true;
+            case "strdup": // VB String(n, ch): n copies of the first char of the 2nd arg
+                if (n < 2) return false;
+                { var s = S(1); result = s.Length == 0 ? string.Empty : new string(s[0], Math.Max(0, Int(0))); }
+                return true;
+            case "strreverse":
+                if (n < 1) return false;
+                { var a = S(0).ToCharArray(); Array.Reverse(a); result = new string(a); }
+                return true;
+            case "asc": // VB Asc: code point of the first character (0 for empty)
+                { var s = S(0); result = s.Length == 0 ? 0 : (int)s[0]; }
+                return true;
+            case "chr": // VB Chr: character for a code point
+                if (n < 1) return false;
+                result = char.ConvertFromUtf32(Math.Clamp(Int(0), 0, 0x10FFFF));
+                return true;
+            case "val": // VB Val: leading numeric prefix parsed invariantly; 0 when none
+                result = ValOf(S(0));
+                return true;
+            case "instrrev": // VB InStrRev(s, sub): 1-based index of the LAST occurrence, 0 if none
+                if (n < 2) return false;
+                result = S(0).LastIndexOf(S(1), StringComparison.Ordinal) + 1;
+                return true;
+            case "strcomp": // VB StrComp(a, b): -1 / 0 / 1 (ordinal)
+                if (n < 2) return false;
+                result = Math.Sign(string.CompareOrdinal(S(0), S(1)));
+                return true;
+            case "strconv": // VB StrConv: 1=UpperCase, 2=LowerCase, 3=ProperCase (title case)
+                if (n < 2) return false;
+                {
+                    var s = S(0);
+                    result = Int(1) switch
+                    {
+                        1 => s.ToUpper(context.Culture),
+                        2 => s.ToLower(context.Culture),
+                        3 => context.Culture.TextInfo.ToTitleCase(s.ToLower(context.Culture)),
+                        _ => s,
+                    };
+                }
+                return true;
 
             // ── Date parts ──
             case "year": result = n > 0 ? Dt(0).Year : 0; return true;
@@ -548,6 +590,26 @@ public sealed class ExpressionEvaluator
         "s" or "second" => d.Second,
         _ => 0,
     };
+
+    // VB Val: the leading numeric prefix of a string, parsed invariantly (the expression language is
+    // invariant — "1.5" is 1.5). Stops at the first non-numeric char; returns 0 when there's no number.
+    private static double ValOf(string s)
+    {
+        if (string.IsNullOrEmpty(s)) return 0;
+        s = s.TrimStart();
+        var sb = new System.Text.StringBuilder();
+        bool seenDot = false, seenE = false, seenDigit = false;
+        foreach (var c in s)
+        {
+            if (char.IsDigit(c)) { sb.Append(c); seenDigit = true; }
+            else if ((c == '+' || c == '-') && (sb.Length == 0 || sb[^1] is 'e' or 'E')) { sb.Append(c); }
+            else if (c == '.' && !seenDot && !seenE) { sb.Append(c); seenDot = true; }
+            else if ((c == 'e' || c == 'E') && seenDigit && !seenE) { sb.Append(c); seenE = true; }
+            else { break; }
+        }
+        return double.TryParse(sb.ToString(), System.Globalization.NumberStyles.Float,
+            System.Globalization.CultureInfo.InvariantCulture, out var d) ? d : 0;
+    }
 
     // VB Like pattern → regex: * = any run, ? = one char, # = one digit; other chars are literal.
     // Whole-string, CASE-SENSITIVE match (VB's default Option Compare Binary, matching SSRS). A match

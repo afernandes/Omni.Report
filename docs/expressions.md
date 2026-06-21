@@ -84,7 +84,10 @@ O `+` é **numérico** (não concatena strings) — use `Concat`. O import de `.
 Vocabulário comum disponível (case-insensitive), além das nativas do NCalc (`Abs`/`Round`/`Sqrt`/…):
 
 - **Condicional/texto:** `IIf`, `Switch`, `Choose`, `IsNothing`/`IsNull`, `Coalesce`; `Len`, `Left`, `Right`,
-  `Mid`, `Trim`/`LTrim`/`RTrim`, `UCase`/`LCase`, `Replace`, `InStr`.
+  `Mid`, `Trim`/`LTrim`/`RTrim`, `UCase`/`LCase`, `Replace`, `InStr`, **`InStrRev`** (última ocorrência),
+  **`Space(n)`**, **`StrDup(n, ch)`** (= VB `String`), **`StrReverse`**, **`StrComp(a, b)`** (−1/0/1),
+  **`StrConv(s, modo)`** (1=maiúsculas, 2=minúsculas, 3=ProperCase), **`Asc`**/**`Chr`**, **`Val(s)`**
+  (prefixo numérico, parse invariante).
 - **Conversões VB:** `CStr`, `CInt`, `CDbl`, `CDec`, `CBool`, `CDate`.
 - **Data:** `Year`/`Month`/`Day`/`Hour`/`Minute`/`Second`/`Weekday`, `DateAdd`, `DateDiff`,
   **`DatePart(interval, date)`** (`yyyy`/`q`/`m`/`d`/`y`=dia-do-ano/`ww`/`w`/`h`/`n`/`s`),
