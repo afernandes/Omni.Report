@@ -604,7 +604,41 @@ public sealed class RdlImporter
             RowGroups = new EquatableArray<TablixGroup>(rowGroups),
             ColumnGroups = new EquatableArray<TablixGroup>(colGroups),
             Cells = new EquatableArray<TablixCell>(cells),
+            RowSubtotals = HasSubtotalMember(El(El(item, "TablixRowHierarchy"), "TablixMembers")),
+            ColumnSubtotals = HasSubtotalMember(El(El(item, "TablixColumnHierarchy"), "TablixMembers")),
         };
+    }
+
+    // SSRS emits a group total as an EMPTY <Group/> member — no GroupExpression AND no Name — sitting as a
+    // SIBLING of the dynamic group member at the same nesting level. A level that holds BOTH a dynamic group
+    // and such a total member signals a subtotal on that axis. Detection is deliberately CONSERVATIVE: a named
+    // static group (<Group Name="Details"/> = detail rows) and a label member (no <Group> at all) are NOT
+    // totals, so they never produce a false positive (worst case is a missed total, which imports cleanly).
+    private static bool HasSubtotalMember(XElement? members)
+    {
+        if (members is null)
+        {
+            return false;
+        }
+        bool anyDynamic = false, anyTotal = false;
+        foreach (var m in members.Elements().Where(e => e.Name.LocalName == "TablixMember"))
+        {
+            var group = El(m, "Group");
+            bool isDynamic = !string.IsNullOrEmpty(Val(El(group, "GroupExpressions"), "GroupExpression"));
+            if (isDynamic)
+            {
+                anyDynamic = true;
+            }
+            else if (group is not null && string.IsNullOrEmpty(group.Attribute("Name")?.Value))
+            {
+                anyTotal = true; // empty <Group/> with no Name = the static total member
+            }
+            if (HasSubtotalMember(El(m, "TablixMembers"))) // nested levels (inner group totals)
+            {
+                return true;
+            }
+        }
+        return anyDynamic && anyTotal;
     }
 
     // RDL <NoRowsMessage> on a data region (literal or =expression) → the message shown for an empty dataset.

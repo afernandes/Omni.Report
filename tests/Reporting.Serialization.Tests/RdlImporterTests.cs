@@ -717,6 +717,62 @@ public class RdlImporterTests
         def.Metadata.ContainsKey("ImportWarnings").Should().BeFalse("a clean flat table imports fully");
     }
 
+    // dynamic group member on each axis; the suffix optionally adds the static total member (<Group/>).
+    private const string DynRow = "<TablixMember><Group Name=\"g\"><GroupExpressions><GroupExpression>=Fields!Cat.Value</GroupExpression></GroupExpressions></Group></TablixMember>";
+    private const string DynCol = "<TablixMember><Group Name=\"c\"><GroupExpressions><GroupExpression>=Fields!Mes.Value</GroupExpression></GroupExpressions></Group></TablixMember>";
+    private const string TotalMember = "<TablixMember><Group /></TablixMember>"; // empty group = SSRS total
+    private const string DetailsMember = "<TablixMember><Group Name=\"Details\" /></TablixMember>"; // named static = detail, NOT a total
+
+    private static string MatrixRdl(string rowMembers, string colMembers) => $"""
+        <Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition">
+          <Body><Height>4cm</Height><ReportItems>
+            <Tablix Name="M"><Top>0cm</Top><Left>0cm</Left><Width>8cm</Width><Height>3cm</Height>
+              <TablixBody><TablixColumns><TablixColumn><Width>8cm</Width></TablixColumn></TablixColumns>
+                <TablixRows><TablixRow><TablixCells><TablixCell><CellContents><Textbox><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Sum(Fields!V.Value)</Value></TextRun></TextRuns></Paragraph></Paragraphs></Textbox></CellContents></TablixCell></TablixCells></TablixRow></TablixRows>
+              </TablixBody>
+              <TablixColumnHierarchy><TablixMembers>{colMembers}</TablixMembers></TablixColumnHierarchy>
+              <TablixRowHierarchy><TablixMembers>{rowMembers}</TablixMembers></TablixRowHierarchy>
+            </Tablix>
+          </ReportItems></Body>
+        </Report>
+        """;
+
+    private static Reporting.Elements.TablixElement ImportMatrix(string rowMembers, string colMembers)
+        => new RdlImporter().ImportXml(MatrixRdl(rowMembers, colMembers))
+            .ReportHeader!.Elements.OfType<Reporting.Elements.TablixElement>().Single();
+
+    [Fact]
+    public void Tablix_matrix_row_total_member_sets_RowSubtotals()
+    {
+        var t = ImportMatrix(DynRow + TotalMember, DynCol);
+        t.RowSubtotals.Should().BeTrue("a static <Group/> sibling of the dynamic row group is the total");
+        t.ColumnSubtotals.Should().BeFalse("the column axis has only a dynamic group");
+    }
+
+    [Fact]
+    public void Tablix_matrix_column_total_member_sets_ColumnSubtotals()
+    {
+        var t = ImportMatrix(DynRow, DynCol + TotalMember);
+        t.ColumnSubtotals.Should().BeTrue();
+        t.RowSubtotals.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Tablix_matrix_without_total_members_has_no_subtotals()
+    {
+        var t = ImportMatrix(DynRow, DynCol);
+        t.RowSubtotals.Should().BeFalse();
+        t.ColumnSubtotals.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Tablix_matrix_with_named_details_member_is_not_a_subtotal()
+    {
+        // A named static group (Details/leaf) sibling of a dynamic group must NOT be mistaken for a total.
+        var t = ImportMatrix(DynRow + DetailsMember, DynCol);
+        t.RowSubtotals.Should().BeFalse("a named static group is detail rows, not a total");
+    }
+
     [Fact]
     public void Tablix_cell_ColSpan_is_imported_into_the_band()
     {
