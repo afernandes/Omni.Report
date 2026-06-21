@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Reporting.Output.Docx</RootNamespace>
+    <AssemblyName>Reporting.Output.Docx</AssemblyName>
+    <Description>OmniReport — Word (.docx) exporter via DocumentFormat.OpenXml. Tabular strategy: the paginated report's grid becomes an editable Word table.</Description>
+    <!-- OpenXML triggers a few CA warnings; relax for this adapter project (matches the Excel adapter). -->
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Reporting.Core\Reporting.Core.csproj" />
+    <ProjectReference Include="..\Reporting.Layout\Reporting.Layout.csproj" />
+    <ProjectReference Include="..\Reporting.Output.Pdf\Reporting.Output.Pdf.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="DocumentFormat.OpenXml" />
+  </ItemGroup>
+
+</Project>

@@ -20,6 +20,9 @@
     <!-- Excel output -->
     <PackageVersion Include="ClosedXML" Version="0.105.0" />
 
+    <!-- Word (.docx) output — pinned to the version ClosedXML 0.105.0 already brings transitively. -->
+    <PackageVersion Include="DocumentFormat.OpenXml" Version="3.1.1" />
+
     <!-- PDF inspection (test-side) -->
     <PackageVersion Include="PdfPig" Version="0.1.10" />
 

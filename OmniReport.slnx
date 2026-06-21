@@ -28,6 +28,7 @@
     <Project Path="src/Reporting.Layout/Reporting.Layout.csproj" />
     <Project Path="src/Reporting.Maps/Reporting.Maps.csproj" />
     <Project Path="src/Reporting.Output.Csv/Reporting.Output.Csv.csproj" />
+    <Project Path="src/Reporting.Output.Docx/Reporting.Output.Docx.csproj" />
     <Project Path="src/Reporting.Output.Excel/Reporting.Output.Excel.csproj" />
     <Project Path="src/Reporting.Output.Html/Reporting.Output.Html.csproj" />
     <Project Path="src/Reporting.Output.Image/Reporting.Output.Image.csproj" />
@@ -59,6 +60,7 @@
     <Project Path="tests/Reporting.Expressions.Roslyn.Tests/Reporting.Expressions.Roslyn.Tests.csproj" />
     <Project Path="tests/Reporting.Hosting.AspNetCore.Tests/Reporting.Hosting.AspNetCore.Tests.csproj" />
     <Project Path="tests/Reporting.Layout.Tests/Reporting.Layout.Tests.csproj" />
+    <Project Path="tests/Reporting.Output.Docx.Tests/Reporting.Output.Docx.Tests.csproj" />
     <Project Path="tests/Reporting.Output.Excel.Tests/Reporting.Output.Excel.Tests.csproj" />
     <Project Path="tests/Reporting.Output.Tests/Reporting.Output.Tests.csproj" />
     <Project Path="tests/Reporting.Output.Pdf.Tests/Reporting.Output.Pdf.Tests.csproj" />

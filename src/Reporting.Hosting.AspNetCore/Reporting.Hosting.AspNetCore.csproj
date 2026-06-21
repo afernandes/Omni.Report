@@ -22,6 +22,7 @@
     <ProjectReference Include="..\Reporting.Rendering.Skia\Reporting.Rendering.Skia.csproj" />
     <ProjectReference Include="..\Reporting.Output.Pdf\Reporting.Output.Pdf.csproj" />
     <ProjectReference Include="..\Reporting.Output.Excel\Reporting.Output.Excel.csproj" />
+    <ProjectReference Include="..\Reporting.Output.Docx\Reporting.Output.Docx.csproj" />
     <ProjectReference Include="..\Reporting.Printing\Reporting.Printing.csproj" />
     <ProjectReference Include="..\Reporting.Serialization\Reporting.Serialization.csproj" />
   </ItemGroup>
