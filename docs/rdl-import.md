@@ -42,11 +42,17 @@ var pdf = await new ReportEngine().RenderAsync(def, dataSources);
   ponteiro); `<Subreport>` → `SubreportElement` (ReportName→ReportId + Parameters→ParameterBindings).
   `<Map>` e `<CustomReportItem>` (DataBar/Sparkline/Indicator) → aviso em `Metadata["ImportWarnings"]`.
 - **Tablix tabela plana** (`<Tablix>` Table/List sem grupo dinâmico em nenhum eixo — colunas estáticas +
-  linha Details) → `TablixElement` no modo tabela: célula `(0,c)` = header label, `(1,c)` = detalhe TextBox
-  (com `<Style>`/Format), por coluna; `<TablixColumns>`/`Width` → `ColumnWidths` (pesos relativos). Header vs
-  detalhe são classificados pela hierarquia de linha (o membro com `<Group>` é o detalhe). Híbrido
-  tabela+matrix (colunas estáticas com grupo dinâmico de linha, ou vice-versa), múltiplas linhas de detalhe,
-  row-group headers/footers e ColSpan são follow-up (com aviso).
+  linha Details):
+  - quando é o **único** item do Body (e a página não tem `<PageHeader>`) → **decompõe em bandas**: a linha
+    de cabeçalho vira uma banda **PageHeader** (Labels, repete por página) e a linha de detalhe vira a
+    **DetailBand** (1 `TextBox` por coluna, `DataSetName` do Tablix), de modo que a tabela **pagina
+    nativamente** e repete o cabeçalho — em vez de um bloco único. Colunas posicionadas por largura absoluta,
+    reescaladas para caber na largura do Tablix; `<Style>`/Format por célula preservados.
+  - caso contrário (Body com outros itens) → `TablixElement` no modo tabela: célula `(0,c)` = header label,
+    `(1,c)` = detalhe TextBox, `<TablixColumns>`/`Width` → `ColumnWidths` (pesos relativos).
+  - Header vs detalhe classificados pela hierarquia de linha (o membro com `<Group>` é o detalhe). Híbrido
+    tabela+matrix, múltiplas linhas de detalhe, row-group headers/footers e ColSpan são follow-up (com aviso);
+    múltiplas DetailBands (várias data regions no Body) também (cai no `TablixElement`).
 - **Tablix matrix/crosstab** (`<Tablix>` com hierarquias dinâmicas de linha **e** coluna) → `TablixElement`:
   `TablixRowHierarchy`/`TablixColumnHierarchy` (membros com `<Group><GroupExpression>`, recursivo p/ níveis
   aninhados, + sort do membro) → `RowGroups`/`ColumnGroups`; `<TablixCorner>` → célula `(0,0)`;
