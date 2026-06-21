@@ -117,6 +117,45 @@ public class SsrsFunctionTests
     }
 
     [Theory]
+    [InlineData("Space(3)", "   ")]
+    [InlineData("StrDup(4, 'x')", "xxxx")]          // VB String(n, ch): n copies of the first char
+    [InlineData("StrReverse('abc')", "cba")]
+    [InlineData("Chr(65)", "A")]
+    [InlineData("StrConv('hello WORLD', 3)", "Hello World")] // 3 = ProperCase (title)
+    [InlineData("StrConv('aA', 1)", "AA")]          // 1 = UpperCase
+    [InlineData("StrConv('aA', 2)", "aa")]          // 2 = LowerCase
+    public void Vb_string_builders(string expr, string expected)
+    {
+        var (ctx, ev) = NewContext();
+        ev.Evaluate(expr, ctx).Should().Be(expected);
+    }
+
+    [Theory]
+    [InlineData("Asc('A')", 65)]
+    [InlineData("Asc('')", 0)]                       // empty → 0
+    [InlineData("InStrRev('abcabc', 'bc')", 5)]      // 1-based last occurrence
+    [InlineData("InStrRev('abc', 'z')", 0)]          // not found → 0
+    [InlineData("StrComp('a', 'b')", -1)]
+    [InlineData("StrComp('b', 'a')", 1)]
+    [InlineData("StrComp('a', 'a')", 0)]
+    public void Vb_int_returning_text_functions(string expr, int expected)
+    {
+        var (ctx, ev) = NewContext();
+        System.Convert.ToInt32(ev.Evaluate(expr, ctx)).Should().Be(expected);
+    }
+
+    [Theory]
+    [InlineData("Val('123abc')", 123.0)]             // leading numeric prefix
+    [InlineData("Val('3.14xyz')", 3.14)]             // invariant decimal point
+    [InlineData("Val('abc')", 0.0)]                  // no number → 0
+    [InlineData("Val('-2.5')", -2.5)]
+    public void Vb_Val_parses_the_leading_number(string expr, double expected)
+    {
+        var (ctx, ev) = NewContext();
+        System.Convert.ToDouble(ev.Evaluate(expr, ctx)).Should().Be(expected);
+    }
+
+    [Theory]
     [InlineData("Len('abcd')", 4)]
     [InlineData("Left('ab', 10)", 2)] // clamps, no overflow
     public void Len_and_clamping(string expr, int expectedLen)
