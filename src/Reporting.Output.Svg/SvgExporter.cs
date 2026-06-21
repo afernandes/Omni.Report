@@ -145,6 +145,7 @@ public sealed class SvgExporter : IReportExporter
 
     private static void Replay(SKCanvas canvas, LayoutPrimitive primitive)
     {
+        var clip = SkiaPrimitiveRenderer.BeginClip(canvas, primitive.ClipBounds, SvgDpi);
         switch (primitive)
         {
             case DrawTextPrimitive t:
@@ -174,6 +175,7 @@ public sealed class SvgExporter : IReportExporter
                 SkiaPrimitiveRenderer.DrawPath(canvas, poly.BuildPath, poly.Pen, poly.Fill, SvgDpi);
                 break;
         }
+        SkiaPrimitiveRenderer.EndClip(canvas, clip);
     }
 
     /// <summary>Removes the leading <c>&lt;?xml …?&gt;</c> declaration. Required when embedding

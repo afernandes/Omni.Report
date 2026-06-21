@@ -127,6 +127,7 @@ public sealed class PngImageExporter : IReportExporter
 
     private static void Replay(SKCanvas canvas, LayoutPrimitive primitive, float dpi)
     {
+        var clip = SkiaPrimitiveRenderer.BeginClip(canvas, primitive.ClipBounds, dpi);
         switch (primitive)
         {
             case DrawTextPrimitive t:
@@ -156,5 +157,6 @@ public sealed class PngImageExporter : IReportExporter
                 SkiaPrimitiveRenderer.DrawPath(canvas, poly.BuildPath, poly.Pen, poly.Fill, dpi);
                 break;
         }
+        SkiaPrimitiveRenderer.EndClip(canvas, clip);
     }
 }

@@ -296,6 +296,31 @@ public static class SkiaPrimitiveRenderer
         }
     }
 
+    /// <summary>Applies <paramref name="clip"/> (if any) to the canvas and returns the save-count to restore
+    /// after the primitive is drawn (null = nothing pushed). Shared by every SKCanvas-based replay loop
+    /// (PDF/PNG/SVG exporters) so container-rectangle children are cut consistently.</summary>
+    public static int? BeginClip(SKCanvas canvas, Rectangle? clip, float dpi)
+    {
+        ArgumentNullException.ThrowIfNull(canvas);
+        if (clip is not { } c)
+        {
+            return null;
+        }
+        int saved = canvas.Save();
+        canvas.ClipRect(c.ToSKRect(dpi));
+        return saved;
+    }
+
+    /// <summary>Restores the canvas to the count returned by <see cref="BeginClip"/> (no-op when null).</summary>
+    public static void EndClip(SKCanvas canvas, int? saved)
+    {
+        ArgumentNullException.ThrowIfNull(canvas);
+        if (saved is { } s)
+        {
+            canvas.RestoreToCount(s);
+        }
+    }
+
     public static Size MeasureText(string text, TextStyle style, Unit? maxWidth, float dpi)
     {
         ArgumentNullException.ThrowIfNull(style);

@@ -71,6 +71,7 @@ public sealed class SkiaPdfExporter : IReportExporter
 
     private static void Replay(SKCanvas canvas, LayoutPrimitive primitive)
     {
+        var clip = SkiaPrimitiveRenderer.BeginClip(canvas, primitive.ClipBounds, PdfDpi);
         switch (primitive)
         {
             case DrawTextPrimitive t:
@@ -100,6 +101,7 @@ public sealed class SkiaPdfExporter : IReportExporter
                 SkiaPrimitiveRenderer.DrawPath(canvas, poly.BuildPath, poly.Pen, poly.Fill, PdfDpi);
                 break;
         }
+        SkiaPrimitiveRenderer.EndClip(canvas, clip);
     }
 
     /// <summary>For thermal-receipt-style continuous paper, the effective page height equals

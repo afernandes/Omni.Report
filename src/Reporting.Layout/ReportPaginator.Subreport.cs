@@ -99,20 +99,27 @@ public sealed partial class ReportPaginator
     {
         var b = p.Bounds;
         var moved = new Rectangle(b.X + dx, b.Y + dy, b.Width, b.Height);
+        // A container-rectangle clip inside the child report is in the child's local coords — translate it too,
+        // or it would cut the wrong region once the subreport is placed into the parent.
+        var movedClip = p.ClipBounds is { } cb
+            ? new Rectangle(cb.X + dx, cb.Y + dy, cb.Width, cb.Height)
+            : (Rectangle?)null;
         return p switch
         {
             DrawLinePrimitive ln => ln with
             {
                 Bounds = moved,
+                ClipBounds = movedClip,
                 From = new Point(ln.From.X + dx, ln.From.Y + dy),
                 To = new Point(ln.To.X + dx, ln.To.Y + dy),
             },
             DrawPolygonPrimitive pg => pg with
             {
                 Bounds = moved,
+                ClipBounds = movedClip,
                 Points = new EquatableArray<Point>(pg.Points.Select(pt => new Point(pt.X + dx, pt.Y + dy)).ToArray()),
             },
-            _ => p with { Bounds = moved },
+            _ => p with { Bounds = moved, ClipBounds = movedClip },
         };
     }
 }

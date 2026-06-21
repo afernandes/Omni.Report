@@ -37,8 +37,9 @@ var pdf = await new ReportEngine().RenderAsync(def, dataSources);
     largura ~0 = vertical; antes toda linha virava diagonal), `Rectangle` como **container**: a forma +
     `<ReportItems>` aninhados viram `RectangleElement.Children` com **bounds relativos** ao retângulo
     (preservando a hierarquia; recursivo p/ retângulos dentro de retângulos), em vez de achatar os filhos em
-    coordenadas absolutas na banda. O render desenha o fundo e depois os filhos por cima (sem clip ainda — um
-    filho que ultrapassa o retângulo continua aparecendo),
+    coordenadas absolutas na banda. O render desenha o fundo e depois os filhos por cima, **recortando o
+    overflow** ao retângulo em todos os backends (Skia raster/PDF/PNG/SVG, GDI; HTML herda via o visual
+    embutido); o recorte respeita o bounding box (cantos arredondados no clip são follow-up),
   - `Image` `External` (path/expr), `Embedded` (bytes inline) e `Database` (`<Value>` expressão → bytes do
     campo, vira `Source=Expression`); `<Sizing>` → `ImageSizing` (`Fit`→Stretch, `FitProportional`→Fit,
     `Clip`→Native; `AutoSize`/ausente → Fit, o default do model — sem equivalente de "crescer o item").

@@ -151,12 +151,22 @@ internal sealed class BandRenderer
                     actualHeight = MaxHeight(actualHeight, elementBounds, bandOrigin, null);
                     // The rect owns ONLY its fill for link/bookmark purposes — children below get their own.
                     linkTo = primitives.Count;
+                    int clipFrom = primitives.Count;
                     // Container: draw children ON TOP of the fill (z-order by construction), positioned
-                    // RELATIVE to this rectangle's top-left. No clipping — an overflowing child overflows.
+                    // RELATIVE to this rectangle's top-left.
                     foreach (var child in rect.Children)
                     {
                         actualHeight = RenderElement(child, new Point(elementBounds.X, elementBounds.Y),
                                                      bandOrigin, primitives, ctx, actualHeight);
+                    }
+                    // Clip every child primitive to this rectangle so overflow is cut. For a rect nested in a
+                    // rect, intersect with the inner clip already set so the tighter of the two wins.
+                    for (int i = clipFrom; i < primitives.Count; i++)
+                    {
+                        var clip = primitives[i].ClipBounds is { } existing
+                            ? IntersectRect(existing, elementBounds)
+                            : elementBounds;
+                        primitives[i] = primitives[i] with { ClipBounds = clip };
                     }
                     break;
 
@@ -541,6 +551,17 @@ internal sealed class BandRenderer
     {
         var bottomRelative = (growsTo ?? bounds).Bottom - origin.Y;
         return bottomRelative > current ? bottomRelative : current;
+    }
+
+    /// <summary>Axis-aligned intersection of two rectangles (empty when they don't overlap). Used to combine a
+    /// nested container's clip with its parent's so the tighter bound wins.</summary>
+    private static Rectangle IntersectRect(Rectangle a, Rectangle b)
+    {
+        var x = a.X > b.X ? a.X : b.X;
+        var y = a.Y > b.Y ? a.Y : b.Y;
+        var right = a.Right < b.Right ? a.Right : b.Right;
+        var bottom = a.Bottom < b.Bottom ? a.Bottom : b.Bottom;
+        return new Rectangle(x, y, right > x ? right - x : Unit.Zero, bottom > y ? bottom - y : Unit.Zero);
     }
 
     private EquatableArray<byte> ResolveImageBytes(ImageElement image, IReportExpressionContext ctx)
