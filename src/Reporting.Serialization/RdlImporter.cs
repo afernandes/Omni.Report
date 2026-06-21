@@ -791,6 +791,7 @@ public sealed class RdlImporter
         {
             DataSetName = Val(tablix, "DataSetName"),
             NoRowsMessage = NoRowsOf(tablix),
+            PageBreak = ReadPageBreak(tablix),
         };
         return true;
     }
@@ -859,6 +860,35 @@ public sealed class RdlImporter
             _ => el,
         };
         return string.IsNullOrEmpty(name) ? withCommon : withCommon with { Name = name };
+    }
+
+    // RDL page break on a data region/band → OmniReport PageBreak. RDL 2008+ uses
+    // <PageBreak><BreakLocation>Start|End|StartAndEnd|Between</BreakLocation></PageBreak>; the 2005 legacy
+    // uses the booleans <PageBreakAtStart>/<PageBreakAtEnd>. Absent/unknown → None.
+    private static PageBreak ReadPageBreak(XElement? region)
+    {
+        if (region is null)
+        {
+            return PageBreak.None;
+        }
+        if (Val(El(region, "PageBreak"), "BreakLocation") is { Length: > 0 } loc)
+        {
+            return loc switch
+            {
+                "Start" => PageBreak.Start,
+                "End" => PageBreak.End,
+                "StartAndEnd" => PageBreak.StartAndEnd,
+                "Between" => PageBreak.Between,
+                _ => PageBreak.None,
+            };
+        }
+        return (ParseBool(Val(region, "PageBreakAtStart")), ParseBool(Val(region, "PageBreakAtEnd"))) switch
+        {
+            (true, true) => PageBreak.StartAndEnd,
+            (true, false) => PageBreak.Start,
+            (false, true) => PageBreak.End,
+            _ => PageBreak.None,
+        };
     }
 
     // RDL <Visibility><Hidden> is the inverse of OmniReport's Visible/VisibleExpression: a constant maps
