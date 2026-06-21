@@ -114,6 +114,101 @@ public class DocxExporterTests
         Data = new Reporting.Common.EquatableArray<byte>(bytes),
     };
 
+    // ── Chart/visual rasterisation (camada 2, PR2) ────────────────────────────────
+
+    // A line/area/pie chart emits a polygon; a BAR chart emits rectangles (no polygon). Both are flagged
+    // IsVisual by the layout engine — so detection must key on IsVisual, NOT geometry.
+    private static Reporting.Layout.Primitives.LayoutPrimitive ChartPolygon(string id) =>
+        new Reporting.Layout.Primitives.DrawPolygonPrimitive
+        {
+            SourceElementId = id,
+            IsVisual = true,
+            Bounds = new Reporting.Geometry.Rectangle(
+                Reporting.Geometry.Unit.FromMm(0), Reporting.Geometry.Unit.FromMm(0),
+                Reporting.Geometry.Unit.FromMm(60), Reporting.Geometry.Unit.FromMm(40)),
+            Points = new Reporting.Common.EquatableArray<Reporting.Geometry.Point>(new[]
+            {
+                new Reporting.Geometry.Point(Reporting.Geometry.Unit.FromMm(0), Reporting.Geometry.Unit.FromMm(40)),
+                new Reporting.Geometry.Point(Reporting.Geometry.Unit.FromMm(20), Reporting.Geometry.Unit.FromMm(10)),
+                new Reporting.Geometry.Point(Reporting.Geometry.Unit.FromMm(60), Reporting.Geometry.Unit.FromMm(40)),
+            }),
+            Fill = new Reporting.Rendering.BrushStyle(Reporting.Styling.Color.Blue),
+        };
+
+    private static Reporting.Layout.Primitives.LayoutPrimitive BarChartRect(string id) =>
+        new Reporting.Layout.Primitives.DrawRectanglePrimitive
+        {
+            SourceElementId = id,
+            IsVisual = true, // a bar — no polygon, but still a visual to rasterise
+            Bounds = new Reporting.Geometry.Rectangle(
+                Reporting.Geometry.Unit.FromMm(2), Reporting.Geometry.Unit.FromMm(10),
+                Reporting.Geometry.Unit.FromMm(10), Reporting.Geometry.Unit.FromMm(30)),
+            Fill = new Reporting.Rendering.BrushStyle(Reporting.Styling.Color.Blue),
+        };
+
+    private static Reporting.Layout.Primitives.LayoutPrimitive Text(string id, string text, double xMm, double yMm, bool visual = false) =>
+        new Reporting.Layout.Primitives.DrawTextPrimitive
+        {
+            SourceElementId = id,
+            IsVisual = visual,
+            Text = text,
+            Bounds = new Reporting.Geometry.Rectangle(
+                Reporting.Geometry.Unit.FromMm(xMm), Reporting.Geometry.Unit.FromMm(yMm),
+                Reporting.Geometry.Unit.FromMm(30), Reporting.Geometry.Unit.FromMm(6)),
+            Style = Reporting.Rendering.TextStyle.Default,
+        };
+
+    [Fact]
+    public void Chart_visual_is_rasterised_and_its_text_excluded_from_the_table()
+    {
+        // A chart = a SourceElementId group with a polygon + its own axis/legend text. It must rasterise to an
+        // image and its text must NOT pollute the table; a normal cell's text stays in the table.
+        var report = ReportWith(
+            ChartPolygon("chart1"),
+            Text("chart1", "EixoLabel", 0, 42),   // chart's own label — must NOT appear as a table row
+            Text("cell", "ValorTabela", 0, 60));  // a normal table cell — must stay
+
+        using var ms = new MemoryStream(new DocxExporter().ExportToBytes(report));
+        using var doc = WordprocessingDocument.Open(ms, false);
+
+        doc.MainDocumentPart!.ImageParts.Should().ContainSingle("the chart rasterises to one PNG");
+        var cellTexts = doc.MainDocumentPart.Document.Body!.Descendants<TableCell>().Select(c => c.InnerText).ToList();
+        cellTexts.Should().Contain(s => s.Contains("ValorTabela"));
+        cellTexts.Should().NotContain(s => s.Contains("EixoLabel"), "the chart's label is in the image, not the table");
+
+        new OpenXmlValidator(FileFormatVersions.Office2019).Validate(doc).Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Bar_chart_without_polygons_is_still_detected_via_IsVisual()
+    {
+        // Regression: keying detection on geometry (polygon) missed bar/scatter/stock charts. The IsVisual
+        // flag covers a bar chart (rectangles only) — it rasterises and its label leaves the table.
+        var report = ReportWith(
+            BarChartRect("bar1"),
+            Text("bar1", "BarLabel", 2, 42, visual: true),
+            Text("cell", "ValorTabela", 0, 60));
+
+        using var ms = new MemoryStream(new DocxExporter().ExportToBytes(report));
+        using var doc = WordprocessingDocument.Open(ms, false);
+
+        doc.MainDocumentPart!.ImageParts.Should().ContainSingle("a polygon-free bar chart still rasterises");
+        var cellTexts = doc.MainDocumentPart.Document.Body!.Descendants<TableCell>().Select(c => c.InnerText).ToList();
+        cellTexts.Should().Contain(s => s.Contains("ValorTabela"));
+        cellTexts.Should().NotContain(s => s.Contains("BarLabel"));
+        new OpenXmlValidator(FileFormatVersions.Office2019).Validate(doc).Should().BeEmpty();
+    }
+
+    [Fact]
+    public void RasterizeVisuals_false_omits_the_chart()
+    {
+        var report = ReportWith(ChartPolygon("chart1"), Text("cell", "ValorTabela", 0, 60));
+        var bytes = new DocxExporter(new DocxExportOptions { RasterizeVisuals = false }).ExportToBytes(report);
+        using var ms = new MemoryStream(bytes);
+        using var doc = WordprocessingDocument.Open(ms, false);
+        doc.MainDocumentPart!.ImageParts.Should().BeEmpty("rasterisation disabled");
+    }
+
     [Fact]
     public void Inline_png_image_is_embedded_as_an_image_part_and_drawing()
     {

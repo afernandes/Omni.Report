@@ -57,17 +57,22 @@ public sealed class DocxExporter : IReportExporter
             body.AppendChild(Heading(report.Name));
         }
 
-        var grid = LayoutPrimitiveGrid.Build(report);
+        // Visual elements (charts/gauges/sparklines/indicators/data bars/barcodes/maps) are VECTOR primitives
+        // the Word table can't hold — the layout engine flags them with LayoutPrimitive.IsVisual. Each such
+        // element (grouped by SourceElementId) is rasterised to a PNG below AND excluded from the table grid so
+        // its axis/legend text isn't duplicated as stray rows. Using the explicit flag (not geometry sniffing)
+        // correctly covers bar charts (rectangles) and avoids mistaking a Tablix's border rects for a visual.
+        var visualIds = _options.RasterizeVisuals ? CollectVisualElementIds(report) : new HashSet<string>();
+
+        var gridReport = visualIds.Count == 0 ? report : WithoutPrimitives(report, visualIds);
+        var grid = LayoutPrimitiveGrid.Build(gridReport);
         if (grid.Rows.Count > 0)
         {
             body.AppendChild(BuildTable(grid));
         }
 
-        // The tabular grid only carries text — images (logo/photo/signature) would be silently dropped.
-        // Emit each as a standalone inline-image paragraph after the table (in-cell positioning is a
-        // follow-up; charts/shapes are vector primitives that need rasterisation — deferred to PR2).
-        // Dedupe by exact bytes so a repeating page-header/footer logo (present on every page) collapses to
-        // a single image instead of N copies; drawingId only advances when an image is actually emitted.
+        // Inline raster images (logo/photo/signature) — emitted as standalone paragraphs after the table.
+        // Dedupe by exact bytes so a repeating page-header/footer logo collapses to a single image.
         var seen = new HashSet<Reporting.Common.EquatableArray<byte>>();
         uint drawingId = 1;
         foreach (var page in report.Pages)
@@ -82,7 +87,81 @@ public sealed class DocxExporter : IReportExporter
             }
         }
 
+        // Rasterise each visual element's region to a PNG and embed it (reuses the inline-image writer).
+        if (visualIds.Count > 0)
+        {
+            foreach (var (region, prims) in VisualRegions(report, visualIds))
+            {
+                var png = Reporting.Output.Image.RegionRasterizer.RenderRegionPng(prims, region, _options.RasterizeDpi);
+                var synthetic = new DrawImagePrimitive
+                {
+                    Bounds = region,
+                    Data = new Reporting.Common.EquatableArray<byte>(png),
+                    Sizing = Reporting.Elements.ImageSizing.Native,
+                };
+                if (DocxImageWriter.AppendInlineImage(main, body, synthetic, drawingId))
+                {
+                    drawingId++;
+                }
+            }
+        }
+
         main.Document.Save();
+    }
+
+    // A "visual" element id = a SourceElementId whose primitives are flagged IsVisual by the layout engine
+    // (chart/gauge/sparkline/indicator/data bar/barcode/map). Used to both exclude them from the text grid
+    // and rasterise them — independent of which geometry a given chart type happens to emit.
+    private static HashSet<string> CollectVisualElementIds(RenderedReport report)
+    {
+        var ids = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var page in report.Pages)
+        {
+            foreach (var p in page.Primitives)
+            {
+                if (p.IsVisual && p.SourceElementId is { Length: > 0 } id)
+                {
+                    ids.Add(id);
+                }
+            }
+        }
+        return ids;
+    }
+
+    private static RenderedReport WithoutPrimitives(RenderedReport report, HashSet<string> excludedIds)
+    {
+        var pages = report.Pages.Select(pg => new RenderedPage(
+            pg.PageNumber,
+            pg.PageSetup,
+            new Reporting.Common.EquatableArray<LayoutPrimitive>(
+                pg.Primitives.Where(p => p.SourceElementId is not { } id || !excludedIds.Contains(id)).ToArray())))
+            .ToArray();
+        return new RenderedReport(report.Name, new Reporting.Common.EquatableArray<RenderedPage>(pages));
+    }
+
+    // One entry per visual element: its union bounds (the rasterisation region) + the primitives to draw.
+    private static IEnumerable<(Reporting.Geometry.Rectangle Region, List<LayoutPrimitive> Prims)> VisualRegions(
+        RenderedReport report, HashSet<string> visualIds)
+    {
+        foreach (var page in report.Pages)
+        {
+            foreach (var group in page.Primitives
+                .Where(p => p.SourceElementId is { } id && visualIds.Contains(id))
+                .GroupBy(p => p.SourceElementId!))
+            {
+                var prims = group.ToList();
+                yield return (UnionBounds(prims), prims);
+            }
+        }
+    }
+
+    private static Reporting.Geometry.Rectangle UnionBounds(List<LayoutPrimitive> prims)
+    {
+        var minX = prims.Min(p => p.Bounds.X);
+        var minY = prims.Min(p => p.Bounds.Y);
+        var maxX = prims.Max(p => p.Bounds.Right);
+        var maxY = prims.Max(p => p.Bounds.Bottom);
+        return new Reporting.Geometry.Rectangle(minX, minY, maxX - minX, maxY - minY);
     }
 
     // ── Table writer ──────────────────────────────────────────────────────────────

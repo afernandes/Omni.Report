@@ -13,6 +13,8 @@
     <ProjectReference Include="..\Reporting.Core\Reporting.Core.csproj" />
     <ProjectReference Include="..\Reporting.Layout\Reporting.Layout.csproj" />
     <ProjectReference Include="..\Reporting.Output.Pdf\Reporting.Output.Pdf.csproj" />
+    <!-- Rasterises chart/visual sub-regions to PNG (RegionRasterizer) for inline embedding — brings the Skia stack. -->
+    <ProjectReference Include="..\Reporting.Output.Image\Reporting.Output.Image.csproj" />
   </ItemGroup>
 
   <ItemGroup>

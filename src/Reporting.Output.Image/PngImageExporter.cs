@@ -125,38 +125,8 @@ public sealed class PngImageExporter : IReportExporter
         return data.ToArray();
     }
 
+    // Single-primitive dispatch is shared with region rasterisation (Docx chart embedding) so full-page and
+    // sub-region output stay byte-identical.
     private static void Replay(SKCanvas canvas, LayoutPrimitive primitive, float dpi)
-    {
-        var clip = SkiaPrimitiveRenderer.BeginClip(canvas, primitive.ClipBounds, primitive.ClipCornerRadius, dpi);
-        switch (primitive)
-        {
-            case DrawTextPrimitive t:
-                SkiaPrimitiveRenderer.DrawText(canvas, t.Text, t.Bounds, t.Style, dpi);
-                break;
-            case DrawLinePrimitive l:
-                SkiaPrimitiveRenderer.DrawLine(canvas, l.From, l.To, l.Pen, dpi);
-                break;
-            case DrawRectanglePrimitive r:
-                SkiaPrimitiveRenderer.DrawRectangle(canvas, r.Bounds, r.Pen, r.Fill, dpi);
-                break;
-            case DrawEllipsePrimitive e:
-                SkiaPrimitiveRenderer.DrawEllipse(canvas, e.Bounds, e.Pen, e.Fill, dpi);
-                break;
-            case DrawImagePrimitive i:
-                if (i.Data.Count > 0)
-                {
-                    var copy = new byte[i.Data.Count];
-                    for (int k = 0; k < copy.Length; k++)
-                    {
-                        copy[k] = i.Data[k];
-                    }
-                    SkiaPrimitiveRenderer.DrawImage(canvas, copy, i.Bounds, dpi, i.Sizing);
-                }
-                break;
-            case DrawPolygonPrimitive poly:
-                SkiaPrimitiveRenderer.DrawPath(canvas, poly.BuildPath, poly.Pen, poly.Fill, dpi);
-                break;
-        }
-        SkiaPrimitiveRenderer.EndClip(canvas, clip);
-    }
+        => RegionRasterizer.Replay(canvas, primitive, dpi);
 }
