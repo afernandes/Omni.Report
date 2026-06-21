@@ -45,6 +45,9 @@ internal sealed class RowScopedContext : IReportExpressionContext
     public object? EvaluateLookup(object? source, string destExpression, string resultExpression, string datasetName, bool all)
         => _inner.EvaluateLookup(source, destExpression, resultExpression, datasetName, all);
 
+    public object? EvaluatePositional(string function, string expression, AggregateScope scope)
+        => _inner.EvaluatePositional(function, expression, scope);
+
     public IValueLookup? GetSource(string sourceName) => _inner.GetSource(sourceName);
 
     public bool TryResolveUnqualifiedField(string fieldName, out object? value)

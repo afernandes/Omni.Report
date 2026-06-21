@@ -140,6 +140,12 @@ public sealed class ExpressionEvaluator
                 return;
             }
 
+            if (TryEvaluatePositional(name, args, context, out var positional))
+            {
+                args.Result = positional;
+                return;
+            }
+
             if (TryEvaluateBuiltin(name, args, context, out var builtin))
             {
                 args.Result = builtin;
@@ -213,6 +219,33 @@ public sealed class ExpressionEvaluator
         var dataset = Convert.ToString(args.Parameters.Evaluate(3), System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty;
         result = context.EvaluateLookup(source, destExpr, resultExpr, dataset, all);
         return true;
+    }
+
+    // SSRS positional functions over the current row's position within a scope:
+    // RowNumber(scope?) / CountRows(scope?) take an optional SCOPE as the first arg (not an expression);
+    // Previous(expr, scope?) takes a raw expression first. All delegate to context.EvaluatePositional.
+    private static bool TryEvaluatePositional(string name, FunctionEventArgs args, IReportExpressionContext context, out object? result)
+    {
+        result = null;
+        if (string.Equals(name, "RowNumber", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(name, "CountRows", StringComparison.OrdinalIgnoreCase))
+        {
+            var scope = args.Parameters.Count >= 1 ? ParseScope(args.Parameters.Evaluate(0)) : AggregateScope.Report;
+            result = context.EvaluatePositional(name, string.Empty, scope);
+            return true;
+        }
+        if (string.Equals(name, "Previous", StringComparison.OrdinalIgnoreCase))
+        {
+            if (args.Parameters.Count == 0)
+            {
+                return false;
+            }
+            var expr = ExtractRawExpression(args.Parameters[0]);
+            var scope = args.Parameters.Count >= 2 ? ParseScope(args.Parameters.Evaluate(1)) : AggregateScope.Report;
+            result = context.EvaluatePositional("Previous", expr, scope);
+            return true;
+        }
+        return false;
     }
 
     private static bool TryEvaluateBuiltin(string name, FunctionEventArgs args, IReportExpressionContext context, out object? result)
@@ -451,7 +484,7 @@ public sealed class ExpressionEvaluator
     }
 
     private static readonly HashSet<string> AggregateNames =
-        new(StringComparer.OrdinalIgnoreCase) { "Sum", "Avg", "Average", "Count", "Min", "Max", "RunningTotal" };
+        new(StringComparer.OrdinalIgnoreCase) { "Sum", "Avg", "Average", "Count", "Min", "Max", "RunningTotal", "First", "Last", "CountDistinct" };
 }
 
 public sealed class ExpressionEvaluationException : Exception
