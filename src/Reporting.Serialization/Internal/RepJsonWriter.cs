@@ -249,6 +249,10 @@ internal static class RepJsonWriter
         {
             o["noRowsMessage"] = band.NoRowsMessage;
         }
+        if (band.DataSetName is not null)
+        {
+            o["dataSetName"] = band.DataSetName;
+        }
         if (band.FilterExpression is not null)
         {
             o["filterExpression"] = band.FilterExpression;

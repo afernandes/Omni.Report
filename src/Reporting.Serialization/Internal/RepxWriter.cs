@@ -247,6 +247,10 @@ internal static class RepxWriter
         {
             el.SetAttributeValue("NoRowsMessage", band.NoRowsMessage);
         }
+        if (band.DataSetName is not null)
+        {
+            el.SetAttributeValue("DataSetName", band.DataSetName);
+        }
         if (band.FilterExpression is not null)
         {
             el.SetAttributeValue("FilterExpression", band.FilterExpression);

@@ -110,6 +110,15 @@ public class RdlFeaturesRoundTripTests
     }
 
     [Fact]
+    public void Detail_data_set_name_round_trips()
+    {
+        var def = MinimalReport();
+        AssertRoundTrip(def with { Detail = def.Detail with { DataSetName = "Pedidos" } });
+        // null stays null (attribute/key absent) — additive default.
+        (def.Detail.DataSetName).Should().BeNull();
+    }
+
+    [Fact]
     public void Detail_filter_and_sort_round_trip()
     {
         var def = MinimalReport();
