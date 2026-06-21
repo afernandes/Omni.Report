@@ -76,6 +76,10 @@ public sealed record TablixElement : ReportElement
     /// <summary>Label for the <b>grand total</b> row/column. When null, the default <c>"Total geral"</c> is
     /// used. Applies to both row and column grand totals.</summary>
     public string? GrandTotalLabel { get; init; }
+
+    /// <summary>Message rendered (centred, in place of the grid) when the bound dataset yields no rows —
+    /// RDL <c>&lt;NoRowsMessage&gt;</c>. When null, an empty dataset renders nothing.</summary>
+    public string? NoRowsMessage { get; init; }
 }
 
 /// <summary>One axis of a Tablix grouping — name + group-key expression + sort.</summary>

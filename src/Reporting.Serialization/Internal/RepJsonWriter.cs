@@ -543,6 +543,10 @@ internal static class RepJsonWriter
                 {
                     o["grandTotalLabel"] = tablix.GrandTotalLabel;
                 }
+                if (tablix.NoRowsMessage is not null)
+                {
+                    o["noRowsMessage"] = tablix.NoRowsMessage;
+                }
                 if (tablix.ColumnWidths.Count > 0)
                 {
                     o["columnWidths"] = new JsonArray(tablix.ColumnWidths.Select(wt => (JsonNode?)wt).ToArray());

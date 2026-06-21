@@ -51,6 +51,9 @@ var pdf = await new ReportEngine().RenderAsync(def, dataSources);
   aninhados, + sort do membro) → `RowGroups`/`ColumnGroups`; `<TablixCorner>` → célula `(0,0)`;
   valor do `<TablixBody>` → célula de corpo `(1,1)`; `DataSetName`. Híbrido tabela+matrix e span por-célula
   são follow-up — um aviso vai em `Metadata["ImportWarnings"]` (nunca silencioso).
+- **Tablix `<NoRowsMessage>`** (literal ou `=expressão`) → `TablixElement.NoRowsMessage`, em ambos os modos
+  (tabela plana e matrix). No render, um dataset vazio mostra a mensagem centralizada no lugar da grade
+  (expressões são avaliadas).
 - **DataSets** (`<DataSets><DataSet>`) → `DataSourceDefinition` (metadados de binding; a execução da query
   fica delegada ao host `IReportDataSource`): `<Fields>` → `DataField` (campos com `<Value>` viram
   `CalculatedField`); `<Filters>` estruturado → `FilterExpression` booleano; `<SortExpressions>`;

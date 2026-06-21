@@ -548,6 +548,7 @@ internal static class RepJsonReader
             ColumnSubtotals = (bool?)o["columnSubtotals"] ?? false,
             SubtotalLabel = (string?)o["subtotalLabel"],
             GrandTotalLabel = (string?)o["grandTotalLabel"],
+            NoRowsMessage = (string?)o["noRowsMessage"],
         };
     }
 

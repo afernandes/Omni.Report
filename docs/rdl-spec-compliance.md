@@ -173,9 +173,9 @@ Legenda: ✅ pleno · 🟡 parcial · 🔴 ausente/crítico.
 | DataSetName | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — | S | 1 |
 | Tablix.Filters | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | Filtro pré-grupo ausente | M | 2 |
 | Tablix.Style/OmitBorderOnPageBreak | 🟡 | ✅ | ✅ | ✅ | 🟡 | 🔴 | 🔴 | Bordas via grid hardcoded; sem OmitBorderOnPageBreak | S | 2 |
-| PageBreak/PageName/NoRowsMessage | 🟡 | 🟡 | 🟡 | 🟡 | 🟡 | 🔴 | 🔴 | NoRowsMessage não renderiza; PageName não gera bookmark | S | 2 |
+| PageBreak/PageName/NoRowsMessage | 🟡 | 🟡 | ✅ | ✅ | ✅ | ✅ | ✅ | NoRowsMessage ✅ Tablix (model/render/4-serial/import/code-first/Designer, #110); PageBreak/PageName ainda; PageName não gera bookmark | S | 2 |
 | ColSpan/RowSpan | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | Toda célula é 1×1; sem merge | M | 2 |
-| **RdlImporter: Tablix** | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | **`.rdl` com Tablix importa como report vazio (perda silenciosa)** | L | 1 |
+| **RdlImporter: Tablix** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🟡 | flat-table (#106) + matrix (#96) + NoRowsMessage (#110) importam; híbrido/span/multi-detail são follow-up (com aviso) | L | 1 |
 
 ### Área F — Data viz
 

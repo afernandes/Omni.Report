@@ -557,11 +557,16 @@ public sealed class RdlImporter
         {
             Bounds = bounds,
             DataSetName = Val(item, "DataSetName"),
+            NoRowsMessage = NoRowsOf(item),
             RowGroups = new EquatableArray<TablixGroup>(rowGroups),
             ColumnGroups = new EquatableArray<TablixGroup>(colGroups),
             Cells = new EquatableArray<TablixCell>(cells),
         };
     }
+
+    // RDL <NoRowsMessage> on a data region (literal or =expression) → the message shown for an empty dataset.
+    private static string? NoRowsOf(XElement item)
+        => Val(item, "NoRowsMessage") is { Length: > 0 } m ? RdlExpression.Convert(m) : null;
 
     // Imports an RDL flat Table/List (static columns + a Details row) into the TablixElement table shape the
     // renderer already understands: Cells (0,c) = header Label, (1,c) = detail TextBox, RowGroups/ColumnGroups
@@ -634,6 +639,7 @@ public sealed class RdlImporter
         {
             Bounds = bounds,
             DataSetName = Val(item, "DataSetName"),
+            NoRowsMessage = NoRowsOf(item),
             Cells = new EquatableArray<TablixCell>(cells),
             // RDL widths are absolute; the renderer treats ColumnWidths as relative weights, preserving ratios.
             ColumnWidths = widths.Count >= 2 && widths.Any(w => w > 0)

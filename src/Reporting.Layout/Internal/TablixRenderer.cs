@@ -39,6 +39,20 @@ internal static class TablixRenderer
         var list = new List<LayoutPrimitive>();
         actualHeight = bounds.Height;
 
+        // RDL NoRowsMessage: an empty dataset shows a centred message in place of the grid (both modes).
+        if (rows.Count == 0 && tablix.NoRowsMessage is { Length: > 0 } noRows)
+        {
+            list.Add(new DrawTextPrimitive
+            {
+                Text = Resolve(ev, templates, noRows, baseCtx),
+                Bounds = bounds,
+                Style = new TextStyle(new Font("Arial", 9, FontStyle.Italic), BodyText,
+                    HorizontalAlignment.Center, VerticalAlignment.Middle, WordWrap: true),
+                SourceElementId = tablix.Id,
+            });
+            return list;
+        }
+
         // Matrix / pivot mode: a row group AND a column group turn the Tablix into a crosstab
         // (any number of nested levels on each axis).
         if (tablix.RowGroups.Count >= 1 && tablix.ColumnGroups.Count >= 1)
