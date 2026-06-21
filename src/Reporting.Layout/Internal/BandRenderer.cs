@@ -78,9 +78,12 @@ internal sealed class BandRenderer
             var style = BuildTextStyle(effectiveStyle);
 
             // Style.BackColor paints as a background fill behind the element (previously dropped everywhere
-            // except Tablix cells). Emitted before the content so text/image draws on top.
+            // except Tablix cells). Emitted before the content so text/image draws on top; its bounds are
+            // patched below if the element grows (CanGrow), so the fill always matches the final size.
+            int bgIndex = -1;
             if (effectiveStyle.BackColor is { } backColor)
             {
+                bgIndex = primitives.Count;
                 primitives.Add(new DrawRectanglePrimitive
                 {
                     Bounds = elementBounds,
@@ -102,6 +105,11 @@ internal sealed class BandRenderer
                     var text = ResolveTextBoxText(tb, ctx, effectiveStyle.Format);
                     var rendered = EmitText(text, elementBounds, style, tb.Id, tb.CanGrow, tb.CanShrink);
                     primitives.Add(rendered);
+                    // Grow/shrink the background fill to the textbox's final height so it never clips.
+                    if (bgIndex >= 0 && rendered.Bounds.Height != elementBounds.Height)
+                    {
+                        primitives[bgIndex] = ((DrawRectanglePrimitive)primitives[bgIndex]) with { Bounds = rendered.Bounds };
+                    }
                     // Publish this text box's value for ReportItems!Name.Value lookups in later bands.
                     RecordReportItem(tb, text, ctx);
                     actualHeight = MaxHeight(actualHeight, rendered.Bounds, origin, growsTo: tb.CanGrow ? rendered.Bounds : null);

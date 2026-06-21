@@ -100,6 +100,26 @@ public class BandRendererCoverageTests
     }
 
     [Fact]
+    public async Task CanGrow_textbox_background_fill_grows_with_the_text()
+    {
+        var req = WithSingleRowDefinition(new TextBoxElement
+        {
+            Id = "tb",
+            Bounds = new Rectangle(0.Mm(), 0.Mm(), 30.Mm(), 5.Mm()), // narrow + short → wraps to many lines
+            CanGrow = true,
+            Expression = "'Uma frase bem longa que vai quebrar em varias linhas dentro de uma caixa estreita'",
+            Style = Style.Default with { BackColor = Color.LightGray },
+        });
+        var report = await new ReportPaginator().PaginateAsync(req);
+        var prims = report.Pages[0].Primitives;
+        var fill = prims.OfType<DrawRectanglePrimitive>().Single(r => r.Fill?.Color == Color.LightGray);
+        var text = prims.OfType<DrawTextPrimitive>().First();
+        // The fill grew past the declared 5mm to cover the wrapped text (matches the textbox's final height).
+        fill.Bounds.Height.Should().Be(text.Bounds.Height);
+        fill.Bounds.Height.Should().BeGreaterThan(Unit.FromMm(5));
+    }
+
+    [Fact]
     public async Task TextBox_without_BackColor_emits_no_background_fill()
     {
         var req = WithSingleRowDefinition(new TextBoxElement
