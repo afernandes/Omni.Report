@@ -27,6 +27,12 @@ else
 
     <div class="prop-section">
         <div class="prop-section-head"><Icon Name="chevron-down" Size="12" CssClass="chev icon icon-12" /><span>Layout</span><span class="count">4</span></div>
+        @if (Element.ParentElement is not null)
+        {
+            <div style="font-size:10px;color:var(--text-tertiary);padding:2px 12px 4px;">
+                ↳ X/Y relativos ao retângulo pai
+            </div>
+        }
         @Row("X",      ToMm(Element.X),      v => Element.X      = ParseMm(v) ?? Element.X)
         @Row("Y",      ToMm(Element.Y),      v => Element.Y      = ParseMm(v) ?? Element.Y)
         @Row("Width",  ToMm(Element.Width),  v => Element.Width  = ParseMm(v) ?? Element.Width)

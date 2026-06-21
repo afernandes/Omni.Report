@@ -1024,6 +1024,20 @@
 }
 .el.txt-right  .el-content { justify-content: flex-end; }
 .el.txt-center .el-content { justify-content: center; }
+
+/* Container-rectangle children overlay (PR1: nested elements visible + selectable, not yet draggable).
+   Fills the parent .el and clips like .el-content, but is click-transparent so empty rectangle area still
+   selects the rectangle; each child re-enables pointer events so it can be individually selected. */
+.el-children {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.el-child {
+  pointer-events: auto;
+  cursor: pointer;
+}
 .el.bold { font-weight: 600; }
 .el.italic { font-style: italic; }
 

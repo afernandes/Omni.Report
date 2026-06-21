@@ -216,9 +216,51 @@ public sealed class ElementViewModel : Notifying
     /// with multi-run text would silently lose its runs on any edit. There's no run editor yet — this only
     /// guarantees the runs round-trip; authoring them is a follow-up.</summary>
     private Reporting.Common.EquatableArray<TextRun> _textRuns = Reporting.Common.EquatableArray<TextRun>.Empty;
-    // Container-rectangle children: preserved verbatim across edit→save (no nested canvas editor yet — PR3),
-    // so opening a report with a Rectangle-as-container in the Designer and saving never drops its children.
-    private Reporting.Common.EquatableArray<ReportElement> _rectChildren = Reporting.Common.EquatableArray<ReportElement>.Empty;
+    /// <summary>Children of a container <see cref="DesignerElementKind.Rectangle"/>, materialised as real
+    /// child view models (recursively) so the Designer can show, select and edit them — not merely round-trip
+    /// them. <see cref="ToElement"/> rebuilds <c>RectangleElement.Children</c> from these. Opaque/advanced
+    /// children (Tablix/Subreport/nested Rectangle) survive losslessly because each child VM uses the same
+    /// <see cref="FromElement"/>/<see cref="ToElement"/> path (including <see cref="_sourceElement"/> for
+    /// opaque kinds), so a load→edit→save cycle never degrades a nested Tablix into a TextBox.</summary>
+    public ObservableCollection<ElementViewModel> Children { get; } = new();
+
+    /// <summary>The container Rectangle VM that owns this element when it is a nested child, else null. Lets
+    /// the canvas/outline/property-grid treat a child distinctly (coordinates relative to the parent,
+    /// delete-from-parent). A back-reference only — never serialised; set when the child is materialised in
+    /// <see cref="LoadFrom"/> or cloned.</summary>
+    internal ElementViewModel? ParentElement { get; private set; }
+
+    /// <summary>Adds <paramref name="child"/> as a container child: sets the parent back-reference and chains
+    /// the child's <c>Changed</c> into this VM's, so editing a nested element bubbles up to the band → report
+    /// and the canvas/outline re-render (children don't go through <c>BandViewModel.AddElement</c>, which is
+    /// what wires that for top-level elements).</summary>
+    internal void AttachChild(ElementViewModel child)
+    {
+        child.ParentElement = this;
+        child.Changed += RaiseChanged;
+        Children.Add(child);
+    }
+
+    /// <summary>Removes a container child (outline delete), unsubscribing its change bubbling and raising a
+    /// change so the canvas drops it.</summary>
+    public void RemoveChild(ElementViewModel child)
+    {
+        if (Children.Remove(child))
+        {
+            child.Changed -= RaiseChanged;
+            child.ParentElement = null;
+            RaiseChanged();
+        }
+    }
+
+    private void DetachAllChildren()
+    {
+        foreach (var child in Children)
+        {
+            child.Changed -= RaiseChanged;
+        }
+        Children.Clear();
+    }
     // Style.BackgroundImage: complex record with no dedicated editor yet — preserved verbatim across edit→save
     // so editing an unrelated property (via ToElement) never silently drops an element's background image.
     private Reporting.Styling.BackgroundImage? _backgroundImage;
@@ -962,7 +1004,15 @@ public sealed class ElementViewModel : Notifying
             DesignerElementKind.Label => new LabelElement { Text = Text, Bounds = Bounds },
             DesignerElementKind.TextBox => new TextBoxElement { Expression = Expression, Bounds = Bounds, CanGrow = CanGrow, CanShrink = CanShrink, TextRuns = _textRuns },
             DesignerElementKind.Line => new LineElement { Bounds = Bounds, Direction = LineDir },
-            DesignerElementKind.Rectangle => new RectangleElement { Bounds = Bounds, FillColor = FillColor, CornerRadius = Unit.FromMm(CornerRadiusMm), Children = _rectChildren },
+            DesignerElementKind.Rectangle => new RectangleElement
+            {
+                Bounds = Bounds,
+                FillColor = FillColor,
+                CornerRadius = Unit.FromMm(CornerRadiusMm),
+                Children = Children.Count == 0
+                    ? Reporting.Common.EquatableArray<ReportElement>.Empty
+                    : new Reporting.Common.EquatableArray<ReportElement>(Children.Select(c => c.ToElement()).ToArray()),
+            },
             DesignerElementKind.Ellipse => new EllipseElement { Bounds = Bounds, FillColor = FillColor },
             DesignerElementKind.Image => new ImageElement
             {
@@ -1099,7 +1149,10 @@ public sealed class ElementViewModel : Notifying
             ImageSizing = ImageSizing, ImagePath = ImagePath, ImageExpression = ImageExpression,
         };
         c._textRuns = _textRuns; // EquatableArray is immutable → safe to share on clone
-        c._rectChildren = _rectChildren; // ditto — preserve container children on clone
+        foreach (var child in Children) // deep-clone container children (fresh ids) so paste duplicates the whole subtree
+        {
+            c.AttachChild(child.Clone());
+        }
         c._backgroundImage = _backgroundImage; // immutable record — safe to share on clone
         foreach (var rule in ConditionalFormats)
         {
@@ -1199,6 +1252,7 @@ public sealed class ElementViewModel : Notifying
         ConditionalFormats.Clear();
         ChartSeries.Clear();
         DrillthroughParameters.Clear();
+        DetachAllChildren();
         _propertyExpressions.Clear();
 
         var fontStyle = element.Style.Font?.Style ?? FontStyle.Regular;
@@ -1241,7 +1295,16 @@ public sealed class ElementViewModel : Notifying
                 BarcodeShowText = bc.ShowText;
                 break;
             case LineElement ln: LineDir = ln.Direction; break;
-            case RectangleElement r: FillColor = r.FillColor; CornerRadiusMm = r.CornerRadius.ToMm(); _rectChildren = r.Children; break;
+            case RectangleElement r:
+                FillColor = r.FillColor;
+                CornerRadiusMm = r.CornerRadius.ToMm();
+                // Materialise children into editable child VMs (recursive — a child Rectangle materialises its
+                // own children in turn). The same FromElement path preserves opaque kinds, so depth is unbounded.
+                foreach (var child in r.Children)
+                {
+                    AttachChild(FromElement(child));
+                }
+                break;
             case EllipseElement e: FillColor = e.FillColor; break;
             case ImageElement img:
                 InlineImageData = img.InlineData.Count > 0 ? img.InlineData.ToArray() : null;
