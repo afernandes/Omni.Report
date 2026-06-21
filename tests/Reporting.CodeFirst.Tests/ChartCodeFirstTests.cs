@@ -146,6 +146,54 @@ public class ChartCodeFirstTests
         verticalLines.Should().BeGreaterThanOrEqualTo(4);
     }
 
+    [Theory]
+    [InlineData("en-US")] // thousands grouped with a comma
+    [InlineData("pt-BR")] // thousands grouped with a dot (also the engine default)
+    public async Task Bar_chart_axis_labels_use_the_report_culture(string language)
+    {
+        // Values ≥ 1000 force the grouped value-axis labels (top = NiceCeil(2500) = 5000, 4 divisions
+        // → 1250, 2500, 3750, 5000). Compare against the culture's OWN grouped rendering rather than a
+        // literal: ICU (Linux/CI) and NLS (Windows) disagree on separators, so a literal would be flaky.
+        var texts = await RenderBarChartAxisTextsAsync(language);
+        var culture = System.Globalization.CultureInfo.GetCultureInfo(language);
+
+        texts.Should().Contain((5000d).ToString("#,0", culture));
+        texts.Should().Contain((1250d).ToString("#,0", culture));
+    }
+
+    [Fact]
+    public async Task Bar_chart_axis_labels_without_language_keep_the_default_pt_BR()
+    {
+        // Opt-in: absent Language → pt-BR default, so charts that never declared a culture render
+        // exactly as before (no golden break).
+        var texts = await RenderBarChartAxisTextsAsync(language: null);
+        var ptBr = System.Globalization.CultureInfo.GetCultureInfo("pt-BR");
+
+        texts.Should().Contain((5000d).ToString("#,0", ptBr));
+    }
+
+    private static async Task<List<string>> RenderBarChartAxisTextsAsync(string? language)
+    {
+        MesVenda[] rows = [new("Jan", 1000m), new("Fev", 2500m), new("Mar", 1750m)];
+        var builder = ReportBuilder.Create("c");
+        if (language is not null)
+        {
+            builder = builder.Language(language);
+        }
+        var report = builder
+            .Page(p => p.A4().Portrait().Margins(15))
+            .DataSource("Vendas", rows)
+            .ReportHeader(h => h.Height(80)
+                .Chart(ChartKind.Bar, "Vendas")
+                    .At(0, 0).Size(170, 75)
+                    .Series("Receita", "Fields.Mes", "Fields.Total"))
+            .Build();
+
+        var rendered = await report.PaginateAsync();
+        return rendered.Pages.SelectMany(p => p.Primitives)
+            .OfType<DrawTextPrimitive>().Select(t => t.Text).ToList();
+    }
+
     private static async Task<List<LayoutPrimitive>> RenderChartAsync(ChartKind kind)
     {
         var report = ReportBuilder.Create("c")

@@ -93,6 +93,51 @@ public class KpiCodeFirstTests
         prims.OfType<DrawTextPrimitive>().Select(t => t.Text).Should().Contain("150");
     }
 
+    [Theory]
+    [InlineData("en-US")] // thousands grouped with a comma
+    [InlineData("pt-BR")] // thousands grouped with a dot (also the engine default)
+    public async Task Gauge_value_label_uses_the_report_culture(string language)
+    {
+        // Sum = 1500 (≥ 1000) exercises the grouped value label. Compare against the culture's OWN
+        // grouped rendering — ICU (Linux/CI) vs NLS (Windows) disagree on separators, so a literal flakes.
+        var label = await RenderGaugeValueLabelAsync(language);
+        var culture = System.Globalization.CultureInfo.GetCultureInfo(language);
+
+        label.Should().Be((1500d).ToString("#,0", culture));
+    }
+
+    [Fact]
+    public async Task Gauge_value_label_without_language_keeps_the_default_pt_BR()
+    {
+        // Opt-in: absent Language → pt-BR default, so gauges that never declared a culture render
+        // exactly as before (no golden break).
+        var label = await RenderGaugeValueLabelAsync(language: null);
+        var ptBr = System.Globalization.CultureInfo.GetCultureInfo("pt-BR");
+
+        label.Should().Be((1500d).ToString("#,0", ptBr));
+    }
+
+    private static async Task<string> RenderGaugeValueLabelAsync(string? language)
+    {
+        Item[] rows = [new("A", 1000m), new("B", 500m)]; // sum = 1500
+        var builder = ReportBuilder.Create("c");
+        if (language is not null)
+        {
+            builder = builder.Language(language);
+        }
+        var report = builder
+            .Page(p => p.A4().Portrait().Margins(15))
+            .DataSource("Itens", rows)
+            .ReportFooter(f => f.Height(45)
+                .Gauge("Sum(Fields.Valor)", GaugeKind.Radial).At(0, 0).Size(80, 40)
+                    .Range(0, 2000))
+            .Build();
+
+        var prims = (await report.PaginateAsync()).Pages.SelectMany(p => p.Primitives).ToList();
+        // A gauge emits exactly one text primitive: the value label.
+        return prims.OfType<DrawTextPrimitive>().Single().Text;
+    }
+
     private static async Task<List<LayoutPrimitive>> RenderGaugeAsync(GaugeKind kind)
     {
         var report = ReportBuilder.Create("c")
