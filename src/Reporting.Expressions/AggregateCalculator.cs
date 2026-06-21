@@ -19,8 +19,24 @@ internal static class AggregateCalculator
             "AVG" or "AVERAGE" => AverageRows(expression, rows, evaluator, owner),
             "MIN" => MinRows(expression, rows, evaluator, owner),
             "MAX" => MaxRows(expression, rows, evaluator, owner),
+            "FIRST" => EvaluatePerRow(expression, rows, evaluator, owner).FirstOrDefault(),
+            "LAST" => EvaluatePerRow(expression, rows, evaluator, owner).LastOrDefault(),
+            "COUNTDISTINCT" => CountDistinctRows(expression, rows, evaluator, owner),
             _ => throw new InvalidOperationException($"Unknown aggregate function: {function}"),
         };
+    }
+
+    private static int CountDistinctRows(string expression, IReadOnlyList<DictionaryLookup> rows, ExpressionEvaluator evaluator, ReportExpressionContext owner)
+    {
+        var seen = new HashSet<object>();
+        foreach (var value in EvaluatePerRow(expression, rows, evaluator, owner))
+        {
+            if (value is not null)
+            {
+                seen.Add(value);
+            }
+        }
+        return seen.Count;
     }
 
     private static int CountRows(string expression, IReadOnlyList<DictionaryLookup> rows, ExpressionEvaluator evaluator, ReportExpressionContext owner)

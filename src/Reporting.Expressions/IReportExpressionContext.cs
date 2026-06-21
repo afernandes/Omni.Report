@@ -50,6 +50,11 @@ public interface IReportExpressionContext
     /// <c>object?[]</c> of every match (LookupSet). Returns empty/null if the dataset isn't registered.</summary>
     object? EvaluateLookup(object? source, string destExpression, string resultExpression, string datasetName, bool all);
 
+    /// <summary>Computes a positional function over the current row within a scope: <c>RowNumber</c>
+    /// (1-based position), <c>CountRows</c> (rows in scope), or <c>Previous</c> (evaluates
+    /// <paramref name="expression"/> against the prior row, or <c>null</c> on the first row).</summary>
+    object? EvaluatePositional(string function, string expression, AggregateScope scope);
+
     /// <summary>Returns the current-row lookup of the data source named <paramref name="sourceName"/>,
     /// or <c>null</c> when the source is unknown OR has no current row in scope.</summary>
     /// <remarks>

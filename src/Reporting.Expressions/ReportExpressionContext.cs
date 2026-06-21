@@ -240,6 +240,63 @@ public sealed class ReportExpressionContext : IReportExpressionContext
         return AggregateCalculator.Calculate(function, expression, rows, _evaluator, this);
     }
 
+    public object? EvaluatePositional(string function, string expression, AggregateScope scope)
+    {
+        switch (function.ToUpperInvariant())
+        {
+            case "ROWNUMBER":
+                // 1-based position: rows seen so far in the scope (incremental list — current row is last).
+                return PositionList(scope).Count;
+            case "COUNTROWS":
+                // Total rows in scope (complete for Report via the primed override).
+                return ScopeRows(scope).Count;
+            case "PREVIOUS":
+                return PreviousValue(expression);
+            default:
+                return null;
+        }
+    }
+
+    // Complete scope rows (Report uses the primed override) — mirrors EvaluateAggregate's selection.
+    private List<DictionaryLookup> ScopeRows(AggregateScope scope) => scope switch
+    {
+        AggregateScope.Group or AggregateScope.Running => _groupRows,
+        AggregateScope.Page => _pageRows,
+        _ => _reportScopeOverride ?? _reportRows,
+    };
+
+    // Incremental list for positional functions — its Count is the current 1-based position in the scope.
+    private List<DictionaryLookup> PositionList(AggregateScope scope) => scope switch
+    {
+        AggregateScope.Group or AggregateScope.Running => _groupRows,
+        AggregateScope.Page => _pageRows,
+        _ => _reportRows,
+    };
+
+    private object? PreviousValue(string expression)
+    {
+        // Evaluate the expression against the row before the current one (report scope, incremental).
+        if (_reportRows.Count < 2)
+        {
+            return null;
+        }
+        var prev = _reportRows[_reportRows.Count - 2];
+        var live = _fieldsLookup.Keys.Select(k => new KeyValuePair<string, object?>(k, _fieldsLookup[k])).ToList();
+        try
+        {
+            SetCurrentRowNoSnapshot(prev);
+            return _evaluator.Evaluate(expression, this);
+        }
+        catch
+        {
+            return null;
+        }
+        finally
+        {
+            SetCurrentRowNoSnapshot(live);
+        }
+    }
+
     /// <summary>Registers all rows of a named dataset so cross-dataset <c>Lookup</c>/<c>LookupSet</c> can
     /// scan them. Snapshots each row (decoupled from the live source). Re-registering replaces.</summary>
     public void RegisterDataset(string name, IEnumerable<IEnumerable<KeyValuePair<string, object?>>> rows)

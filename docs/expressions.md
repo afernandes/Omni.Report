@@ -66,6 +66,23 @@ escopo até a linha corrente). A função `RunningTotal(...)` é o atalho para o
 Internamente, `AggregateCalculator` mantém pilhas de acumuladores indexadas pelo
 escopo. A paginação reseta o escopo apropriado entre páginas / grupos.
 
+## Funções posicionais e de escopo (estilo SSRS)
+
+```text
+RowNumber()            // posição 1-based da linha corrente no escopo (Report por padrão)
+RowNumber('Group')     // posição dentro do grupo corrente
+CountRows()            // total de linhas no escopo
+Previous(Fields.Total) // valor da expressão na linha ANTERIOR (null na 1ª)
+First(Fields.Nome)     // expressão na 1ª linha do escopo
+Last(Fields.Nome)      // expressão na última linha do escopo
+CountDistinct(Fields.Cidade) // contagem de valores distintos não-nulos no escopo
+```
+
+`RowNumber`/`CountRows` aceitam um escopo opcional como 1º argumento; `Previous`/`First`/`Last`/
+`CountDistinct` recebem a expressão e um escopo opcional. `First`/`Last`/`CountDistinct` são reduções
+de escopo (compartilham a maquinaria dos agregadores — escopo Report usa o conjunto completo);
+`RowNumber`/`Previous` são posicionais (rastreiam a posição da linha corrente).
+
 ## Lookup entre datasets
 
 No estilo SSRS, `Lookup` / `LookupSet` cruzam **outro** dataset sem um join prévio —
