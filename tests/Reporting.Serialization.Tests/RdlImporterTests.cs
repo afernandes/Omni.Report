@@ -202,6 +202,31 @@ public class RdlImporterTests
     }
 
     [Fact]
+    public void Page_columns_and_spacing_are_imported()
+    {
+        var rdl = """
+            <Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition">
+              <Page><Columns>3</Columns><ColumnSpacing>1cm</ColumnSpacing></Page>
+              <Body><Height>2cm</Height><ReportItems /></Body>
+            </Report>
+            """;
+        var def = new RdlImporter().ImportXml(rdl);
+        def.PageSetup.Columns.Should().Be(3);
+        def.PageSetup.ColumnSpacing.ToCm().Should().BeApproximately(1, 0.01);
+    }
+
+    [Fact]
+    public void No_columns_defaults_to_single_column()
+    {
+        var rdl = """
+            <Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition">
+              <Body><Height>2cm</Height><ReportItems /></Body>
+            </Report>
+            """;
+        new RdlImporter().ImportXml(rdl).PageSetup.Columns.Should().Be(1);
+    }
+
+    [Fact]
     public void Report_Language_is_imported_into_Metadata()
     {
         var rdl = """

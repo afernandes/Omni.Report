@@ -76,7 +76,12 @@ public sealed class RdlImporter
             ParseSize(Val(marginHost, "TopMargin")) ?? Unit.Zero,
             ParseSize(Val(marginHost, "RightMargin")) ?? Unit.Zero,
             ParseSize(Val(marginHost, "BottomMargin")) ?? Unit.Zero);
-        var pageSetup = new PageSetup(new PaperSize("Imported", pageWidth, pageHeight), Orientation.Portrait, margins);
+        // Newspaper/snake columns: RDL <Columns>/<ColumnSpacing> live on <Page> (2016+) or <Report> (legacy);
+        // marginHost (page ?? report) covers both. Absent → 1 column (no change).
+        var columns = int.TryParse(Val(marginHost, "Columns"), out var n) && n > 1 ? n : 1;
+        var columnSpacing = columns > 1 ? ParseSize(Val(marginHost, "ColumnSpacing")) ?? Unit.Zero : Unit.Zero;
+        var pageSetup = new PageSetup(new PaperSize("Imported", pageWidth, pageHeight), Orientation.Portrait,
+            margins, columns, columnSpacing);
 
         var parameters = (El(report, "ReportParameters")?.Elements()
                 .Where(e => e.Name.LocalName == "ReportParameter")
