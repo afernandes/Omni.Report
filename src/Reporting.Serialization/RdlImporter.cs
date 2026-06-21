@@ -7,6 +7,7 @@ using Reporting.Geometry;
 using Reporting.Paper;
 using Reporting.Parameters;
 using Reporting.Serialization.Internal;
+using Reporting.Styling;
 
 namespace Reporting.Serialization;
 
@@ -112,16 +113,16 @@ public sealed class RdlImporter
         switch (item.Name.LocalName)
         {
             case "Textbox":
-                into.Add(TextItem(item, bounds));
+                into.Add(ApplyCommon(TextItem(item, bounds), item));
                 break;
             case "Line":
-                into.Add(new LineElement { Bounds = bounds });
+                into.Add(ApplyCommon(new LineElement { Bounds = bounds }, item));
                 break;
             case "Image":
-                into.Add(ImageItem(item, bounds));
+                into.Add(ApplyCommon(ImageItem(item, bounds), item));
                 break;
             case "Rectangle":
-                into.Add(new RectangleElement { Bounds = bounds });
+                into.Add(ApplyCommon(new RectangleElement { Bounds = bounds }, item));
                 // Recurse: nested items are positioned relative to the rectangle in RDL.
                 foreach (var child in El(item, "ReportItems")?.Elements() ?? Enumerable.Empty<XElement>())
                 {
@@ -132,15 +133,65 @@ public sealed class RdlImporter
         }
     }
 
+    // Applies the report-item attributes common to every element — the RDL <Style>, Visibility/Hidden,
+    // Bookmark, DocumentMapLabel and Action — that the model already supports but the importer ignored.
+    private static ReportElement ApplyCommon(ReportElement el, XElement item)
+    {
+        var style = ReadStyle(item);
+        var (visible, visExpr) = ReadVisibility(item);
+        var bookmark = ConvertOpt(Val(item, "Bookmark"));
+        var docMap = ConvertOpt(Val(item, "DocumentMapLabel"));
+        var action = ReadAction(El(item, "Action"));
+        return el switch
+        {
+            TextBoxElement t => t with { Style = style ?? t.Style, Visible = visible, VisibleExpression = visExpr, Bookmark = bookmark, DocumentMapLabel = docMap, Action = action },
+            LabelElement l => l with { Style = style ?? l.Style, Visible = visible, VisibleExpression = visExpr, Bookmark = bookmark, DocumentMapLabel = docMap, Action = action },
+            RectangleElement r => r with { Style = style ?? r.Style, Visible = visible, VisibleExpression = visExpr, Bookmark = bookmark, DocumentMapLabel = docMap, Action = action },
+            ImageElement im => im with { Style = style ?? im.Style, Visible = visible, VisibleExpression = visExpr, Bookmark = bookmark, DocumentMapLabel = docMap, Action = action },
+            // A line's color/width come from its style border; map the first visible side to the Pen.
+            LineElement ln => ln with { Pen = StyleBorderToPen(style) ?? ln.Pen, Visible = visible, VisibleExpression = visExpr, Bookmark = bookmark, DocumentMapLabel = docMap, Action = action },
+            // INVARIANT: every element type AddItem can produce must have an arm above — otherwise its
+            // Style/Visibility/Bookmark/Action would be silently dropped. Keep this in sync with AddItem.
+            _ => el,
+        };
+    }
+
+    // RDL <Visibility><Hidden> is the inverse of OmniReport's Visible/VisibleExpression: a constant maps
+    // to the Visible bool; an expression becomes VisibleExpression = !(converted Hidden).
+    private static (bool Visible, string? VisibleExpression) ReadVisibility(XElement item)
+    {
+        var hidden = Val(El(item, "Visibility"), "Hidden");
+        if (string.IsNullOrWhiteSpace(hidden))
+        {
+            return (true, null);
+        }
+        if (bool.TryParse(hidden, out var h))
+        {
+            return (!h, null);
+        }
+        return (true, $"!({RdlExpression.Convert(hidden)})");
+    }
+
+    private static string? ConvertOpt(string? raw)
+        => string.IsNullOrEmpty(raw) ? null : RdlExpression.Convert(raw);
+
     private static ReportElement TextItem(XElement item, Rectangle bounds)
     {
         var raw = TextboxValue(item);
         if (RdlExpression.IsExpression(raw))
         {
-            return new TextBoxElement { Expression = RdlExpression.Convert(raw), Bounds = bounds };
+            return new TextBoxElement
+            {
+                Expression = RdlExpression.Convert(raw),
+                Bounds = bounds,
+                CanGrow = ParseBool(Val(item, "CanGrow")),
+                CanShrink = ParseBool(Val(item, "CanShrink")),
+            };
         }
         return new LabelElement { Text = raw ?? string.Empty, Bounds = bounds };
     }
+
+    private static bool ParseBool(string? raw) => bool.TryParse(raw, out var b) && b;
 
     // RDL 2016 nests the value under Paragraphs/Paragraph/TextRuns/TextRun/Value; RDL 2008 uses a direct
     // <Value>. Returns the first value found.
@@ -220,6 +271,213 @@ public sealed class RdlImporter
         "DateTime" => typeof(DateTime),
         _ => typeof(string),
     };
+
+    // ── Style + Action ────────────────────────────────────────────────────────────
+
+    // Reads an item's RDL <Style> child into an OmniReport Style (font, colors, alignment, format,
+    // padding, border). Returns null when there's no <Style> or it contributes nothing.
+    private static Style? ReadStyle(XElement item)
+    {
+        var s = El(item, "Style");
+        if (s is null)
+        {
+            return null;
+        }
+        var fontFamily = Val(s, "FontFamily");
+        var fontSizePt = ParsePoints(Val(s, "FontSize"));
+        var fontStyle = FontStyle.Regular;
+        if (IsBold(Val(s, "FontWeight"))) { fontStyle |= FontStyle.Bold; }
+        if (string.Equals(Val(s, "FontStyle"), "Italic", StringComparison.OrdinalIgnoreCase)) { fontStyle |= FontStyle.Italic; }
+        var decoration = Val(s, "TextDecoration");
+        if (string.Equals(decoration, "Underline", StringComparison.OrdinalIgnoreCase)) { fontStyle |= FontStyle.Underline; }
+        if (string.Equals(decoration, "LineThrough", StringComparison.OrdinalIgnoreCase)) { fontStyle |= FontStyle.Strikeout; }
+        Font? font = (fontFamily is not null || fontSizePt is not null || fontStyle != FontStyle.Regular)
+            ? new Font(fontFamily ?? Font.Default.Family, fontSizePt ?? Font.Default.Size, fontStyle)
+            : null;
+
+        var style = new Style(
+            Font: font,
+            ForeColor: ParseColor(Val(s, "Color")),
+            BackColor: ParseColor(Val(s, "BackgroundColor")),
+            Border: ReadBorder(s),
+            Padding: ReadPadding(s),
+            HorizontalAlignment: ParseHAlign(Val(s, "TextAlign")),
+            VerticalAlignment: ParseVAlign(Val(s, "VerticalAlign")),
+            Format: Val(s, "Format") is { Length: > 0 } fmt ? fmt : null);
+        return style == Style.Default ? null : style;
+    }
+
+    private static Border? ReadBorder(XElement style)
+    {
+        // RDL: a default <Border> applies to all sides; <TopBorder>/<BottomBorder>/<LeftBorder>/
+        // <RightBorder> override per side. Each carries <Color>/<Style>/<Width>.
+        var def = ReadBorderSide(El(style, "Border"));
+        var left = ReadBorderSide(El(style, "LeftBorder")) ?? def;
+        var top = ReadBorderSide(El(style, "TopBorder")) ?? def;
+        var right = ReadBorderSide(El(style, "RightBorder")) ?? def;
+        var bottom = ReadBorderSide(El(style, "BottomBorder")) ?? def;
+        if (left is null && top is null && right is null && bottom is null)
+        {
+            return null;
+        }
+        return new Border(left ?? BorderSide.None, top ?? BorderSide.None, right ?? BorderSide.None, bottom ?? BorderSide.None);
+    }
+
+    private static BorderSide? ReadBorderSide(XElement? border)
+    {
+        if (border is null)
+        {
+            return null;
+        }
+        var lineStyle = (Val(border, "Style") ?? "Solid") switch
+        {
+            "None" => BorderLineStyle.None,
+            "Dotted" => BorderLineStyle.Dotted,
+            "Dashed" => BorderLineStyle.Dashed,
+            "Double" => BorderLineStyle.Double,
+            _ => BorderLineStyle.Solid,
+        };
+        var width = ParseSize(Val(border, "Width")) ?? Unit.FromPoint(1);
+        var color = ParseColor(Val(border, "Color")) ?? Color.Black;
+        return new BorderSide(lineStyle, width, color);
+    }
+
+    private static Thickness? ReadPadding(XElement style)
+    {
+        var l = ParseSize(Val(style, "PaddingLeft"));
+        var t = ParseSize(Val(style, "PaddingTop"));
+        var r = ParseSize(Val(style, "PaddingRight"));
+        var b = ParseSize(Val(style, "PaddingBottom"));
+        if (l is null && t is null && r is null && b is null)
+        {
+            return null;
+        }
+        return new Thickness(l ?? Unit.Zero, t ?? Unit.Zero, r ?? Unit.Zero, b ?? Unit.Zero);
+    }
+
+    private static BorderSide? StyleBorderToPen(Style? style)
+    {
+        var b = style?.Border;
+        if (b is null)
+        {
+            return null;
+        }
+        foreach (var side in new[] { b.Top, b.Left, b.Right, b.Bottom })
+        {
+            if (side.IsVisible) { return side; }
+        }
+        return null;
+    }
+
+    // Reads an RDL <Action> (Hyperlink / Drillthrough / BookmarkLink) into an ElementAction.
+    private static ElementAction? ReadAction(XElement? action)
+    {
+        if (action is null)
+        {
+            return null;
+        }
+        if (Val(action, "Hyperlink") is { Length: > 0 } url)
+        {
+            return ElementAction.ToUrl(RdlExpression.Convert(url));
+        }
+        if (Val(action, "BookmarkLink") is { Length: > 0 } bm)
+        {
+            return ElementAction.ToBookmark(RdlExpression.Convert(bm));
+        }
+        var drill = El(action, "Drillthrough");
+        if (drill is not null && Val(drill, "ReportName") is { Length: > 0 } report)
+        {
+            return ElementAction.ToDrillthrough(report);
+        }
+        return null;
+    }
+
+    private static bool IsBold(string? weight)
+    {
+        if (weight is null)
+        {
+            return false;
+        }
+        if (int.TryParse(weight, out var w))
+        {
+            return w >= 600; // RDL numeric weights 100–900
+        }
+        return weight.ToLowerInvariant() is "bold" or "bolder" or "semibold" or "demibold" or "extrabold" or "heavy" or "black";
+    }
+
+    // Font sizes are kept in points as a double — parse directly (not via Unit, whose integer mils would
+    // round 14pt to 13.968). RDL font sizes are virtually always "pt".
+    private static double? ParsePoints(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            return null;
+        }
+        var s = raw.Trim();
+        int i = 0;
+        while (i < s.Length && (char.IsDigit(s[i]) || s[i] is '.' or '-' or '+')) { i++; }
+        if (i == 0 || !double.TryParse(s[..i], NumberStyles.Float, Inv, out var value))
+        {
+            return null;
+        }
+        return s[i..].Trim().ToLowerInvariant() switch
+        {
+            "pt" or "" => value,
+            "px" => value * 72.0 / 96.0,
+            "in" => value * 72.0,
+            "cm" => value * 72.0 / 2.54,
+            "mm" => value * 72.0 / 25.4,
+            "pc" => value * 12.0,
+            _ => value,
+        };
+    }
+
+    private static HorizontalAlignment ParseHAlign(string? a) => a switch
+    {
+        "Center" => HorizontalAlignment.Center,
+        "Right" => HorizontalAlignment.Right,
+        _ => HorizontalAlignment.Left,
+    };
+
+    private static VerticalAlignment ParseVAlign(string? a) => a switch
+    {
+        "Middle" => VerticalAlignment.Middle,
+        "Bottom" => VerticalAlignment.Bottom,
+        _ => VerticalAlignment.Top,
+    };
+
+    // RDL colors are "#RRGGBB"/"#AARRGGBB" or a named color. Returns null on empty/unknown (inherit).
+    private static Color? ParseColor(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            return null;
+        }
+        var c = raw.Trim();
+        if (c.StartsWith('#'))
+        {
+            try { return Color.FromHex(c); }
+            catch (FormatException) { return null; }
+        }
+        return c.ToLowerInvariant() switch
+        {
+            "black" => Color.FromRgb(0, 0, 0),
+            "white" => Color.FromRgb(255, 255, 255),
+            "red" => Color.FromRgb(255, 0, 0),
+            "green" => Color.FromRgb(0, 128, 0),
+            "lime" => Color.FromRgb(0, 255, 0),
+            "blue" => Color.FromRgb(0, 0, 255),
+            "yellow" => Color.FromRgb(255, 255, 0),
+            "gray" or "grey" => Color.FromRgb(128, 128, 128),
+            "silver" => Color.FromRgb(192, 192, 192),
+            "lightgray" or "lightgrey" => Color.FromRgb(211, 211, 211),
+            "navy" => Color.FromRgb(0, 0, 128),
+            "orange" => Color.FromRgb(255, 165, 0),
+            "purple" => Color.FromRgb(128, 0, 128),
+            "transparent" => Color.Transparent,
+            _ => null,
+        };
+    }
 
     // ── XML + size helpers (namespace-agnostic via LocalName) ─────────────────────
 
