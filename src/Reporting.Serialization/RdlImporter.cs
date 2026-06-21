@@ -1458,24 +1458,8 @@ public sealed class RdlImporter
             try { return Color.FromHex(c); }
             catch (FormatException) { return null; }
         }
-        return c.ToLowerInvariant() switch
-        {
-            "black" => Color.FromRgb(0, 0, 0),
-            "white" => Color.FromRgb(255, 255, 255),
-            "red" => Color.FromRgb(255, 0, 0),
-            "green" => Color.FromRgb(0, 128, 0),
-            "lime" => Color.FromRgb(0, 255, 0),
-            "blue" => Color.FromRgb(0, 0, 255),
-            "yellow" => Color.FromRgb(255, 255, 0),
-            "gray" or "grey" => Color.FromRgb(128, 128, 128),
-            "silver" => Color.FromRgb(192, 192, 192),
-            "lightgray" or "lightgrey" => Color.FromRgb(211, 211, 211),
-            "navy" => Color.FromRgb(0, 0, 128),
-            "orange" => Color.FromRgb(255, 165, 0),
-            "purple" => Color.FromRgb(128, 0, 128),
-            "transparent" => Color.Transparent,
-            _ => null,
-        };
+        // Named colours share one map with the renderer's expression-binding coercion (Color.FromName).
+        return Color.FromName(c);
     }
 
     // ── XML + size helpers (namespace-agnostic via LocalName) ─────────────────────

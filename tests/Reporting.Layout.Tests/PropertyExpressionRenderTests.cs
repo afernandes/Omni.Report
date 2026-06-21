@@ -100,6 +100,26 @@ public class PropertyExpressionRenderTests
         text.Style.ForeColor.Should().Be(Color.FromHex("#CC0000"), "the expression result coerces to Color and overrides the static black");
     }
 
+    [Theory]
+    [InlineData("Red", 255, 0, 0)]       // the ubiquitous negative-in-red expression yields a NAMED colour
+    [InlineData("blue", 0, 0, 255)]      // case-insensitive
+    [InlineData("Green", 0, 128, 0)]
+    public async Task Binds_fore_colour_from_a_named_colour_expression(string name, byte r, byte g, byte b)
+    {
+        // SSRS conditional formatting commonly resolves to a named colour (=IIf(x<0,"Red","Black")); the
+        // binder must coerce the name, not only #hex (which it already did).
+        var text = await RenderTextBox(new StyledRow("A", name, 10), ("Style.ForeColor", "Fields.Cor"));
+        text.Style.ForeColor.Should().Be(Color.FromRgb(r, g, b));
+    }
+
+    [Fact]
+    public async Task Unknown_named_colour_keeps_the_static_value()
+    {
+        // A name we don't know must NOT crash or blank — the static colour stays as the graceful fallback.
+        var text = await RenderTextBox(new StyledRow("A", "chartreuse-ish", 10), ("Style.ForeColor", "Fields.Cor"));
+        text.Style.ForeColor.Should().Be(Color.Black);
+    }
+
     [Fact]
     public async Task Binds_font_size_from_an_expression_on_a_nested_record_path()
     {
