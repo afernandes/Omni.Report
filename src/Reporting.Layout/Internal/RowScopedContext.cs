@@ -36,6 +36,7 @@ internal sealed class RowScopedContext : IReportExpressionContext
     public DateTime Now => _inner.Now;
     public DateTime Today => _inner.Today;
     public string UserName => _inner.UserName;
+    public string ReportName => _inner.ReportName;
     public CultureInfo Culture => _inner.Culture;
 
     public object? EvaluateAggregate(string function, string expression, AggregateScope scope)

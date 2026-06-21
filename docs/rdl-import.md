@@ -57,8 +57,9 @@ var pdf = await new ReportEngine().RenderAsync(def, dataSources);
 - **Estilo e atributos** dos itens: nó `<Style>` (fonte/cores/borda/padding/alinhamento/format),
   `Visibility/Hidden`, `Bookmark`, `DocumentMapLabel`, `Action`, `CanGrow`/`CanShrink`.
 - **Expressões** VB → OmniReport (`RdlExpression`): `Fields!X.Value`→`Fields.X`,
-  `Parameters!P.Value`→`Parameters.P`, `Globals!PageNumber`→`PageNumber`, `Globals!ExecutionTime`→`Now`,
-  `User!UserID`→`UserName`. Texto sem `=` é literal. Apenas o membro `.Value` é reescrito —
+  `Parameters!P.Value`→`Parameters.P`, `Globals!PageNumber`/`OverallPageNumber`→`PageNumber`,
+  `Globals!TotalPages`/`OverallTotalPages`→`TotalPages`, `Globals!ReportName`→`ReportName` (resolve ao
+  `ReportDefinition.Name` no render), `Globals!ExecutionTime`→`Now`, `User!UserID`→`UserName`. Texto sem `=` é literal. Apenas o membro `.Value` é reescrito —
   `.Count`/`.Label` são preservados (erro visível em vez de dado errado).
 
 ## Ainda não importado (follow-ups)

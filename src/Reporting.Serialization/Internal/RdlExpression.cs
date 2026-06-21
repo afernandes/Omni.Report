@@ -56,7 +56,7 @@ internal static partial class RdlExpression
         body = ReportItemRef().Replace(body, m => $"ReportItems.{m.Groups[1].Value}");
         body = GlobalRef().Replace(body, m => m.Groups[1].Value switch
         {
-            "PageNumber" => "PageNumber",
+            "PageNumber" or "OverallPageNumber" => "PageNumber",
             "TotalPages" or "OverallTotalPages" => "TotalPages",
             "ExecutionTime" => "Now",
             var other => other, // ReportName, etc. — left as a bare identifier

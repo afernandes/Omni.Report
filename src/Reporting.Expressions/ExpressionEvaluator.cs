@@ -118,6 +118,7 @@ public sealed class ExpressionEvaluator
             if (name == "GroupKey") { args.Result = context.GroupKey; return; }
             if (name == "PageNumber") { args.Result = context.PageNumber; return; }
             if (name == "TotalPages") { args.Result = context.TotalPages; return; }
+            if (name == "ReportName") { args.Result = context.ReportName; return; }
             if (context.TryResolveUnqualifiedField(name, out var fieldValue))
             {
                 args.Result = fieldValue;

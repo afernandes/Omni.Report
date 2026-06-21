@@ -37,6 +37,9 @@ public interface IReportExpressionContext
     /// <summary>Identifier of the user generating the report (configurable).</summary>
     string UserName { get; }
 
+    /// <summary>Name of the report (RDL <c>Globals!ReportName</c>). Empty when unset.</summary>
+    string ReportName { get; }
+
     /// <summary>Culture used for formatting <c>{expr:format}</c> templates and numeric output.</summary>
     CultureInfo Culture { get; }
 

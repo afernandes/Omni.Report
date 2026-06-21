@@ -55,6 +55,7 @@ public sealed class ReportExpressionContext : IReportExpressionContext
     public DateTime Now { get; set; }
     public DateTime Today => Now.Date;
     public string UserName { get; set; }
+    public string ReportName { get; set; } = string.Empty;
     public CultureInfo Culture { get; }
 
     /// <summary>Sets the field values for the current row and pushes a snapshot into the scope buffers.</summary>
