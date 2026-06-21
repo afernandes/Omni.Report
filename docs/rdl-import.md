@@ -49,7 +49,8 @@ var pdf = await new ReportEngine().RenderAsync(def, dataSources);
   `<Query>` → a **convenção viva do Designer** (`_sql`/`_storedProc`/`param:@x` em `Parameters`), a mesma
   que `DesignerDataSource`/`DataSourceFactory` consomem — então a query importada **abre no editor de fonte
   de dados e executa** (`CommandType=StoredProcedure`→`_storedProc`; `<QueryParameter>` `=Parameters!P.Value`
-  → bind ao parâmetro P, valor literal → literal).
+  → bind ao parâmetro P, valor literal → literal; um valor de **expressão** não-paramétrica, ex. `=Today()`,
+  é congelado como literal **com aviso**). `CommandType=TableDirect` é tratado como texto.
 - **Report-level**: `<EmbeddedImages>` → bytes inline (um `<Image Source="Embedded">` resolve a
   `ImageElement` com `InlineData`); `<CustomProperties>` → `Metadata`; `<Code>` (módulo VB report-level)
   preservado em `Metadata["RdlCode"]` (execução é follow-up).

@@ -553,6 +553,24 @@ public class RdlImporterTests
     }
 
     [Fact]
+    public void Query_parameter_with_a_dynamic_expression_is_frozen_as_literal_with_a_warning()
+    {
+        var rdl = """
+            <Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition">
+              <DataSets><DataSet Name="DS"><Query>
+                <CommandText>SELECT 1</CommandText>
+                <QueryParameters><QueryParameter Name="@Hoje"><Value>=Today()</Value></QueryParameter></QueryParameters>
+              </Query></DataSet></DataSets>
+              <Body><Height>1cm</Height><ReportItems /></Body>
+            </Report>
+            """;
+        var def = new RdlImporter().ImportXml(rdl);
+        // Dynamic value → literal slot (best-effort) + warning (never silent).
+        def.DataSources.Single().Parameters["param:@Hoje"].Should().Be("|Today()");
+        def.Metadata["ImportWarnings"].Should().Contain("@Hoje");
+    }
+
+    [Fact]
     public void DataSet_filters_combine_and_skip_unsupported_or_valueless()
     {
         var rdl = """
