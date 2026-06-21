@@ -217,8 +217,8 @@ public class RdlImporterTests
               </ReportItems></Body>
             </Report>
             """;
-        var tablix = new RdlImporter().ImportXml(rdl).ReportHeader!.Elements.OfType<Reporting.Elements.TablixElement>().Single();
-        tablix.NoRowsMessage.Should().Be(expected);
+        // A lone flat Tablix decomposes into a DetailBand, which carries the NoRowsMessage (also expression-converted).
+        new RdlImporter().ImportXml(rdl).Detail.NoRowsMessage.Should().Be(expected);
     }
 
     [Theory]
@@ -606,20 +606,47 @@ public class RdlImporterTests
             </Report>
             """;
         var def = new RdlImporter().ImportXml(rdl);
-        var t = def.ReportHeader!.Elements.OfType<Reporting.Elements.TablixElement>().Single();
 
-        t.DataSetName.Should().Be("Vendas");
-        t.RowGroups.Should().BeEmpty("a flat table has no dynamic row groups");
-        t.ColumnGroups.Should().BeEmpty("a flat table has no dynamic column groups");
-        // Header row 0 → labels; detail row 1 → text boxes, indexed by column.
-        ((Reporting.Elements.LabelElement)t.Cells.Single(c => c.RowIndex == 0 && c.ColumnIndex == 0).Content!).Text.Should().Be("Produto");
-        ((Reporting.Elements.LabelElement)t.Cells.Single(c => c.RowIndex == 0 && c.ColumnIndex == 1).Content!).Text.Should().Be("Total");
-        ((Reporting.Elements.TextBoxElement)t.Cells.Single(c => c.RowIndex == 1 && c.ColumnIndex == 0).Content!).Expression.Should().Be("Fields.Produto");
-        var d1 = (Reporting.Elements.TextBoxElement)t.Cells.Single(c => c.RowIndex == 1 && c.ColumnIndex == 1).Content!;
-        d1.Expression.Should().Be("Fields.Total");
-        d1.Style.Format.Should().Be("C", "the detail cell keeps its RDL Format");
-        t.ColumnWidths.Count.Should().Be(2, "the two RDL column widths become relative weights");
+        // A lone flat Tablix decomposes into a repeating column-header band (PageHeader) + a paginating
+        // DetailBand with one TextBox per column — a native banded table, not a monolithic TablixElement.
+        def.ReportHeader.Should().BeNull("the body's only item became the bands");
+        var headers = def.PageHeader!.Elements.OfType<Reporting.Elements.LabelElement>().ToList();
+        headers.Select(h => h.Text).Should().Equal("Produto", "Total");
+
+        var details = def.Detail.Elements.OfType<Reporting.Elements.TextBoxElement>().ToList();
+        details.Select(d => d.Expression).Should().Equal("Fields.Produto", "Fields.Total");
+        details[1].Style.Format.Should().Be("C", "the detail cell keeps its RDL Format");
+        def.Detail.DataSetName.Should().Be("Vendas", "the band is bound to the Tablix's dataset (#112)");
+
+        // Columns are placed at absolute X by the RDL widths (4cm then 2cm).
+        details[0].Bounds.Width.ToCm().Should().BeApproximately(4, 0.05);
+        details[1].Bounds.X.ToCm().Should().BeApproximately(4, 0.05);
         def.Metadata.ContainsKey("ImportWarnings").Should().BeFalse("a clean flat table imports fully");
+    }
+
+    [Fact]
+    public void Tablix_flat_with_another_body_item_stays_a_TablixElement()
+    {
+        // Guard: more than one Body data region → keep the existing single-block TablixElement path.
+        var rdl = """
+            <Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition">
+              <Body><Height>3cm</Height><ReportItems>
+                <Textbox Name="titulo"><Top>0cm</Top><Left>0cm</Left><Width>6cm</Width><Height>1cm</Height><Paragraphs><Paragraph><TextRuns><TextRun><Value>Relatório</Value></TextRun></TextRuns></Paragraph></Paragraphs></Textbox>
+                <Tablix Name="T"><Top>1cm</Top><Left>0cm</Left><Width>6cm</Width><Height>2cm</Height>
+                  <DataSetName>Vendas</DataSetName>
+                  <TablixBody>
+                    <TablixColumns><TablixColumn><Width>6cm</Width></TablixColumn></TablixColumns>
+                    <TablixRows><TablixRow><TablixCells><TablixCell><CellContents><Textbox><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!Produto.Value</Value></TextRun></TextRuns></Paragraph></Paragraphs></Textbox></CellContents></TablixCell></TablixCells></TablixRow></TablixRows>
+                  </TablixBody>
+                  <TablixColumnHierarchy><TablixMembers><TablixMember /></TablixMembers></TablixColumnHierarchy>
+                  <TablixRowHierarchy><TablixMembers><TablixMember><Group Name="Details" /></TablixMember></TablixMembers></TablixRowHierarchy>
+                </Tablix>
+              </ReportItems></Body>
+            </Report>
+            """;
+        var def = new RdlImporter().ImportXml(rdl);
+        def.ReportHeader!.Elements.OfType<Reporting.Elements.TablixElement>().Should().ContainSingle("two body items → TablixElement path");
+        def.Detail.Elements.Should().BeEmpty("the detail band stays empty in the TablixElement path");
     }
 
     [Fact]

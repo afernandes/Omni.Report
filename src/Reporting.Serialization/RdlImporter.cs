@@ -85,18 +85,35 @@ public sealed class RdlImporter
 
         // Body's free report items render once → a ReportHeader band. Page header/footer map directly.
         var body = El(report, "Body");
-        var reportHeader = BandFrom(El(body, "ReportItems"), Val(body, "Height"), BandKind.ReportHeader);
         var pageHeaderEl = El(page, "PageHeader");
-        var pageHeader = BandFrom(El(pageHeaderEl, "ReportItems"), Val(pageHeaderEl, "Height"), BandKind.PageHeader);
         var pageFooterEl = El(page, "PageFooter");
         var pageFooter = BandFrom(El(pageFooterEl, "ReportItems"), Val(pageFooterEl, "Height"), BandKind.PageFooter);
+
+        // First-cut Tablix→bands: a Body that is exactly one flat Tablix becomes a repeating column-header
+        // band + a paginating DetailBand (so a long table flows across pages and repeats its header) instead
+        // of one monolithic TablixElement. Anything else keeps the TablixElement path.
+        ReportBand? reportHeader;
+        ReportBand? pageHeader;
+        DetailBand detail;
+        if (TryFlatTablixBands(body, pageHeaderEl is not null, out var flatHeader, out var flatDetail))
+        {
+            reportHeader = null;
+            pageHeader = flatHeader;
+            detail = flatDetail!;
+        }
+        else
+        {
+            reportHeader = BandFrom(El(body, "ReportItems"), Val(body, "Height"), BandKind.ReportHeader);
+            pageHeader = BandFrom(El(pageHeaderEl, "ReportItems"), Val(pageHeaderEl, "Height"), BandKind.PageHeader);
+            detail = DetailBand.Empty;
+        }
 
         // Run every reader that can add warnings BEFORE snapshotting Metadata (which merges _warnings) —
         // an object-initializer evaluates top-to-bottom, so reading DataSets after Metadata would drop their
         // warnings.
         var variables = ReadVariables(report);
         var dataSources = ReadDataSets(report);
-        return new ReportDefinition(reportName ?? "RdlReport", pageSetup, DetailBand.Empty)
+        return new ReportDefinition(reportName ?? "RdlReport", pageSetup, detail)
         {
             Parameters = new EquatableArray<ReportParameter>(parameters),
             ReportHeader = reportHeader,
@@ -653,6 +670,129 @@ public sealed class RdlImporter
                 ? new EquatableArray<double>(widths)
                 : EquatableArray<double>.Empty,
         };
+    }
+
+    // First-cut Tablix→bands: when the Body is EXACTLY one flat Tablix (no dynamic row/col groups) and the
+    // page has no <PageHeader>, decompose it into a repeating column-header band (PageHeader) + a DetailBand
+    // with one positioned TextBox per column, instead of one monolithic TablixElement inside the ReportHeader.
+    // The detail band paginates row-by-row and the header repeats per page — like a native banded report.
+    // Bounds are absolute per column (RDL column widths are absolute, anchored at the Tablix's Left). Anything
+    // that doesn't match (extra Body items, dynamic groups, no columns, no detail row, an existing PageHeader)
+    // returns false so the caller keeps the existing TablixElement path (with its own warning).
+    private bool TryFlatTablixBands(XElement? body, bool pageHasHeader, out ReportBand? headerBand, out DetailBand? detail)
+    {
+        headerBand = null;
+        detail = null;
+        var items = El(body, "ReportItems")?.Elements().ToList() ?? new List<XElement>();
+        if (pageHasHeader || items.Count != 1 || items[0].Name.LocalName != "Tablix")
+        {
+            return false;
+        }
+        var tablix = items[0];
+        if (ReadTablixGroups(El(El(tablix, "TablixRowHierarchy"), "TablixMembers"), "Rows").Count != 0
+            || ReadTablixGroups(El(El(tablix, "TablixColumnHierarchy"), "TablixMembers"), "Cols").Count != 0)
+        {
+            return false;
+        }
+
+        var tbBounds = Bounds(tablix, Unit.Zero, Unit.Zero);
+        var tablixBody = El(tablix, "TablixBody");
+        var bodyRows = (El(tablixBody, "TablixRows")?.Elements().Where(e => e.Name.LocalName == "TablixRow")
+            ?? Enumerable.Empty<XElement>()).ToList();
+        var colWidths = (El(tablixBody, "TablixColumns")?.Elements().Where(e => e.Name.LocalName == "TablixColumn")
+            ?? Enumerable.Empty<XElement>())
+            .Select(c => ParseSize(Val(c, "Width")) ?? Unit.Zero).ToList();
+        if (colWidths.Count == 0)
+        {
+            return false; // no column geometry → can't place cells; keep the TablixElement path
+        }
+
+        // Classify header/detail rows the same way FlatTableTablix does (the member with a <Group> = detail).
+        var rowMembers = (El(El(tablix, "TablixRowHierarchy"), "TablixMembers")?.Elements()
+            .Where(e => e.Name.LocalName == "TablixMember") ?? Enumerable.Empty<XElement>()).ToList();
+        int detailIdx = rowMembers.FindIndex(m => El(m, "Group") is not null);
+        XElement? headerRow, detailRow;
+        if (detailIdx >= 0 && detailIdx < bodyRows.Count)
+        {
+            detailRow = bodyRows[detailIdx];
+            headerRow = detailIdx > 0 ? bodyRows[detailIdx - 1] : null;
+        }
+        else
+        {
+            detailRow = bodyRows.Count >= 1 ? bodyRows[^1] : null;
+            headerRow = bodyRows.Count >= 2 ? bodyRows[0] : null;
+        }
+        if (detailRow is null)
+        {
+            return false;
+        }
+
+        // Column X edges, anchored at the Tablix's Left. The columns are scaled to fill the Tablix's declared
+        // width exactly — the RDL widths act as relative weights, matching how the old TablixElement render
+        // (ComputeColumnEdges) fit them into the element's bounds. This keeps the table inside its rectangle
+        // (no overflow past the page) regardless of the absolute width sum.
+        double widthSumMm = colWidths.Sum(w => w.ToMm());
+        double scale = widthSumMm > 0 ? tbBounds.Width.ToMm() / widthSumMm : 1.0;
+        var edges = new Unit[colWidths.Count + 1];
+        edges[0] = tbBounds.X;
+        double accMm = 0;
+        for (int c = 0; c < colWidths.Count; c++)
+        {
+            accMm += colWidths[c].ToMm() * scale;
+            edges[c + 1] = tbBounds.X + Unit.FromMm(accMm);
+        }
+        Unit ColW(int c) => edges[c + 1] - edges[c];
+
+        if (headerRow is not null)
+        {
+            var hHeight = ParseSize(Val(headerRow, "Height")) ?? Unit.FromMm(6);
+            var hcells = RowCells(headerRow);
+            var hels = new List<ReportElement>();
+            for (int c = 0; c < hcells.Count && c < colWidths.Count; c++)
+            {
+                var tb = FirstTextbox(hcells[c]);
+                if (TextboxValue(tb) is { Length: > 0 } v)
+                {
+                    hels.Add(new LabelElement
+                    {
+                        Text = v,
+                        Bounds = new Rectangle(edges[c], Unit.Zero, ColW(c), hHeight),
+                        Style = tb is null ? Style.Default : ReadStyle(tb) ?? Style.Default,
+                    });
+                }
+            }
+            if (hels.Count > 0)
+            {
+                headerBand = new ReportBand(BandKind.PageHeader, hHeight, new EquatableArray<ReportElement>(hels));
+            }
+        }
+
+        var dHeight = ParseSize(Val(detailRow, "Height")) ?? Unit.FromMm(6);
+        var dcells = RowCells(detailRow);
+        var dels = new List<ReportElement>();
+        for (int c = 0; c < dcells.Count && c < colWidths.Count; c++)
+        {
+            var tb = FirstTextbox(dcells[c]);
+            if (TextboxValue(tb) is { Length: > 0 } v)
+            {
+                dels.Add(new TextBoxElement
+                {
+                    Expression = RdlExpression.Convert(v),
+                    Bounds = new Rectangle(edges[c], Unit.Zero, ColW(c), dHeight),
+                    Style = tb is null ? Style.Default : ReadStyle(tb) ?? Style.Default,
+                });
+            }
+        }
+        if (dels.Count == 0)
+        {
+            return false; // nothing renderable in the detail → keep the TablixElement path (which warns)
+        }
+        detail = new DetailBand(dHeight, new EquatableArray<ReportElement>(dels))
+        {
+            DataSetName = Val(tablix, "DataSetName"),
+            NoRowsMessage = NoRowsOf(tablix),
+        };
+        return true;
     }
 
     private static List<XElement> RowCells(XElement tablixRow)
