@@ -76,6 +76,15 @@ public interface IReportExpressionContext
     /// then every other source's current row in registration order.</param>
     /// <returns><c>true</c> if any source had the field, <c>false</c> otherwise.</returns>
     bool TryResolveUnqualifiedField(string fieldName, out object? value);
+
+    /// <summary>RDL <c>ReportItems!Name.Value</c>: the value another named text box resolved to. The
+    /// renderer records each named text box's value via <see cref="SetReportItem"/> as it renders, so a
+    /// later band (e.g. a page footer referencing a body text box) can read it. Returns <c>null</c> for an
+    /// unknown name or one not yet rendered (e.g. a page header referencing the body — that runs first).</summary>
+    object? GetReportItem(string name);
+
+    /// <summary>Records the rendered value of a named text box for <see cref="GetReportItem"/> lookups.</summary>
+    void SetReportItem(string name, object? value);
 }
 
 /// <summary>Read-only string-keyed value lookup. Returns <c>null</c> for unknown keys.</summary>

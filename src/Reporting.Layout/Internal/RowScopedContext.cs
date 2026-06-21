@@ -60,6 +60,10 @@ internal sealed class RowScopedContext : IReportExpressionContext
         return _inner.TryResolveUnqualifiedField(fieldName, out value);
     }
 
+    // ReportItems is a report-wide registry — delegate to the shared root context.
+    public object? GetReportItem(string name) => _inner.GetReportItem(name);
+    public void SetReportItem(string name, object? value) => _inner.SetReportItem(name, value);
+
     /// <summary>Case-insensitive read-only view over one row's key/value pairs.</summary>
     private sealed class RowLookup : IValueLookup
     {

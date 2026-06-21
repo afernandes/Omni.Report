@@ -82,6 +82,7 @@ internal sealed class BandRenderer
             {
                 case LabelElement lbl:
                     primitives.Add(EmitText(lbl.Text, elementBounds, style, lbl.Id));
+                    RecordReportItem(lbl, lbl.Text, ctx);
                     actualHeight = MaxHeight(actualHeight, elementBounds, origin, growsTo: null);
                     break;
 
@@ -89,6 +90,8 @@ internal sealed class BandRenderer
                     var text = ResolveTextBoxText(tb, ctx, effectiveStyle.Format);
                     var rendered = EmitText(text, elementBounds, style, tb.Id, tb.CanGrow, tb.CanShrink);
                     primitives.Add(rendered);
+                    // Publish this text box's value for ReportItems!Name.Value lookups in later bands.
+                    RecordReportItem(tb, text, ctx);
                     actualHeight = MaxHeight(actualHeight, rendered.Bounds, origin, growsTo: tb.CanGrow ? rendered.Bounds : null);
                     break;
 
@@ -376,6 +379,16 @@ internal sealed class BandRenderer
         => tb.TextRuns.Count > 0
             ? string.Concat(tb.TextRuns.Select(r => ResolveText(r.Value, ctx)))
             : ResolveText(tb.Expression, ctx, elementFormat);
+
+    // Publishes a named element's rendered text so ReportItems!Name.Value resolves in later-rendered bands
+    // (e.g. a page footer echoing a body text box). Unnamed elements are skipped.
+    private static void RecordReportItem(ReportElement element, string value, IReportExpressionContext ctx)
+    {
+        if (!string.IsNullOrEmpty(element.Name))
+        {
+            ctx.SetReportItem(element.Name, value);
+        }
+    }
 
     /// <summary>Resolves the rows a data-bound element (chart, sparkline) iterates: the named
     /// data source when <paramref name="dataSetName"/> matches a registered source, otherwise

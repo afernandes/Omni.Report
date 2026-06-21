@@ -100,6 +100,8 @@ public sealed class ExpressionEvaluator
                         "Total" or "TotalPages" => context.TotalPages,
                         _ => null,
                     },
+                    // ReportItems!X.Value → [ReportItems.X]: the value another named text box rendered to.
+                    "ReportItems" => context.GetReportItem(head),
                     _ => null,
                 };
 
