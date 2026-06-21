@@ -293,6 +293,8 @@ public class RdlImporterTests
     [InlineData("=Like(Fields!A.Value, \"Z*\")", "Like(Fields.A, \"Z*\")")]
     // Word boundary: "Like" as a substring of an identifier does not fire.
     [InlineData("=Fields!Likelihood.Value", "Fields.Likelihood")]
+    // Chained Like folds left-associatively (rare but pinned).
+    [InlineData("=Fields!A.Value Like \"X*\" Like \"Y*\"", "Like(Like(Fields.A, \"X*\"), \"Y*\")")]
     public void Vb_Like_infix_is_rewritten_to_the_Like_function(string rdlExpr, string expected)
     {
         var rdl = $"""
