@@ -80,17 +80,17 @@ internal static class KpiRenderer
 
         if (el.Kind == GaugeKind.Linear)
         {
-            RenderLinearGauge(el, bounds, min, max, val, list);
+            RenderLinearGauge(el, bounds, min, max, val, list, ctx.Culture);
         }
         else
         {
-            RenderRadialGauge(el, bounds, min, max, val, list);
+            RenderRadialGauge(el, bounds, min, max, val, list, ctx.Culture);
         }
         return list;
     }
 
     private static void RenderRadialGauge(
-        GaugeElement el, Rectangle b, double min, double max, double val, List<LayoutPrimitive> list)
+        GaugeElement el, Rectangle b, double min, double max, double val, List<LayoutPrimitive> list, CultureInfo culture)
     {
         double x = b.X.ToMm(), y = b.Y.ToMm(), w = b.Width.ToMm(), h = b.Height.ToMm();
         double labelH = Math.Min(6, h * 0.22);
@@ -125,11 +125,11 @@ internal static class KpiRenderer
             new PenStyle(NeedleColor, Unit.FromPoint(1.5)), el.Id));
 
         // Value label below the dial.
-        list.Add(Text(FormatValue(val, el.Style.Format), x, y + gaugeH, w, labelH, 8, bold: true, HorizontalAlignment.Center, el.Id));
+        list.Add(Text(FormatValue(val, el.Style.Format, culture), x, y + gaugeH, w, labelH, 8, bold: true, HorizontalAlignment.Center, el.Id));
     }
 
     private static void RenderLinearGauge(
-        GaugeElement el, Rectangle b, double min, double max, double val, List<LayoutPrimitive> list)
+        GaugeElement el, Rectangle b, double min, double max, double val, List<LayoutPrimitive> list, CultureInfo culture)
     {
         double x = b.X.ToMm(), y = b.Y.ToMm(), w = b.Width.ToMm(), h = b.Height.ToMm();
         double labelH = Math.Min(5, h * 0.4);
@@ -175,7 +175,7 @@ internal static class KpiRenderer
             SourceElementId = el.Id,
         });
 
-        list.Add(Text(FormatValue(val, el.Style.Format), x, y + h - labelH, w, labelH, 7, bold: false, HorizontalAlignment.Center, el.Id));
+        list.Add(Text(FormatValue(val, el.Style.Format, culture), x, y + h - labelH, w, labelH, 7, bold: false, HorizontalAlignment.Center, el.Id));
     }
 
     /// <summary>Builds a filled annular sector (ring segment) approximated by line segments.</summary>
@@ -480,12 +480,13 @@ internal static class KpiRenderer
 
     // The element's Format property (when set) drives the value label — so a Gauge/DataBar value can be
     // currency, percent, etc., consistent with a textbox. Falls back to a sensible heuristic when unset.
-    private static string FormatValue(double v, string? format = null)
+    // Numbers are formatted in the report's culture (RDL <Language>, via ctx.Culture; defaults to pt-BR).
+    private static string FormatValue(double v, string? format, CultureInfo culture)
         => !string.IsNullOrEmpty(format)
-            ? ValueFormatter.Format(v, format, CultureInfo.GetCultureInfo("pt-BR"))
+            ? ValueFormatter.Format(v, format, culture)
             : Math.Abs(v) >= 1000
-                ? v.ToString("#,0", CultureInfo.GetCultureInfo("pt-BR"))
-                : v.ToString("0.##", CultureInfo.InvariantCulture);
+                ? v.ToString("#,0", culture)
+                : v.ToString("0.##", culture);
 
     private static DrawTextPrimitive Text(
         string text, double xMm, double yMm, double wMm, double hMm,

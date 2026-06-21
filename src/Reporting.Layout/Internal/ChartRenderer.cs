@@ -83,31 +83,35 @@ internal static class ChartRenderer
             return list;
         }
 
+        // Value-axis labels honour the report's declared culture (RDL <Language> → ctx.Culture;
+        // defaults to pt-BR when unset, so existing output is unchanged).
+        var culture = baseCtx.Culture;
+
         switch (chart.Kind)
         {
             case ChartKind.Pie:
                 RenderPie(chart, data, plotX, plotY, plotW, plotH, list);
                 break;
             case ChartKind.Radar:
-                RenderRadar(chart, data, plotX, plotY, plotW, plotH, list);
+                RenderRadar(chart, data, plotX, plotY, plotW, plotH, list, culture);
                 break;
             case ChartKind.Line:
-                RenderCartesian(chart, data, plotX, plotY, plotW, plotH, list, line: true);
+                RenderCartesian(chart, data, plotX, plotY, plotW, plotH, list, culture, line: true);
                 break;
             case ChartKind.Area:
-                RenderCartesian(chart, data, plotX, plotY, plotW, plotH, list, line: true, area: true);
+                RenderCartesian(chart, data, plotX, plotY, plotW, plotH, list, culture, line: true, area: true);
                 break;
             case ChartKind.Scatter:
-                RenderCartesian(chart, data, plotX, plotY, plotW, plotH, list, line: false, markers: true);
+                RenderCartesian(chart, data, plotX, plotY, plotW, plotH, list, culture, line: false, markers: true);
                 break;
             case ChartKind.Bubble:
-                RenderCartesian(chart, data, plotX, plotY, plotW, plotH, list, line: false, bubble: true);
+                RenderCartesian(chart, data, plotX, plotY, plotW, plotH, list, culture, line: false, bubble: true);
                 break;
             case ChartKind.Stock:
-                RenderCartesian(chart, data, plotX, plotY, plotW, plotH, list, line: false, stock: true);
+                RenderCartesian(chart, data, plotX, plotY, plotW, plotH, list, culture, line: false, stock: true);
                 break;
             default:
-                RenderCartesian(chart, data, plotX, plotY, plotW, plotH, list, line: false);
+                RenderCartesian(chart, data, plotX, plotY, plotW, plotH, list, culture, line: false);
                 break;
         }
 
@@ -224,7 +228,7 @@ internal static class ChartRenderer
     private static void RenderCartesian(
         ChartElement chart, ChartData data,
         double px, double py, double pw, double ph,
-        List<LayoutPrimitive> list, bool line, bool area = false, bool markers = false,
+        List<LayoutPrimitive> list, CultureInfo culture, bool line, bool area = false, bool markers = false,
         bool bubble = false, bool stock = false)
     {
         const double leftGutter = 12; // mm reserved for y-axis labels
@@ -251,7 +255,7 @@ internal static class ChartRenderer
             double v = top * i / divs;
             double y = YOf(v);
             list.Add(Line(ax, y, ax + aw, y, gridPen, chart.Id));
-            list.Add(Text(FormatValue(v, chart.Style.Format), px, y - 2.5, leftGutter - 1.5, 5, 6, false, HorizontalAlignment.Right, chart.Id));
+            list.Add(Text(FormatValue(v, chart.Style.Format, culture), px, y - 2.5, leftGutter - 1.5, 5, 6, false, HorizontalAlignment.Right, chart.Id));
         }
 
         // Axes (drawn after gridlines so they sit on top).
@@ -407,13 +411,13 @@ internal static class ChartRenderer
     private static void RenderRadar(
         ChartElement chart, ChartData data,
         double px, double py, double pw, double ph,
-        List<LayoutPrimitive> list)
+        List<LayoutPrimitive> list, CultureInfo culture)
     {
         int cats = data.Categories.Count;
         if (cats < 3)
         {
             // A radar needs at least 3 axes to form a web — fall back to bars for 1–2 categories.
-            RenderCartesian(chart, data, px, py, pw, ph, list, line: false);
+            RenderCartesian(chart, data, px, py, pw, ph, list, culture, line: false);
             return;
         }
 
@@ -662,10 +666,13 @@ internal static class ChartRenderer
 
     // The chart's Format property (when set) drives the value-axis labels — e.g. a revenue chart's
     // Y axis in currency — consistent with every other value display. Heuristic fallback when unset.
-    private static string FormatValue(double v, string? format = null)
+    // All branches format in the report's culture (RDL <Language> → ctx.Culture; defaults to pt-BR), so
+    // both the grouped (≥1000) and the fractional (<1000) labels use the report's decimal/group symbols —
+    // previously the fractional branch used InvariantCulture, which ignored the declared culture.
+    private static string FormatValue(double v, string? format, CultureInfo culture)
         => !string.IsNullOrEmpty(format)
-            ? ValueFormatter.Format(v, format, PtBr)
-            : Math.Abs(v) >= 1000 ? v.ToString("#,0", PtBr) : v.ToString("0.##", CultureInfo.InvariantCulture);
+            ? ValueFormatter.Format(v, format, culture)
+            : Math.Abs(v) >= 1000 ? v.ToString("#,0", culture) : v.ToString("0.##", culture);
 
     private static DrawTextPrimitive Text(
         string text, double xMm, double yMm, double wMm, double hMm,
