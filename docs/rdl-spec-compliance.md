@@ -77,7 +77,7 @@ Legenda: ✅ pleno · 🟡 parcial · 🔴 ausente/crítico.
 | ReportSections (2016+) | 🔴 | 🔴 | n/a | 🔴 | n/a | n/a | n/a | Sem multi-seção; `PageSetup` único por report | XL | 3 |
 | EmbeddedImages | 🔴 | 🟡 | 🟡 | 🔴 | ✅ | 🔴 | 🔴 | Modelo (`ImageElement.InlineData`) existe; importador não popula bytes; falta UI de embed | M | 1 |
 | Code (VB/C#) | 🟡 | ✅ | ✅ | 🔴 | 🟡 | ✅ | ✅ | Round-trip ok; **não executa** sem Roslyn; importador não lê `<Code>`; não está no switch do renderer | L | 1 |
-| CustomProperties | 🟡 | 🟡 | ✅ | 🔴 | ✅ | ✅ | ✅ | Modelado como `Metadata`; importador não popula | S | 2 |
+| CustomProperties | 🟡 | 🟡 | ✅ | ✅ | ✅ | ✅ | ✅ | Modelado como `Metadata`; importa CustomProperties + Description/Author/AutoRefresh/Language (#120) | S | 2 |
 | DocumentMap / Label | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Emite dados de outline; viewer renderiza TOC | S | 1 |
 | ReportParameters (coleção) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — | S | 1 |
 | RDL Version / Namespace | 🟡 | 🟡 | n/a | 🟡 | n/a | n/a | n/a | Usa `LocalName` (robusto), mas sem detecção/aviso de versão | M | 3 |

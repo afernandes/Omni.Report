@@ -227,6 +227,45 @@ public class RdlImporterTests
     }
 
     [Fact]
+    public void Report_level_metadata_is_imported_and_round_trips()
+    {
+        var rdl = """
+            <Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition">
+              <Description>Relatório de vendas mensal</Description>
+              <Author>Ana Silva</Author>
+              <AutoRefresh>1800</AutoRefresh>
+              <Language>en-US</Language>
+              <Body><Height>2cm</Height><ReportItems /></Body>
+            </Report>
+            """;
+        var def = new RdlImporter().ImportXml(rdl);
+        def.Metadata["Description"].Should().Be("Relatório de vendas mensal");
+        def.Metadata["Author"].Should().Be("Ana Silva");
+        def.Metadata["AutoRefresh"].Should().Be("1800");
+        def.Metadata["Language"].Should().Be("en-US"); // also locks in the existing Language import
+
+        // The generic Metadata bag round-trips through both formats without serializer changes.
+        var repx = new RepxSerializer();
+        repx.LoadFromBytes(repx.SaveToBytes(def)).Metadata.Should().Contain(def.Metadata);
+        var json = new RepJsonSerializer();
+        json.LoadFromBytes(json.SaveToBytes(def)).Metadata.Should().Contain(def.Metadata);
+    }
+
+    [Fact]
+    public void Absent_report_metadata_creates_no_keys()
+    {
+        var rdl = """
+            <Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition">
+              <Body><Height>2cm</Height><ReportItems /></Body>
+            </Report>
+            """;
+        var meta = new RdlImporter().ImportXml(rdl).Metadata;
+        meta.Should().NotContainKey("Description");
+        meta.Should().NotContainKey("Author");
+        meta.Should().NotContainKey("AutoRefresh");
+    }
+
+    [Fact]
     public void Report_Language_is_imported_into_Metadata()
     {
         var rdl = """
