@@ -362,9 +362,118 @@ public sealed class RdlImporter
             case "Tablix":
                 into.Add(ApplyCommon(TablixItem(item, bounds), item));
                 break;
-            // Chart, Gauge, Map, Subreport, … — follow-ups; skipped, not errored.
+            case "Chart":
+                into.Add(ApplyCommon(ChartItem(item, bounds), item));
+                break;
+            case "GaugePanel":
+                into.Add(ApplyCommon(GaugeItem(item, bounds), item));
+                break;
+            case "Subreport":
+                into.Add(ApplyCommon(SubreportItem(item, bounds), item));
+                break;
+            case "Map":
+                _warnings.Add($"Map '{item.Attribute("Name")?.Value}': não importado (mapas RDL são follow-up).");
+                break;
+            case "CustomReportItem":
+                _warnings.Add($"CustomReportItem '{Val(item, "Type")}': não importado (DataBar/Sparkline/Indicator são follow-up).");
+                break;
+            // Other report items — skipped, not errored.
         }
     }
+
+    // RDL <Chart>: chart type from the first series' <Type>, category from the category hierarchy's first
+    // group expression, and one ChartSeries per <ChartSeries> (value from its first DataValue).
+    private ReportElement ChartItem(XElement item, Rectangle bounds)
+    {
+        var seriesEls = El(El(item, "ChartData"), "ChartSeriesCollection")?.Elements()
+            .Where(e => e.Name.LocalName == "ChartSeries").ToList() ?? new List<XElement>();
+        var category = RdlExpression.Convert(FirstGroupExpression(El(item, "ChartCategoryHierarchy")));
+        var kind = MapChartKind(Val(seriesEls.FirstOrDefault(), "Type"));
+
+        var series = new List<ChartSeries>();
+        if (FirstGroupExpression(El(item, "ChartSeriesHierarchy")) is { Length: > 0 })
+        {
+            _warnings.Add($"Chart '{item.Attribute("Name")?.Value}': agrupamento dinâmico de série (ChartSeriesHierarchy) não importado (séries são achatadas).");
+        }
+        foreach (var s in seriesEls)
+        {
+            var valueRaw = TextOfFirst(El(s, "DataPoints"), "Value"); // the series' data value (scoped)
+            if (string.IsNullOrEmpty(valueRaw))
+            {
+                continue;
+            }
+            series.Add(new ChartSeries(
+                Name: Val(s, "SeriesName") ?? s.Attribute("Name")?.Value ?? $"Série{series.Count + 1}",
+                CategoryExpression: category,
+                ValueExpression: RdlExpression.Convert(valueRaw)));
+        }
+        if (series.Count == 0)
+        {
+            _warnings.Add($"Chart '{item.Attribute("Name")?.Value}': importado sem séries (estrutura ChartData não reconhecida).");
+        }
+        return new ChartElement
+        {
+            Bounds = bounds,
+            Kind = kind,
+            Series = new EquatableArray<ChartSeries>(series),
+        };
+    }
+
+    private ReportElement GaugeItem(XElement item, Rectangle bounds)
+    {
+        var items = El(item, "GaugePanelItems");
+        var kind = El(item, "LinearGauges") is not null || (items is not null && El(items, "LinearGauge") is not null)
+            ? GaugeKind.Linear
+            : GaugeKind.Radial;
+        // The pointer value is the gauge's bound value. Scope to <GaugePointers> — the scale's
+        // <Maximum>/<Minimum><Value> precede the pointers in RDL, so a whole-panel scan grabs the wrong one.
+        var pointers = item.Descendants().FirstOrDefault(e => e.Name.LocalName == "GaugePointers");
+        var value = TextOfFirst(pointers, "Value");
+        return new GaugeElement
+        {
+            Bounds = bounds,
+            Kind = kind,
+            ValueExpression = string.IsNullOrEmpty(value) ? "0" : RdlExpression.Convert(value),
+        };
+    }
+
+    private static ReportElement SubreportItem(XElement item, Rectangle bounds)
+    {
+        var bindings = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var p in El(item, "Parameters")?.Elements().Where(e => e.Name.LocalName == "Parameter")
+                 ?? Enumerable.Empty<XElement>())
+        {
+            if (p.Attribute("Name")?.Value is { Length: > 0 } pn)
+            {
+                bindings[pn] = RdlExpression.Convert(Val(p, "Value"));
+            }
+        }
+        return new SubreportElement
+        {
+            Bounds = bounds,
+            ReportId = Val(item, "ReportName"),
+            ParameterBindings = new EquatableDictionary<string, string>(bindings),
+        };
+    }
+
+    private static ChartKind MapChartKind(string? rdlType) => rdlType switch
+    {
+        "Line" => ChartKind.Line,
+        "Area" => ChartKind.Area,
+        "Shape" => ChartKind.Pie, // RDL pie/doughnut series are Type=Shape
+        "Scatter" => ChartKind.Scatter,
+        "Bubble" => ChartKind.Bubble,
+        "Polar" or "Radar" => ChartKind.Radar,
+        "Stock" or "Range" => ChartKind.Stock,
+        _ => ChartKind.Bar, // Column/Bar and unknowns → Bar
+    };
+
+    // The text of the first descendant <Value> (namespace-agnostic) under the given scope.
+    private static string? TextOfFirst(XElement? scope, string localName)
+        => scope?.Descendants().FirstOrDefault(e => e.Name.LocalName == localName)?.Value;
+
+    private static string? FirstGroupExpression(XElement? hierarchy)
+        => TextOfFirst(hierarchy, "GroupExpression");
 
     // Maps an RDL <Tablix> to OmniReport's TablixElement. First cut: the matrix/crosstab path — dynamic
     // row + column group hierarchies + the body value cell + corner. Static-column tables and per-cell
@@ -459,6 +568,9 @@ public sealed class RdlImporter
             // A line's color/width come from its style border; map the first visible side to the Pen.
             LineElement ln => ln with { Pen = StyleBorderToPen(style) ?? ln.Pen, Visible = visible, VisibleExpression = visExpr, Bookmark = bookmark, DocumentMapLabel = docMap, Action = action },
             TablixElement tx => tx with { Style = style ?? tx.Style, Visible = visible, VisibleExpression = visExpr, Bookmark = bookmark, DocumentMapLabel = docMap, Action = action },
+            ChartElement ch => ch with { Style = style ?? ch.Style, Visible = visible, VisibleExpression = visExpr, Bookmark = bookmark, DocumentMapLabel = docMap, Action = action },
+            GaugeElement g => g with { Style = style ?? g.Style, Visible = visible, VisibleExpression = visExpr, Bookmark = bookmark, DocumentMapLabel = docMap, Action = action },
+            SubreportElement sr => sr with { Style = style ?? sr.Style, Visible = visible, VisibleExpression = visExpr, Bookmark = bookmark, DocumentMapLabel = docMap, Action = action },
             // INVARIANT: every element type AddItem can produce must have an arm above — otherwise its
             // Style/Visibility/Bookmark/Action would be silently dropped. Keep this in sync with AddItem.
             _ => el,

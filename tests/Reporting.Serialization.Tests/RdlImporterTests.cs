@@ -281,6 +281,52 @@ public class RdlImporterTests
     }
 
     [Fact]
+    public void DataViz_chart_gauge_and_subreport_are_imported()
+    {
+        var rdl = """
+            <Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition">
+              <Body><Height>6cm</Height><ReportItems>
+                <Chart Name="Ch">
+                  <Top>0cm</Top><Left>0cm</Left><Width>8cm</Width><Height>5cm</Height>
+                  <ChartData><ChartSeriesCollection><ChartSeries Name="S1"><Type>Line</Type>
+                    <DataPoints><DataPoint><DataValues><DataValue><Value>=Sum(Fields!Total.Value)</Value></DataValue></DataValues></DataPoint></DataPoints>
+                  </ChartSeries></ChartSeriesCollection></ChartData>
+                  <ChartCategoryHierarchy><ChartMembers><ChartMember><Group><GroupExpressions><GroupExpression>=Fields!Mes.Value</GroupExpression></GroupExpressions></Group></ChartMember></ChartMembers></ChartCategoryHierarchy>
+                </Chart>
+                <GaugePanel Name="G">
+                  <Top>0cm</Top><Left>9cm</Left><Width>4cm</Width><Height>4cm</Height>
+                  <GaugePanelItems><RadialGauge Name="R"><GaugeScales><GaugeScale>
+                    <Maximum><Value>200</Value></Maximum>
+                    <GaugePointers><GaugePointer>
+                    <GaugeInputValue><Value>=Fields!Pct.Value</Value></GaugeInputValue>
+                  </GaugePointer></GaugePointers></GaugeScale></GaugeScales></RadialGauge></GaugePanelItems>
+                </GaugePanel>
+                <Subreport Name="Sub">
+                  <Top>0cm</Top><Left>0cm</Left><Width>8cm</Width><Height>3cm</Height>
+                  <ReportName>Detalhe</ReportName>
+                  <Parameters><Parameter Name="id"><Value>=Fields!Id.Value</Value></Parameter></Parameters>
+                </Subreport>
+              </ReportItems></Body>
+            </Report>
+            """;
+        var els = new RdlImporter().ImportXml(rdl).ReportHeader!.Elements;
+
+        var chart = els.OfType<Reporting.Elements.ChartElement>().Single();
+        chart.Kind.Should().Be(Reporting.Elements.ChartKind.Line);
+        chart.Series.Should().ContainSingle();
+        chart.Series[0].ValueExpression.Should().Be("Sum(Fields.Total)");
+        chart.Series[0].CategoryExpression.Should().Be("Fields.Mes");
+
+        var gauge = els.OfType<Reporting.Elements.GaugeElement>().Single();
+        gauge.Kind.Should().Be(Reporting.Elements.GaugeKind.Radial);
+        gauge.ValueExpression.Should().Be("Fields.Pct");
+
+        var sub = els.OfType<Reporting.Elements.SubreportElement>().Single();
+        sub.ReportId.Should().Be("Detalhe");
+        sub.ParameterBindings["id"].Should().Be("Fields.Id");
+    }
+
+    [Fact]
     public void Tablix_matrix_is_imported_with_groups_corner_and_body_value()
     {
         var rdl = """
