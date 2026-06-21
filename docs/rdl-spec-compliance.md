@@ -136,7 +136,7 @@ Legenda: ✅ pleno · 🟡 parcial · 🔴 ausente/crítico.
 | Rectangle.Fill/Border | 🟡 | 🟡 | ✅ | 🔴 | ✅ | ✅ | ✅ | Import não lê estilo do RDL | M | 2 |
 | Rectangle.NestedReportItems | 🟡 | 🔴 | n/a | 🟡 | 🔴 | 🔴 | 🔴 | Retângulo é folha; filhos achatados na banda (perde hierarquia) | L | 3 |
 | Image.Source (Ext/Embed/DB) | 🟡 | ✅ | ✅ | 🟡 | ✅ | ✅ | ✅ | Só External; Embedded/Database viram path-placeholder | M | 2 |
-| Image.MimeType/Sizing | 🟡 | 🟡 | ✅ | 🔴 | ✅ | ✅ | ✅ | MimeType não modelado; Sizing RDL não mapeado | S | 2 |
+| Image.MimeType/Sizing | 🟡 | ✅ | ✅ | 🔴 | ✅ | ✅ | ✅ | Sizing honrado no render em todos os backends (#114, ImageSizingMath); import RDL <Sizing>→model é PR2; MimeType não modelado | S | 2 |
 | Line.Direction | 🟡 | ✅ | ✅ | 🔴 | ✅ | ✅ | ✅ | Import não infere direção dos bounds | S | 1 |
 | Line.Pen (style/width/color) | 🟡 | ✅ | ✅ | 🔴 | ✅ | ✅ | ✅ | Import ignora estilo da linha | S | 2 |
 | Subreport.ReportId/Inline | 🟡 | ✅ | ✅ | 🔴 | ✅ | ✅ | 🟡 | Import não lê Subreport; editor de inline-def é gap | M | 1 |

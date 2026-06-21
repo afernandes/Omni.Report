@@ -1,3 +1,4 @@
+using Reporting.Elements;
 using Reporting.Geometry;
 using Reporting.Paper;
 
@@ -24,7 +25,7 @@ public interface IRenderingContext : IDisposable
 
     void DrawEllipse(Rectangle bounds, PenStyle? pen, BrushStyle? fill);
 
-    void DrawImage(ReadOnlySpan<byte> imageData, Rectangle bounds);
+    void DrawImage(ReadOnlySpan<byte> imageData, Rectangle bounds, ImageSizing sizing = ImageSizing.Fit);
 
     /// <summary>Draws a vector path. The callback receives a builder; implementations
     /// allocate a backend-specific path object and stroke/fill it.</summary>

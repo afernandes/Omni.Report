@@ -167,7 +167,7 @@ public sealed class SvgExporter : IReportExporter
                     {
                         copy[k] = i.Data[k];
                     }
-                    SkiaPrimitiveRenderer.DrawImage(canvas, copy, i.Bounds, SvgDpi);
+                    SkiaPrimitiveRenderer.DrawImage(canvas, copy, i.Bounds, SvgDpi, i.Sizing);
                 }
                 break;
             case DrawPolygonPrimitive poly:

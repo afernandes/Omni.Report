@@ -288,6 +288,7 @@ internal static class MapRenderer
                     Data = new EquatableArray<byte>(bytes),
                     Bounds = Rect(sxL, syT, sxR - sxL, syB - syT),
                     SourceElementId = map.Id,
+                    Sizing = Reporting.Elements.ImageSizing.Stretch, // tiles are pre-sized to their slot
                 });
             }
         }

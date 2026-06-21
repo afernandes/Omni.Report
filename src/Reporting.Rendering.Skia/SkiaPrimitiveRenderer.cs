@@ -246,7 +246,8 @@ public static class SkiaPrimitiveRenderer
         }
     }
 
-    public static void DrawImage(SKCanvas canvas, ReadOnlySpan<byte> imageData, Rectangle bounds, float dpi)
+    public static void DrawImage(SKCanvas canvas, ReadOnlySpan<byte> imageData, Rectangle bounds, float dpi,
+        Reporting.Elements.ImageSizing sizing = Reporting.Elements.ImageSizing.Fit)
     {
         ArgumentNullException.ThrowIfNull(canvas);
         if (imageData.IsEmpty)
@@ -259,7 +260,21 @@ public static class SkiaPrimitiveRenderer
         {
             return;
         }
-        canvas.DrawImage(image, bounds.ToSKRect(dpi));
+        var p = Reporting.Elements.ImageSizingMath.Compute(sizing, bounds, image.Width, image.Height);
+        var dest = p.Dest.ToSKRect(dpi);
+        var src = SKRect.Create(
+            (float)(p.SrcX * image.Width), (float)(p.SrcY * image.Height),
+            (float)(p.SrcW * image.Width), (float)(p.SrcH * image.Height));
+        int? saved = p.Clip ? canvas.Save() : null;
+        if (p.Clip)
+        {
+            canvas.ClipRect(bounds.ToSKRect(dpi));
+        }
+        canvas.DrawImage(image, src, dest);
+        if (saved is { } s)
+        {
+            canvas.RestoreToCount(s);
+        }
     }
 
     public static void DrawPath(SKCanvas canvas, Action<IPathBuilder> build, PenStyle? pen, BrushStyle? fill, float dpi)

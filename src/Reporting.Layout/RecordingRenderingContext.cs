@@ -134,7 +134,8 @@ public sealed class RecordingRenderingContext : IRenderingContext, ITextMeasurer
         });
     }
 
-    public void DrawImage(ReadOnlySpan<byte> imageData, Rectangle bounds)
+    public void DrawImage(ReadOnlySpan<byte> imageData, Rectangle bounds,
+        Reporting.Elements.ImageSizing sizing = Reporting.Elements.ImageSizing.Fit)
     {
         EnsurePage();
         var copy = imageData.ToArray();
@@ -142,6 +143,7 @@ public sealed class RecordingRenderingContext : IRenderingContext, ITextMeasurer
         {
             Bounds = bounds,
             Data = new EquatableArray<byte>(copy),
+            Sizing = sizing,
         });
     }
 

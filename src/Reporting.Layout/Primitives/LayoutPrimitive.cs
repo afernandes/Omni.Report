@@ -56,6 +56,10 @@ public sealed record DrawEllipsePrimitive : LayoutPrimitive
 public sealed record DrawImagePrimitive : LayoutPrimitive
 {
     public required EquatableArray<byte> Data { get; init; }
+
+    /// <summary>How the image fills <see cref="LayoutPrimitive.Bounds"/> — Stretch (distort), Fit (letterbox,
+    /// the default), Fill (crop), or Native. Honoured by every backend via <c>ImageSizingMath</c>.</summary>
+    public Reporting.Elements.ImageSizing Sizing { get; init; } = Reporting.Elements.ImageSizing.Fit;
 }
 
 /// <summary>A polyline or filled polygon defined by a vertex list. Charts emit these: a bar is

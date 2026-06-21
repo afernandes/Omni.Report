@@ -159,7 +159,8 @@ public sealed class GdiRenderingContext : IRenderingContext, ITextMeasurer
         }
     }
 
-    public void DrawImage(ReadOnlySpan<byte> imageData, ReportingRectangle bounds)
+    public void DrawImage(ReadOnlySpan<byte> imageData, ReportingRectangle bounds,
+        Reporting.Elements.ImageSizing sizing = Reporting.Elements.ImageSizing.Fit)
     {
         EnsureGraphics();
         if (imageData.IsEmpty)
@@ -169,7 +170,22 @@ public sealed class GdiRenderingContext : IRenderingContext, ITextMeasurer
         var copy = imageData.ToArray();
         using var ms = new MemoryStream(copy);
         using var image = Image.FromStream(ms);
-        _graphics!.DrawImage(image, bounds.ToRectF(_dpi));
+        var p = Reporting.Elements.ImageSizingMath.Compute(sizing, bounds, image.Width, image.Height);
+        var dest = p.Dest.ToRectF(_dpi);
+        var src = new System.Drawing.RectangleF(
+            (float)(p.SrcX * image.Width), (float)(p.SrcY * image.Height),
+            (float)(p.SrcW * image.Width), (float)(p.SrcH * image.Height));
+        if (p.Clip)
+        {
+            var saved = _graphics!.Save();
+            _graphics.SetClip(bounds.ToRectF(_dpi));
+            _graphics.DrawImage(image, dest, src, System.Drawing.GraphicsUnit.Pixel);
+            _graphics.Restore(saved);
+        }
+        else
+        {
+            _graphics!.DrawImage(image, dest, src, System.Drawing.GraphicsUnit.Pixel);
+        }
     }
 
     public void DrawPath(Action<IPathBuilder> build, PenStyle? pen, BrushStyle? fill)

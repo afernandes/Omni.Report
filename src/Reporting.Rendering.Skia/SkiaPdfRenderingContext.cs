@@ -135,10 +135,11 @@ public sealed class SkiaPdfRenderingContext : IRenderingContext, ITextMeasurer
         SkiaPrimitiveRenderer.DrawEllipse(_canvas!, bounds, pen, fill, PdfDpi);
     }
 
-    public void DrawImage(ReadOnlySpan<byte> imageData, Rectangle bounds)
+    public void DrawImage(ReadOnlySpan<byte> imageData, Rectangle bounds,
+        Reporting.Elements.ImageSizing sizing = Reporting.Elements.ImageSizing.Fit)
     {
         EnsurePage();
-        SkiaPrimitiveRenderer.DrawImage(_canvas!, imageData, bounds, PdfDpi);
+        SkiaPrimitiveRenderer.DrawImage(_canvas!, imageData, bounds, PdfDpi, sizing);
     }
 
     public void DrawPath(Action<IPathBuilder> build, PenStyle? pen, BrushStyle? fill)
