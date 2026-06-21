@@ -391,9 +391,13 @@ public sealed class RdlImporter
         var kind = MapChartKind(Val(seriesEls.FirstOrDefault(), "Type"));
 
         var series = new List<ChartSeries>();
+        if (FirstGroupExpression(El(item, "ChartSeriesHierarchy")) is { Length: > 0 })
+        {
+            _warnings.Add($"Chart '{item.Attribute("Name")?.Value}': agrupamento dinâmico de série (ChartSeriesHierarchy) não importado (séries são achatadas).");
+        }
         foreach (var s in seriesEls)
         {
-            var valueRaw = TextOfFirst(s, "Value"); // first <Value> under the series' DataPoints
+            var valueRaw = TextOfFirst(El(s, "DataPoints"), "Value"); // the series' data value (scoped)
             if (string.IsNullOrEmpty(valueRaw))
             {
                 continue;
@@ -421,8 +425,10 @@ public sealed class RdlImporter
         var kind = El(item, "LinearGauges") is not null || (items is not null && El(items, "LinearGauge") is not null)
             ? GaugeKind.Linear
             : GaugeKind.Radial;
-        // The pointer value is the gauge's bound value; descend to the first <Value> under GaugePointers.
-        var value = TextOfFirst(item, "Value");
+        // The pointer value is the gauge's bound value. Scope to <GaugePointers> — the scale's
+        // <Maximum>/<Minimum><Value> precede the pointers in RDL, so a whole-panel scan grabs the wrong one.
+        var pointers = item.Descendants().FirstOrDefault(e => e.Name.LocalName == "GaugePointers");
+        var value = TextOfFirst(pointers, "Value");
         return new GaugeElement
         {
             Bounds = bounds,

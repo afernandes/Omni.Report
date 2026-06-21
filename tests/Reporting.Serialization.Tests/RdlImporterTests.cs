@@ -295,7 +295,9 @@ public class RdlImporterTests
                 </Chart>
                 <GaugePanel Name="G">
                   <Top>0cm</Top><Left>9cm</Left><Width>4cm</Width><Height>4cm</Height>
-                  <GaugePanelItems><RadialGauge Name="R"><GaugeScales><GaugeScale><GaugePointers><GaugePointer>
+                  <GaugePanelItems><RadialGauge Name="R"><GaugeScales><GaugeScale>
+                    <Maximum><Value>200</Value></Maximum>
+                    <GaugePointers><GaugePointer>
                     <GaugeInputValue><Value>=Fields!Pct.Value</Value></GaugeInputValue>
                   </GaugePointer></GaugePointers></GaugeScale></GaugeScales></RadialGauge></GaugePanelItems>
                 </GaugePanel>
