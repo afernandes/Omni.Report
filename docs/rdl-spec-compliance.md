@@ -246,6 +246,7 @@ Legenda: ✅ pleno · 🟡 parcial · 🔴 ausente/crítico. (% e dimensões atu
 | ReportItems! | 🟡 | ✅ | n/a | ✅ | ✅ | ✅ | ✅ | Footer→corpo funciona (#101); header→corpo (2º passe) é follow-up | L | 2 |
 | DataSets! | 🔴 | 🔴 | n/a | 🔴 | 🔴 | 🔴 | 🔴 | Sem metadados de dataset em expressão | L | 3 |
 | Sum/Avg/Count/Min/Max | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — | S | 1 |
+| Var/VarP/StDev/StDevP | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Agregados estatísticos amostral/populacional (#130) | S | 2 |
 | RunningValue/RunningTotal | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | RunningTotal com escopo (#93) | M | 2 |
 | RowNumber | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Posicional com escopo (#93) | M | 1 |
 | Previous | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Linha anterior, null na 1ª (#93) | M | 1 |

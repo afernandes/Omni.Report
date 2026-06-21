@@ -23,6 +23,58 @@ public class AggregateCalculatorTests
         });
     }
 
+    // Canonical dataset 2,4,4,4,5,5,7,9: mean=5, population variance=4, population stddev=2.
+    private static ReportExpressionContext CanonicalStatsCtx()
+    {
+        var ctx = NewCtx();
+        foreach (var v in new decimal[] { 2, 4, 4, 4, 5, 5, 7, 9 })
+        {
+            PushRow(ctx, v);
+        }
+        return ctx;
+    }
+
+    [Fact]
+    public void VarP_and_StDevP_are_population_statistics()
+    {
+        var ctx = CanonicalStatsCtx();
+        ((decimal)ctx.EvaluateAggregate("VarP", "[Fields.Total]", AggregateScope.Report)!)
+            .Should().BeApproximately(4m, 0.0001m, "population variance divides by n");
+        ((decimal)ctx.EvaluateAggregate("StDevP", "[Fields.Total]", AggregateScope.Report)!)
+            .Should().BeApproximately(2m, 0.0001m, "population stddev is sqrt(VarP)");
+    }
+
+    [Fact]
+    public void Var_and_StDev_are_sample_statistics()
+    {
+        var ctx = CanonicalStatsCtx();
+        // Sample variance divides by n-1 = 7: 32/7 ≈ 4.5714; sample stddev ≈ 2.1381.
+        ((decimal)ctx.EvaluateAggregate("Var", "[Fields.Total]", AggregateScope.Report)!)
+            .Should().BeApproximately(4.5714m, 0.0005m);
+        ((decimal)ctx.EvaluateAggregate("StDev", "[Fields.Total]", AggregateScope.Report)!)
+            .Should().BeApproximately(2.1381m, 0.0005m);
+    }
+
+    [Fact]
+    public void Sample_statistics_need_two_points_else_zero()
+    {
+        var ctx = NewCtx();
+        PushRow(ctx, 42m); // single row: sample variance/stddev undefined → 0 (no divide-by-zero/crash)
+        ctx.EvaluateAggregate("Var", "[Fields.Total]", AggregateScope.Report).Should().Be(0m);
+        ctx.EvaluateAggregate("StDev", "[Fields.Total]", AggregateScope.Report).Should().Be(0m);
+        // Population is defined for a single point: variance 0, stddev 0.
+        ctx.EvaluateAggregate("VarP", "[Fields.Total]", AggregateScope.Report).Should().Be(0m);
+    }
+
+    [Fact]
+    public void Statistics_on_empty_group_return_zero()
+    {
+        var ctx = NewCtx();
+        ctx.ResetGroup();
+        ctx.EvaluateAggregate("StDevP", "[Fields.Total]", AggregateScope.Group).Should().Be(0m);
+        ctx.EvaluateAggregate("VarP", "[Fields.Total]", AggregateScope.Group).Should().Be(0m);
+    }
+
     [Fact]
     public void Sum_report_scope_aggregates_every_row()
     {

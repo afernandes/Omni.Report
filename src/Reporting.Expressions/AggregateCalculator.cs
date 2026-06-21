@@ -22,6 +22,11 @@ internal static class AggregateCalculator
             "FIRST" => EvaluatePerRow(expression, rows, evaluator, owner).FirstOrDefault(),
             "LAST" => EvaluatePerRow(expression, rows, evaluator, owner).LastOrDefault(),
             "COUNTDISTINCT" => CountDistinctRows(expression, rows, evaluator, owner),
+            // SSRS statistical aggregates: Var/StDev are SAMPLE (÷ n-1); VarP/StDevP are POPULATION (÷ n).
+            "VAR" => VarianceRows(expression, rows, evaluator, owner, sample: true),
+            "VARP" => VarianceRows(expression, rows, evaluator, owner, sample: false),
+            "STDEV" => StdDevRows(expression, rows, evaluator, owner, sample: true),
+            "STDEVP" => StdDevRows(expression, rows, evaluator, owner, sample: false),
             _ => throw new InvalidOperationException($"Unknown aggregate function: {function}"),
         };
     }
@@ -113,6 +118,54 @@ internal static class AggregateCalculator
             }
         }
         return max;
+    }
+
+    private static decimal VarianceRows(string expression, IReadOnlyList<DictionaryLookup> rows, ExpressionEvaluator evaluator, ReportExpressionContext owner, bool sample)
+        => Variance(MaterializeDecimals(expression, rows, evaluator, owner), sample);
+
+    private static decimal StdDevRows(string expression, IReadOnlyList<DictionaryLookup> rows, ExpressionEvaluator evaluator, ReportExpressionContext owner, bool sample)
+    {
+        var variance = Variance(MaterializeDecimals(expression, rows, evaluator, owner), sample);
+        // decimal has no Sqrt; route through double. Variance is non-negative so the cast back is safe.
+        return variance <= 0m ? 0m : (decimal)Math.Sqrt((double)variance);
+    }
+
+    /// <summary>Population (<paramref name="sample"/>=false) variance divides by n; sample variance divides by
+    /// n-1 (Bessel's correction). Returns 0 when there are too few rows (sample needs ≥2, population ≥1),
+    /// matching the engine's 0-on-empty convention (e.g. <c>AverageRows</c>).</summary>
+    private static decimal Variance(List<decimal> values, bool sample)
+    {
+        int n = values.Count;
+        int divisor = sample ? n - 1 : n;
+        if (divisor <= 0)
+        {
+            return 0m;
+        }
+        decimal sum = 0m;
+        foreach (var v in values)
+        {
+            sum += v;
+        }
+        decimal mean = sum / n;
+        decimal sumSq = 0m;
+        foreach (var v in values)
+        {
+            var delta = v - mean;
+            sumSq += delta * delta;
+        }
+        return sumSq / divisor;
+    }
+
+    // EvaluatePerRow swaps the live Fields row per item, so it MUST be enumerated once; variance needs two
+    // passes (mean, then squared deviations), hence materialize to a list up front.
+    private static List<decimal> MaterializeDecimals(string expression, IReadOnlyList<DictionaryLookup> rows, ExpressionEvaluator evaluator, ReportExpressionContext owner)
+    {
+        var list = new List<decimal>();
+        foreach (var value in EvaluatePerRow(expression, rows, evaluator, owner))
+        {
+            list.Add(ToDecimal(value));
+        }
+        return list;
     }
 
     private static IEnumerable<object?> EvaluatePerRow(

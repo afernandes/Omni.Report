@@ -665,7 +665,7 @@ public sealed class ExpressionEvaluator
     }
 
     private static readonly HashSet<string> AggregateNames =
-        new(StringComparer.OrdinalIgnoreCase) { "Sum", "Avg", "Average", "Count", "Min", "Max", "RunningTotal", "First", "Last", "CountDistinct" };
+        new(StringComparer.OrdinalIgnoreCase) { "Sum", "Avg", "Average", "Count", "Min", "Max", "RunningTotal", "First", "Last", "CountDistinct", "Var", "VarP", "StDev", "StDevP" };
 }
 
 public sealed class ExpressionEvaluationException : Exception
