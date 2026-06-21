@@ -328,6 +328,24 @@ public class RdlImporterTests
     }
 
     [Fact]
+    public void DataSet_filters_combine_and_skip_unsupported_or_valueless()
+    {
+        var rdl = """
+            <Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition">
+              <DataSets><DataSet Name="D"><Filters>
+                <Filter><FilterExpression>=Fields!A.Value</FilterExpression><Operator>GreaterThanOrEqual</Operator><FilterValues><FilterValue>10</FilterValue></FilterValues></Filter>
+                <Filter><FilterExpression>=Fields!B.Value</FilterExpression><Operator>NotEqual</Operator><FilterValues><FilterValue>x</FilterValue></FilterValues></Filter>
+                <Filter><FilterExpression>=Fields!C.Value</FilterExpression><Operator>In</Operator><FilterValues><FilterValue>1</FilterValue></FilterValues></Filter>
+                <Filter><FilterExpression>=Fields!D.Value</FilterExpression><Operator>GreaterThan</Operator><FilterValues></FilterValues></Filter>
+              </Filters></DataSet></DataSets>
+            </Report>
+            """;
+        var ds = new RdlImporter().ImportXml(rdl).DataSources[0];
+        // A >= 10 AND B <> "x"; the unsupported In and the valueless GreaterThan are dropped, not fabricated.
+        ds.FilterExpression.Should().Be("Fields.A >= 10 && Fields.B <> \"x\"");
+    }
+
+    [Fact]
     public void Report_variables_are_imported()
     {
         var rdl = """

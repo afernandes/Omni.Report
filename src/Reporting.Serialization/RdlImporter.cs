@@ -177,9 +177,13 @@ public sealed class RdlImporter
             {
                 continue;
             }
-            var op = Val(f, "Operator") ?? "Equal";
             var value = FilterValue(El(f, "FilterValues"));
-            clauses.Add(op switch
+            if (value is null)
+            {
+                continue; // no comparison value → skip rather than emit a malformed clause
+            }
+            var op = Val(f, "Operator") ?? "Equal";
+            var clause = op switch
             {
                 "Equal" => $"{left} == {value}",
                 "NotEqual" => $"{left} <> {value}",
@@ -188,25 +192,33 @@ public sealed class RdlImporter
                 "LessThan" => $"{left} < {value}",
                 "LessThanOrEqual" => $"{left} <= {value}",
                 "Like" => $"Like({left}, {value})",
-                _ => $"{left} == {value}", // unknown operator → equality (best effort)
-            });
+                // Unsupported (In/Between/TopN/…) → skip, never fabricate a wrong equality predicate.
+                _ => null,
+            };
+            if (clause is not null)
+            {
+                clauses.Add(clause);
+            }
         }
         return clauses.Count == 0 ? null : string.Join(" && ", clauses);
     }
 
-    private static string FilterValue(XElement? filterValues)
+    private static string? FilterValue(XElement? filterValues)
     {
         var raw = filterValues?.Elements().FirstOrDefault(e => e.Name.LocalName == "FilterValue")?.Value;
         if (string.IsNullOrEmpty(raw))
         {
-            return "\"\"";
+            return null; // no value supplied — caller skips the clause
         }
         if (RdlExpression.IsExpression(raw))
         {
             return RdlExpression.Convert(raw);
         }
-        // Literal: a number stays bare; anything else becomes a quoted string.
-        return double.TryParse(raw, NumberStyles.Any, Inv, out _) ? raw : $"\"{raw}\"";
+        // Literal: only a genuine bare number stays unquoted (no thousands/currency, which would tokenize
+        // wrong); anything else becomes a quoted string.
+        return double.TryParse(raw, NumberStyles.Float | NumberStyles.AllowLeadingSign, Inv, out _)
+            ? raw
+            : $"\"{raw}\"";
     }
 
     private static List<SortDescriptor> ReadDataSetSorts(XElement? sorts)
