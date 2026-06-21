@@ -215,7 +215,7 @@ Legenda: ✅ pleno · 🟡 parcial · 🔴 ausente/crítico. (% e dimensões atu
 | Format | 🟡 | 🟡 | ✅ | ✅ | 🟡 | ✅ | 🟡 | Importa `<Style><Format>` (#89); suporte a custom format SSRS ainda limitado | M | 2 |
 | Alignment H/V | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — | S | 1 |
 | WordWrap | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — | S | 1 |
-| BackgroundImage | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | Ausência total | L | 2 |
+| BackgroundImage | 🟡 | ✅ | ✅ | 🟡 | ✅ | ✅ | ✅ | Fase B: External (path/expr) esticado, render+4-serial+import+Designer-preserve (#134); Embedded/tiling/MaxSize = fase C | L | 2 |
 | BackgroundGradient | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | Ausência total | L | 3 |
 | TextDecoration (Overline) | 🟡 | 🟡 | ✅ | n/a | 🟡 | ✅ | 🟡 | Underline/Strikeout ok; falta Overline | S | 3 |
 | Visibility.Hidden (expr) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Importa `<Hidden>` constante e expressão (#89) | S | 1 |

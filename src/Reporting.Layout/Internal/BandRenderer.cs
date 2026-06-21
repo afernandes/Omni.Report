@@ -107,6 +107,25 @@ internal sealed class BandRenderer
                 });
             }
 
+            // Style.BackgroundImage paints behind the content (on top of any BackColor), stretched to bounds.
+            // Like BackColor, it sits before linkFrom so it gets no Action/link, and is grown with CanGrow below.
+            int bgImageIndex = -1;
+            if (effectiveStyle.BackgroundImage is { } bgImage)
+            {
+                var bgBytes = ResolveBackgroundBytes(bgImage, ctx);
+                if (bgBytes.Count > 0)
+                {
+                    bgImageIndex = primitives.Count;
+                    primitives.Add(new DrawImagePrimitive
+                    {
+                        Bounds = elementBounds,
+                        SourceElementId = element.Id,
+                        Data = bgBytes,
+                        Sizing = ImageSizing.Stretch,
+                    });
+                }
+            }
+
             int linkFrom = primitives.Count;
             // Upper bound for THIS element's Action/Bookmark/DocMapLabel propagation. A container rectangle
             // appends its children's primitives to the same list, but each child already ran its own tail
@@ -129,6 +148,10 @@ internal sealed class BandRenderer
                     if (bgIndex >= 0 && rendered.Bounds.Height != elementBounds.Height)
                     {
                         primitives[bgIndex] = ((DrawRectanglePrimitive)primitives[bgIndex]) with { Bounds = rendered.Bounds };
+                    }
+                    if (bgImageIndex >= 0 && rendered.Bounds.Height != elementBounds.Height)
+                    {
+                        primitives[bgImageIndex] = ((DrawImagePrimitive)primitives[bgImageIndex]) with { Bounds = rendered.Bounds };
                     }
                     // Publish this text box's value for ReportItems!Name.Value lookups in later bands.
                     RecordReportItem(tb, text, ctx);
@@ -565,6 +588,11 @@ internal sealed class BandRenderer
         var bottom = a.Bottom < b.Bottom ? a.Bottom : b.Bottom;
         return new Rectangle(x, y, right > x ? right - x : Unit.Zero, bottom > y ? bottom - y : Unit.Zero);
     }
+
+    // A Style.BackgroundImage (phase B = External) resolves like an Image element: a per-row expression
+    // (yielding bytes or a path) takes precedence, otherwise a static file/URL path.
+    private EquatableArray<byte> ResolveBackgroundBytes(Reporting.Styling.BackgroundImage bg, IReportExpressionContext ctx)
+        => bg.IsExpression ? ResolveExpression(bg.Expression, ctx) : LoadFile(bg.Path);
 
     private EquatableArray<byte> ResolveImageBytes(ImageElement image, IReportExpressionContext ctx)
     {

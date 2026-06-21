@@ -219,6 +219,9 @@ public sealed class ElementViewModel : Notifying
     // Container-rectangle children: preserved verbatim across edit→save (no nested canvas editor yet — PR3),
     // so opening a report with a Rectangle-as-container in the Designer and saving never drops its children.
     private Reporting.Common.EquatableArray<ReportElement> _rectChildren = Reporting.Common.EquatableArray<ReportElement>.Empty;
+    // Style.BackgroundImage: complex record with no dedicated editor yet — preserved verbatim across edit→save
+    // so editing an unrelated property (via ToElement) never silently drops an element's background image.
+    private Reporting.Styling.BackgroundImage? _backgroundImage;
 
     /// <summary>True for kinds rendered as an opaque placeholder — their full domain element is
     /// preserved in <see cref="_sourceElement"/> and re-emitted verbatim by <see cref="ToElement"/>.
@@ -951,7 +954,8 @@ public sealed class ElementViewModel : Notifying
             HorizontalAlignment: HorizontalAlignment,
             VerticalAlignment: VerticalAlignment,
             WordWrap: WordWrap,
-            Format: Format);
+            Format: Format,
+            BackgroundImage: _backgroundImage);
 
         ReportElement element = Kind switch
         {
@@ -1096,6 +1100,7 @@ public sealed class ElementViewModel : Notifying
         };
         c._textRuns = _textRuns; // EquatableArray is immutable → safe to share on clone
         c._rectChildren = _rectChildren; // ditto — preserve container children on clone
+        c._backgroundImage = _backgroundImage; // immutable record — safe to share on clone
         foreach (var rule in ConditionalFormats)
         {
             c.ConditionalFormats.Add(new ConditionalFormatRule
@@ -1204,6 +1209,7 @@ public sealed class ElementViewModel : Notifying
         Height = element.Bounds.Height;
         ForeColor = element.Style.ForeColor ?? Color.Black;
         BackColor = element.Style.BackColor;
+        _backgroundImage = element.Style.BackgroundImage; // preserved (no editor yet) so edits don't drop it
         Padding = element.Style.Padding;
         FontFamily = element.Style.Font?.Family ?? "Arial";
         FontSize = element.Style.Font?.Size ?? 10;

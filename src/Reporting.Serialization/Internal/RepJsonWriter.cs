@@ -802,6 +802,13 @@ internal static class RepJsonWriter
         {
             o["border"] = WriteBorder(style.Border);
         }
+        if (style.BackgroundImage is { } bg)
+        {
+            var bgObj = new JsonObject();
+            if (bg.Path is not null) bgObj["path"] = bg.Path;
+            if (bg.Expression is not null) bgObj["expression"] = bg.Expression;
+            o["backgroundImage"] = bgObj;
+        }
         return o;
     }
 

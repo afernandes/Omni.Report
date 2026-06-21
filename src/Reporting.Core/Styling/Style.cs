@@ -27,7 +27,9 @@ public sealed record Style(
     [property: PropertyGrid(Category = "Aparência", Order = 7, Label = "Quebra de linha", Bindable = true)]
     bool WordWrap = true,
     [property: PropertyGrid(Category = "Aparência", Order = 9, Label = "Formato", Editor = "format-preset", Bindable = true)]
-    string? Format = null)
+    string? Format = null,
+    // Complex record (like Font/Border) — edited by a dedicated editor, NOT flattened into the metadata grid.
+    BackgroundImage? BackgroundImage = null)
 {
     public static readonly Style Default = new();
 }
