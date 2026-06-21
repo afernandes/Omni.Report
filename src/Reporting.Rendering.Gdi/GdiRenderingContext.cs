@@ -209,11 +209,33 @@ public sealed class GdiRenderingContext : IRenderingContext, ITextMeasurer
         }
     }
 
-    public void PushClip(ReportingRectangle bounds)
+    public void PushClip(ReportingRectangle bounds, Unit cornerRadius)
     {
         EnsureGraphics();
         _clipStack.Push(_graphics!.Save());
-        _graphics.SetClip(bounds.ToRectF(_dpi), CombineMode.Intersect);
+        var rect = bounds.ToRectF(_dpi);
+        if (cornerRadius > Unit.Zero)
+        {
+            float r = Math.Min((float)cornerRadius.ToPixels(_dpi), Math.Min(rect.Width, rect.Height) / 2f);
+            using var path = RoundedRectPath(rect, r);
+            _graphics.SetClip(path, CombineMode.Intersect);
+        }
+        else
+        {
+            _graphics.SetClip(rect, CombineMode.Intersect);
+        }
+    }
+
+    private static GraphicsPath RoundedRectPath(System.Drawing.RectangleF r, float radius)
+    {
+        float d = radius * 2f;
+        var path = new GraphicsPath();
+        path.AddArc(r.X, r.Y, d, d, 180, 90);
+        path.AddArc(r.Right - d, r.Y, d, d, 270, 90);
+        path.AddArc(r.Right - d, r.Bottom - d, d, d, 0, 90);
+        path.AddArc(r.X, r.Bottom - d, d, d, 90, 90);
+        path.CloseFigure();
+        return path;
     }
 
     public void PopClip()

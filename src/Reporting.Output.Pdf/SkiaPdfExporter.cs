@@ -71,7 +71,7 @@ public sealed class SkiaPdfExporter : IReportExporter
 
     private static void Replay(SKCanvas canvas, LayoutPrimitive primitive)
     {
-        var clip = SkiaPrimitiveRenderer.BeginClip(canvas, primitive.ClipBounds, PdfDpi);
+        var clip = SkiaPrimitiveRenderer.BeginClip(canvas, primitive.ClipBounds, primitive.ClipCornerRadius, PdfDpi);
         switch (primitive)
         {
             case DrawTextPrimitive t:

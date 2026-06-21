@@ -32,10 +32,11 @@ public interface IRenderingContext : IDisposable
     void DrawPath(Action<IPathBuilder> build, PenStyle? pen, BrushStyle? fill);
 
     /// <summary>Clips subsequent drawing to <paramref name="bounds"/> (absolute page coords) until the
-    /// matching <see cref="PopClip"/> — used for container-rectangle children so overflow is cut. Default
-    /// no-op: a backend that doesn't support clipping renders unclipped (graceful, matching pre-container
-    /// behaviour where overflow simply showed). Skia and GDI override these with real clipping.</summary>
-    void PushClip(Rectangle bounds) { }
+    /// matching <see cref="PopClip"/> — used for container-rectangle children so overflow is cut.
+    /// <paramref name="cornerRadius"/> rounds the clip region when the container rectangle is rounded (zero =
+    /// square). Default no-op: a backend that doesn't support clipping renders unclipped (graceful, matching
+    /// pre-container behaviour where overflow simply showed). Skia and GDI override these with real clipping.</summary>
+    void PushClip(Rectangle bounds, Unit cornerRadius) { }
 
     /// <summary>Restores the clip region pushed by the matching <see cref="PushClip"/>.</summary>
     void PopClip() { }

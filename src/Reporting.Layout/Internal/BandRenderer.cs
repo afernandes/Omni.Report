@@ -160,13 +160,15 @@ internal sealed class BandRenderer
                                                      bandOrigin, primitives, ctx, actualHeight);
                     }
                     // Clip every child primitive to this rectangle so overflow is cut. For a rect nested in a
-                    // rect, intersect with the inner clip already set so the tighter of the two wins.
+                    // rect, intersect with the inner clip already set so the tighter of the two wins. The corner
+                    // radius rounds the clip for a DIRECT child; on a nested intersection the rounded-rect∩rect
+                    // shape is ill-defined, so fall back to a square clip (radius 0) — a minor visual edge.
                     for (int i = clipFrom; i < primitives.Count; i++)
                     {
-                        var clip = primitives[i].ClipBounds is { } existing
-                            ? IntersectRect(existing, elementBounds)
-                            : elementBounds;
-                        primitives[i] = primitives[i] with { ClipBounds = clip };
+                        var existing = primitives[i].ClipBounds;
+                        var clip = existing is { } e ? IntersectRect(e, elementBounds) : elementBounds;
+                        var radius = existing is null ? rect.CornerRadius : Unit.Zero;
+                        primitives[i] = primitives[i] with { ClipBounds = clip, ClipCornerRadius = radius };
                     }
                     break;
 

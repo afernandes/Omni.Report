@@ -99,11 +99,11 @@ public sealed class SkiaRenderingContext : IRenderingContext, ITextMeasurer
         SkiaPrimitiveRenderer.DrawPath(_canvas!, build, pen, fill, _dpi);
     }
 
-    public void PushClip(Rectangle bounds)
+    public void PushClip(Rectangle bounds, Unit cornerRadius)
     {
         EnsurePage();
         _canvas!.Save();
-        _canvas.ClipRect(bounds.ToSKRect(_dpi));
+        SkiaPrimitiveRenderer.ApplyClip(_canvas, bounds, cornerRadius, _dpi);
     }
 
     public void PopClip() => _canvas?.Restore();

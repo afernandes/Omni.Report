@@ -30,9 +30,13 @@ public abstract record LayoutPrimitive
     /// <summary>Clip rectangle (absolute page coords) this primitive is constrained to — set by the layout
     /// engine for the children of a container <c>Rectangle</c> so overflow is cut to the container. Null = no
     /// clip. Backends that support clipping (Skia raster/PDF/PNG/SVG, GDI) honour it; the HTML overlay inherits
-    /// it via the embedded visual; text/data exporters ignore it. Corner-radius clipping is a follow-up (the
-    /// clip is the rounded rect's bounding box).</summary>
+    /// it via the embedded visual; text/data exporters ignore it.</summary>
     public Rectangle? ClipBounds { get; init; }
+
+    /// <summary>Corner radius of <see cref="ClipBounds"/> when the container rectangle is rounded
+    /// (<c>RectangleElement.CornerRadius</c>). Zero = a plain rectangular clip. Backends round the clip region
+    /// to this radius; ignored when <see cref="ClipBounds"/> is null.</summary>
+    public Unit ClipCornerRadius { get; init; } = Unit.Zero;
 }
 
 public sealed record DrawTextPrimitive : LayoutPrimitive

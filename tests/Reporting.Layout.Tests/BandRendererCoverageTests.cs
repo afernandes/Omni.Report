@@ -126,7 +126,55 @@ public class BandRendererCoverageTests
         (child.Bounds.Y - fill.Bounds.Y).Should().Be(5.Mm());
         // The child is clipped to the container; the fill itself carries no clip.
         child.ClipBounds.Should().Be(fill.Bounds);
+        child.ClipCornerRadius.Should().Be(Unit.Zero, "a square container clips with no corner radius");
         fill.ClipBounds.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Rounded_container_propagates_corner_radius_to_child_clip()
+    {
+        var req = WithSingleRowDefinition(new RectangleElement
+        {
+            Id = "box",
+            Bounds = new Rectangle(10.Mm(), 10.Mm(), 80.Mm(), 40.Mm()),
+            CornerRadius = Unit.FromMm(4),
+            Children = EquatableArray.Create<ReportElement>(new LabelElement
+            {
+                Id = "child",
+                Text = "arredondado",
+                Bounds = new Rectangle(5.Mm(), 5.Mm(), 30.Mm(), 6.Mm()),
+            }),
+        });
+        var report = await new ReportPaginator().PaginateAsync(req);
+        var child = report.Pages[0].Primitives.OfType<DrawTextPrimitive>().Single(t => t.Text == "arredondado");
+        // The container's CornerRadius rides along on the child's clip so backends round the clip region.
+        child.ClipCornerRadius.Should().Be(Unit.FromMm(4));
+    }
+
+    [Fact]
+    public async Task Nested_rounded_clip_falls_back_to_square()
+    {
+        // A child of a rect nested in another rect gets the intersected (square) clip — corner rounding at a
+        // rounded∩rect intersection is ill-defined, so radius drops to zero (documented edge).
+        var req = WithSingleRowDefinition(new RectangleElement
+        {
+            Id = "outer",
+            Bounds = new Rectangle(0.Mm(), 0.Mm(), 100.Mm(), 50.Mm()),
+            CornerRadius = Unit.FromMm(6),
+            Children = EquatableArray.Create<ReportElement>(new RectangleElement
+            {
+                Id = "inner",
+                Bounds = new Rectangle(5.Mm(), 5.Mm(), 40.Mm(), 20.Mm()),
+                CornerRadius = Unit.FromMm(3),
+                Children = EquatableArray.Create<ReportElement>(new LabelElement
+                {
+                    Id = "leaf", Text = "fundo", Bounds = new Rectangle(2.Mm(), 2.Mm(), 20.Mm(), 6.Mm()),
+                }),
+            }),
+        });
+        var report = await new ReportPaginator().PaginateAsync(req);
+        var leaf = report.Pages[0].Primitives.OfType<DrawTextPrimitive>().Single(t => t.Text == "fundo");
+        leaf.ClipCornerRadius.Should().Be(Unit.Zero, "nested intersection clip is square");
     }
 
     [Fact]

@@ -64,7 +64,7 @@ public static class RenderedReportPlayer
         bool clipped = primitive.ClipBounds is not null;
         if (clipped)
         {
-            context.PushClip(primitive.ClipBounds!.Value);
+            context.PushClip(primitive.ClipBounds!.Value, primitive.ClipCornerRadius);
         }
         try
         {

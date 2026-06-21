@@ -127,7 +127,7 @@ public sealed class PngImageExporter : IReportExporter
 
     private static void Replay(SKCanvas canvas, LayoutPrimitive primitive, float dpi)
     {
-        var clip = SkiaPrimitiveRenderer.BeginClip(canvas, primitive.ClipBounds, dpi);
+        var clip = SkiaPrimitiveRenderer.BeginClip(canvas, primitive.ClipBounds, primitive.ClipCornerRadius, dpi);
         switch (primitive)
         {
             case DrawTextPrimitive t:
