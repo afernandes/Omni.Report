@@ -223,4 +223,45 @@ public class RdlImporterTests
         tb.Action.Should().NotBeNull();
         tb.Action!.Hyperlink.Should().Be("Fields.Url");
     }
+
+    private const string ReportLevel = """
+        <Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition">
+          <EmbeddedImages>
+            <EmbeddedImage Name="Logo"><MimeType>image/png</MimeType><ImageData>AQIDBA==</ImageData></EmbeddedImage>
+          </EmbeddedImages>
+          <CustomProperties>
+            <CustomProperty><Name>Autor</Name><Value>Equipe BI</Value></CustomProperty>
+          </CustomProperties>
+          <Code>Public Function Dobro(x As Integer) As Integer
+            Return x * 2
+          End Function</Code>
+          <Body>
+            <Height>3cm</Height>
+            <ReportItems>
+              <Image Name="Img">
+                <Source>Embedded</Source><Value>Logo</Value>
+                <Top>0cm</Top><Left>0cm</Left><Width>3cm</Width><Height>2cm</Height>
+              </Image>
+            </ReportItems>
+          </Body>
+        </Report>
+        """;
+
+    [Fact]
+    public void Embedded_image_bytes_are_resolved_inline()
+    {
+        var def = new RdlImporter().ImportXml(ReportLevel);
+        var img = def.ReportHeader!.Elements.OfType<Reporting.Elements.ImageElement>().Single();
+        img.Source.Should().Be(Reporting.Elements.ImageSourceKind.Inline);
+        img.InlineData.ToArray().Should().Equal((byte)1, (byte)2, (byte)3, (byte)4); // AQIDBA== decodes to 1,2,3,4
+    }
+
+    [Fact]
+    public void Custom_properties_and_report_code_are_preserved_in_metadata()
+    {
+        var def = new RdlImporter().ImportXml(ReportLevel);
+        def.Metadata["Autor"].Should().Be("Equipe BI");
+        def.Metadata.ContainsKey("RdlCode").Should().BeTrue();
+        def.Metadata["RdlCode"].Should().Contain("Dobro");
+    }
 }
