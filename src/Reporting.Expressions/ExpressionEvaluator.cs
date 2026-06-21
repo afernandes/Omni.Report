@@ -427,6 +427,61 @@ public sealed class ExpressionEvaluator
                 { var v = p.Evaluate(0); result = v is DateTime cd ? cd : Convert.ToDateTime(v, CultureInfo.InvariantCulture); }
                 return true;
 
+            // ── More date parts (VB DatePart with interval string) ──
+            case "datepart": // DatePart(interval, date) — generalises Year/Month/Day/… via the interval string
+                if (n < 2) return false;
+                result = DatePartOf(S(0), Dt(1));
+                return true;
+            case "monthname": // MonthName(1..12 [, abbreviate])
+                if (n < 1) return false;
+                { var m = Int(0); var dtf = context.Culture.DateTimeFormat;
+                  result = m is >= 1 and <= 12 ? (n >= 2 && Bool(1) ? dtf.GetAbbreviatedMonthName(m) : dtf.GetMonthName(m)) : string.Empty; }
+                return true;
+            case "weekdayname": // WeekdayName(1..7 [, abbreviate]) — VB: 1 = Sunday
+                if (n < 1) return false;
+                { var wd = Int(0); var dtf = context.Culture.DateTimeFormat;
+                  result = wd is >= 1 and <= 7
+                      ? (n >= 2 && Bool(1) ? dtf.GetAbbreviatedDayName((DayOfWeek)(wd - 1)) : dtf.GetDayName((DayOfWeek)(wd - 1)))
+                      : string.Empty; }
+                return true;
+
+            // ── Formatting (VB Format* helpers → ValueFormatter with a standard .NET format string) ──
+            case "formatcurrency": // FormatCurrency(value [, decimals=2])
+                if (n < 1) return false;
+                result = ValueFormatter.Format(p.Evaluate(0), "C" + (n >= 2 ? Int(1) : 2), context.Culture);
+                return true;
+            case "formatnumber":
+                if (n < 1) return false;
+                result = ValueFormatter.Format(p.Evaluate(0), "N" + (n >= 2 ? Int(1) : 2), context.Culture);
+                return true;
+            case "formatpercent": // VB: 0.25 → "25%"
+                if (n < 1) return false;
+                result = ValueFormatter.Format(p.Evaluate(0), "P" + (n >= 2 ? Int(1) : 2), context.Culture);
+                return true;
+            case "formatdatetime": // FormatDateTime(date [, VB DateFormat 0..4])
+                if (n < 1) return false;
+                { var d = Dt(0);
+                  result = (n >= 2 ? Int(1) : 0) switch
+                  {
+                      1 => d.ToString("D", context.Culture), // vbLongDate
+                      2 => d.ToString("d", context.Culture), // vbShortDate
+                      3 => d.ToString("T", context.Culture), // vbLongTime
+                      4 => d.ToString("t", context.Culture), // vbShortTime
+                      _ => d.ToString("G", context.Culture), // vbGeneralDate
+                  }; }
+                return true;
+
+            // ── More numeric (VB) ──
+            case "fix": // truncate toward zero: Fix(-2.7) = -2
+                result = n > 0 ? Math.Truncate(Convert.ToDouble(p.Evaluate(0), context.Culture)) : 0d;
+                return true;
+            case "int": // VB Int: floor toward -∞: Int(-2.7) = -3
+                result = n > 0 ? Math.Floor(Convert.ToDouble(p.Evaluate(0), context.Culture)) : 0d;
+                return true;
+            case "sign":
+                result = n > 0 ? Math.Sign(Convert.ToDouble(p.Evaluate(0), context.Culture)) : 0;
+                return true;
+
             default:
                 return false;
         }
@@ -471,6 +526,24 @@ public sealed class ExpressionEvaluator
             _ => 0,
         };
     }
+
+    // VB DatePart: the component of a date named by the interval string. Note "y"/"dy" = day of YEAR and
+    // "w"/"weekday" = day of week (differs from AddInterval, where "y" means day-of-month math). Week of
+    // year uses ISO weeks; an unknown interval returns 0.
+    private static int DatePartOf(string interval, DateTime d) => interval.ToLowerInvariant() switch
+    {
+        "yyyy" or "year" => d.Year,
+        "q" or "quarter" => (d.Month - 1) / 3 + 1,
+        "m" or "month" => d.Month,
+        "d" or "day" => d.Day,
+        "y" or "dy" => d.DayOfYear,
+        "ww" or "week" or "wk" => System.Globalization.ISOWeek.GetWeekOfYear(d),
+        "w" or "weekday" => (int)d.DayOfWeek + 1, // VB: Sunday = 1
+        "h" or "hour" => d.Hour,
+        "n" or "minute" or "mi" => d.Minute,
+        "s" or "second" => d.Second,
+        _ => 0,
+    };
 
     // VB Like pattern → regex: * = any run, ? = one char, # = one digit; other chars are literal.
     // Whole-string, CASE-SENSITIVE match (VB's default Option Compare Binary, matching SSRS). A match
