@@ -314,6 +314,42 @@ public class RdlImporterTests
         tb.Expression.Should().Be(expected);
     }
 
+    [Theory]
+    [InlineData("NoWrap", false)]
+    [InlineData("WordWrap", true)]
+    public void Style_WrapMode_is_imported_to_WordWrap(string wrapMode, bool expected)
+    {
+        var rdl = $"""
+            <Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition">
+              <Body><Height>2cm</Height><ReportItems>
+                <Textbox Name="T"><Top>0cm</Top><Left>0cm</Left><Width>3cm</Width><Height>1cm</Height>
+                  <Style><WrapMode>{wrapMode}</WrapMode></Style>
+                  <Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!X.Value</Value></TextRun></TextRuns></Paragraph></Paragraphs>
+                </Textbox>
+              </ReportItems></Body>
+            </Report>
+            """;
+        var tb = new RdlImporter().ImportXml(rdl).ReportHeader!.Elements.OfType<Reporting.Elements.TextBoxElement>().Single();
+        tb.Style.WordWrap.Should().Be(expected);
+    }
+
+    [Fact]
+    public void Style_without_WrapMode_keeps_WordWrap_default_true()
+    {
+        var rdl = """
+            <Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition">
+              <Body><Height>2cm</Height><ReportItems>
+                <Textbox Name="T"><Top>0cm</Top><Left>0cm</Left><Width>3cm</Width><Height>1cm</Height>
+                  <Style><FontWeight>Bold</FontWeight></Style>
+                  <Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!X.Value</Value></TextRun></TextRuns></Paragraph></Paragraphs>
+                </Textbox>
+              </ReportItems></Body>
+            </Report>
+            """;
+        var tb = new RdlImporter().ImportXml(rdl).ReportHeader!.Elements.OfType<Reporting.Elements.TextBoxElement>().Single();
+        tb.Style.WordWrap.Should().BeTrue("WrapMode ausente → default do model (wrap)");
+    }
+
     [Fact]
     public void ReportItems_reference_and_element_name_are_imported()
     {
