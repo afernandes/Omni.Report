@@ -536,12 +536,13 @@ public class RdlImporterTests
     }
 
     [Fact]
-    public void Tablix_without_both_hierarchies_records_a_warning()
+    public void Tablix_flat_table_with_no_body_cells_warns_empty()
     {
+        // Details row member but no <TablixBody> → flat-table branch yields zero cells → "vazia" warning.
         var rdl = """
             <Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition">
               <Body><Height>3cm</Height><ReportItems>
-                <Tablix Name="FlatTable">
+                <Tablix Name="Vazia">
                   <Top>0cm</Top><Left>0cm</Left><Width>8cm</Width><Height>2cm</Height>
                   <TablixRowHierarchy><TablixMembers><TablixMember><Group Name="Det" /></TablixMember></TablixMembers></TablixRowHierarchy>
                 </Tablix>
@@ -549,7 +550,25 @@ public class RdlImporterTests
             </Report>
             """;
         var def = new RdlImporter().ImportXml(rdl);
-        def.Metadata["ImportWarnings"].Should().Contain("FlatTable");
+        def.Metadata["ImportWarnings"].Should().Contain("vazia");
+    }
+
+    [Fact]
+    public void Tablix_hybrid_table_matrix_records_a_warning()
+    {
+        // One dynamic axis (row group) + a static other axis → table+matrix hybrid is a follow-up → warns.
+        var rdl = """
+            <Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition">
+              <Body><Height>3cm</Height><ReportItems>
+                <Tablix Name="Hibrido">
+                  <Top>0cm</Top><Left>0cm</Left><Width>8cm</Width><Height>2cm</Height>
+                  <TablixRowHierarchy><TablixMembers><TablixMember><Group Name="G"><GroupExpressions><GroupExpression>=Fields!Regiao.Value</GroupExpression></GroupExpressions></Group></TablixMember></TablixMembers></TablixRowHierarchy>
+                </Tablix>
+              </ReportItems></Body>
+            </Report>
+            """;
+        var def = new RdlImporter().ImportXml(rdl);
+        def.Metadata["ImportWarnings"].Should().Contain("híbrido");
     }
 
     [Fact]

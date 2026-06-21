@@ -548,7 +548,9 @@ public sealed class RdlImporter
 
         if (rowGroups.Count == 0 || colGroups.Count == 0)
         {
-            _warnings.Add($"Tablix '{name}': importado parcialmente — sem hierarquia dinâmica de linha E coluna (tabelas planas/colunas estáticas são follow-up).");
+            // Pure flat tables are handled above; reaching here means exactly one axis is dynamic and the
+            // other static — a table+matrix hybrid, which is a follow-up.
+            _warnings.Add($"Tablix '{name}': importado parcialmente — híbrido tabela+matrix (um eixo com grupo dinâmico e outro estático) é follow-up.");
         }
 
         return new TablixElement
@@ -565,6 +567,9 @@ public sealed class RdlImporter
     // renderer already understands: Cells (0,c) = header Label, (1,c) = detail TextBox, RowGroups/ColumnGroups
     // empty, ColumnWidths = the RDL column widths (relative weights). Header vs detail rows are classified by
     // the row hierarchy (the member with a <Group> is the Details/detail row), falling back to position.
+    // Scope limits (acceptable for the common 1-header-1-detail table): a Details member nested under a static
+    // parent isn't classified (positional fallback covers the 2-row case); a trailing column empty in BOTH
+    // rows is dropped (it carries no value); multiple detail/header rows collapse to one each.
     private ReportElement FlatTableTablix(XElement item, Rectangle bounds, string name)
     {
         var body = El(item, "TablixBody");
