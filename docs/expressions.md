@@ -66,6 +66,16 @@ escopo até a linha corrente). A função `RunningTotal(...)` é o atalho para o
 Internamente, `AggregateCalculator` mantém pilhas de acumuladores indexadas pelo
 escopo. A paginação reseta o escopo apropriado entre páginas / grupos.
 
+## Concatenação e Like
+
+```text
+Concat('Total: ', Fields.Valor)   // concatena (alvo do operador & do VB/SSRS)
+Like(Fields.Sku, 'A#*')           // padrão VB: * = qualquer, ? = 1 char, # = 1 dígito (case-insensitive)
+```
+
+O `+` é **numérico** (não concatena strings) — use `Concat`. O import de `.rdl` reescreve o operador
+`&` do VB em `Concat(...)` automaticamente.
+
 ## Funções posicionais e de escopo (estilo SSRS)
 
 ```text

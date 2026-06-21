@@ -333,6 +333,17 @@ public sealed class ExpressionEvaluator
                 return true;
 
             // ── Text ──
+            case "concat": // variadic string concatenation — the target of VB's & operator
+            {
+                var sb = new System.Text.StringBuilder();
+                for (int i = 0; i < n; i++) { sb.Append(S(i)); }
+                result = sb.ToString();
+                return true;
+            }
+            case "like": // VB Like: * = any run, ? = one char, # = one digit. Case-insensitive.
+                if (n < 2) return false;
+                result = VbLike(S(0), S(1));
+                return true;
             case "len":
                 result = n > 0 ? S(0).Length : 0;
                 return true;
@@ -456,6 +467,26 @@ public sealed class ExpressionEvaluator
             "s" or "second" => (int)span.TotalSeconds,
             _ => 0,
         };
+    }
+
+    // VB Like pattern → regex: * = any run, ? = one char, # = one digit; other chars are literal.
+    // Case-insensitive, whole-string match. (Character-class [...] is a rare VB feature, not handled.)
+    private static bool VbLike(string value, string pattern)
+    {
+        var sb = new System.Text.StringBuilder("^");
+        foreach (var c in pattern)
+        {
+            sb.Append(c switch
+            {
+                '*' => ".*",
+                '?' => ".",
+                '#' => "[0-9]",
+                _ => System.Text.RegularExpressions.Regex.Escape(c.ToString()),
+            });
+        }
+        sb.Append('$');
+        return System.Text.RegularExpressions.Regex.IsMatch(value, sb.ToString(),
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.Singleline);
     }
 
     private static AggregateScope ParseScope(object? value)

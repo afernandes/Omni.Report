@@ -53,6 +53,51 @@ internal static partial class RdlExpression
             var other => other, // ReportName, etc. — left as a bare identifier
         });
         body = UserRef().Replace(body, m => m.Groups[1].Value is "UserID" ? "UserName" : m.Groups[1].Value);
-        return body.Trim();
+        return ConvertConcat(body.Trim());
+    }
+
+    // VB '&' string concatenation has no operator in the engine, so rewrite top-level a & b & c into the
+    // Concat(a, b, c) runtime function. Splits only at depth-0 '&' outside string literals, so nested
+    // parens and quoted '&' are preserved. (VB uses And/AndAlso for logic, never '&', so '&' is concat.)
+    private static string ConvertConcat(string body)
+    {
+        var parts = SplitTopLevel(body, '&');
+        if (parts.Count <= 1)
+        {
+            return body;
+        }
+        return "Concat(" + string.Join(", ", parts.Select(p => p.Trim())) + ")";
+    }
+
+    private static List<string> SplitTopLevel(string s, char separator)
+    {
+        var parts = new List<string>();
+        int depth = 0, start = 0;
+        bool inString = false;
+        char quote = '\0';
+        for (int i = 0; i < s.Length; i++)
+        {
+            char c = s[i];
+            if (inString)
+            {
+                if (c == quote) { inString = false; }
+                continue;
+            }
+            switch (c)
+            {
+                case '\'' or '"': inString = true; quote = c; break;
+                case '(': depth++; break;
+                case ')': depth--; break;
+                default:
+                    if (c == separator && depth == 0)
+                    {
+                        parts.Add(s[start..i]);
+                        start = i + 1;
+                    }
+                    break;
+            }
+        }
+        parts.Add(s[start..]);
+        return parts;
     }
 }

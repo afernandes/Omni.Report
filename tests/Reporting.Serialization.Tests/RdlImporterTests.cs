@@ -161,6 +161,18 @@ public class RdlImporterTests
     }
 
     [Fact]
+    public void Expression_conversion_rewrites_vb_concat_to_Concat()
+    {
+        // VB '&' string concatenation → Concat(...), with field refs converted and literals preserved.
+        Reporting.Serialization.Internal.RdlExpression.Convert("=\"Total: \" & Fields!Valor.Value")
+            .Should().Be("Concat(\"Total: \", Fields.Valor)");
+        Reporting.Serialization.Internal.RdlExpression.Convert("=Fields!A.Value & \" - \" & Fields!B.Value")
+            .Should().Be("Concat(Fields.A, \" - \", Fields.B)");
+        // No '&' → unchanged (single expression, not wrapped).
+        Reporting.Serialization.Internal.RdlExpression.Convert("=Fields!X.Value").Should().Be("Fields.X");
+    }
+
+    [Fact]
     public void Expression_conversion_does_not_silently_drop_non_value_members()
     {
         // Only `.Value` is rewritten; `.Count`/`.Label` survive (a visible error beats wrong data).
