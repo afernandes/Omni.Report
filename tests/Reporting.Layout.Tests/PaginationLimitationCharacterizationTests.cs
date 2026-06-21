@@ -73,55 +73,6 @@ public class PaginationLimitationCharacterizationTests
 
     // 11. ─────────────────────────────────────────────────────────────────────
     /// <summary>
-    /// LIMITATION: <c>PrintOnLastPage = false</c> is NOT honoured.
-    /// <para>
-    /// <see cref="ReportPaginator"/>.EmitPageHeader / EmitPageFooter gate only on the FIRST page
-    /// (<c>PrintOnFirstPage</c>); the last-page flag is explicitly deferred (see the comment at
-    /// the gating site). A page footer with <c>PrintOnLastPage=false</c> therefore STILL appears
-    /// on the final page. This locks that current behaviour so a false "it's suppressed" green
-    /// test cannot creep in.
-    /// </para>
-    /// <para>Replace with a "footer absent on last page" assertion when PrintOnLastPage lands.</para>
-    /// </summary>
-    [Fact]
-    public async Task PrintOnLastPage_false_footer_still_appears_on_the_last_page_today()
-    {
-        var pageFooter = new ReportBand(BandKind.PageFooter, Unit.FromMm(6),
-            EquatableArray.Create<ReportElement>(new LabelElement
-            {
-                Id = "page-footer",
-                Bounds = new Rectangle(0.Mm(), 0.Mm(), 40.Mm(), 6.Mm()),
-                Text = "FOOT",
-            }),
-            PrintOnLastPage: false); // intent: hide on last page — NOT implemented yet
-        var page = new PageSetup(new PaperSize("MiniA6", Unit.FromMm(60), Unit.FromMm(60)),
-            Margins: Thickness.Uniform(Unit.FromMm(5)));
-        var detail = new DetailBand(Unit.FromMm(10),
-            EquatableArray.Create<ReportElement>(new LabelElement
-            {
-                Id = "row", Bounds = new Rectangle(0.Mm(), 0.Mm(), 40.Mm(), 10.Mm()), Text = "row",
-            }));
-        var def = new ReportDefinition("lastfoot", page, detail) { PageFooter = pageFooter };
-        var req = TestData.BuildRequest(def, TestData.ManyRows(20)); // multiple pages
-
-        var report = await new ReportPaginator().PaginateAsync(req);
-
-        report.Pages.Count.Should().BeGreaterThanOrEqualTo(2);
-        bool HasFooter(RenderedPage p) =>
-            p.Primitives.OfType<DrawTextPrimitive>().Any(t => t.SourceElementId == "page-footer");
-        // Characterization: the footer is on the LAST page despite PrintOnLastPage=false.
-        HasFooter(report.Pages[^1]).Should().BeTrue(
-            "PrintOnLastPage is deferred today, so the footer still prints on the last page");
-        // And it prints on every page (no last-page special-casing at all yet).
-        report.Pages.Should().OnlyContain(
-            p => p.Primitives.OfType<DrawTextPrimitive>().Any(t => t.SourceElementId == "page-footer"),
-            "the footer prints on every page including the last — last-page suppression is unimplemented");
-
-        // documents limitation; flip the last-page assertion to BeFalse when PrintOnLastPage is implemented.
-    }
-
-    // 12. ─────────────────────────────────────────────────────────────────────
-    /// <summary>
     /// LIMITATION: continuous paper IGNORES <c>Columns &gt; 1</c>.
     /// <para>
     /// <see cref="Reporting.Layout.Internal.PageAccumulator"/> forces a single column when

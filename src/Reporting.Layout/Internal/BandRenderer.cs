@@ -54,15 +54,44 @@ internal sealed class BandRenderer
     public BandLayout Render(IBand band, Point origin, IReportExpressionContext ctx)
     {
         var primitives = new List<LayoutPrimitive>();
-        Unit actualHeight = band.Height;
+        // Accumulate the true content extent from zero (each element's effective bottom, grown/shrunk).
+        // The declared band.Height is applied as a FLOOR afterwards — unless the band opts into shrinking.
+        Unit contentExtent = Unit.Zero;
 
         foreach (var rawElement in band.Elements)
         {
-            actualHeight = RenderElement(rawElement, origin, origin, primitives, ctx, actualHeight);
+            contentExtent = RenderElement(rawElement, origin, origin, primitives, ctx, contentExtent);
         }
 
-        return new BandLayout(primitives, actualHeight);
+        // Band-level CanShrink (opt-in) lets the band collapse below its declared height to wrap its content,
+        // pulling the next band up. Without it, band.Height stays the floor (historical grow-only behaviour).
+        return new BandLayout(primitives, EffectiveBandHeight(band, contentExtent));
     }
+
+    /// <summary>Whether a band may collapse below its declared height to fit its content. Opt-in via
+    /// <see cref="DetailBand.CanShrink"/>; other band kinds keep their declared height as the floor.</summary>
+    private static bool BandAllowsShrink(IBand band)
+        => band is DetailBand { CanShrink: true } && band.Elements.All(IsShrinkSafe);
+
+    /// <summary>Whether an element's rendered height is exactly what <see cref="Measure"/> predicts. Shrinking
+    /// a band drops the declared-height floor, so the page-fit pre-check (Measure) MUST equal the emitted
+    /// height (Render); elements that grow beyond their declared bounds at render time (a Tablix to its grid
+    /// height, a container Rectangle to its children) would break that equality, so a band containing one
+    /// keeps its declared height instead of shrinking. Text/Label/Line/Image/Chart/etc. measure exactly.</summary>
+    private static bool IsShrinkSafe(ReportElement e) => e switch
+    {
+        TablixElement => false,
+        RectangleElement r when r.Children.Count > 0 => false,
+        _ => true,
+    };
+
+    /// <summary>Final band height: the content extent when the band opts into shrinking (and actually has
+    /// content), otherwise the declared height as a floor. Single source of truth shared by Render and
+    /// Measure so the page-fit pre-check and the emission never disagree.</summary>
+    private static Unit EffectiveBandHeight(IBand band, Unit contentExtent)
+        => BandAllowsShrink(band) && contentExtent > Unit.Zero ? contentExtent : Max(band.Height, contentExtent);
+
+    private static Unit Max(Unit a, Unit b) => a > b ? a : b;
 
     /// <summary>Renders a single element — and, for a container <see cref="RectangleElement"/>, its
     /// <see cref="RectangleElement.Children"/> recursively — at <paramref name="parentOffset"/>, appending the
@@ -354,22 +383,49 @@ internal sealed class BandRenderer
     /// checks and page-fit pre-checks.</summary>
     public Unit Measure(IBand band, IReportExpressionContext ctx)
     {
-        Unit height = band.Height;
-        foreach (var element in band.Elements)
+        // Mirror Render's height computation EXACTLY (it shares EffectiveBandHeight): accumulate each visible
+        // element's effective bottom. The text branch resolves the SAME effective element + style as
+        // RenderElement (property-expression bindings → conditional formats → font/format) so a binding or
+        // conditional format that changes the measured height can't make Measure and Render disagree — which,
+        // on the floor-less shrink path, would overlap or gap the next band.
+        Unit contentExtent = Unit.Zero;
+        foreach (var rawElement in band.Elements)
         {
-            if (element is TextBoxElement tb && tb.CanGrow && IsVisible(element, ctx))
+            var element = rawElement.PropertyExpressions.Count == 0
+                ? rawElement
+                : ApplyPropertyExpressions(rawElement, ctx);
+            if (!IsVisible(element, ctx))
             {
-                var style = BuildTextStyle(element.Style);
-                var text = ResolveTextBoxText(tb, ctx, element.Style.Format);
+                continue;
+            }
+            Unit bottom;
+            if (element is TextBoxElement tb && (tb.CanGrow || tb.CanShrink))
+            {
+                var effectiveStyle = ResolveEffectiveStyle(element, ctx);
+                var style = BuildTextStyle(effectiveStyle);
+                var text = ResolveTextBoxText(tb, ctx, effectiveStyle.Format);
                 var size = _measurer.Measure(text, style, element.Bounds.Width);
-                var bottom = element.Bounds.Y + size.Height;
-                if (bottom > height)
+                var h = element.Bounds.Height;
+                if (tb.CanGrow && size.Height > h)
                 {
-                    height = bottom;
+                    h = size.Height;
                 }
+                else if (tb.CanShrink && size.Height < h)
+                {
+                    h = size.Height;
+                }
+                bottom = element.Bounds.Y + h;
+            }
+            else
+            {
+                bottom = element.Bounds.Bottom;
+            }
+            if (bottom > contentExtent)
+            {
+                contentExtent = bottom;
             }
         }
-        return height;
+        return EffectiveBandHeight(band, contentExtent);
     }
 
     /// <summary>Resolves each of the element's per-property expression bindings against the current
