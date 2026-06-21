@@ -513,6 +513,7 @@ public sealed partial class ReportPaginator : IReportPaginator
             page.Emit(layout.Primitives, layout.Height);
         }
         EmitPageHeader(def, page, bandRenderer, ctx);
+        page.MarkColumnTop(); // snake columns begin below the report/page header
 
         // Iterate rows with group detection
         var openGroupKeys = new object?[def.Groups.Count];
@@ -746,9 +747,10 @@ public sealed partial class ReportPaginator : IReportPaginator
         {
             return;
         }
-        // KeepTogether: ensure header + footer fits on remaining space.
+        // KeepTogether: ensure header + footer fits on remaining space. In multi-column mode, try the next
+        // column first (snake) before breaking the whole physical page — mirrors EnsureRoom.
         var needed = group.Header.Height + (group.Footer?.Height ?? Unit.Zero);
-        if (group.KeepTogether && !page.Fits(needed))
+        if (group.KeepTogether && !page.Fits(needed) && !page.AdvanceColumn())
         {
             BreakPage(def, page, renderer, ctx);
         }
@@ -783,10 +785,16 @@ public sealed partial class ReportPaginator : IReportPaginator
     private void EnsureRoom(PageAccumulator page, Unit needed, ReportDefinition def,
         BandRenderer renderer, ReportExpressionContext ctx)
     {
-        if (!page.Fits(needed))
+        if (page.Fits(needed))
         {
-            BreakPage(def, page, renderer, ctx);
+            return;
         }
+        // Multi-column (snake): move to the next column on the same physical page before breaking it.
+        if (page.AdvanceColumn())
+        {
+            return;
+        }
+        BreakPage(def, page, renderer, ctx);
     }
 
     private void BreakPage(ReportDefinition def, PageAccumulator page, BandRenderer renderer, ReportExpressionContext ctx)
@@ -796,6 +804,7 @@ public sealed partial class ReportPaginator : IReportPaginator
         ctx.ResetPage();
         ctx.PageNumber = page.PageNumber;
         EmitPageHeader(def, page, renderer, ctx);
+        page.MarkColumnTop(); // snake columns on the new page begin below its page header
     }
 
     private static void EmitPageHeader(ReportDefinition def, PageAccumulator page, BandRenderer renderer, IReportExpressionContext ctx)
