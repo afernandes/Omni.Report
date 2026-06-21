@@ -534,7 +534,8 @@ internal static class RepJsonReader
         {
             var co = n.AsObject();
             ReportElement? content = co["content"] is JsonObject ce ? ReadElement(ce) : null;
-            return new TablixCell((int?)co["rowIndex"] ?? 0, (int?)co["columnIndex"] ?? 0, content);
+            return new TablixCell((int?)co["rowIndex"] ?? 0, (int?)co["columnIndex"] ?? 0, content,
+                ColumnSpan: (int?)co["columnSpan"] ?? 1, RowSpan: (int?)co["rowSpan"] ?? 1);
         });
         var columnWidths = ReadArray(o, "columnWidths", n => (double?)n ?? 0d);
         return new TablixElement

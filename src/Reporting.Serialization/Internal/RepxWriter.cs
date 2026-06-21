@@ -723,6 +723,14 @@ internal static class RepxWriter
                 var ce = new XElement("Cell",
                     new XAttribute("RowIndex", c.RowIndex.ToString(Inv)),
                     new XAttribute("ColumnIndex", c.ColumnIndex.ToString(Inv)));
+                if (c.ColumnSpan != 1)
+                {
+                    ce.Add(new XAttribute("ColumnSpan", c.ColumnSpan.ToString(Inv)));
+                }
+                if (c.RowSpan != 1)
+                {
+                    ce.Add(new XAttribute("RowSpan", c.RowSpan.ToString(Inv)));
+                }
                 if (c.Content is not null)
                 {
                     ce.Add(new XElement("Content", WriteElement(c.Content)));

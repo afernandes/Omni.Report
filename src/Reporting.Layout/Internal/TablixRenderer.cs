@@ -62,19 +62,20 @@ internal static class TablixRenderer
 
         // Split cells into the header template (row 0) and the detail template (row 1),
         // indexed by column. Column count is the widest column index seen.
-        var headerCells = new Dictionary<int, ReportElement?>();
-        var detailCells = new Dictionary<int, ReportElement?>();
+        var headerCells = new Dictionary<int, TablixCell>();
+        var detailCells = new Dictionary<int, TablixCell>();
         int colCount = 0;
         foreach (var cell in tablix.Cells)
         {
-            colCount = Math.Max(colCount, cell.ColumnIndex + 1);
+            // A cell occupies ColumnSpan columns, so the grid is as wide as the furthest span reaches.
+            colCount = Math.Max(colCount, cell.ColumnIndex + Math.Max(1, cell.ColumnSpan));
             if (cell.RowIndex == 0)
             {
-                headerCells[cell.ColumnIndex] = cell.Content;
+                headerCells[cell.ColumnIndex] = cell;
             }
             else if (cell.RowIndex == 1)
             {
-                detailCells[cell.ColumnIndex] = cell.Content;
+                detailCells[cell.ColumnIndex] = cell;
             }
         }
 
@@ -89,27 +90,39 @@ internal static class TablixRenderer
         bool hasHeader = headerCells.Count > 0;
         double y = y0;
 
+        // Emits one template row honouring ColSpan, returning the set of column edges interior to a merged
+        // cell (so the grid omits the vertical line that would cut through it).
+        HashSet<int> EmitRow(Dictionary<int, TablixCell> cells, double rowY, bool bold, Color color, IReportExpressionContext ctx)
+        {
+            var interior = new HashSet<int>();
+            for (int c = 0; c < colCount;)
+            {
+                cells.TryGetValue(c, out var cell);
+                int span = cell is null ? 1 : Math.Clamp(cell.ColumnSpan, 1, colCount - c);
+                EmitStyledCell(list, cell?.Content, Text(cell?.Content, ev, templates, ctx),
+                    colLeft[c], rowY, colLeft[c + span] - colLeft[c], bold, color, ev, ctx, tablix.Id);
+                for (int k = c + 1; k < c + span; k++)
+                {
+                    interior.Add(k);
+                }
+                c += span;
+            }
+            return interior;
+        }
+
+        var headerInterior = new HashSet<int>();
         if (hasHeader)
         {
             list.Add(Fill(x0, y, w, RowHeightMm, HeaderBg, tablix.Id));
-            for (int c = 0; c < colCount; c++)
-            {
-                headerCells.TryGetValue(c, out var content);
-                EmitStyledCell(list, content, Text(content, ev, templates, baseCtx),
-                    colLeft[c], y, colLeft[c + 1] - colLeft[c], defaultBold: true, HeaderText, ev, baseCtx, tablix.Id);
-            }
+            headerInterior = EmitRow(headerCells, y, bold: true, HeaderText, baseCtx);
             y += RowHeightMm;
         }
 
+        var detailInterior = new HashSet<int>();
         foreach (var row in rows)
         {
             var rowCtx = new RowScopedContext(baseCtx, row);
-            for (int c = 0; c < colCount; c++)
-            {
-                detailCells.TryGetValue(c, out var content);
-                EmitStyledCell(list, content, Text(content, ev, templates, rowCtx),
-                    colLeft[c], y, colLeft[c + 1] - colLeft[c], defaultBold: false, BodyText, ev, rowCtx, tablix.Id);
-            }
+            detailInterior = EmitRow(detailCells, y, bold: false, BodyText, rowCtx);
             y += RowHeightMm;
         }
 
@@ -121,10 +134,29 @@ internal static class TablixRenderer
             double ly = y0 + r * RowHeightMm;
             list.Add(Line(x0, ly, x0 + w, ly, pen, tablix.Id));
         }
-        for (int c = 0; c <= colCount; c++)
+        // Outer vertical edges run full height; interior edges are split per band and skipped where they'd
+        // cut through a horizontally-merged (ColSpan) cell.
+        list.Add(Line(x0, y0, x0, y0 + totalH, pen, tablix.Id));
+        list.Add(Line(colLeft[colCount], y0, colLeft[colCount], y0 + totalH, pen, tablix.Id));
+        double detailTop = hasHeader ? y0 + RowHeightMm : y0;
+        for (int c = 1; c < colCount; c++)
         {
             double lx = colLeft[c];
-            list.Add(Line(lx, y0, lx, y0 + totalH, pen, tablix.Id));
+            bool hIn = hasHeader && headerInterior.Contains(c);
+            bool dIn = detailInterior.Contains(c);
+            if (!hIn && !dIn)
+            {
+                list.Add(Line(lx, y0, lx, y0 + totalH, pen, tablix.Id)); // common case: full-height line
+                continue;
+            }
+            if (hasHeader && !hIn)
+            {
+                list.Add(Line(lx, y0, lx, y0 + RowHeightMm, pen, tablix.Id));
+            }
+            if (!dIn)
+            {
+                list.Add(Line(lx, detailTop, lx, y0 + totalH, pen, tablix.Id));
+            }
         }
 
         actualHeight = Unit.FromMm(totalH);

@@ -568,6 +568,14 @@ internal static class RepJsonWriter
                     o["cells"] = new JsonArray(tablix.Cells.Select(c =>
                     {
                         var co = new JsonObject { ["rowIndex"] = c.RowIndex, ["columnIndex"] = c.ColumnIndex };
+                        if (c.ColumnSpan != 1)
+                        {
+                            co["columnSpan"] = c.ColumnSpan;
+                        }
+                        if (c.RowSpan != 1)
+                        {
+                            co["rowSpan"] = c.RowSpan;
+                        }
                         if (c.Content is not null)
                         {
                             co["content"] = WriteElement(c.Content);

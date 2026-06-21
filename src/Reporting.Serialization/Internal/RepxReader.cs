@@ -514,7 +514,9 @@ internal static class RepxReader
             return new TablixCell(
                 int.Parse(Attr(c, "RowIndex") ?? "0", Inv),
                 int.Parse(Attr(c, "ColumnIndex") ?? "0", Inv),
-                content is null ? null : ReadElement(content));
+                content is null ? null : ReadElement(content),
+                ColumnSpan: int.TryParse(Attr(c, "ColumnSpan"), System.Globalization.NumberStyles.Integer, Inv, out var cs) ? cs : 1,
+                RowSpan: int.TryParse(Attr(c, "RowSpan"), System.Globalization.NumberStyles.Integer, Inv, out var rs) ? rs : 1);
         }).ToArray() ?? Array.Empty<TablixCell>();
         var columnWidths = el.Element("ColumnWidths")?.Elements("W")
             .Select(wt => double.TryParse(wt.Value, System.Globalization.NumberStyles.Any, Inv, out var d) ? d : 0d)
