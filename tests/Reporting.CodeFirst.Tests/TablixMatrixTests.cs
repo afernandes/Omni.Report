@@ -250,6 +250,28 @@ public class TablixMatrixTests
         texts.Should().Contain("Geral").And.NotContain("Total geral");
     }
 
+    [Fact]
+    public async Task Malformed_subtotal_label_does_not_crash_the_render()
+    {
+        // A bad format template ("Total {1}") must not abort rendering — it falls back to the raw template.
+        var report = ReportBuilder.Create("BadLabel")
+            .Page(p => p.A4().Portrait().Margins(10))
+            .DataSource("Vendas", Rows)
+            .ReportHeader(h => h.Height(70)
+                .Tablix(t => t
+                    .RowGroup("Fields.Regiao")
+                    .ColumnGroup("Fields.Mes")
+                    .Corner("Região")
+                    .Cell("Fields.Total")
+                    .RowSubtotals()
+                    .TotalLabels(subtotal: "Total {1}")) // {1} is out of range → would throw if unguarded
+                .At(0, 0).Size(150, 60))
+            .Build();
+
+        var act = async () => await TextsOf(report);
+        await act.Should().NotThrowAsync();
+    }
+
     private static Report SortedMatrix(string? sort, bool descending) =>
         ReportBuilder.Create("Sorted")
             .Page(p => p.A4().Portrait().Margins(10))

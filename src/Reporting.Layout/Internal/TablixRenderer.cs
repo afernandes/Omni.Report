@@ -216,7 +216,7 @@ internal static class TablixRenderer
                     {
                         start--;
                     }
-                    vcols.Add(VCol.Subtotal(start, j, string.Format(baseCtx.Culture, subLabelFmt, colLeaves[j][level])));
+                    vcols.Add(VCol.Subtotal(start, j, SafeLabel(subLabelFmt, colLeaves[j][level], baseCtx.Culture)));
                 }
             }
         }
@@ -339,7 +339,7 @@ internal static class TablixRenderer
                     {
                         start--;
                     }
-                    TotalRow(y, string.Format(baseCtx.Culture, subLabelFmt, rowLeaves[i][level]), start, i);
+                    TotalRow(y, SafeLabel(subLabelFmt, rowLeaves[i][level], baseCtx.Culture), start, i);
                     y += RowHeightMm;
                     bodyRows++;
                     for (int d = level; d < nRowLevels; d++) prevRowPrefix[d] = null; // next block redraws headers
@@ -531,6 +531,22 @@ internal static class TablixRenderer
         catch
         {
             return v.ToString(culture);
+        }
+    }
+
+    /// <summary>Formats a user-supplied total label ("Total {0}") with the group value. A malformed
+    /// template ("Total {1}", "Total {") would otherwise make <see cref="string.Format(IFormatProvider,
+    /// string, object?)"/> throw and abort the whole render — so we fall back to the raw template, mirroring
+    /// <see cref="FormatNumber"/>'s defensive guard.</summary>
+    private static string SafeLabel(string format, string arg, System.Globalization.CultureInfo culture)
+    {
+        try
+        {
+            return string.Format(culture, format, arg);
+        }
+        catch (FormatException)
+        {
+            return format;
         }
     }
 
