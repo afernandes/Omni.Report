@@ -1221,8 +1221,26 @@ public sealed class RdlImporter
             HorizontalAlignment: ParseHAlign(Val(s, "TextAlign")),
             VerticalAlignment: ParseVAlign(Val(s, "VerticalAlign")),
             WordWrap: ParseWrapMode(Val(s, "WrapMode")),
-            Format: Val(s, "Format") is { Length: > 0 } fmt ? fmt : null);
+            Format: Val(s, "Format") is { Length: > 0 } fmt ? fmt : null,
+            BackgroundImage: ReadBackgroundImage(s));
         return style == Style.Default ? null : style;
+    }
+
+    // RDL <Style><BackgroundImage><Source>External</Source><Value>path-or-=expr</Value></...>. Phase B maps
+    // the External source (a literal path/URL, or an =expression) to the stretched background. Embedded/Database
+    // backgrounds and <BackgroundRepeat>/tiling are a follow-up (phase C).
+    private static BackgroundImage? ReadBackgroundImage(XElement style)
+    {
+        var bg = El(style, "BackgroundImage");
+        var value = Val(bg, "Value");
+        if (bg is null || string.IsNullOrEmpty(value)
+            || !string.Equals(Val(bg, "Source"), "External", StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+        return RdlExpression.IsExpression(value)
+            ? new BackgroundImage(Expression: RdlExpression.Convert(value))
+            : new BackgroundImage(Path: value);
     }
 
     private static Border? ReadBorder(XElement style)

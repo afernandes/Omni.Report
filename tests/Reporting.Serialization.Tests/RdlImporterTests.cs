@@ -209,6 +209,28 @@ public class RdlImporterTests
     }
 
     [Theory]
+    [InlineData("logo.png", "logo.png", null)]                  // External literal path
+    [InlineData("=Fields!Logo.Value", null, "Fields.Logo")]     // External expression
+    public void Style_BackgroundImage_External_imports(string value, string? expectedPath, string? expectedExpr)
+    {
+        var rdl = $"""
+            <Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition">
+              <Body><Height>3cm</Height><ReportItems>
+                <Textbox Name="t"><Top>0cm</Top><Left>0cm</Left><Width>5cm</Width><Height>1cm</Height>
+                  <Style><BackgroundImage><Source>External</Source><Value>{value}</Value></BackgroundImage></Style>
+                  <Paragraphs><Paragraph><TextRuns><TextRun><Value>x</Value></TextRun></TextRuns></Paragraph></Paragraphs>
+                </Textbox>
+              </ReportItems></Body>
+            </Report>
+            """;
+        var el = new RdlImporter().ImportXml(rdl).ReportHeader!.Elements.Single();
+        el.Style.BackgroundImage.Should().NotBeNull();
+        var bg = el.Style.BackgroundImage!;
+        bg.Path.Should().Be(expectedPath);
+        bg.Expression.Should().Be(expectedExpr);
+    }
+
+    [Theory]
     [InlineData("Fit", "Stretch")]              // RDL Fit = stretch to box (distorts)
     [InlineData("FitProportional", "Fit")]      // preserve aspect (letterbox)
     [InlineData("Clip", "Native")]              // native size, clipped

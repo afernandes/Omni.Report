@@ -100,6 +100,37 @@ public class BandRendererCoverageTests
     }
 
     [Fact]
+    public async Task Style_BackgroundImage_path_emits_a_stretched_image_behind_the_text()
+    {
+        var png = Convert.FromBase64String(
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M8AAAMBAQDJ/QodAAAAAElFTkSuQmCC");
+        var tmp = Path.Combine(Path.GetTempPath(), $"omni-bg-{Guid.NewGuid():n}.png");
+        File.WriteAllBytes(tmp, png);
+        try
+        {
+            var req = WithSingleRowDefinition(new TextBoxElement
+            {
+                Id = "tb",
+                Bounds = new Rectangle(0.Mm(), 0.Mm(), 50.Mm(), 8.Mm()),
+                Expression = "'Olá'",
+                Style = Style.Default with { BackgroundImage = new BackgroundImage(Path: tmp) },
+            });
+            var report = await new ReportPaginator().PaginateAsync(req);
+            var prims = report.Pages[0].Primitives.ToList();
+
+            var bg = prims.OfType<DrawImagePrimitive>().Single(i => i.SourceElementId == "tb");
+            bg.Data.Count.Should().Be(png.Length, "the background image bytes are loaded from the path");
+            bg.Sizing.Should().Be(ImageSizing.Stretch);
+            // Drawn BEFORE the text (underneath).
+            prims.IndexOf(bg).Should().BeLessThan(prims.FindIndex(p => p is DrawTextPrimitive));
+        }
+        finally
+        {
+            File.Delete(tmp);
+        }
+    }
+
+    [Fact]
     public async Task Rectangle_container_draws_children_on_top_at_relative_positions()
     {
         var req = WithSingleRowDefinition(new RectangleElement

@@ -646,6 +646,13 @@ internal static class RepxWriter
         {
             el.Add(WriteBorder(style.Border));
         }
+        if (style.BackgroundImage is { } bg)
+        {
+            var bgEl = new XElement("BackgroundImage");
+            if (bg.Path is not null) bgEl.SetAttributeValue("Path", bg.Path);
+            if (bg.Expression is not null) bgEl.SetAttributeValue("Expression", bg.Expression);
+            el.Add(bgEl);
+        }
         return el;
     }
 

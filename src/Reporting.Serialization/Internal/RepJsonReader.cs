@@ -619,6 +619,9 @@ internal static class RepJsonReader
         var padding = (string?)o["padding"] is { } p && !string.IsNullOrEmpty(p)
             ? Formats.ParseThickness(p)
             : (Thickness?)null;
+        var backgroundImage = o["backgroundImage"] is JsonObject bgo
+            ? new BackgroundImage((string?)bgo["path"], (string?)bgo["expression"])
+            : null;
         return new Style(
             font,
             (string?)o["foreColor"] is { } fc ? Formats.ParseColor(fc) : null,
@@ -628,7 +631,8 @@ internal static class RepJsonReader
             Enum.Parse<HorizontalAlignment>((string?)o["horizontalAlignment"] ?? nameof(HorizontalAlignment.Left)),
             Enum.Parse<VerticalAlignment>((string?)o["verticalAlignment"] ?? nameof(VerticalAlignment.Top)),
             (bool?)o["wordWrap"] ?? true,
-            (string?)o["format"]);
+            (string?)o["format"],
+            backgroundImage);
     }
 
     private static Border ReadBorder(JsonObject o)

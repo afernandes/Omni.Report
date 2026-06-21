@@ -45,6 +45,29 @@ public class AdvancedElementRoundTripTests
     }
 
     [Fact]
+    public void Style_BackgroundImage_survives_a_designer_edit_and_clone()
+    {
+        // No dedicated editor yet — but editing any unrelated property goes through ToElement, which must
+        // NOT silently drop the background image (data-loss regression caught by adversarial review).
+        var lbl = new LabelElement
+        {
+            Id = "l",
+            Text = "fundo",
+            Bounds = new Rectangle(Unit.Zero, Unit.Zero, Unit.FromMm(40), Unit.FromMm(20)),
+            Style = new Reporting.Styling.Style(BackgroundImage: new Reporting.Styling.BackgroundImage(Path: "logo.png")),
+        };
+
+        var vm = ElementViewModel.FromElement(lbl);
+        vm.X = Unit.FromMm(10); // edit an unrelated property
+        var back = vm.ToElement();
+        back.Style.BackgroundImage.Should().NotBeNull();
+        back.Style.BackgroundImage!.Path.Should().Be("logo.png", "the bg image survives an unrelated edit");
+
+        var clone = vm.Clone().ToElement();
+        clone.Style.BackgroundImage!.Path.Should().Be("logo.png", "Clone preserves the bg image");
+    }
+
+    [Fact]
     public void Gauge_round_trips_losslessly_and_stays_movable()
     {
         var gauge = new GaugeElement

@@ -635,7 +635,10 @@ internal static class RepxReader
             ? Formats.ParseThickness(p)
             : (Thickness?)null;
         var border = el.Element("Border") is { } borderEl ? ReadBorder(borderEl) : null;
-        return new Style(font, foreColor, backColor, border, padding, horizontal, vertical, wordWrap, format);
+        var backgroundImage = el.Element("BackgroundImage") is { } bgEl
+            ? new BackgroundImage(Attr(bgEl, "Path"), Attr(bgEl, "Expression"))
+            : null;
+        return new Style(font, foreColor, backColor, border, padding, horizontal, vertical, wordWrap, format, backgroundImage);
     }
 
     private static Font ReadFont(XElement el)

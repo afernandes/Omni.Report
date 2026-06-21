@@ -24,6 +24,25 @@ public class AdvancedElementsRoundTripTests
     private static readonly RepJsonSerializer RepJson = new();
 
     [Fact]
+    public void Style_background_image_round_trips_path_and_expression()
+    {
+        var pathBg = new LabelElement
+        {
+            Text = "fundo-path",
+            Bounds = new Rectangle(Unit.Zero, Unit.Zero, Unit.FromMm(40), Unit.FromMm(20)),
+            Style = new Style(BackgroundImage: new BackgroundImage(Path: "logo.png")),
+        };
+        var exprBg = new LabelElement
+        {
+            Text = "fundo-expr",
+            Bounds = new Rectangle(Unit.Zero, Unit.FromMm(20), Unit.FromMm(40), Unit.FromMm(20)),
+            Style = new Style(BackgroundImage: new BackgroundImage(Expression: "Fields.Logo")),
+        };
+        AssertRoundTrip(Wrap(pathBg));
+        AssertRoundTrip(Wrap(exprBg));
+    }
+
+    [Fact]
     public void TextRun_with_style_and_action_round_trips()
     {
         var tb = new TextBoxElement
