@@ -190,6 +190,17 @@ public sealed partial class ReportPaginator : IReportPaginator
         return null;
     }
 
+    // Resolves an RDL language tag (e.g. "en-US") to a culture; an unknown/blank tag yields null so the
+    // expression context keeps its default culture instead of throwing. predefinedOnly:true rejects phantom
+    // cultures deterministically (ICU and NLS alike) — a creatable-but-uninitialized tag like "qaa" would
+    // otherwise pass here and crash a later ToString(format, culture). So only real cultures get through.
+    private static System.Globalization.CultureInfo? TryGetCulture(string? language)
+    {
+        if (string.IsNullOrWhiteSpace(language)) return null;
+        try { return System.Globalization.CultureInfo.GetCultureInfo(language, predefinedOnly: true); }
+        catch (System.Globalization.CultureNotFoundException) { return null; }
+    }
+
     private static bool KeysMatch(object? a, object? b)
     {
         if (a is null) return b is null;
@@ -430,7 +441,10 @@ public sealed partial class ReportPaginator : IReportPaginator
         int totalPagesHint)
     {
         var def = request.Definition;
-        var ctx = new ReportExpressionContext(_evaluator);
+        // RDL <Report><Language> (carried in Metadata["Language"]) sets the report's culture, driving
+        // Format/FormatDateTime/Style.Format. Opt-in: absent or invalid → null → the context's default culture.
+        var culture = def.Metadata.TryGetValue("Language", out var lang) ? TryGetCulture(lang) : null;
+        var ctx = new ReportExpressionContext(_evaluator, culture);
         ApplyParameters(ctx, request);
         ctx.TotalPages = totalPagesHint;
         ctx.ReportName = def.Name ?? string.Empty; // RDL Globals!ReportName

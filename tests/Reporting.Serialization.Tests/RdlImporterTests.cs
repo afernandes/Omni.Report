@@ -150,6 +150,29 @@ public class RdlImporterTests
         RdlImporter.ParseSize("5furlongs").Should().BeNull("unknown unit is unspecified, not guessed");
     }
 
+    [Fact]
+    public void Report_Language_is_imported_into_Metadata()
+    {
+        var rdl = """
+            <Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition">
+              <Language>en-US</Language>
+              <Body><Height>2cm</Height><ReportItems /></Body>
+            </Report>
+            """;
+        new RdlImporter().ImportXml(rdl).Metadata.Should().ContainKey("Language").WhoseValue.Should().Be("en-US");
+    }
+
+    [Fact]
+    public void Report_without_Language_has_no_Metadata_key()
+    {
+        var rdl = """
+            <Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition">
+              <Body><Height>2cm</Height><ReportItems /></Body>
+            </Report>
+            """;
+        new RdlImporter().ImportXml(rdl).Metadata.Should().NotContainKey("Language");
+    }
+
     [Theory]
     [InlineData("Sem dados disponíveis.", "Sem dados disponíveis.")]              // literal stays literal
     [InlineData("=&quot;Nada para &quot; &amp; Parameters!Ano.Value", "Concat(\"Nada para \", Parameters.Ano)")] // expression converted

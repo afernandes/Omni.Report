@@ -119,6 +119,9 @@ public sealed class ExpressionEvaluator
             if (name == "PageNumber") { args.Result = context.PageNumber; return; }
             if (name == "TotalPages") { args.Result = context.TotalPages; return; }
             if (name == "ReportName") { args.Result = context.ReportName; return; }
+            // RDL Globals!Language and User!Language both collapse to bare 'Language' (RdlExpression) → the
+            // active culture name (e.g. "en-US"), driven by <Report><Language> via the context's Culture.
+            if (name == "Language") { args.Result = context.Culture.Name; return; }
             if (context.TryResolveUnqualifiedField(name, out var fieldValue))
             {
                 args.Result = fieldValue;

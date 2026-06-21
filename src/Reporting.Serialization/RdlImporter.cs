@@ -348,6 +348,13 @@ public sealed class RdlImporter
         {
             meta["RdlCode"] = code;
         }
+        // RDL <Report><Language> (e.g. "en-US") → the report's authoring culture. Drives Format/FormatDateTime
+        // at render via the expression context. Carried in Metadata (round-trips generically); opt-in — when
+        // absent the engine keeps its default culture.
+        if (Val(report, "Language") is { Length: > 0 } lang)
+        {
+            meta["Language"] = lang;
+        }
         return meta;
     }
 

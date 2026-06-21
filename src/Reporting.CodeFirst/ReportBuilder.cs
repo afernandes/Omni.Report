@@ -108,6 +108,23 @@ public sealed class ReportBuilderRoot
         return this;
     }
 
+    /// <summary>Sets the report culture (RDL <c>&lt;Report&gt;&lt;Language&gt;</c>) used by
+    /// <c>Format</c>/<c>FormatDateTime</c>/<c>Style.Format</c> at render — e.g. <c>"en-US"</c>. Stored in
+    /// <c>Metadata["Language"]</c> (the same key the RDL importer produces), so it round-trips for free.</summary>
+    public ReportBuilderRoot Language(string cultureName)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(cultureName);
+        return Metadata("Language", cultureName);
+    }
+
+    /// <summary>Sets the report culture from a <see cref="System.Globalization.CultureInfo"/> — sugar over
+    /// <see cref="Language(string)"/> storing its name.</summary>
+    public ReportBuilderRoot Culture(System.Globalization.CultureInfo culture)
+    {
+        ArgumentNullException.ThrowIfNull(culture);
+        return Language(culture.Name);
+    }
+
     public ReportBuilderRoot ReportHeader(Action<BandContent> configure)
         => Configure(ref _reportHeader, configure);
 
