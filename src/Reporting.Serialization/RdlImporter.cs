@@ -24,9 +24,11 @@ namespace Reporting.Serialization;
 /// <c>Line</c>, <c>Rectangle</c> (shape + nested items, offset to absolute), and external
 /// <c>Image</c>. VB expressions (<c>=Fields!X.Value</c>, …) are translated by
 /// <see cref="RdlExpression"/>.</para>
-/// <para>Not yet imported (follow-ups): Tablix/Matrix and Chart data regions, embedded-image bytes,
-/// dataset queries, subreports, and rich styling. These are skipped, not errored — the structural
-/// import always succeeds.</para>
+/// <para>Not yet imported (follow-ups): Tablix/Matrix and Chart data regions, dataset queries,
+/// subreports, and Database images. These are skipped, not errored — the structural import always
+/// succeeds.</para>
+/// <para>Not thread-safe: an instance carries per-import state (the resolved embedded-image map). Use
+/// one instance per import, or guard external concurrency.</para>
 /// </remarks>
 public sealed class RdlImporter
 {

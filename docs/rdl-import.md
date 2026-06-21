@@ -30,6 +30,11 @@ var pdf = await new ReportEngine().RenderAsync(def, dataSources);
   - `Textbox` → `TextBox` (se o valor for expressão `=…`) ou `Label` (texto literal);
   - `Line`, `Rectangle` (a forma + itens aninhados, deslocados para coordenadas absolutas),
   - `Image` externa (`Source=External`).
+- **Report-level**: `<EmbeddedImages>` → bytes inline (um `<Image Source="Embedded">` resolve a
+  `ImageElement` com `InlineData`); `<CustomProperties>` → `Metadata`; `<Code>` (módulo VB report-level)
+  preservado em `Metadata["RdlCode"]` (execução é follow-up).
+- **Estilo e atributos** dos itens: nó `<Style>` (fonte/cores/borda/padding/alinhamento/format),
+  `Visibility/Hidden`, `Bookmark`, `DocumentMapLabel`, `Action`, `CanGrow`/`CanShrink`.
 - **Expressões** VB → OmniReport (`RdlExpression`): `Fields!X.Value`→`Fields.X`,
   `Parameters!P.Value`→`Parameters.P`, `Globals!PageNumber`→`PageNumber`, `Globals!ExecutionTime`→`Now`,
   `User!UserID`→`UserName`. Texto sem `=` é literal. Apenas o membro `.Value` é reescrito —
