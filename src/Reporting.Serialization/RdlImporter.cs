@@ -647,30 +647,34 @@ public sealed class RdlImporter
         var cells = new List<TablixCell>();
         if (headerRow is not null)
         {
-            var hc = RowCells(headerRow);
-            for (int c = 0; c < hc.Count; c++)
+            int col = 0; // RDL <ColSpan> pushes the next cell spanColumns over, not 1.
+            foreach (var hcell in RowCells(headerRow))
             {
-                if (TextboxValue(FirstTextbox(hc[c])) is { Length: > 0 } v)
+                int span = ColSpanOf(hcell);
+                if (TextboxValue(FirstTextbox(hcell)) is { Length: > 0 } v)
                 {
-                    cells.Add(new TablixCell(0, c, new LabelElement { Text = v, Bounds = Rectangle.Empty }));
+                    cells.Add(new TablixCell(0, col, new LabelElement { Text = v, Bounds = Rectangle.Empty }, ColumnSpan: span));
                 }
+                col += span;
             }
         }
         if (detailRow is not null)
         {
-            var dc = RowCells(detailRow);
-            for (int c = 0; c < dc.Count; c++)
+            int col = 0;
+            foreach (var dcell in RowCells(detailRow))
             {
-                var tb = FirstTextbox(dc[c]);
+                int span = ColSpanOf(dcell);
+                var tb = FirstTextbox(dcell);
                 if (TextboxValue(tb) is { Length: > 0 } v)
                 {
-                    cells.Add(new TablixCell(1, c, new TextBoxElement
+                    cells.Add(new TablixCell(1, col, new TextBoxElement
                     {
                         Expression = RdlExpression.Convert(v),
                         Bounds = Rectangle.Empty,
                         Style = tb is null ? Style.Default : ReadStyle(tb) ?? Style.Default,
-                    }));
+                    }, ColumnSpan: span));
                 }
+                col += span;
             }
         }
         if (cells.Count == 0)
@@ -760,25 +764,32 @@ public sealed class RdlImporter
             accMm += colWidths[c].ToMm() * scale;
             edges[c + 1] = tbBounds.X + Unit.FromMm(accMm);
         }
-        Unit ColW(int c) => edges[c + 1] - edges[c];
+        // Width spanning columns [col, col+span) from the precomputed edges (honours RDL ColSpan).
+        Unit SpanW(int col, int span) => edges[col + span] - edges[col];
 
         if (headerRow is not null)
         {
             var hHeight = ParseSize(Val(headerRow, "Height")) ?? Unit.FromMm(6);
-            var hcells = RowCells(headerRow);
             var hels = new List<ReportElement>();
-            for (int c = 0; c < hcells.Count && c < colWidths.Count; c++)
+            int col = 0;
+            foreach (var hcell in RowCells(headerRow))
             {
-                var tb = FirstTextbox(hcells[c]);
+                if (col >= colWidths.Count)
+                {
+                    break;
+                }
+                int span = Math.Clamp(ColSpanOf(hcell), 1, colWidths.Count - col);
+                var tb = FirstTextbox(hcell);
                 if (TextboxValue(tb) is { Length: > 0 } v)
                 {
                     hels.Add(new LabelElement
                     {
                         Text = v,
-                        Bounds = new Rectangle(edges[c], Unit.Zero, ColW(c), hHeight),
+                        Bounds = new Rectangle(edges[col], Unit.Zero, SpanW(col, span), hHeight),
                         Style = tb is null ? Style.Default : ReadStyle(tb) ?? Style.Default,
                     });
                 }
+                col += span;
             }
             if (hels.Count > 0)
             {
@@ -787,20 +798,26 @@ public sealed class RdlImporter
         }
 
         var dHeight = ParseSize(Val(detailRow, "Height")) ?? Unit.FromMm(6);
-        var dcells = RowCells(detailRow);
         var dels = new List<ReportElement>();
-        for (int c = 0; c < dcells.Count && c < colWidths.Count; c++)
+        int dcol = 0;
+        foreach (var dcell in RowCells(detailRow))
         {
-            var tb = FirstTextbox(dcells[c]);
+            if (dcol >= colWidths.Count)
+            {
+                break;
+            }
+            int span = Math.Clamp(ColSpanOf(dcell), 1, colWidths.Count - dcol);
+            var tb = FirstTextbox(dcell);
             if (TextboxValue(tb) is { Length: > 0 } v)
             {
                 dels.Add(new TextBoxElement
                 {
                     Expression = RdlExpression.Convert(v),
-                    Bounds = new Rectangle(edges[c], Unit.Zero, ColW(c), dHeight),
+                    Bounds = new Rectangle(edges[dcol], Unit.Zero, SpanW(dcol, span), dHeight),
                     Style = tb is null ? Style.Default : ReadStyle(tb) ?? Style.Default,
                 });
             }
+            dcol += span;
         }
         if (dels.Count == 0)
         {
@@ -814,6 +831,11 @@ public sealed class RdlImporter
         };
         return true;
     }
+
+    // RDL <TablixCell><ColSpan> (optional, default 1) — how many columns the cell covers. RowSpan is implicit
+    // in RDL (covered cells are omitted from later rows) and not inferred here.
+    private static int ColSpanOf(XElement cell)
+        => int.TryParse(Val(cell, "ColSpan"), out var n) && n > 1 ? n : 1;
 
     private static List<XElement> RowCells(XElement tablixRow)
         => (El(tablixRow, "TablixCells")?.Elements().Where(e => e.Name.LocalName == "TablixCell")

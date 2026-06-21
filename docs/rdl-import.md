@@ -53,6 +53,9 @@ var pdf = await new ReportEngine().RenderAsync(def, dataSources);
     `(1,c)` = detalhe TextBox, `<TablixColumns>`/`Width` → `ColumnWidths` (pesos relativos).
     O `<PageBreak><BreakLocation>` (Start/End/StartAndEnd; e o legado RDL 2005 `PageBreakAtStart`/`AtEnd`) do
     Tablix vira `DetailBand.PageBreak` (quebra de página antes/depois — ex.: "cada grupo em sua página").
+    O `<TablixCell><ColSpan>` (mescla horizontal) é importado: na banda decomposta a célula mesclada vira um
+    elemento mais largo (cobre N colunas); no `TablixElement` (fallback) vira `TablixCell.ColumnSpan`. RowSpan
+    (implícito no RDL) é follow-up.
   - Header vs detalhe classificados pela hierarquia de linha (o membro com `<Group>` é o detalhe). Híbrido
     tabela+matrix, múltiplas linhas de detalhe, row-group headers/footers e ColSpan são follow-up (com aviso);
     múltiplas DetailBands (várias data regions no Body) também (cai no `TablixElement`).
