@@ -108,6 +108,41 @@
                         @onclick="@(() => RemoveElement(capturedBand, captured))"
                         @onclick:stopPropagation="true">×</button>
             </div>
+
+            @* Container-rectangle children, indented one level (depth-2). Selecting a child row drives the
+               same OnSelect → PropertyGrid; deleting removes it from its parent's Children. *@
+            @if (el.Kind == DesignerElementKind.Rectangle && el.Children.Count > 0)
+            {
+                @foreach (var childEl in el.Children)
+                {
+                    var capturedChild = childEl;
+                    var capturedParent = el;
+                    var childErr = !string.IsNullOrEmpty(childEl.Expression)
+                        && ExpressionValidator.Validate(childEl.Expression, DataSources, Parameters) is not null;
+                    <div class="outline-row depth-2 @(ReferenceEquals(childEl, SelectedElement) ? "is-selected" : null)"
+                         @onclick="@(() => OnSelect.InvokeAsync(capturedChild))">
+                        <span></span>
+                        <Icon Name="@KindIcon(childEl)" Size="12" CssClass="type-i icon icon-12" />
+                        <span class="outline-label">@(string.IsNullOrEmpty(childEl.Name) ? childEl.Kind.ToString() : childEl.Name)</span>
+                        @if (childErr)
+                        {
+                            <span class="outline-err" title="Expressão inválida">⚠</span>
+                        }
+                        <button class="outline-btn @(childEl.IsVisible ? null : "is-off")"
+                                type="button"
+                                title="@(childEl.IsVisible ? "Ocultar" : "Mostrar")"
+                                @onclick="@(() => capturedChild.IsVisible = !capturedChild.IsVisible)"
+                                @onclick:stopPropagation="true">
+                            <Icon Name="@(childEl.IsVisible ? "eye" : "eye-off")" Size="11" CssClass="icon icon-12" />
+                        </button>
+                        <button class="outline-btn outline-del"
+                                type="button"
+                                title="Excluir filho do retângulo"
+                                @onclick="@(() => RemoveChild(capturedParent, capturedChild))"
+                                @onclick:stopPropagation="true">×</button>
+                    </div>
+                }
+            }
         }
     }
 </div>
@@ -158,6 +193,12 @@
     {
         band.RemoveElement(el);
         if (ReferenceEquals(SelectedElement, el)) OnSelect.InvokeAsync(null);
+    }
+
+    private void RemoveChild(ElementViewModel parent, ElementViewModel child)
+    {
+        parent.RemoveChild(child);
+        if (ReferenceEquals(SelectedElement, child)) OnSelect.InvokeAsync(null);
     }
 
     private readonly DesignerBandKind[] _optional =

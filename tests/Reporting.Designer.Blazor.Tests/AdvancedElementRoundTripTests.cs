@@ -391,6 +391,103 @@ public class AdvancedElementRoundTripTests
         back2.RowGroups[0].SortDescending.Should().BeTrue();
     }
 
+    // ── Container Rectangle children (PR1: visíveis + selecionáveis + editáveis) ──────
+
+    private static RectangleElement RectWith(params ReportElement[] children) => new()
+    {
+        Id = "rect",
+        Bounds = new Rectangle(Unit.Zero, Unit.Zero, Unit.FromMm(100), Unit.FromMm(60)),
+        Children = new EquatableArray<ReportElement>(children),
+    };
+
+    [Fact]
+    public void Rectangle_children_materialise_into_editable_child_view_models()
+    {
+        var rect = RectWith(
+            new LabelElement { Id = "c1", Text = "Título", Bounds = new Rectangle(Unit.FromMm(5), Unit.FromMm(5), Unit.FromMm(40), Unit.FromMm(6)) },
+            new TextBoxElement { Id = "c2", Expression = "Fields.total", Bounds = new Rectangle(Unit.FromMm(5), Unit.FromMm(15), Unit.FromMm(40), Unit.FromMm(6)) });
+
+        var vm = ElementViewModel.FromElement(rect);
+        vm.Kind.Should().Be(DesignerElementKind.Rectangle);
+        vm.Children.Should().HaveCount(2, "children are materialised as real child VMs, not an opaque blob");
+        vm.Children[0].Kind.Should().Be(DesignerElementKind.Label);
+        vm.Children[1].Kind.Should().Be(DesignerElementKind.TextBox);
+        vm.Children[0].ParentElement.Should().BeSameAs(vm, "each child back-references its container");
+
+        var back = (RectangleElement)vm.ToElement();
+        back.Children.Should().HaveCount(2);
+        ((LabelElement)back.Children[0]).Text.Should().Be("Título");
+        ((TextBoxElement)back.Children[1]).Expression.Should().Be("Fields.total");
+    }
+
+    [Fact]
+    public void Editing_a_childs_bounds_sticks_through_round_trip()
+    {
+        var rect = RectWith(new LabelElement { Id = "c1", Text = "x", Bounds = new Rectangle(Unit.FromMm(5), Unit.FromMm(5), Unit.FromMm(40), Unit.FromMm(6)) });
+        var vm = ElementViewModel.FromElement(rect);
+
+        // Child coordinates are relative to the parent Rectangle — editing them via the child VM must persist.
+        vm.Children[0].X = Unit.FromMm(12);
+        vm.Children[0].Text = "editado";
+
+        var back = (RectangleElement)vm.ToElement();
+        var child = (LabelElement)back.Children[0];
+        child.Bounds.X.Should().Be(Unit.FromMm(12));
+        child.Text.Should().Be("editado");
+    }
+
+    [Fact]
+    public void Rectangle_with_an_opaque_Tablix_child_does_not_degrade_it_to_a_textbox()
+    {
+        // The critical regression: materialising children into VMs must reuse the opaque-preservation path,
+        // otherwise a nested Tablix (no dedicated editor) would silently become a TextBox on save.
+        var rect = RectWith(new TablixElement
+        {
+            Id = "t",
+            Bounds = new Rectangle(Unit.FromMm(5), Unit.FromMm(5), Unit.FromMm(80), Unit.FromMm(30)),
+            DataSetName = "Vendas",
+            Cells = new EquatableArray<TablixCell>(
+                [new TablixCell(0, 0, new LabelElement { Text = "P", Bounds = Rectangle.Empty })]),
+        });
+
+        var vm = ElementViewModel.FromElement(rect);
+        vm.Children.Should().ContainSingle().Which.Kind.Should().Be(DesignerElementKind.Tablix);
+
+        vm.X = Unit.FromMm(10); // edit the parent — round-trips the children
+        var back = (RectangleElement)vm.ToElement();
+        back.Children.Should().ContainSingle();
+        back.Children[0].Should().BeOfType<TablixElement>("a nested opaque element must NOT degrade to TextBox");
+        ((TablixElement)back.Children[0]).DataSetName.Should().Be("Vendas");
+    }
+
+    [Fact]
+    public void Nested_rectangle_in_rectangle_round_trips_to_arbitrary_depth()
+    {
+        var inner = RectWith(new LabelElement { Id = "deep", Text = "fundo", Bounds = Rectangle.Empty });
+        var outer = RectWith(inner with { Id = "inner" });
+
+        var vm = ElementViewModel.FromElement(outer);
+        vm.Children.Should().ContainSingle().Which.Kind.Should().Be(DesignerElementKind.Rectangle);
+        vm.Children[0].Children.Should().ContainSingle("the grandchild is materialised recursively");
+
+        var back = (RectangleElement)vm.ToElement();
+        var innerBack = back.Children.Should().ContainSingle().Subject.Should().BeOfType<RectangleElement>().Subject;
+        ((LabelElement)innerBack.Children.Single()).Text.Should().Be("fundo");
+    }
+
+    [Fact]
+    public void Clone_deep_copies_children_with_fresh_ids()
+    {
+        var rect = RectWith(new LabelElement { Id = "c1", Text = "orig", Bounds = Rectangle.Empty });
+        var vm = ElementViewModel.FromElement(rect);
+
+        var clone = vm.Clone();
+        clone.Children.Should().ContainSingle();
+        clone.Children[0].Id.Should().NotBe("c1", "clone gives children fresh ids");
+        clone.Children[0].ParentElement.Should().BeSameAs(clone);
+        ((LabelElement)((RectangleElement)clone.ToElement()).Children[0]).Text.Should().Be("orig");
+    }
+
     [Fact]
     public void Tablix_row_subtotals_are_editable()
     {

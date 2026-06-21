@@ -71,6 +71,18 @@
                             <div class="el-content">
                                 @ElementInner(el)
                             </div>
+                            @* Container-rectangle children: rendered read-only-positioned and selectable
+                               (PR1). They carry no data-element-id / @ref, so the JS drag/resize/marquee
+                               never sees them — nested drag is a follow-up. *@
+                            @if (el.Kind == DesignerElementKind.Rectangle && el.Children.Count > 0)
+                            {
+                                <div class="el-children">
+                                    @foreach (var child in el.Children)
+                                    {
+                                        @RenderChild(child, 1)
+                                    }
+                                </div>
+                            }
                             @if (_inlineEditElement == el)
                             {
                                 @* The editor fills the element itself — so it inherits the element's exact
@@ -435,6 +447,65 @@
             string.IsNullOrEmpty(e.Expression) ? null : e.Expression,
         _ => null,
     };
+
+    // Visual recursion cap for nested rectangles on the canvas. The data model nests unbounded (ToElement
+    // round-trips every level); this only limits how deep the designer draws to keep the Razor tree sane.
+    private const int MaxNestDepth = 3;
+
+    /// <summary>Renders a container-Rectangle child on the canvas: positioned relative to its parent (X/Y are
+    /// parent-relative), clickable to select + edit via the PropertyGrid, recursive for nested rectangles up
+    /// to <see cref="MaxNestDepth"/>. Children are NOT draggable/resizable in this PR — they carry no
+    /// data-element-id and no @ref, so the JS move/resize/marquee machinery ignores them; the pointerdown is
+    /// stopped so a click on a child never starts a drag of the parent rectangle. Built via RenderTreeBuilder
+    /// (not a Razor template) so <c>AddEventStopPropagationAttribute</c> is available for the recursion.</summary>
+    private RenderFragment RenderChild(ElementViewModel child, int depth) => builder => RenderChildCore(builder, child, depth);
+
+    private void RenderChildCore(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder builder, ElementViewModel child, int depth)
+    {
+        builder.OpenElement(0, "div");
+        // Key by the child VM instance so Blazor matches by identity across structural mutations (a sibling
+        // removed from the middle, reordered, etc.) — the recursive builder reuses sequence numbers, so
+        // without a key the diff could retain stale DOM or graft the wrong sibling's attributes.
+        builder.SetKey(child);
+        var cls = "el el-child"
+            + (child.IsSelected ? " is-selected" : null)
+            + (IsDataKind(child) ? " is-data" : null)
+            + (child.IsBold ? " bold" : null)
+            + (AlignClass(child) is { Length: > 0 } a ? " " + a : null);
+        builder.AddAttribute(1, "class", cls);
+        builder.AddAttribute(2, "style", ElementStyle(child) + (child.IsVisible ? string.Empty : "opacity:0.4;"));
+        builder.AddAttribute(3, "title", OverflowTitle(child));
+        builder.AddAttribute(4, "onclick", EventCallback.Factory.Create<MouseEventArgs>(this, e => OnElementClicked(child, e)));
+        builder.AddEventStopPropagationAttribute(5, "onclick", true);
+        // Stop the pointerdown so the parent rectangle's JS drag handler never grabs a child click.
+        builder.AddEventStopPropagationAttribute(6, "onpointerdown", true);
+
+        builder.OpenElement(7, "div");
+        builder.AddAttribute(8, "class", "el-content");
+        builder.AddContent(9, ElementInner(child));
+        builder.CloseElement();
+
+        if (child.Kind == DesignerElementKind.Rectangle && child.Children.Count > 0 && depth < MaxNestDepth)
+        {
+            builder.OpenElement(10, "div");
+            builder.AddAttribute(11, "class", "el-children");
+            foreach (var grand in child.Children)
+            {
+                RenderChildCore(builder, grand, depth + 1);
+            }
+            builder.CloseElement();
+        }
+
+        if (child.IsSelected)
+        {
+            builder.OpenElement(12, "div");
+            builder.AddAttribute(13, "class", "selection-ring");
+            builder.AddAttribute(14, "aria-hidden", "true");
+            builder.CloseElement();
+        }
+
+        builder.CloseElement();
+    }
 
     private static RenderFragment ElementInner(ElementViewModel e) => builder =>
     {
