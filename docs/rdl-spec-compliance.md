@@ -174,7 +174,7 @@ Legenda: ✅ pleno · 🟡 parcial · 🔴 ausente/crítico.
 | Tablix.Filters | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | Filtro pré-grupo ausente | M | 2 |
 | Tablix.Style/OmitBorderOnPageBreak | 🟡 | ✅ | ✅ | ✅ | 🟡 | 🔴 | 🔴 | Bordas via grid hardcoded; sem OmitBorderOnPageBreak | S | 2 |
 | PageBreak/PageName/NoRowsMessage | 🟡 | 🟡 | ✅ | ✅ | ✅ | ✅ | ✅ | NoRowsMessage ✅ Tablix (model/render/4-serial/import/code-first/Designer, #110); PageBreak/PageName ainda; PageName não gera bookmark | S | 2 |
-| ColSpan/RowSpan | 🟡 | 🟡 | 🔴 | 🔴 | ✅ | ✅ | 🟡 | TablixCell.ColumnSpan/RowSpan no model + 4-serial; render flat-table honra ColSpan (#121); RowSpan render + matrix + import RDL (span implícito) são follow-up | M | 2 |
+| ColSpan/RowSpan | 🟡 | 🟡 | 🟡 | 🟡 | ✅ | ✅ | 🟡 | TablixCell.ColumnSpan/RowSpan no model + 4-serial; render flat-table honra ColSpan (#121); import RDL <ColSpan> (#122, banda + TablixElement); RowSpan render + matrix + RowSpan implícito do RDL são follow-up | M | 2 |
 | **RdlImporter: Tablix** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🟡 | flat-table (#106) + matrix (#96) + NoRowsMessage (#110) importam; híbrido/span/multi-detail são follow-up (com aviso) | L | 1 |
 
 ### Área F — Data viz

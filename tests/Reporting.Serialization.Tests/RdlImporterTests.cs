@@ -718,6 +718,42 @@ public class RdlImporterTests
     }
 
     [Fact]
+    public void Tablix_cell_ColSpan_is_imported_into_the_band()
+    {
+        // Header row: a merged cell (ColSpan=2) over two detail columns; detail row: two normal cells.
+        var rdl = """
+            <Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition">
+              <Body><Height>3cm</Height><ReportItems>
+                <Tablix Name="T"><Top>0cm</Top><Left>0cm</Left><Width>8cm</Width><Height>2cm</Height>
+                  <DataSetName>D</DataSetName>
+                  <TablixBody>
+                    <TablixColumns><TablixColumn><Width>4cm</Width></TablixColumn><TablixColumn><Width>4cm</Width></TablixColumn></TablixColumns>
+                    <TablixRows>
+                      <TablixRow><TablixCells>
+                        <TablixCell><ColSpan>2</ColSpan><CellContents><Textbox><Paragraphs><Paragraph><TextRuns><TextRun><Value>Resumo</Value></TextRun></TextRuns></Paragraph></Paragraphs></Textbox></CellContents></TablixCell>
+                      </TablixCells></TablixRow>
+                      <TablixRow><TablixCells>
+                        <TablixCell><CellContents><Textbox><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!A.Value</Value></TextRun></TextRuns></Paragraph></Paragraphs></Textbox></CellContents></TablixCell>
+                        <TablixCell><CellContents><Textbox><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!B.Value</Value></TextRun></TextRuns></Paragraph></Paragraphs></Textbox></CellContents></TablixCell>
+                      </TablixCells></TablixRow>
+                    </TablixRows>
+                  </TablixBody>
+                  <TablixColumnHierarchy><TablixMembers><TablixMember /><TablixMember /></TablixMembers></TablixColumnHierarchy>
+                  <TablixRowHierarchy><TablixMembers><TablixMember /><TablixMember><Group Name="Details" /></TablixMember></TablixMembers></TablixRowHierarchy>
+                </Tablix>
+              </ReportItems></Body>
+            </Report>
+            """;
+        var def = new RdlImporter().ImportXml(rdl);
+        // Lone flat Tablix → decomposes to bands; the merged header Label spans both columns (~8cm), wider
+        // than a single detail TextBox (~4cm).
+        var header = def.PageHeader!.Elements.OfType<Reporting.Elements.LabelElement>().Single();
+        header.Text.Should().Be("Resumo");
+        header.Bounds.Width.ToCm().Should().BeApproximately(8, 0.1);
+        def.Detail.Elements.OfType<Reporting.Elements.TextBoxElement>().First().Bounds.Width.ToCm().Should().BeApproximately(4, 0.1);
+    }
+
+    [Fact]
     public void Tablix_flat_with_another_body_item_stays_a_TablixElement()
     {
         // Guard: more than one Body data region → keep the existing single-block TablixElement path.
