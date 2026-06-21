@@ -519,6 +519,13 @@ public sealed class RdlImporter
         var rowGroups = ReadTablixGroups(El(El(item, "TablixRowHierarchy"), "TablixMembers"), "Rows");
         var colGroups = ReadTablixGroups(El(El(item, "TablixColumnHierarchy"), "TablixMembers"), "Cols");
 
+        // Pure flat table (RDL Table/List): no DYNAMIC group on either axis (static columns + a Details row).
+        // The model/renderer already support this shape (Cells row 0 = header, row 1 = detail); map the grid.
+        if (rowGroups.Count == 0 && colGroups.Count == 0)
+        {
+            return FlatTableTablix(item, bounds, name);
+        }
+
         var cells = new List<TablixCell>();
         var cornerRaw = TextboxValue(FirstTextbox(El(item, "TablixCorner")));
         if (!string.IsNullOrEmpty(cornerRaw))
@@ -553,6 +560,86 @@ public sealed class RdlImporter
             Cells = new EquatableArray<TablixCell>(cells),
         };
     }
+
+    // Imports an RDL flat Table/List (static columns + a Details row) into the TablixElement table shape the
+    // renderer already understands: Cells (0,c) = header Label, (1,c) = detail TextBox, RowGroups/ColumnGroups
+    // empty, ColumnWidths = the RDL column widths (relative weights). Header vs detail rows are classified by
+    // the row hierarchy (the member with a <Group> is the Details/detail row), falling back to position.
+    private ReportElement FlatTableTablix(XElement item, Rectangle bounds, string name)
+    {
+        var body = El(item, "TablixBody");
+        var bodyRows = (El(body, "TablixRows")?.Elements().Where(e => e.Name.LocalName == "TablixRow")
+            ?? Enumerable.Empty<XElement>()).ToList();
+        var widths = (El(body, "TablixColumns")?.Elements().Where(e => e.Name.LocalName == "TablixColumn")
+            ?? Enumerable.Empty<XElement>())
+            .Select(c => ParseSize(Val(c, "Width"))?.ToMm() ?? 0.0).ToList();
+
+        // Classify: the row-hierarchy member with a <Group> (Details, even without GroupExpression) is the
+        // detail row; the static member before it is the header. No hierarchy → positional (last = detail).
+        var rowMembers = (El(El(item, "TablixRowHierarchy"), "TablixMembers")?.Elements()
+            .Where(e => e.Name.LocalName == "TablixMember") ?? Enumerable.Empty<XElement>()).ToList();
+        int detailIdx = rowMembers.FindIndex(m => El(m, "Group") is not null);
+        XElement? headerRow, detailRow;
+        if (detailIdx >= 0 && detailIdx < bodyRows.Count)
+        {
+            detailRow = bodyRows[detailIdx];
+            headerRow = detailIdx > 0 ? bodyRows[detailIdx - 1] : null;
+        }
+        else
+        {
+            detailRow = bodyRows.Count >= 1 ? bodyRows[^1] : null;
+            headerRow = bodyRows.Count >= 2 ? bodyRows[0] : null;
+        }
+
+        var cells = new List<TablixCell>();
+        if (headerRow is not null)
+        {
+            var hc = RowCells(headerRow);
+            for (int c = 0; c < hc.Count; c++)
+            {
+                if (TextboxValue(FirstTextbox(hc[c])) is { Length: > 0 } v)
+                {
+                    cells.Add(new TablixCell(0, c, new LabelElement { Text = v, Bounds = Rectangle.Empty }));
+                }
+            }
+        }
+        if (detailRow is not null)
+        {
+            var dc = RowCells(detailRow);
+            for (int c = 0; c < dc.Count; c++)
+            {
+                var tb = FirstTextbox(dc[c]);
+                if (TextboxValue(tb) is { Length: > 0 } v)
+                {
+                    cells.Add(new TablixCell(1, c, new TextBoxElement
+                    {
+                        Expression = RdlExpression.Convert(v),
+                        Bounds = Rectangle.Empty,
+                        Style = tb is null ? Style.Default : ReadStyle(tb) ?? Style.Default,
+                    }));
+                }
+            }
+        }
+        if (cells.Count == 0)
+        {
+            _warnings.Add($"Tablix '{name}': tabela sem células de texto reconhecíveis — importada vazia.");
+        }
+
+        return new TablixElement
+        {
+            Bounds = bounds,
+            DataSetName = Val(item, "DataSetName"),
+            Cells = new EquatableArray<TablixCell>(cells),
+            // RDL widths are absolute; the renderer treats ColumnWidths as relative weights, preserving ratios.
+            ColumnWidths = widths.Count >= 2 && widths.Any(w => w > 0)
+                ? new EquatableArray<double>(widths)
+                : EquatableArray<double>.Empty,
+        };
+    }
+
+    private static List<XElement> RowCells(XElement tablixRow)
+        => (El(tablixRow, "TablixCells")?.Elements().Where(e => e.Name.LocalName == "TablixCell")
+            ?? Enumerable.Empty<XElement>()).ToList();
 
     // Walks a TablixMembers tree (outer→inner), collecting each member that carries a <Group> with a
     // <GroupExpression> into a TablixGroup (with the member's optional first SortExpression). Static

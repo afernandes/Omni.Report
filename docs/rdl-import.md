@@ -38,11 +38,17 @@ var pdf = await new ReportEngine().RenderAsync(def, dataSources);
   por série com valor do 1º DataValue); `<GaugePanel>` → `GaugeElement` (Radial/Linear + valor do 1º
   ponteiro); `<Subreport>` → `SubreportElement` (ReportName→ReportId + Parameters→ParameterBindings).
   `<Map>` e `<CustomReportItem>` (DataBar/Sparkline/Indicator) → aviso em `Metadata["ImportWarnings"]`.
+- **Tablix tabela plana** (`<Tablix>` Table/List sem grupo dinâmico em nenhum eixo — colunas estáticas +
+  linha Details) → `TablixElement` no modo tabela: célula `(0,c)` = header label, `(1,c)` = detalhe TextBox
+  (com `<Style>`/Format), por coluna; `<TablixColumns>`/`Width` → `ColumnWidths` (pesos relativos). Header vs
+  detalhe são classificados pela hierarquia de linha (o membro com `<Group>` é o detalhe). Híbrido
+  tabela+matrix (colunas estáticas com grupo dinâmico de linha, ou vice-versa), múltiplas linhas de detalhe,
+  row-group headers/footers e ColSpan são follow-up (com aviso).
 - **Tablix matrix/crosstab** (`<Tablix>` com hierarquias dinâmicas de linha **e** coluna) → `TablixElement`:
   `TablixRowHierarchy`/`TablixColumnHierarchy` (membros com `<Group><GroupExpression>`, recursivo p/ níveis
   aninhados, + sort do membro) → `RowGroups`/`ColumnGroups`; `<TablixCorner>` → célula `(0,0)`;
-  valor do `<TablixBody>` → célula de corpo `(1,1)`; `DataSetName`. Tabelas planas / colunas estáticas e
-  span por-célula são follow-up — um aviso vai em `Metadata["ImportWarnings"]` (nunca silencioso).
+  valor do `<TablixBody>` → célula de corpo `(1,1)`; `DataSetName`. Híbrido tabela+matrix e span por-célula
+  são follow-up — um aviso vai em `Metadata["ImportWarnings"]` (nunca silencioso).
 - **DataSets** (`<DataSets><DataSet>`) → `DataSourceDefinition` (metadados de binding; a execução da query
   fica delegada ao host `IReportDataSource`): `<Fields>` → `DataField` (campos com `<Value>` viram
   `CalculatedField`); `<Filters>` estruturado → `FilterExpression` booleano; `<SortExpressions>`;
@@ -67,7 +73,7 @@ var pdf = await new ReportEngine().RenderAsync(def, dataSources);
 Avisados via `Metadata["ImportWarnings"]` ou parcialmente suportados (o import **estrutural sempre tem
 sucesso**, nunca lança nem descarta em silêncio):
 
-- **Tablix** não-matrix (tabelas planas / colunas estáticas / span por-célula); **Map** e
+- **Tablix** híbrido tabela+matrix / span por-célula / múltiplas linhas de detalhe; **Map** e
   **CustomReportItem** (DataBar/Sparkline/Indicator) — avisados.
 - **TextRun** com `MarkupType=HTML` (achatado p/ texto, avisado); estilo visual por-run e hotspot de ação
   por-run no render (preservados no modelo, desenho é follow-up). Células de **Tablix** (corner/body) ainda
