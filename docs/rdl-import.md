@@ -60,7 +60,8 @@ var pdf = await new ReportEngine().RenderAsync(def, dataSources);
 - **Report-level**: `<EmbeddedImages>` → bytes inline (um `<Image Source="Embedded">` resolve a
   `ImageElement` com `InlineData`); `<CustomProperties>` → `Metadata`; `<Code>` (módulo VB report-level)
   preservado em `Metadata["RdlCode"]` (execução é follow-up).
-- **Estilo e atributos** dos itens: nó `<Style>` (fonte/cores/borda/padding/alinhamento/format),
+- **Estilo e atributos** dos itens: nó `<Style>` (fonte/cores/borda/padding/alinhamento/format/`WrapMode`
+  →WordWrap, onde `NoWrap` desliga a quebra),
   `Visibility/Hidden`, `Bookmark`, `DocumentMapLabel`, `Action`, `CanGrow`/`CanShrink`.
 - **Expressões** VB → OmniReport (`RdlExpression`): `Fields!X.Value`→`Fields.X`,
   `Parameters!P.Value`→`Parameters.P`, `Globals!PageNumber`/`OverallPageNumber`→`PageNumber`,

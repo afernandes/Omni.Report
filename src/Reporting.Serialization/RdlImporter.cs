@@ -923,6 +923,7 @@ public sealed class RdlImporter
             Padding: ReadPadding(s),
             HorizontalAlignment: ParseHAlign(Val(s, "TextAlign")),
             VerticalAlignment: ParseVAlign(Val(s, "VerticalAlign")),
+            WordWrap: ParseWrapMode(Val(s, "WrapMode")),
             Format: Val(s, "Format") is { Length: > 0 } fmt ? fmt : null);
         return style == Style.Default ? null : style;
     }
@@ -1065,6 +1066,10 @@ public sealed class RdlImporter
         "Bottom" => VerticalAlignment.Bottom,
         _ => VerticalAlignment.Top,
     };
+
+    // RDL <WrapMode>: only "NoWrap" disables wrapping; "WordWrap"/absent → wrap (the model default).
+    private static bool ParseWrapMode(string? a)
+        => !string.Equals(a, "NoWrap", StringComparison.OrdinalIgnoreCase);
 
     // RDL colors are "#RRGGBB"/"#AARRGGBB" or a named color. Returns null on empty/unknown (inherit).
     private static Color? ParseColor(string? raw)
