@@ -491,6 +491,18 @@ public sealed class DesignerParameter : Notifying
     /// <summary>RDL <c>&lt;MultiValue&gt;</c>: the parameter accepts a list of values.</summary>
     public bool AllowMultiple { get => _allowMultiple; set => Set(ref _allowMultiple, value); }
 
+    private bool _hidden;
+    /// <summary>RDL <c>&lt;Hidden&gt;</c>: the parameter is not shown in the prompt (set via default/query).</summary>
+    public bool Hidden { get => _hidden; set => Set(ref _hidden, value); }
+
+    private bool _nullable;
+    /// <summary>RDL <c>&lt;Nullable&gt;</c>: the value may be null.</summary>
+    public bool Nullable { get => _nullable; set => Set(ref _nullable, value); }
+
+    private bool _allowBlank;
+    /// <summary>RDL <c>&lt;AllowBlank&gt;</c>: an empty string is a valid value (string params).</summary>
+    public bool AllowBlank { get => _allowBlank; set => Set(ref _allowBlank, value); }
+
     private string? _availableValuesText;
     /// <summary>Static allowed values (SSRS Available Values), one per line as <c>value</c> or
     /// <c>value|label</c> (split on the first <c>|</c>; values/labels containing <c>|</c> aren't
@@ -528,7 +540,10 @@ public sealed class DesignerParameter : Notifying
             DefaultValue: CoercedDefault(),
             AllowMultiple: AllowMultiple,
             Required: Required,
-            AvailableValues: BuildAvailableValues());
+            AvailableValues: BuildAvailableValues(),
+            Nullable: Nullable,
+            AllowBlank: AllowBlank,
+            Hidden: Hidden);
 
     /// <summary>Builds the core <see cref="Reporting.Parameters.ParameterAvailableValues"/> from the
     /// editor's static text + query fields, or <c>null</c> when neither is configured.</summary>
@@ -614,6 +629,9 @@ public sealed class DesignerParameter : Notifying
             Prompt = p.Prompt,
             Required = p.Required,
             AllowMultiple = p.AllowMultiple,
+            Hidden = p.Hidden,
+            Nullable = p.Nullable,
+            AllowBlank = p.AllowBlank,
             AvailableValuesText = p.AvailableValues is { Values.Count: > 0 } av
                 ? string.Join("\n", av.Values.Select(v => v.Label is null ? v.Value : $"{v.Value}|{v.Label}"))
                 : null,

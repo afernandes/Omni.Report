@@ -275,6 +275,8 @@ public sealed class RdlImporter
         var type = MapType(Val(el, "DataType"));
         var prompt = Val(el, "Prompt");
         var nullable = string.Equals(Val(el, "Nullable"), "true", StringComparison.OrdinalIgnoreCase);
+        var allowBlank = string.Equals(Val(el, "AllowBlank"), "true", StringComparison.OrdinalIgnoreCase);
+        var hidden = string.Equals(Val(el, "Hidden"), "true", StringComparison.OrdinalIgnoreCase);
         var multiValue = string.Equals(Val(el, "MultiValue"), "true", StringComparison.OrdinalIgnoreCase);
 
         var defaultEl = El(el, "DefaultValue");
@@ -291,7 +293,8 @@ public sealed class RdlImporter
 
         // RDL: a parameter is required only when it's neither nullable nor has a default supplied.
         var required = !nullable && defaultEl is null;
-        return new ReportParameter(name, type, prompt, defaultValue, multiValue, required, available);
+        return new ReportParameter(name, type, prompt, defaultValue, multiValue, required, available,
+            Nullable: nullable, AllowBlank: allowBlank, Hidden: hidden);
     }
 
     private static ParameterAvailableValues? ReadAvailableValues(XElement? validValues)

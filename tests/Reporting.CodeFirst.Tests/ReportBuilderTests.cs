@@ -71,6 +71,18 @@ public class ReportBuilderTests
     }
 
     [Fact]
+    public void Parameter_metadata_flags_flow_through_the_builder()
+    {
+        var report = ReportBuilder.Create("Test")
+            .Parameters(p => p.Add<string>("Token", hidden: true, nullable: true, allowBlank: true))
+            .Build();
+        var p = report.Definition.Parameters[0];
+        p.Hidden.Should().BeTrue();
+        p.Nullable.Should().BeTrue();
+        p.AllowBlank.Should().BeTrue();
+    }
+
+    [Fact]
     public void Datasource_registers_and_exposes_fields()
     {
         var rows = new[] { new Venda("Ana", 10m), new Venda("Beto", 20m) };

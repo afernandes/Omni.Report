@@ -101,6 +101,9 @@ internal static class RepJsonWriter
         {
             o["defaultValue"] = Convert.ToString(p.DefaultValue, Inv);
         }
+        if (p.Nullable) { o["nullable"] = true; }
+        if (p.AllowBlank) { o["allowBlank"] = true; }
+        if (p.Hidden) { o["hidden"] = true; }
         if (p.AvailableValues is { } av && (av.Values.Count > 0 || av.IsQuery))
         {
             var avo = new JsonObject();

@@ -4,7 +4,7 @@
 @* Modal that asks the user for runtime parameter values before previewing or exporting.
    Values are cached per session so the user isn't asked again on every preview. *@
 
-<DesignerModal Visible="@(Visible && Parameters.Count > 0)"
+<DesignerModal Visible="@(Visible && Prompted.Count > 0)"
                Title="Parâmetros do relatório"
                HeadIcon="sliders"
                OnClose="OnCancel">
@@ -14,7 +14,7 @@
             Eles ficam guardados durante a sessão para previews seguintes.
         </div>
         <div class="pp-list">
-            @foreach (var p in Parameters)
+            @foreach (var p in Prompted)
             {
                 var captured = p;
                 <div class="pp-row">
@@ -94,6 +94,9 @@
     [Parameter] public IReadOnlyDictionary<string, string?>? InitialValues { get; set; }
     [Parameter] public EventCallback<(IReadOnlyDictionary<string, string?> Values, bool Remember)> OnConfirmed { get; set; }
     [Parameter] public EventCallback OnCancelled { get; set; }
+
+    // RDL Hidden parameters are driven by default/query, not prompted to the user.
+    private IReadOnlyList<DesignerParameter> Prompted => Parameters.Where(p => !p.Hidden).ToList();
 
     private readonly Dictionary<string, string?> _values = new(StringComparer.Ordinal);
     private bool _remember = true;
