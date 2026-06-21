@@ -35,7 +35,8 @@ var pdf = await new ReportEngine().RenderAsync(def, dataSources);
   - `Line` (direção Horizontal/Vertical/diagonal inferida dos bounds — altura ~0 = régua horizontal,
     largura ~0 = vertical; antes toda linha virava diagonal), `Rectangle` (a forma + itens aninhados,
     deslocados para coordenadas absolutas),
-  - `Image` externa (`Source=External`).
+  - `Image` externa (`Source=External`); `<Sizing>` → `ImageSizing` (`Fit`→Stretch, `FitProportional`→Fit,
+    `Clip`→Native; `AutoSize`/ausente → Fit, o default do model — sem equivalente de "crescer o item").
 - **Data viz**: `<Chart>` → `ChartElement` (tipo da 1ª série, categoria da hierarquia, uma `ChartSeries`
   por série com valor do 1º DataValue); `<GaugePanel>` → `GaugeElement` (Radial/Linear + valor do 1º
   ponteiro); `<Subreport>` → `SubreportElement` (ReportName→ReportId + Parameters→ParameterBindings).

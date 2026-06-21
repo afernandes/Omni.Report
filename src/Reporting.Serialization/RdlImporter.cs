@@ -844,20 +844,33 @@ public sealed class RdlImporter
     {
         var source = Val(item, "Source");
         var value = Val(item, "Value");
+        var sizing = ParseSizing(Val(item, "Sizing"));
         if (string.Equals(source, "External", StringComparison.OrdinalIgnoreCase))
         {
             return RdlExpression.IsExpression(value)
-                ? new ImageElement { Source = ImageSourceKind.Expression, Expression = RdlExpression.Convert(value), Bounds = bounds }
-                : new ImageElement { Source = ImageSourceKind.Path, Path = value, Bounds = bounds };
+                ? new ImageElement { Source = ImageSourceKind.Expression, Expression = RdlExpression.Convert(value), Bounds = bounds, Sizing = sizing }
+                : new ImageElement { Source = ImageSourceKind.Path, Path = value, Bounds = bounds, Sizing = sizing };
         }
         if (string.Equals(source, "Embedded", StringComparison.OrdinalIgnoreCase)
             && value is { Length: > 0 } && _embeddedImages.TryGetValue(value, out var bytes))
         {
-            return new ImageElement { Source = ImageSourceKind.Inline, InlineData = new EquatableArray<byte>(bytes), Bounds = bounds };
+            return new ImageElement { Source = ImageSourceKind.Inline, InlineData = new EquatableArray<byte>(bytes), Bounds = bounds, Sizing = sizing };
         }
         // Database images (or an unresolved embedded name) are a follow-up — keep the name as the path.
-        return new ImageElement { Source = ImageSourceKind.Path, Path = value, Bounds = bounds };
+        return new ImageElement { Source = ImageSourceKind.Path, Path = value, Bounds = bounds, Sizing = sizing };
     }
+
+    // RDL <Sizing> → OmniReport ImageSizing. RDL "Fit" stretches to the box (distorts) → Stretch;
+    // "FitProportional" preserves aspect (letterbox) → Fit; "Clip" is native size clipped → Native.
+    // "AutoSize" (the RDL default, which grows the report item to the image) has no fixed-bounds equivalent,
+    // so it — like an absent/unknown value — falls back to the model default Fit (whole image, no distortion).
+    private static ImageSizing ParseSizing(string? raw) => raw switch
+    {
+        "Fit" => ImageSizing.Stretch,
+        "FitProportional" => ImageSizing.Fit,
+        "Clip" => ImageSizing.Native,
+        _ => ImageSizing.Fit,
+    };
 
     private static ReportParameter ReadParameter(XElement el)
     {
