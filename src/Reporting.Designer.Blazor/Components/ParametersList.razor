@@ -38,6 +38,15 @@
                     <label style="font-size:10.5px;color:var(--text-secondary);white-space:nowrap;">
                         <input type="checkbox" checked="@p.AllowMultiple"
                                @onchange="@(e => p.AllowMultiple = (bool)(e.Value ?? false))" /> Multi</label>
+                    <label style="font-size:10.5px;color:var(--text-secondary);white-space:nowrap;" title="Não mostrado no prompt (RDL Hidden)">
+                        <input type="checkbox" checked="@p.Hidden"
+                               @onchange="@(e => p.Hidden = (bool)(e.Value ?? false))" /> Oculto</label>
+                    <label style="font-size:10.5px;color:var(--text-secondary);white-space:nowrap;" title="Aceita valor nulo (RDL Nullable)">
+                        <input type="checkbox" checked="@p.Nullable"
+                               @onchange="@(e => p.Nullable = (bool)(e.Value ?? false))" /> Nulo</label>
+                    <label style="font-size:10.5px;color:var(--text-secondary);white-space:nowrap;" title="Aceita texto vazio (RDL AllowBlank)">
+                        <input type="checkbox" checked="@p.AllowBlank"
+                               @onchange="@(e => p.AllowBlank = (bool)(e.Value ?? false))" /> Vazio</label>
                 </div>
                 <div style="margin-top:4px;">
                     <div style="font-size:10px;color:var(--text-secondary);margin-bottom:2px;">Valores permitidos (1 por linha: <code>valor</code> ou <code>valor|rótulo</code>)</div>

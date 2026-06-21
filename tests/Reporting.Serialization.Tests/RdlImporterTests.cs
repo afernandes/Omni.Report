@@ -264,4 +264,23 @@ public class RdlImporterTests
         def.Metadata.ContainsKey("RdlCode").Should().BeTrue();
         def.Metadata["RdlCode"].Should().Contain("Dobro");
     }
+
+    [Fact]
+    public void Parameter_metadata_hidden_nullable_allowblank_are_imported()
+    {
+        var rdl = """
+            <Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition">
+              <ReportParameters>
+                <ReportParameter Name="P">
+                  <DataType>String</DataType>
+                  <Nullable>true</Nullable><AllowBlank>true</AllowBlank><Hidden>true</Hidden>
+                </ReportParameter>
+              </ReportParameters>
+            </Report>
+            """;
+        var p = new RdlImporter().ImportXml(rdl).Parameters[0];
+        p.Nullable.Should().BeTrue();
+        p.AllowBlank.Should().BeTrue();
+        p.Hidden.Should().BeTrue();
+    }
 }

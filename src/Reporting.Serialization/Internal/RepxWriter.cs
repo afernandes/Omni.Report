@@ -105,6 +105,9 @@ internal static class RepxWriter
         {
             el.SetAttributeValue("Prompt", p.Prompt);
         }
+        if (p.Nullable) { el.SetAttributeValue("Nullable", "true"); }
+        if (p.AllowBlank) { el.SetAttributeValue("AllowBlank", "true"); }
+        if (p.Hidden) { el.SetAttributeValue("Hidden", "true"); }
         if (p.DefaultValue is not null)
         {
             el.Add(new XElement("DefaultValue",

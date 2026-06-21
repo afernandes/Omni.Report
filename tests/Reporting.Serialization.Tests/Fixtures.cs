@@ -196,10 +196,12 @@ internal static class Fixtures
             Parameters = EquatableArray.Create(
                 new ReportParameter("DataInicio", typeof(DateTime), "Data inicial", new DateTime(2026, 1, 1)),
                 new ReportParameter("Limite", typeof(decimal), DefaultValue: 100m, Required: false),
-                // Static Available Values (value + label) — exercises the dropdown-domain round-trip.
+                // Static Available Values (value + label) + the parameter-metadata flags — exercises the
+                // dropdown-domain and Nullable/AllowBlank/Hidden round-trip.
                 new ReportParameter("Status", typeof(string), "Situação", "A", Required: false,
                     AvailableValues: ParameterAvailableValues.FromList(
-                        new ParameterValue("A", "Ativo"), new ParameterValue("I", "Inativo"))),
+                        new ParameterValue("A", "Ativo"), new ParameterValue("I", "Inativo")),
+                    Nullable: true, AllowBlank: true, Hidden: true),
                 // Query-driven Available Values — exercises the dataset/field round-trip.
                 new ReportParameter("Cliente", typeof(string), "Cliente", Required: false,
                     AvailableValues: ParameterAvailableValues.FromQuery("Clientes", "Id", "Nome"))),

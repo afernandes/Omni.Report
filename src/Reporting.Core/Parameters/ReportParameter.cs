@@ -11,7 +11,10 @@ public sealed record ReportParameter(
     object? DefaultValue = null,
     bool AllowMultiple = false,
     bool Required = true,
-    ParameterAvailableValues? AvailableValues = null);
+    ParameterAvailableValues? AvailableValues = null,
+    bool Nullable = false,
+    bool AllowBlank = false,
+    bool Hidden = false);
 
 /// <summary>Domain of allowed values for a parameter — a static list and/or a query over a dataset, so a
 /// host can render a validated dropdown instead of a free-text box (SSRS "Available Values"). Query-driven

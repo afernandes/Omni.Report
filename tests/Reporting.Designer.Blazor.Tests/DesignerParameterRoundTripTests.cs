@@ -81,4 +81,29 @@ public class DesignerParameterRoundTripTests
         cliente.AvailableValuesValueField.Should().Be("Id");
         cliente.AvailableValuesLabelField.Should().Be("Nome");
     }
+
+    [Fact]
+    public void Parameter_metadata_flags_persist_through_designer_and_repx()
+    {
+        var state = new DesignerState();
+        state.Parameters.Clear();
+        state.Parameters.Add(new DesignerParameter("token", DesignerFieldType.Text)
+        {
+            Hidden = true,
+            Nullable = true,
+            AllowBlank = true,
+        });
+
+        var definition = state.BuildDefinition();
+        definition.Parameters[0].Hidden.Should().BeTrue();
+        definition.Parameters[0].Nullable.Should().BeTrue();
+        definition.Parameters[0].AllowBlank.Should().BeTrue();
+
+        var reloaded = new DesignerState();
+        reloaded.Load(new RepxSerializer().SaveToBytes(definition));
+        var p = reloaded.Parameters[0];
+        p.Hidden.Should().BeTrue();
+        p.Nullable.Should().BeTrue();
+        p.AllowBlank.Should().BeTrue();
+    }
 }

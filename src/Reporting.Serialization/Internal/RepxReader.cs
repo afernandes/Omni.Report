@@ -119,7 +119,10 @@ internal static class RepxReader
                 LabelField = Attr(ave, "LabelField"),
             };
         }
-        return new ReportParameter(name, type, prompt, defaultValue, allowMultiple, required, available);
+        return new ReportParameter(name, type, prompt, defaultValue, allowMultiple, required, available,
+            Nullable: bool.Parse(Attr(el, "Nullable") ?? "false"),
+            AllowBlank: bool.Parse(Attr(el, "AllowBlank") ?? "false"),
+            Hidden: bool.Parse(Attr(el, "Hidden") ?? "false"));
     }
 
     private static ReportVariable ReadVariable(XElement el)

@@ -123,7 +123,10 @@ internal static class RepJsonReader
                 LabelField = (string?)avo["labelField"],
             };
         }
-        return new ReportParameter(name, type, prompt, defaultValue, allowMultiple, required, available);
+        return new ReportParameter(name, type, prompt, defaultValue, allowMultiple, required, available,
+            Nullable: (bool?)o["nullable"] ?? false,
+            AllowBlank: (bool?)o["allowBlank"] ?? false,
+            Hidden: (bool?)o["hidden"] ?? false);
     }
 
     private static ReportVariable ReadVariable(JsonObject o)
