@@ -537,6 +537,30 @@ public class RdlImporterTests
     }
 
     [Theory]
+    // VB escapes a literal double-quote inside a string by doubling it (""). The four quote-aware scanners
+    // (SplitTopLevel, SplitTopLevelLike, ConvertParenGroups, MatchingParen) now treat "" as ONE literal
+    // quote and stay in-string, instead of the previous close-then-reopen. That old path actually produced
+    // identical output for every input (the two quotes are adjacent, so the state reconverges before any
+    // split/paren/comma decision) — verified by a differential harness over ~8M inputs — so these cases are
+    // regression lock-ins for the now-explicit handling, NOT cases that fail without it. Raised by the
+    // adversarial review of #102 (infix Like). Covers Like / & / parens following a "" string.
+    // (a) Like after a string containing "".
+    [InlineData("=Fields!A.Value Like \"he said \"\"hi\"\"\"", "Like(Fields.A, \"he said \"\"hi\"\"\")")]
+    // (b) & / Concat after a string containing "" — string as the first and as the second operand.
+    [InlineData("=\"x \"\"y\"\"\" & Fields!A.Value", "Concat(\"x \"\"y\"\"\", Fields.A)")]
+    [InlineData("=Fields!A.Value & \"x \"\"y\"\"\"", "Concat(Fields.A, \"x \"\"y\"\"\")")]
+    // (c) Balanced parens after a "" string — MatchingParen / ConvertParenGroups / comma-split must keep the
+    // closing paren and the argument count right despite the doubled quotes.
+    [InlineData("=IIf(Fields!Cond.Value, \"a \"\"b\"\"\", Fields!C.Value)", "IIf(Fields.Cond, \"a \"\"b\"\"\", Fields.C)")]
+    // Combined: a "" string inside a function argument that also carries an infix Like (recurses through
+    // ConvertParenGroups → ConvertLike), so all four scanners run over the doubled quotes at once.
+    [InlineData("=IIf(Fields!N.Value Like \"x \"\"y\"\"\", 1, 0)", "IIf(Like(Fields.N, \"x \"\"y\"\"\"), 1, 0)")]
+    public void Expression_conversion_handles_vb_escaped_double_quotes(string raw, string expected)
+    {
+        Reporting.Serialization.Internal.RdlExpression.Convert(raw).Should().Be(expected);
+    }
+
+    [Theory]
     [InlineData("0pt", "100pt", "Horizontal")]   // flat height → horizontal ruler
     [InlineData("50pt", "0pt", "Vertical")]       // flat width → vertical ruler
     [InlineData("40pt", "60pt", "TopLeftToBottomRight")] // both sized → diagonal

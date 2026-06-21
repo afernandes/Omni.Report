@@ -114,7 +114,13 @@ internal static partial class RdlExpression
             if (inString)
             {
                 sb.Append(c);
-                if (c == quote) { inString = false; }
+                if (c == quote)
+                {
+                    // VB doubles a quote ("") to embed a literal one. Append the second quote too and stay
+                    // in-string, so the pair isn't read as close-then-reopen (which inverts the parity).
+                    if (i + 1 < s.Length && s[i + 1] == quote) { sb.Append(s[++i]); }
+                    else { inString = false; }
+                }
                 continue;
             }
             if (c is '\'' or '"')
@@ -150,7 +156,12 @@ internal static partial class RdlExpression
             char c = s[j];
             if (inString)
             {
-                if (c == quote) { inString = false; }
+                if (c == quote)
+                {
+                    // VB "" escape: a doubled quote is a literal quote, not a close — skip both, stay in-string.
+                    if (j + 1 < s.Length && s[j + 1] == quote) { j++; }
+                    else { inString = false; }
+                }
                 continue;
             }
             switch (c)
@@ -174,7 +185,12 @@ internal static partial class RdlExpression
             char c = s[i];
             if (inString)
             {
-                if (c == quote) { inString = false; }
+                if (c == quote)
+                {
+                    // VB "" escape: a doubled quote is a literal quote, not a close — skip both, stay in-string.
+                    if (i + 1 < s.Length && s[i + 1] == quote) { i++; }
+                    else { inString = false; }
+                }
                 continue;
             }
             switch (c)
@@ -209,7 +225,12 @@ internal static partial class RdlExpression
             char c = s[i];
             if (inString)
             {
-                if (c == quote) { inString = false; }
+                if (c == quote)
+                {
+                    // VB "" escape: a doubled quote is a literal quote, not a close — skip both, stay in-string.
+                    if (i + 1 < s.Length && s[i + 1] == quote) { i++; }
+                    else { inString = false; }
+                }
                 continue;
             }
             switch (c)
