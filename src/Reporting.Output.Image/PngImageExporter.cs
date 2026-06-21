@@ -149,7 +149,7 @@ public sealed class PngImageExporter : IReportExporter
                     {
                         copy[k] = i.Data[k];
                     }
-                    SkiaPrimitiveRenderer.DrawImage(canvas, copy, i.Bounds, dpi);
+                    SkiaPrimitiveRenderer.DrawImage(canvas, copy, i.Bounds, dpi, i.Sizing);
                 }
                 break;
             case DrawPolygonPrimitive poly:

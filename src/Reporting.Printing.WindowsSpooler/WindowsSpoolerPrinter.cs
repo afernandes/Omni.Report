@@ -220,7 +220,7 @@ public sealed class WindowsSpoolerPrinter : IReportPrinter
                     {
                         copy[k] = i.Data[k];
                     }
-                    ctx.DrawImage(copy, i.Bounds);
+                    ctx.DrawImage(copy, i.Bounds, i.Sizing);
                 }
                 break;
         }

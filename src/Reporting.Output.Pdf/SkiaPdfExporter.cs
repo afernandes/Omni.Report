@@ -93,7 +93,7 @@ public sealed class SkiaPdfExporter : IReportExporter
                     {
                         copy[k] = i.Data[k];
                     }
-                    SkiaPrimitiveRenderer.DrawImage(canvas, copy, i.Bounds, PdfDpi);
+                    SkiaPrimitiveRenderer.DrawImage(canvas, copy, i.Bounds, PdfDpi, i.Sizing);
                 }
                 break;
             case DrawPolygonPrimitive poly:

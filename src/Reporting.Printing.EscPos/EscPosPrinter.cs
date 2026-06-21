@@ -219,7 +219,7 @@ public sealed class EscPosPrinter : IReportPrinter
                     {
                         copy[k] = i.Data[k];
                     }
-                    SkiaPrimitiveRenderer.DrawImage(canvas, copy, i.Bounds, ThermalDpi);
+                    SkiaPrimitiveRenderer.DrawImage(canvas, copy, i.Bounds, ThermalDpi, i.Sizing);
                 }
                 break;
         }

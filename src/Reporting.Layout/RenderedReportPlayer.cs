@@ -88,7 +88,7 @@ public static class RenderedReportPlayer
                     }
                     span = copy;
                 }
-                context.DrawImage(span, i.Bounds);
+                context.DrawImage(span, i.Bounds, i.Sizing);
                 break;
             case DrawPolygonPrimitive poly:
                 context.DrawPath(poly.BuildPath, poly.Pen, poly.Fill);

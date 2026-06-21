@@ -151,6 +151,7 @@ internal sealed class BandRenderer
                             Bounds = elementBounds,
                             SourceElementId = image.Id,
                             Data = bytes,
+                            Sizing = image.Sizing,
                         });
                     }
                     actualHeight = MaxHeight(actualHeight, elementBounds, origin, null);

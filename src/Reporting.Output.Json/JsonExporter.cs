@@ -161,6 +161,7 @@ public sealed class JsonExporter : IReportExporter
                 writer.WriteString("type", "image");
                 WriteBounds(writer, i.Bounds);
                 writer.WriteNumber("byteCount", i.Data.Count);
+                writer.WriteString("sizing", i.Sizing.ToString());
                 writer.WriteEndObject();
                 break;
             case DrawPolygonPrimitive poly:
