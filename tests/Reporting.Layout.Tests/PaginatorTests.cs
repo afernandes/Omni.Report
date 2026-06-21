@@ -115,6 +115,70 @@ public class PaginatorTests
         report.Pages.Sum(p => p.Primitives.Count).Should().Be(20);
     }
 
+    // 60×60mm page, 5mm margins → 50mm content height; a 10mm detail fits 5 rows per column.
+    private static (PageSetup page, DetailBand detail) SnakeFixture(int columns)
+    {
+        var page = new PageSetup(
+            new PaperSize("MiniA6", Unit.FromMm(60), Unit.FromMm(60)),
+            Margins: Thickness.Uniform(Unit.FromMm(5)),
+            Columns: columns,
+            ColumnSpacing: Unit.FromMm(4));
+        var detail = new DetailBand(
+            Unit.FromMm(10),
+            EquatableArray.Create<ReportElement>(
+                new LabelElement
+                {
+                    Bounds = new Rectangle(0.Mm(), 0.Mm(), 18.Mm(), Unit.FromMm(10)),
+                    Text = "row",
+                }));
+        return (page, detail);
+    }
+
+    [Fact]
+    public async Task Snake_columns_pack_rows_into_columns_before_breaking_the_page()
+    {
+        // 2 columns × 4 rows/column = 8 rows per physical page; 20 rows → 3 pages (vs 5 single-column).
+        var (page, detail) = SnakeFixture(columns: 2);
+        var def = new ReportDefinition("snake", page, detail);
+        var report = await new ReportPaginator().PaginateAsync(TestData.BuildRequest(def, TestData.ManyRows(20)));
+
+        report.Pages.Count.Should().Be(3, "two columns roughly halve the page count (5 → 3)");
+        report.Pages.Sum(p => p.Primitives.Count).Should().Be(20, "every row is still emitted");
+
+        // The first physical page uses both columns: some labels at the left margin (col 0) and some offset
+        // to the right (col 1). Content width 50mm, spacing 4mm → column width 23mm, col 1 X = 5 + 23 + 4 = 32mm.
+        var xs = report.Pages[0].Primitives.OfType<DrawTextPrimitive>().Select(t => t.Bounds.X.ToMm()).ToList();
+        xs.Should().Contain(x => x > 4 && x < 6, "column 0 sits at the left margin (~5mm)");
+        xs.Should().Contain(x => x > 30 && x < 34, "column 1 is offset by column width + spacing (~32mm)");
+    }
+
+    [Fact]
+    public async Task Single_column_is_unchanged_by_the_column_engine()
+    {
+        // Regression: Columns=1 (default) keeps the original single-column page count (4 rows/page → 5 pages).
+        var (page, detail) = SnakeFixture(columns: 1);
+        var def = new ReportDefinition("plain", page, detail);
+        var report = await new ReportPaginator().PaginateAsync(TestData.BuildRequest(def, TestData.ManyRows(20)));
+
+        report.Pages.Count.Should().Be(5);
+        report.Pages[0].Primitives.OfType<DrawTextPrimitive>()
+            .Should().OnlyContain(t => t.Bounds.X.ToMm() > 4 && t.Bounds.X.ToMm() < 6, "everything stays at the left margin");
+    }
+
+    [Fact]
+    public async Task Continuous_paper_forces_a_single_column()
+    {
+        // Thermal roll (height 0) must not snake even if Columns>1 is set.
+        var page = new PageSetup(PaperSize.Thermal80, Margins: Thickness.Uniform(Unit.FromMm(2)), Columns: 3);
+        var (_, detail) = SnakeFixture(columns: 3);
+        var def = new ReportDefinition("roll", page, detail);
+        var report = await new ReportPaginator().PaginateAsync(TestData.BuildRequest(def, TestData.ManyRows(8)));
+
+        report.Pages.Should().ContainSingle("continuous paper emits one long page");
+        report.Pages[0].Primitives.OfType<DrawTextPrimitive>()
+            .Should().OnlyContain(t => t.Bounds.X.ToMm() < 4, "single column at the left margin, no snake offset");
+    }
+
     [Fact]
     public async Task Total_pages_two_pass_resolves_correct_count()
     {
