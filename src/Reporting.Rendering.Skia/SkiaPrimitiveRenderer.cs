@@ -41,6 +41,12 @@ public static class SkiaPrimitiveRenderer
         // The PRIMARY font is owned by the using statement above — do NOT add it to the
         // disposal list, or it'd be double-disposed.
         var fallbackFonts = new Dictionary<SKTypeface, SKFont>();
+        // Skia typefaces carry no underline/strikeout — those are drawn as lines from font metrics. One
+        // reusable stroke paint for the whole call (null when the style has neither decoration).
+        bool decorate = (style.Font.Style & (FontStyle.Underline | FontStyle.Strikeout)) != 0;
+        using var decoPaint = decorate
+            ? new SKPaint { Color = style.ForeColor.ToSKColor(), IsAntialias = true, Style = SKPaintStyle.Stroke }
+            : null;
         try
         {
             for (int i = 0; i < lines.Count; i++)
@@ -64,14 +70,46 @@ public static class SkiaPrimitiveRenderer
                 float baselineY = yStart + i * lineHeight;
                 foreach (var run in runs)
                 {
+                    float runWidth = run.Font.MeasureText(run.Text);
                     canvas.DrawText(run.Text, cursor, baselineY, run.Font, paint);
-                    cursor += run.Font.MeasureText(run.Text);
+                    if (decoPaint is not null)
+                    {
+                        DrawTextDecorations(canvas, decoPaint, run.Font, cursor, baselineY, runWidth, style.Font.Style);
+                    }
+                    cursor += runWidth;
                 }
             }
         }
         finally
         {
             foreach (var kv in fallbackFonts) kv.Value.Dispose();
+        }
+    }
+
+    /// <summary>Draws underline / strikethrough lines for a run — Skia typefaces don't carry them, so they
+    /// are stroked from the run's own font metrics (per-run, so a fallback/emoji run is decorated at its own
+    /// width). Positions/thicknesses use the metric hints when present, with size-relative fallbacks.</summary>
+    private static void DrawTextDecorations(SKCanvas canvas, SKPaint paint, SKFont font, float x, float baselineY, float width, FontStyle style)
+    {
+        if (width <= 0)
+        {
+            return;
+        }
+        var m = font.Metrics;
+        float fallbackThickness = Math.Max(1f, font.Size / 14f);
+        if ((style & FontStyle.Underline) != 0)
+        {
+            // UnderlinePosition is a positive offset BELOW the baseline.
+            float y = baselineY + (m.UnderlinePosition ?? m.Descent * 0.5f);
+            paint.StrokeWidth = m.UnderlineThickness ?? fallbackThickness;
+            canvas.DrawLine(x, y, x + width, y, paint);
+        }
+        if ((style & FontStyle.Strikeout) != 0)
+        {
+            // StrikeoutPosition is a negative offset ABOVE the baseline (Ascent is negative).
+            float y = baselineY + (m.StrikeoutPosition ?? m.Ascent * 0.35f);
+            paint.StrokeWidth = m.StrikeoutThickness ?? fallbackThickness;
+            canvas.DrawLine(x, y, x + width, y, paint);
         }
     }
 
