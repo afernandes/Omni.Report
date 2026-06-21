@@ -342,7 +342,7 @@ public sealed class ExpressionEvaluator
                 result = sb.ToString();
                 return true;
             }
-            case "like": // VB Like: * = any run, ? = one char, # = one digit. Case-insensitive.
+            case "like": // VB Like: * = any run, ? = one char, # = one digit. Case-SENSITIVE (see VbLike).
                 if (n < 2) return false;
                 result = VbLike(S(0), S(1));
                 return true;
