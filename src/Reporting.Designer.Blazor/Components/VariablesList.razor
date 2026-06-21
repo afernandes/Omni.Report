@@ -24,7 +24,8 @@
                     <select value="@captured.Scope"
                             @onchange="@(e => captured.Scope = ParseScope(e.Value?.ToString()))"
                             style="font-size:11px;background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--r-1);padding:2px 4px;">
-                        @foreach (var s in Enum.GetValues<VariableScope>())
+                        @* Report-level variables have no group context — offer only Report/Row. *@
+                        @foreach (var s in new[] { VariableScope.Report, VariableScope.Row })
                         {
                             <option value="@s" selected="@(captured.Scope == s)">@s</option>
                         }
