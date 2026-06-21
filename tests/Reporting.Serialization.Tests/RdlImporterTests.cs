@@ -150,6 +150,28 @@ public class RdlImporterTests
         RdlImporter.ParseSize("5furlongs").Should().BeNull("unknown unit is unspecified, not guessed");
     }
 
+    [Theory]
+    [InlineData("Fit", "Stretch")]              // RDL Fit = stretch to box (distorts)
+    [InlineData("FitProportional", "Fit")]      // preserve aspect (letterbox)
+    [InlineData("Clip", "Native")]              // native size, clipped
+    [InlineData("AutoSize", "Fit")]             // no fixed-bounds equivalent → model default
+    [InlineData(null, "Fit")]                   // absent → model default
+    public void Image_Sizing_is_imported(string? rdlSizing, string expected)
+    {
+        var sizingEl = rdlSizing is null ? "" : $"<Sizing>{rdlSizing}</Sizing>";
+        var rdl = $"""
+            <Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition">
+              <Body><Height>4cm</Height><ReportItems>
+                <Image Name="L"><Top>0cm</Top><Left>0cm</Left><Width>4cm</Width><Height>3cm</Height>
+                  <Source>External</Source><Value>logo.png</Value>{sizingEl}
+                </Image>
+              </ReportItems></Body>
+            </Report>
+            """;
+        var img = new RdlImporter().ImportXml(rdl).ReportHeader!.Elements.OfType<Reporting.Elements.ImageElement>().Single();
+        img.Sizing.Should().Be(Enum.Parse<Reporting.Elements.ImageSizing>(expected));
+    }
+
     [Fact]
     public void Report_Language_is_imported_into_Metadata()
     {
