@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Xml.Linq;
 using Reporting.Bands;
 using Reporting.Common;
+using Reporting.Data;
 using Reporting.Elements;
 using Reporting.Geometry;
 using Reporting.Paper;
@@ -93,8 +94,148 @@ public sealed class RdlImporter
             PageFooter = pageFooter,
             Metadata = new EquatableDictionary<string, string>(ReadMetadata(report)),
             Variables = new EquatableArray<ReportVariable>(ReadVariables(report)),
+            DataSources = new EquatableArray<DataSourceDefinition>(ReadDataSets(report)),
         };
     }
+
+    // RDL <DataSets><DataSet Name> → DataSourceDefinition (the binding metadata; query execution stays
+    // delegated to the host's IReportDataSource). Maps Fields/CalculatedFields, structured <Filters> to a
+    // boolean FilterExpression, <SortExpressions>, and preserves CommandText/QueryParameters in Parameters
+    // (a dedicated Query record is a follow-up — PR-8).
+    private static DataSourceDefinition[] ReadDataSets(XElement report)
+        => El(report, "DataSets")?.Elements().Where(e => e.Name.LocalName == "DataSet")
+            .Where(d => d.Attribute("Name")?.Value is { Length: > 0 })
+            .Select(ReadDataSet).ToArray()
+            ?? Array.Empty<DataSourceDefinition>();
+
+    private static DataSourceDefinition ReadDataSet(XElement ds)
+    {
+        var name = ds.Attribute("Name")!.Value;
+        var fields = new List<DataField>();
+        var calculated = new List<CalculatedField>();
+        foreach (var f in El(ds, "Fields")?.Elements().Where(e => e.Name.LocalName == "Field")
+                 ?? Enumerable.Empty<XElement>())
+        {
+            var fieldName = f.Attribute("Name")?.Value;
+            if (string.IsNullOrEmpty(fieldName))
+            {
+                continue;
+            }
+            // A <Field> with a <Value> expression is a calculated field; otherwise it's a data column.
+            if (Val(f, "Value") is { Length: > 0 } valueExpr)
+            {
+                calculated.Add(new CalculatedField(fieldName, RdlExpression.Convert(valueExpr)));
+            }
+            else
+            {
+                fields.Add(new DataField(fieldName, MapClrType(Val(f, "TypeName"))));
+            }
+        }
+
+        var query = El(ds, "Query");
+        var ps = new Dictionary<string, string>(StringComparer.Ordinal);
+        if (Val(query, "CommandText") is { Length: > 0 } sql)
+        {
+            ps["CommandText"] = sql;
+        }
+        if (Val(query, "CommandType") is { Length: > 0 } ct)
+        {
+            ps["CommandType"] = ct;
+        }
+        foreach (var qp in El(query, "QueryParameters")?.Elements().Where(e => e.Name.LocalName == "QueryParameter")
+                 ?? Enumerable.Empty<XElement>())
+        {
+            if (qp.Attribute("Name")?.Value is { Length: > 0 } pn)
+            {
+                ps[$"QueryParameter:{pn}"] = RdlExpression.Convert(Val(qp, "Value"));
+            }
+        }
+
+        return new DataSourceDefinition(name)
+        {
+            Fields = new EquatableArray<DataField>(fields),
+            CalculatedFields = new EquatableArray<CalculatedField>(calculated),
+            FilterExpression = ReadFilters(El(ds, "Filters")),
+            SortExpressions = new EquatableArray<SortDescriptor>(ReadDataSetSorts(El(ds, "SortExpressions"))),
+            Parameters = new EquatableDictionary<string, string>(ps),
+        };
+    }
+
+    // RDL <Filters> is structured (expression + operator + values); fold into one boolean expression
+    // (multiple filters AND together) the engine can evaluate per row.
+    private static string? ReadFilters(XElement? filters)
+    {
+        if (filters is null)
+        {
+            return null;
+        }
+        var clauses = new List<string>();
+        foreach (var f in filters.Elements().Where(e => e.Name.LocalName == "Filter"))
+        {
+            var left = RdlExpression.Convert(Val(f, "FilterExpression"));
+            if (string.IsNullOrEmpty(left))
+            {
+                continue;
+            }
+            var op = Val(f, "Operator") ?? "Equal";
+            var value = FilterValue(El(f, "FilterValues"));
+            clauses.Add(op switch
+            {
+                "Equal" => $"{left} == {value}",
+                "NotEqual" => $"{left} <> {value}",
+                "GreaterThan" => $"{left} > {value}",
+                "GreaterThanOrEqual" => $"{left} >= {value}",
+                "LessThan" => $"{left} < {value}",
+                "LessThanOrEqual" => $"{left} <= {value}",
+                "Like" => $"Like({left}, {value})",
+                _ => $"{left} == {value}", // unknown operator → equality (best effort)
+            });
+        }
+        return clauses.Count == 0 ? null : string.Join(" && ", clauses);
+    }
+
+    private static string FilterValue(XElement? filterValues)
+    {
+        var raw = filterValues?.Elements().FirstOrDefault(e => e.Name.LocalName == "FilterValue")?.Value;
+        if (string.IsNullOrEmpty(raw))
+        {
+            return "\"\"";
+        }
+        if (RdlExpression.IsExpression(raw))
+        {
+            return RdlExpression.Convert(raw);
+        }
+        // Literal: a number stays bare; anything else becomes a quoted string.
+        return double.TryParse(raw, NumberStyles.Any, Inv, out _) ? raw : $"\"{raw}\"";
+    }
+
+    private static List<SortDescriptor> ReadDataSetSorts(XElement? sorts)
+    {
+        var list = new List<SortDescriptor>();
+        foreach (var s in sorts?.Elements().Where(e => e.Name.LocalName == "SortExpression")
+                 ?? Enumerable.Empty<XElement>())
+        {
+            var expr = RdlExpression.Convert(Val(s, "Value"));
+            if (string.IsNullOrEmpty(expr))
+            {
+                continue;
+            }
+            var desc = string.Equals(Val(s, "Direction"), "Descending", StringComparison.OrdinalIgnoreCase);
+            list.Add(new SortDescriptor(expr, desc ? SortDirection.Descending : SortDirection.Ascending));
+        }
+        return list;
+    }
+
+    private static Type? MapClrType(string? typeName) => typeName switch
+    {
+        "System.Int32" or "System.Int16" or "System.Int64" => typeof(int),
+        "System.Decimal" => typeof(decimal),
+        "System.Double" or "System.Single" => typeof(double),
+        "System.Boolean" => typeof(bool),
+        "System.DateTime" => typeof(DateTime),
+        "System.String" => typeof(string),
+        _ => null,
+    };
 
     // RDL <Variables><Variable Name><Value>=expr → report-level ReportVariable (Report scope).
     private static ReportVariable[] ReadVariables(XElement report)

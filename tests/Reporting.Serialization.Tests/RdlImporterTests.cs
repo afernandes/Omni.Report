@@ -281,6 +281,53 @@ public class RdlImporterTests
     }
 
     [Fact]
+    public void DataSets_are_imported_with_fields_calculated_filter_sort_and_query()
+    {
+        var rdl = """
+            <Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition">
+              <DataSets>
+                <DataSet Name="Vendas">
+                  <Query>
+                    <CommandText>SELECT * FROM Vendas</CommandText>
+                    <CommandType>Text</CommandType>
+                    <QueryParameters>
+                      <QueryParameter Name="@Ano"><Value>=Parameters!Ano.Value</Value></QueryParameter>
+                    </QueryParameters>
+                  </Query>
+                  <Fields>
+                    <Field Name="Total"><DataField>Total</DataField><TypeName>System.Decimal</TypeName></Field>
+                    <Field Name="Imposto"><Value>=Fields!Total.Value * 0.1</Value></Field>
+                  </Fields>
+                  <Filters>
+                    <Filter>
+                      <FilterExpression>=Fields!Total.Value</FilterExpression>
+                      <Operator>GreaterThan</Operator>
+                      <FilterValues><FilterValue>0</FilterValue></FilterValues>
+                    </Filter>
+                  </Filters>
+                  <SortExpressions>
+                    <SortExpression><Value>=Fields!Total.Value</Value><Direction>Descending</Direction></SortExpression>
+                  </SortExpressions>
+                </DataSet>
+              </DataSets>
+            </Report>
+            """;
+        var ds = new RdlImporter().ImportXml(rdl).DataSources[0];
+
+        ds.Name.Should().Be("Vendas");
+        ds.Fields.Select(f => f.Name).Should().Equal("Total");
+        ds.Fields[0].FieldType.Should().Be(typeof(decimal));
+        ds.CalculatedFields.Should().ContainSingle();
+        ds.CalculatedFields[0].Name.Should().Be("Imposto");
+        ds.CalculatedFields[0].Expression.Should().Be("Fields.Total * 0.1");
+        ds.FilterExpression.Should().Be("Fields.Total > 0");
+        ds.SortExpressions[0].Expression.Should().Be("Fields.Total");
+        ds.SortExpressions[0].Direction.Should().Be(Reporting.Data.SortDirection.Descending);
+        ds.Parameters["CommandText"].Should().Be("SELECT * FROM Vendas");
+        ds.Parameters["QueryParameter:@Ano"].Should().Be("Parameters.Ano");
+    }
+
+    [Fact]
     public void Report_variables_are_imported()
     {
         var rdl = """

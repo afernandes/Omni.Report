@@ -30,6 +30,11 @@ var pdf = await new ReportEngine().RenderAsync(def, dataSources);
   - `Textbox` → `TextBox` (se o valor for expressão `=…`) ou `Label` (texto literal);
   - `Line`, `Rectangle` (a forma + itens aninhados, deslocados para coordenadas absolutas),
   - `Image` externa (`Source=External`).
+- **DataSets** (`<DataSets><DataSet>`) → `DataSourceDefinition` (metadados de binding; a execução da query
+  fica delegada ao host `IReportDataSource`): `<Fields>` → `DataField` (campos com `<Value>` viram
+  `CalculatedField`); `<Filters>` estruturado → `FilterExpression` booleano; `<SortExpressions>`;
+  `<Query>` `CommandText`/`CommandType`/`QueryParameters` preservados em `Parameters` (record `Query`
+  dedicado é follow-up).
 - **Report-level**: `<EmbeddedImages>` → bytes inline (um `<Image Source="Embedded">` resolve a
   `ImageElement` com `InlineData`); `<CustomProperties>` → `Metadata`; `<Code>` (módulo VB report-level)
   preservado em `Metadata["RdlCode"]` (execução é follow-up).
@@ -44,9 +49,9 @@ var pdf = await new ReportEngine().RenderAsync(def, dataSources);
 
 Pulados silenciosamente (o import **estrutural sempre tem sucesso**, não lança):
 
-- **Tablix/Matrix** e **Chart** (data regions) — o maior gap; precisa do mapeamento de
-  hierarquias/células e do binding de dados.
-- Bytes de **imagem embutida** (`EmbeddedImages`), **datasets/queries**, **subreports**.
-- **Estilos** ricos (cores, fontes, bordas), **TextRuns** múltiplos (só o 1º run é lido),
-  **defaults multi-valor** (só o 1º valor), e o operador VB `&` de concatenação.
+- **Tablix/Matrix** e **Chart** (data regions) — o maior gap restante; precisa do mapeamento de
+  hierarquias/células e do binding de dados (depende dos DataSets, já importados).
+- **Subreports**; **TextRuns** múltiplos (só o 1º run é lido); **defaults multi-valor** (só o 1º valor);
+  record `Query` dedicado (CommandText/QueryParameters hoje vivem em `DataSourceDefinition.Parameters`);
+  operador infixo VB `Like` (use a função `Like()`).
 - Botão "Importar .rdl" no Designer (a API pública já existe; falta o wiring de UI).
