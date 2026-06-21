@@ -40,7 +40,7 @@ Das features RDL avaliadas: **96 completas · 18 parciais · 32 ausentes** (~66%
 | 15 | **Named/reusable styles** (Style[@Name]) | ausente | Hoje todo Style é inline; perde manutenibilidade em relatórios grandes. |
 | 16 | **Gradients** (linear/radial) + background image | ausente | Preenchimentos avançados. |
 | 17 | **Shared data sources / datasets** | parcial | Hoje tudo embedded (escolha arquitetural — arquivo único); RDL separa. |
-| 18 | **Export Word (.docx)** | ausente | Migração SSRS; limite canvas-vs-flow (esforço alto). |
+| 18 | **Export Word (.docx)** | ✅ tabular (#127) | `Reporting.Output.Docx` (DocumentFormat.OpenXml): o grid paginado vira uma tabela Word editável (RowKind→negrito/sombreado/cor), reusando `LayoutPrimitiveGrid` como o XLSX. Diferido: imagens/charts via `w:drawing` e modo posicionado absoluto (camadas 2–3). |
 | 19 | **Export imagem (PNG/TIFF público) + XML** | parcial | PNG interno existe (`SkiaRenderingContext.GetPagePng`) sem `IReportExporter` público; TIFF/XML ausentes. **Quick win** (PNG = wrapper). |
 
 ## Recomendação de sequência

@@ -32,6 +32,7 @@
          and makes the dependency surface obvious to readers. -->
     <ProjectReference Include="..\Reporting.Output.Pdf\Reporting.Output.Pdf.csproj" />
     <ProjectReference Include="..\Reporting.Output.Excel\Reporting.Output.Excel.csproj" />
+    <ProjectReference Include="..\Reporting.Output.Docx\Reporting.Output.Docx.csproj" />
     <ProjectReference Include="..\Reporting.Output.Html\Reporting.Output.Html.csproj" />
     <ProjectReference Include="..\Reporting.Output.Svg\Reporting.Output.Svg.csproj" />
     <ProjectReference Include="..\Reporting.Output.Csv\Reporting.Output.Csv.csproj" />

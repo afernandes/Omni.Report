@@ -60,6 +60,7 @@ public static class ServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(services);
         services.AddSingleton<IReportExporter>(_ => new Reporting.Output.Pdf.SkiaPdfExporter());
         services.AddSingleton<IReportExporter>(_ => new Reporting.Output.Excel.ExcelExporter());
+        services.AddSingleton<IReportExporter>(_ => new Reporting.Output.Docx.DocxExporter());
         services.AddSingleton<IReportExporter>(_ => new Reporting.Output.Html.SvgHtmlExporter());
         services.AddSingleton<IReportExporter>(_ => new Reporting.Output.Svg.SvgExporter());
         services.AddSingleton<IReportExporter>(_ => new Reporting.Output.Csv.CsvExporter());

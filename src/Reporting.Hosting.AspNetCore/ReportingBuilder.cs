@@ -63,6 +63,16 @@ public sealed class ReportingBuilder
         return this;
     }
 
+    /// <summary>Registers the OpenXML-backed <see cref="Reporting.Output.Docx.DocxExporter"/> for Word output.</summary>
+    public ReportingBuilder UseDocxOutput(Reporting.Output.Docx.DocxExportOptions? options = null)
+    {
+        Services.AddSingleton(options ?? Reporting.Output.Docx.DocxExportOptions.Default);
+        Services.AddSingleton<Reporting.Output.Docx.DocxExporter>(sp =>
+            new Reporting.Output.Docx.DocxExporter(sp.GetRequiredService<Reporting.Output.Docx.DocxExportOptions>()));
+        Services.AddSingleton<IReportExporter>(sp => sp.GetRequiredService<Reporting.Output.Docx.DocxExporter>());
+        return this;
+    }
+
     /// <summary>Registers a concrete <see cref="IReportPrinter"/> instance. The Windows
     /// spooler / ESC/POS / Android implementations are in their dedicated packages; the
     /// host picks whichever fits its target platform.</summary>
