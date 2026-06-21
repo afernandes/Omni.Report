@@ -115,20 +115,59 @@ public class RdlImporterTests
     public void Body_field_textbox_becomes_a_textbox_with_converted_expression()
     {
         var def = Import();
-        var texts = def.ReportHeader!.Elements.OfType<TextBoxElement>().Select(t => t.Expression).ToList();
-        texts.Should().Contain("Fields.Nome");
-        texts.Should().Contain("Sum(Fields.Total)"); // VB Fields!X.Value → Fields.X inside the aggregate
+        // The free Cliente textbox is a band sibling…
+        def.ReportHeader!.Elements.OfType<TextBoxElement>().Select(t => t.Expression).Should().Contain("Fields.Nome");
+        // …and the Total textbox nested in the Rectangle keeps its converted aggregate expression.
+        var nested = def.ReportHeader.Elements.OfType<RectangleElement>().Single()
+            .Children.OfType<TextBoxElement>().Select(t => t.Expression);
+        nested.Should().Contain("Sum(Fields.Total)"); // VB Fields!X.Value → Fields.X inside the aggregate
     }
 
     [Fact]
-    public void Rectangle_is_imported_and_nested_items_are_offset_to_absolute()
+    public void Rectangle_is_imported_as_a_container_preserving_nested_hierarchy()
     {
         var def = Import();
-        def.ReportHeader!.Elements.OfType<RectangleElement>().Should().ContainSingle();
-        // The nested Total textbox sits at rect(3cm,1cm) + (0.5cm,0.5cm) = (3.5cm, 1.5cm) absolute.
-        var total = def.ReportHeader.Elements.OfType<TextBoxElement>().Single(t => t.Expression.Contains("Sum"));
-        total.Bounds.X.Should().Be(Unit.FromCm(3.5));
-        total.Bounds.Y.Should().Be(Unit.FromCm(1.5));
+        // The Rectangle keeps its nested item as a CHILD (relative bounds) instead of flattening it to an
+        // absolute sibling in the band — so the band has exactly the rect + the free Cliente textbox.
+        var rect = def.ReportHeader!.Elements.OfType<RectangleElement>().Should().ContainSingle().Subject;
+        def.ReportHeader.Elements.OfType<TextBoxElement>().Should().ContainSingle()
+            .Which.Expression.Should().Contain("Nome"); // only the free Cliente textbox is a band sibling
+        // The nested Total textbox lives in rect.Children with bounds RELATIVE to the rectangle (0.5cm,0.5cm),
+        // NOT the old absolute (3.5cm,1.5cm).
+        var total = rect.Children.OfType<TextBoxElement>().Single(t => t.Expression.Contains("Sum"));
+        total.Bounds.X.Should().Be(Unit.FromCm(0.5));
+        total.Bounds.Y.Should().Be(Unit.FromCm(0.5));
+    }
+
+    [Fact]
+    public void Rectangle_nested_inside_rectangle_imports_recursively_with_relative_bounds()
+    {
+        const string rdl = """
+            <Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition">
+              <Body><Height>6cm</Height><ReportItems>
+                <Rectangle Name="Outer">
+                  <Top>1cm</Top><Left>1cm</Left><Width>10cm</Width><Height>5cm</Height>
+                  <ReportItems>
+                    <Rectangle Name="Inner">
+                      <Top>0.5cm</Top><Left>0.5cm</Left><Width>4cm</Width><Height>2cm</Height>
+                      <ReportItems>
+                        <Textbox Name="Leaf">
+                          <Top>0.25cm</Top><Left>0.25cm</Left><Width>3cm</Width><Height>0.6cm</Height>
+                          <Paragraphs><Paragraph><TextRuns><TextRun><Value>oi</Value></TextRun></TextRuns></Paragraph></Paragraphs>
+                        </Textbox>
+                      </ReportItems>
+                    </Rectangle>
+                  </ReportItems>
+                </Rectangle>
+              </ReportItems></Body>
+            </Report>
+            """;
+        var def = new RdlImporter().ImportXml(rdl);
+        var outer = def.ReportHeader!.Elements.OfType<RectangleElement>().Single();
+        var inner = outer.Children.OfType<RectangleElement>().Single();
+        inner.Bounds.X.Should().Be(Unit.FromCm(0.5), "inner rect bounds are RELATIVE to the outer rect");
+        var leaf = inner.Children.OfType<LabelElement>().Single(); // literal text → Label
+        leaf.Bounds.X.Should().Be(Unit.FromCm(0.25), "leaf bounds are RELATIVE to the inner rect");
     }
 
     [Theory]

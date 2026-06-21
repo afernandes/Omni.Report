@@ -100,6 +100,65 @@ public class BandRendererCoverageTests
     }
 
     [Fact]
+    public async Task Rectangle_container_draws_children_on_top_at_relative_positions()
+    {
+        var req = WithSingleRowDefinition(new RectangleElement
+        {
+            Id = "box",
+            Bounds = new Rectangle(10.Mm(), 10.Mm(), 80.Mm(), 40.Mm()),
+            FillColor = Color.LightGray,
+            Children = EquatableArray.Create<ReportElement>(new LabelElement
+            {
+                Id = "child",
+                Text = "dentro",
+                Bounds = new Rectangle(5.Mm(), 5.Mm(), 30.Mm(), 6.Mm()), // RELATIVE to the rectangle
+            }),
+        });
+        var report = await new ReportPaginator().PaginateAsync(req);
+        var prims = report.Pages[0].Primitives.ToList();
+
+        var fill = prims.OfType<DrawRectanglePrimitive>().Single(r => r.SourceElementId == "box");
+        var child = prims.OfType<DrawTextPrimitive>().Single(t => t.Text == "dentro");
+        // Z-order: the rectangle fill is emitted BEFORE its child (child drawn on top).
+        prims.IndexOf(fill).Should().BeLessThan(prims.IndexOf(child));
+        // The child sits at the rectangle's top-left + its RELATIVE bounds (5mm, 5mm) — not flattened away.
+        (child.Bounds.X - fill.Bounds.X).Should().Be(5.Mm());
+        (child.Bounds.Y - fill.Bounds.Y).Should().Be(5.Mm());
+    }
+
+    [Fact]
+    public async Task Container_rectangle_action_does_not_leak_onto_its_children()
+    {
+        // Regression: the per-element Action/Bookmark propagation tail must NOT span the children appended
+        // during recursion — a child without its own link must stay link-less, and a child WITH its own link
+        // must keep it (not be overwritten by the parent rectangle's).
+        var req = WithSingleRowDefinition(new RectangleElement
+        {
+            Id = "box",
+            Bounds = new Rectangle(0.Mm(), 0.Mm(), 80.Mm(), 30.Mm()),
+            Action = ElementAction.ToUrl("https://rect.example.com"),
+            Children = EquatableArray.Create<ReportElement>(
+                new LabelElement { Id = "plain", Text = "semlink", Bounds = new Rectangle(2.Mm(), 2.Mm(), 30.Mm(), 6.Mm()) },
+                new LabelElement
+                {
+                    Id = "own",
+                    Text = "comlink",
+                    Bounds = new Rectangle(2.Mm(), 10.Mm(), 30.Mm(), 6.Mm()),
+                    Action = ElementAction.ToUrl("https://child.example.com"),
+                }),
+        });
+        var report = await new ReportPaginator().PaginateAsync(req);
+        var prims = report.Pages[0].Primitives;
+
+        prims.OfType<DrawRectanglePrimitive>().Single(r => r.SourceElementId == "box")
+            .LinkTarget.Should().Be("https://rect.example.com");
+        var plain = prims.OfType<DrawTextPrimitive>().Single(t => t.Text == "semlink");
+        plain.LinkTarget.Should().BeNull("the parent rectangle's link must not leak onto a plain child");
+        var own = prims.OfType<DrawTextPrimitive>().Single(t => t.Text == "comlink");
+        own.LinkTarget.Should().Be("https://child.example.com", "a child keeps its OWN link, not the parent's");
+    }
+
+    [Fact]
     public async Task CanGrow_textbox_background_fill_grows_with_the_text()
     {
         var req = WithSingleRowDefinition(new TextBoxElement

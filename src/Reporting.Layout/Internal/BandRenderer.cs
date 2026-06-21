@@ -58,21 +58,36 @@ internal sealed class BandRenderer
 
         foreach (var rawElement in band.Elements)
         {
-            // Apply per-property expression bindings first, so visibility/bounds/style overrides take
-            // effect before everything below. No bindings → zero cost, same instance.
-            var element = rawElement.PropertyExpressions.Count == 0
-                ? rawElement
-                : ApplyPropertyExpressions(rawElement, ctx);
+            actualHeight = RenderElement(rawElement, origin, origin, primitives, ctx, actualHeight);
+        }
 
-            if (!IsVisible(element, ctx))
-            {
-                continue;
-            }
-            var elementBounds = new Rectangle(
-                origin.X + element.Bounds.X,
-                origin.Y + element.Bounds.Y,
-                element.Bounds.Width,
-                element.Bounds.Height);
+        return new BandLayout(primitives, actualHeight);
+    }
+
+    /// <summary>Renders a single element — and, for a container <see cref="RectangleElement"/>, its
+    /// <see cref="RectangleElement.Children"/> recursively — at <paramref name="parentOffset"/>, appending the
+    /// resulting primitives and returning the updated band height. Children are positioned RELATIVE to their
+    /// rectangle (<paramref name="parentOffset"/> shifts to the rect's top-left for the nested call), while
+    /// <paramref name="bandOrigin"/> stays fixed so a nested child still grows the band correctly. No clipping
+    /// — children that overflow the rectangle overflow (parity with the legacy flattened behaviour).</summary>
+    private Unit RenderElement(ReportElement rawElement, Point parentOffset, Point bandOrigin,
+        List<LayoutPrimitive> primitives, IReportExpressionContext ctx, Unit actualHeight)
+    {
+        // Apply per-property expression bindings first, so visibility/bounds/style overrides take
+        // effect before everything below. No bindings → zero cost, same instance.
+        var element = rawElement.PropertyExpressions.Count == 0
+            ? rawElement
+            : ApplyPropertyExpressions(rawElement, ctx);
+
+        if (!IsVisible(element, ctx))
+        {
+            return actualHeight;
+        }
+        var elementBounds = new Rectangle(
+            parentOffset.X + element.Bounds.X,
+            parentOffset.Y + element.Bounds.Y,
+            element.Bounds.Width,
+            element.Bounds.Height);
 
             var effectiveStyle = ResolveEffectiveStyle(element, ctx);
             var style = BuildTextStyle(effectiveStyle);
@@ -93,12 +108,17 @@ internal sealed class BandRenderer
             }
 
             int linkFrom = primitives.Count;
+            // Upper bound for THIS element's Action/Bookmark/DocMapLabel propagation. A container rectangle
+            // appends its children's primitives to the same list, but each child already ran its own tail
+            // during recursion — so the parent's tail must stop before them, or it would clobber/leak the
+            // rect's link onto every child. The rect arm sets this to its pre-children count; -1 = "all".
+            int linkTo = -1;
             switch (element)
             {
                 case LabelElement lbl:
                     primitives.Add(EmitText(lbl.Text, elementBounds, style, lbl.Id));
                     RecordReportItem(lbl, lbl.Text, ctx);
-                    actualHeight = MaxHeight(actualHeight, elementBounds, origin, growsTo: null);
+                    actualHeight = MaxHeight(actualHeight, elementBounds, bandOrigin, growsTo: null);
                     break;
 
                 case TextBoxElement tb:
@@ -112,12 +132,12 @@ internal sealed class BandRenderer
                     }
                     // Publish this text box's value for ReportItems!Name.Value lookups in later bands.
                     RecordReportItem(tb, text, ctx);
-                    actualHeight = MaxHeight(actualHeight, rendered.Bounds, origin, growsTo: tb.CanGrow ? rendered.Bounds : null);
+                    actualHeight = MaxHeight(actualHeight, rendered.Bounds, bandOrigin, growsTo: tb.CanGrow ? rendered.Bounds : null);
                     break;
 
                 case LineElement line:
                     primitives.Add(EmitLine(line, elementBounds));
-                    actualHeight = MaxHeight(actualHeight, elementBounds, origin, null);
+                    actualHeight = MaxHeight(actualHeight, elementBounds, bandOrigin, null);
                     break;
 
                 case RectangleElement rect:
@@ -128,7 +148,16 @@ internal sealed class BandRenderer
                         Pen = ResolveBorderPen(rect),
                         Fill = rect.FillColor is { } c ? new BrushStyle(c) : null,
                     });
-                    actualHeight = MaxHeight(actualHeight, elementBounds, origin, null);
+                    actualHeight = MaxHeight(actualHeight, elementBounds, bandOrigin, null);
+                    // The rect owns ONLY its fill for link/bookmark purposes — children below get their own.
+                    linkTo = primitives.Count;
+                    // Container: draw children ON TOP of the fill (z-order by construction), positioned
+                    // RELATIVE to this rectangle's top-left. No clipping — an overflowing child overflows.
+                    foreach (var child in rect.Children)
+                    {
+                        actualHeight = RenderElement(child, new Point(elementBounds.X, elementBounds.Y),
+                                                     bandOrigin, primitives, ctx, actualHeight);
+                    }
                     break;
 
                 case EllipseElement ellipse:
@@ -139,7 +168,7 @@ internal sealed class BandRenderer
                         Pen = ResolveBorderPen(ellipse),
                         Fill = ellipse.FillColor is { } cf ? new BrushStyle(cf) : null,
                     });
-                    actualHeight = MaxHeight(actualHeight, elementBounds, origin, null);
+                    actualHeight = MaxHeight(actualHeight, elementBounds, bandOrigin, null);
                     break;
 
                 case ImageElement image:
@@ -154,7 +183,7 @@ internal sealed class BandRenderer
                             Sizing = image.Sizing,
                         });
                     }
-                    actualHeight = MaxHeight(actualHeight, elementBounds, origin, null);
+                    actualHeight = MaxHeight(actualHeight, elementBounds, bandOrigin, null);
                     break;
 
                 case BarcodeElement barcode:
@@ -164,7 +193,7 @@ internal sealed class BandRenderer
                     {
                         primitives.Add(p);
                     }
-                    actualHeight = MaxHeight(actualHeight, elementBounds, origin, null);
+                    actualHeight = MaxHeight(actualHeight, elementBounds, bandOrigin, null);
                     break;
 
                 case ChartElement chart:
@@ -172,7 +201,7 @@ internal sealed class BandRenderer
                     {
                         primitives.Add(p);
                     }
-                    actualHeight = MaxHeight(actualHeight, elementBounds, origin, null);
+                    actualHeight = MaxHeight(actualHeight, elementBounds, bandOrigin, null);
                     break;
 
                 case SparklineElement sparkline:
@@ -180,7 +209,7 @@ internal sealed class BandRenderer
                     {
                         primitives.Add(p);
                     }
-                    actualHeight = MaxHeight(actualHeight, elementBounds, origin, null);
+                    actualHeight = MaxHeight(actualHeight, elementBounds, bandOrigin, null);
                     break;
 
                 case IndicatorElement indicator:
@@ -188,7 +217,7 @@ internal sealed class BandRenderer
                     {
                         primitives.Add(p);
                     }
-                    actualHeight = MaxHeight(actualHeight, elementBounds, origin, null);
+                    actualHeight = MaxHeight(actualHeight, elementBounds, bandOrigin, null);
                     break;
 
                 case DataBarElement dataBar:
@@ -196,7 +225,7 @@ internal sealed class BandRenderer
                     {
                         primitives.Add(p);
                     }
-                    actualHeight = MaxHeight(actualHeight, elementBounds, origin, null);
+                    actualHeight = MaxHeight(actualHeight, elementBounds, bandOrigin, null);
                     break;
 
                 case GaugeElement gauge:
@@ -204,7 +233,7 @@ internal sealed class BandRenderer
                     {
                         primitives.Add(p);
                     }
-                    actualHeight = MaxHeight(actualHeight, elementBounds, origin, null);
+                    actualHeight = MaxHeight(actualHeight, elementBounds, bandOrigin, null);
                     break;
 
                 case TablixElement tablix:
@@ -215,7 +244,7 @@ internal sealed class BandRenderer
                         primitives.Add(p);
                     }
                     var tablixGrown = new Rectangle(elementBounds.X, elementBounds.Y, elementBounds.Width, tablixHeight);
-                    actualHeight = MaxHeight(actualHeight, tablixGrown, origin, tablixGrown);
+                    actualHeight = MaxHeight(actualHeight, tablixGrown, bandOrigin, tablixGrown);
                     break;
 
                 case MapElement mapEl:
@@ -223,7 +252,7 @@ internal sealed class BandRenderer
                     {
                         primitives.Add(p);
                     }
-                    actualHeight = MaxHeight(actualHeight, elementBounds, origin, null);
+                    actualHeight = MaxHeight(actualHeight, elementBounds, bandOrigin, null);
                     break;
 
                 case SubreportElement subreport when _renderSubreport is not null:
@@ -231,7 +260,7 @@ internal sealed class BandRenderer
                     {
                         primitives.Add(p);
                     }
-                    actualHeight = MaxHeight(actualHeight, elementBounds, origin, null);
+                    actualHeight = MaxHeight(actualHeight, elementBounds, bandOrigin, null);
                     break;
             }
 
@@ -250,7 +279,10 @@ internal sealed class BandRenderer
                 : null;
             if (linkTarget is not null || bookmarkId is not null || docMapLabel is not null)
             {
-                for (int li = linkFrom; li < primitives.Count; li++)
+                // Scope to THIS element's own primitives — a container rect's children (appended after
+                // linkTo during recursion) keep their own link/bookmark and never inherit the parent's.
+                int linkEnd = linkTo < 0 ? primitives.Count : linkTo;
+                for (int li = linkFrom; li < linkEnd; li++)
                 {
                     primitives[li] = primitives[li] with
                     {
@@ -260,9 +292,8 @@ internal sealed class BandRenderer
                     };
                 }
             }
-        }
 
-        return new BandLayout(primitives, actualHeight);
+        return actualHeight;
     }
 
     /// <summary>Resolves the element's <c>Action</c> to a navigation target string: a hyperlink URL

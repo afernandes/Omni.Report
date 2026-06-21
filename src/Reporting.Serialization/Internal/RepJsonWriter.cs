@@ -414,6 +414,12 @@ internal static class RepJsonWriter
                     o["fillColor"] = Formats.FormatColor(rect.FillColor.Value);
                 }
                 o["cornerRadius"] = Formats.FormatUnit(rect.CornerRadius);
+                // Nested container children (relative bounds) — recurse via the same element writer; emitted
+                // only when present so a plain rectangle stays compact.
+                if (rect.Children.Count > 0)
+                {
+                    o["children"] = new JsonArray(rect.Children.Select(e => (JsonNode?)WriteElement(e)).ToArray());
+                }
                 break;
             case EllipseElement ellipse:
                 if (ellipse.FillColor is not null)

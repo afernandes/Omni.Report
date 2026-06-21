@@ -413,8 +413,9 @@ public sealed class RdlImporter
         return new ReportBand(kind, height, new EquatableArray<ReportElement>(elements));
     }
 
-    // Maps one RDL report item to OmniReport element(s), offsetting by (dx, dy) so nested items inside a
-    // Rectangle become absolute. Unknown item kinds are skipped (structural import never fails on them).
+    // Maps one RDL report item to OmniReport element(s), offsetting its bounds by (dx, dy). A Rectangle's
+    // nested items recurse with a ZERO offset into the rect's Children (relative bounds), preserving the
+    // container hierarchy. Unknown item kinds are skipped (structural import never fails on them).
     private void AddItem(XElement item, Unit dx, Unit dy, List<ReportElement> into)
     {
         var bounds = Bounds(item, dx, dy);
@@ -430,12 +431,17 @@ public sealed class RdlImporter
                 into.Add(ApplyCommon(ImageItem(item, bounds), item));
                 break;
             case "Rectangle":
-                into.Add(ApplyCommon(new RectangleElement { Bounds = bounds }, item));
-                // Recurse: nested items are positioned relative to the rectangle in RDL.
+                // RDL nests items inside <Rectangle><ReportItems>, positioned RELATIVE to the rectangle.
+                // Preserve that hierarchy as RectangleElement.Children (relative bounds) — recurse with a zero
+                // offset into a LOCAL list — instead of flattening children to absolute coords into the band.
+                var rectChildren = new List<ReportElement>();
                 foreach (var child in El(item, "ReportItems")?.Elements() ?? Enumerable.Empty<XElement>())
                 {
-                    AddItem(child, bounds.X, bounds.Y, into);
+                    AddItem(child, Unit.Zero, Unit.Zero, rectChildren);
                 }
+                into.Add(ApplyCommon(
+                    new RectangleElement { Bounds = bounds, Children = new EquatableArray<ReportElement>(rectChildren) },
+                    item));
                 break;
             case "Tablix":
                 into.Add(ApplyCommon(TablixItem(item, bounds), item));
@@ -1417,6 +1423,13 @@ public sealed class RdlImporter
         foreach (var e in elements)
         {
             if (e.Bounds.Bottom > max) { max = e.Bounds.Bottom; }
+            // A container rectangle's children are positioned relative to it; a child overflowing the rect
+            // still extends the band (parity with the legacy flattened siblings) for the no-<Height> fallback.
+            if (e is RectangleElement { Children.Count: > 0 } rect)
+            {
+                var childExtent = e.Bounds.Y + BoundsHeight(rect.Children);
+                if (childExtent > max) { max = childExtent; }
+            }
         }
         return max;
     }
