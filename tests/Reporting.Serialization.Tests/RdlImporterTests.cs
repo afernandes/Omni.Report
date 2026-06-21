@@ -280,6 +280,34 @@ public class RdlImporterTests
         def.Metadata["RdlCode"].Should().Contain("Dobro");
     }
 
+    [Theory]
+    [InlineData("=Fields!Nome.Value Like \"A*\"", "Like(Fields.Nome, \"A*\")")]
+    [InlineData("=Campo Like \"A*\"", "Like(Campo, \"A*\")")] // non-.Value member left intact
+    [InlineData("=Fields!A.Value Like Parameters!P.Value", "Like(Fields.A, Parameters.P)")]
+    [InlineData("=IIf(Fields!N.Value Like \"A*\", 1, 0)", "IIf(Like(Fields.N, \"A*\"), 1, 0)")]
+    // VB precedence: & binds tighter than Like → Like(Concat(a,b), "X*").
+    [InlineData("=Fields!A.Value & Fields!B.Value Like \"X*\"", "Like(Concat(Fields.A, Fields.B), \"X*\")")]
+    // A literal "Like" inside a string is preserved (not rewritten).
+    [InlineData("=\"x Like y\"", "\"x Like y\"")]
+    // Idempotent: an existing Like(...) function call is not re-wrapped.
+    [InlineData("=Like(Fields!A.Value, \"Z*\")", "Like(Fields.A, \"Z*\")")]
+    // Word boundary: "Like" as a substring of an identifier does not fire.
+    [InlineData("=Fields!Likelihood.Value", "Fields.Likelihood")]
+    public void Vb_Like_infix_is_rewritten_to_the_Like_function(string rdlExpr, string expected)
+    {
+        var rdl = $"""
+            <Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition">
+              <Body><Height>2cm</Height><ReportItems>
+                <Textbox Name="T"><Top>0cm</Top><Left>0cm</Left><Width>8cm</Width><Height>1cm</Height>
+                  <Paragraphs><Paragraph><TextRuns><TextRun><Value>{System.Security.SecurityElement.Escape(rdlExpr)}</Value></TextRun></TextRuns></Paragraph></Paragraphs>
+                </Textbox>
+              </ReportItems></Body>
+            </Report>
+            """;
+        var tb = new RdlImporter().ImportXml(rdl).ReportHeader!.Elements.OfType<Reporting.Elements.TextBoxElement>().Single();
+        tb.Expression.Should().Be(expected);
+    }
+
     [Fact]
     public void ReportItems_reference_and_element_name_are_imported()
     {

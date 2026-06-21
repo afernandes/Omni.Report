@@ -69,7 +69,9 @@ sucesso**, nunca lança nem descarta em silêncio):
   por-run no render (preservados no modelo, desenho é follow-up). Células de **Tablix** (corner/body) ainda
   achatam para o 1º run (multi-run só nos Textboxes livres por ora).
 - **defaults multi-valor** (só o 1º valor); record `Query` dedicado (CommandText/QueryParameters hoje vivem
-  em `DataSourceDefinition.Parameters`); operador infixo VB `Like` (use a função `Like()`).
+  em `DataSourceDefinition.Parameters`). O operador infixo VB `Like` **é convertido** (`a Like "X*"` →
+  `Like(a, "X*")`, honrando a precedência `&` > `Like`); classes de caractere `[...]` no padrão não são
+  suportadas pela função `Like()` subjacente (só os curingas `* ? #`).
 - **`ReportItems!X.Value`** é importado e resolve em bandas renderizadas **depois** da referenciada (ex.:
   rodapé ecoando o corpo); `ReportItems!X.Value` num **cabeçalho de página** referenciando o corpo retorna
   vazio (a header renderiza antes — 2º passe é follow-up).

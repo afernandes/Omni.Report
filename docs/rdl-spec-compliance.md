@@ -248,7 +248,7 @@ Legenda: ✅ pleno · 🟡 parcial · 🔴 ausente/crítico.
 | StDev/StDevP/Var/VarP | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | Ausente | M | 3 |
 | InScope | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | Requer scope tracking | M | 3 |
 | Level (hierarquia recursiva) | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | Sem grupo recursivo | L | 3 |
-| Operadores VB (& concat, Like) | 🟡 | 🟡 | 🟡 | 🟡 | 🟡 | ✅ | 🟡 | `&` e `Like` não mapeados no import (falham em render) | M | 2 |
+| Operadores VB (& concat, Like) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | `&`→`Concat` e `Like` infixo→`Like()` mapeados no import (precedência `&`>`Like`); classes `[...]` do Like são follow-up | M | 2 |
 | Scope param (Report/Group/Page/Running) | 🟡 | 🟡 | 🟡 | 🟡 | 🟡 | ✅ | 🟡 | Recursive ausente; scope desconhecido cai p/ Report (silencioso) | M | 2 |
 | RdlExpression (conversor VB→dotted) | 🟡 | 🟡 | ✅ | ✅ | n/a | n/a | n/a | Converte coleções; não converte operadores VB nem membros ≠ `.Value` | M | 2 |
 
