@@ -513,13 +513,32 @@ public sealed class RdlImporter
         // <Maximum>/<Minimum><Value> precede the pointers in RDL, so a whole-panel scan grabs the wrong one.
         var pointers = item.Descendants().FirstOrDefault(e => e.Name.LocalName == "GaugePointers");
         var value = TextOfFirst(pointers, "Value");
+
+        // Scale Min/Max (<Maximum>/<Minimum>, optionally wrapping <Value>) — TextOfFirst concatenates the
+        // descendant text, so both <Maximum>100</Maximum> and <Maximum><Value>100</Value></Maximum> work.
+        // Banded ranges from <ScaleRanges><ScaleRange><StartValue>/<EndValue>/<BackgroundColor>.
+        var ranges = item.Descendants().Where(e => e.Name.LocalName == "ScaleRange")
+            .Select(r => new GaugeRange(
+                GaugeScalar(TextOfFirst(r, "StartValue")) ?? "0",
+                GaugeScalar(TextOfFirst(r, "EndValue")) ?? "0",
+                (ParseColor(TextOfFirst(r, "BackgroundColor")) ?? Color.FromRgb(128, 128, 128)).ToHex()))
+            .ToList();
+
         return new GaugeElement
         {
             Bounds = bounds,
             Kind = kind,
             ValueExpression = string.IsNullOrEmpty(value) ? "0" : RdlExpression.Convert(value),
+            MinimumExpression = GaugeScalar(TextOfFirst(item, "Minimum")) ?? "0",
+            MaximumExpression = GaugeScalar(TextOfFirst(item, "Maximum")) ?? "100",
+            Ranges = new EquatableArray<GaugeRange>(ranges),
         };
     }
+
+    // An RDL gauge scale value (Min/Max/range bound): an =expression is converted; a plain number is kept.
+    private static string? GaugeScalar(string? raw)
+        => string.IsNullOrWhiteSpace(raw) ? null
+            : RdlExpression.IsExpression(raw) ? RdlExpression.Convert(raw) : raw.Trim();
 
     private static ReportElement SubreportItem(XElement item, Rectangle bounds)
     {

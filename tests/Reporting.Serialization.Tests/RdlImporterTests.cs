@@ -775,6 +775,37 @@ public class RdlImporterTests
     }
 
     [Fact]
+    public void Gauge_scale_ranges_and_min_max_are_imported()
+    {
+        var rdl = """
+            <Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition">
+              <Body><Height>5cm</Height><ReportItems>
+                <GaugePanel Name="G"><Top>0cm</Top><Left>0cm</Left><Width>4cm</Width><Height>4cm</Height>
+                  <GaugePanelItems><RadialGauge Name="R"><GaugeScales><GaugeScale>
+                    <Minimum><Value>0</Value></Minimum>
+                    <Maximum><Value>120</Value></Maximum>
+                    <ScaleRanges>
+                      <ScaleRange><StartValue>0</StartValue><EndValue>60</EndValue><BackgroundColor>Green</BackgroundColor></ScaleRange>
+                      <ScaleRange><StartValue>60</StartValue><EndValue>90</EndValue><BackgroundColor>#FFFF00</BackgroundColor></ScaleRange>
+                      <ScaleRange><StartValue>90</StartValue><EndValue>120</EndValue><BackgroundColor>Red</BackgroundColor></ScaleRange>
+                    </ScaleRanges>
+                    <GaugePointers><GaugePointer><GaugeInputValue><Value>=Fields!Pct.Value</Value></GaugeInputValue></GaugePointer></GaugePointers>
+                  </GaugeScale></GaugeScales></RadialGauge></GaugePanelItems>
+                </GaugePanel>
+              </ReportItems></Body>
+            </Report>
+            """;
+        var gauge = new RdlImporter().ImportXml(rdl).ReportHeader!.Elements.OfType<Reporting.Elements.GaugeElement>().Single();
+        gauge.MinimumExpression.Should().Be("0");
+        gauge.MaximumExpression.Should().Be("120");
+        gauge.Ranges.Should().HaveCount(3);
+        gauge.Ranges[0].StartExpression.Should().Be("0");
+        gauge.Ranges[0].EndExpression.Should().Be("60");
+        gauge.Ranges[0].ColorHex.Should().Be(Reporting.Styling.Color.FromRgb(0, 128, 0).ToHex(), "Green");
+        gauge.Ranges[1].ColorHex.Should().Be(Reporting.Styling.Color.FromHex("#FFFF00").ToHex(), "hex passes through");
+    }
+
+    [Fact]
     public void Tablix_flat_table_is_imported_with_header_and_detail_cells()
     {
         var rdl = """

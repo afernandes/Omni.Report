@@ -196,7 +196,7 @@ Legenda: ✅ pleno · 🟡 parcial · 🔴 ausente/crítico. (% e dimensões atu
 | Chart.ChartData (binding) | ✅ | ✅ | ✅ | 🟡 | ✅ | ✅ | ✅ | Importa séries/valores (#97); multi-source futuro | S | 1 |
 | Gauge | ✅ | ✅ | ✅ | 🟡 | ✅ | ✅ | ✅ | Importa tipo+valor do 1º ponteiro (#97); ticks/thresholds semânticos futuros | M | 2 |
 | Gauge.Scale (Min/Max/Interval) | 🟡 | 🟡 | 🟡 | 🔴 | 🟡 | 🟡 | 🟡 | Sem Interval/ticks/labels de escala | M | 3 |
-| Gauge.Ranges | ✅ | ✅ | ✅ | 🔴 | ✅ | ✅ | ✅ | Import ignora; resto completo | S | 1 |
+| Gauge.Ranges | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Faixas + Min/Max importam de <ScaleRanges> (#135) | S | 1 |
 | Map | ✅ | ✅ | ✅ | 🔴 | ✅ | ✅ | ✅ | Vetorial ok; tiles scaffolded; import ignora | M | 2 |
 | Map.GeoJSON / Graticule | ✅ | ✅ | ✅ | 🔴 | ✅ | ✅ | ✅ | Completos (exceto import) | S | 1 |
 | DataBar | ✅ | ✅ | ✅ | 🔴 | ✅ | ✅ | ✅ | Só horizontal; sem Direction/gradiente/negativos | M | 2 |
