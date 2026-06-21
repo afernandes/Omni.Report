@@ -81,6 +81,59 @@ public class BandRendererCoverageTests
     }
 
     [Fact]
+    public async Task TextBox_with_BackColor_emits_a_background_fill_behind_the_text()
+    {
+        var req = WithSingleRowDefinition(new TextBoxElement
+        {
+            Id = "tb",
+            Bounds = new Rectangle(0.Mm(), 0.Mm(), 50.Mm(), 8.Mm()),
+            Expression = "'Olá'",
+            Style = Style.Default with { BackColor = Color.LightGray },
+        });
+        var report = await new ReportPaginator().PaginateAsync(req);
+        var prims = report.Pages[0].Primitives;
+        // A fill rectangle of the BackColor is emitted, and it comes BEFORE the text (drawn underneath).
+        var fill = prims.OfType<DrawRectanglePrimitive>().Single(r => r.Fill?.Color == Color.LightGray);
+        var fillIdx = prims.ToList().IndexOf(fill);
+        var textIdx = prims.ToList().FindIndex(p => p is DrawTextPrimitive);
+        fillIdx.Should().BeLessThan(textIdx, "the background fill is drawn before (under) the text");
+    }
+
+    [Fact]
+    public async Task CanGrow_textbox_background_fill_grows_with_the_text()
+    {
+        var req = WithSingleRowDefinition(new TextBoxElement
+        {
+            Id = "tb",
+            Bounds = new Rectangle(0.Mm(), 0.Mm(), 30.Mm(), 5.Mm()), // narrow + short → wraps to many lines
+            CanGrow = true,
+            Expression = "'Uma frase bem longa que vai quebrar em varias linhas dentro de uma caixa estreita'",
+            Style = Style.Default with { BackColor = Color.LightGray },
+        });
+        var report = await new ReportPaginator().PaginateAsync(req);
+        var prims = report.Pages[0].Primitives;
+        var fill = prims.OfType<DrawRectanglePrimitive>().Single(r => r.Fill?.Color == Color.LightGray);
+        var text = prims.OfType<DrawTextPrimitive>().First();
+        // The fill grew past the declared 5mm to cover the wrapped text (matches the textbox's final height).
+        fill.Bounds.Height.Should().Be(text.Bounds.Height);
+        fill.Bounds.Height.Should().BeGreaterThan(Unit.FromMm(5));
+    }
+
+    [Fact]
+    public async Task TextBox_without_BackColor_emits_no_background_fill()
+    {
+        var req = WithSingleRowDefinition(new TextBoxElement
+        {
+            Id = "tb",
+            Bounds = new Rectangle(0.Mm(), 0.Mm(), 50.Mm(), 8.Mm()),
+            Expression = "'Olá'",
+        });
+        var report = await new ReportPaginator().PaginateAsync(req);
+        // No BackColor → no fill rectangle (no regression for the default case).
+        report.Pages[0].Primitives.OfType<DrawRectanglePrimitive>().Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task Rectangle_with_fill_and_border_emits_primitive()
     {
         var req = WithSingleRowDefinition(new RectangleElement
