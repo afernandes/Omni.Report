@@ -504,6 +504,34 @@ public class PaginationEdgeCaseTests
     }
 
     [Fact]
+    public async Task Band_with_a_growing_element_keeps_its_floor_even_with_CanShrink()
+    {
+        // Shrink-safety guard: a container Rectangle grows to its children, which Measure can't predict.
+        // A band containing one must NOT drop its declared-height floor (or the next band would overlap),
+        // so two stacked rows stay one full band-height apart even with DetailBand.CanShrink=true.
+        var rect = new RectangleElement
+        {
+            Id = "r",
+            Bounds = new Rectangle(0.Mm(), 0.Mm(), 40.Mm(), 8.Mm()),
+            Children = EquatableArray.Create<ReportElement>(new LabelElement
+            {
+                Id = "child", Text = "C", Bounds = new Rectangle(0.Mm(), 0.Mm(), 40.Mm(), 4.Mm()),
+            }),
+        };
+        var detail = new DetailBand(Unit.FromMm(20),
+            EquatableArray.Create<ReportElement>(rect), CanShrink: true);
+        var def = new ReportDefinition("rect-shrink", PageSetup.A4Portrait, detail);
+        var report = await new ReportPaginator().PaginateAsync(
+            TestData.BuildRequest(def, [new Venda("a", "p", 1m), new Venda("b", "p", 2m)]));
+
+        var ys = report.Pages.SelectMany(p => p.Primitives).OfType<DrawTextPrimitive>()
+            .Where(t => t.SourceElementId == "child").Select(t => t.Bounds.Y).OrderBy(y => y.Mils).ToList();
+        ys.Should().HaveCount(2);
+        (ys[1] - ys[0]).ToMm().Should().BeApproximately(20, 0.5,
+            "a band with a growing element keeps its declared height — shrink is suppressed to preserve Measure≡Render");
+    }
+
+    [Fact]
     public async Task Band_Measure_and_Render_agree_on_shrunk_height()
     {
         // Measure (page-fit pre-check) MUST equal Render (actual emission) or the next band overlaps/leaves a
