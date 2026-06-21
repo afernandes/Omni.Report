@@ -31,7 +31,8 @@ public class ConcatLikeTests
     [InlineData("hello", "x*", false)]
     [InlineData("A1", "A#", true)]
     [InlineData("AB", "A#", false)]
-    [InlineData("ABC", "abc", true)] // case-insensitive
+    [InlineData("ABC", "ABC", true)]
+    [InlineData("ABC", "abc", false)] // case-sensitive (VB default Option Compare Binary)
     public void Like_matches_vb_patterns(string value, string pattern, bool expected)
     {
         var ev = Ev();

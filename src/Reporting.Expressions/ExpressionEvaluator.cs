@@ -470,7 +470,8 @@ public sealed class ExpressionEvaluator
     }
 
     // VB Like pattern → regex: * = any run, ? = one char, # = one digit; other chars are literal.
-    // Case-insensitive, whole-string match. (Character-class [...] is a rare VB feature, not handled.)
+    // Whole-string, CASE-SENSITIVE match (VB's default Option Compare Binary, matching SSRS). A match
+    // timeout guards against catastrophic backtracking from author-supplied patterns (e.g. many '*').
     private static bool VbLike(string value, string pattern)
     {
         var sb = new System.Text.StringBuilder("^");
@@ -485,8 +486,15 @@ public sealed class ExpressionEvaluator
             });
         }
         sb.Append('$');
-        return System.Text.RegularExpressions.Regex.IsMatch(value, sb.ToString(),
-            System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.Singleline);
+        try
+        {
+            return System.Text.RegularExpressions.Regex.IsMatch(value, sb.ToString(),
+                System.Text.RegularExpressions.RegexOptions.Singleline, TimeSpan.FromSeconds(1));
+        }
+        catch (System.Text.RegularExpressions.RegexMatchTimeoutException)
+        {
+            return false;
+        }
     }
 
     private static AggregateScope ParseScope(object? value)

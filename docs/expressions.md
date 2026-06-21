@@ -70,7 +70,7 @@ escopo. A paginação reseta o escopo apropriado entre páginas / grupos.
 
 ```text
 Concat('Total: ', Fields.Valor)   // concatena (alvo do operador & do VB/SSRS)
-Like(Fields.Sku, 'A#*')           // padrão VB: * = qualquer, ? = 1 char, # = 1 dígito (case-insensitive)
+Like(Fields.Sku, 'A#*')           // padrão VB: * = qualquer, ? = 1 char, # = 1 dígito (case-sensitive, como o VB)
 ```
 
 O `+` é **numérico** (não concatena strings) — use `Concat`. O import de `.rdl` reescreve o operador
