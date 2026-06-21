@@ -145,7 +145,7 @@ public sealed class SvgExporter : IReportExporter
 
     private static void Replay(SKCanvas canvas, LayoutPrimitive primitive)
     {
-        var clip = SkiaPrimitiveRenderer.BeginClip(canvas, primitive.ClipBounds, SvgDpi);
+        var clip = SkiaPrimitiveRenderer.BeginClip(canvas, primitive.ClipBounds, primitive.ClipCornerRadius, SvgDpi);
         switch (primitive)
         {
             case DrawTextPrimitive t:

@@ -299,7 +299,7 @@ public static class SkiaPrimitiveRenderer
     /// <summary>Applies <paramref name="clip"/> (if any) to the canvas and returns the save-count to restore
     /// after the primitive is drawn (null = nothing pushed). Shared by every SKCanvas-based replay loop
     /// (PDF/PNG/SVG exporters) so container-rectangle children are cut consistently.</summary>
-    public static int? BeginClip(SKCanvas canvas, Rectangle? clip, float dpi)
+    public static int? BeginClip(SKCanvas canvas, Rectangle? clip, Unit cornerRadius, float dpi)
     {
         ArgumentNullException.ThrowIfNull(canvas);
         if (clip is not { } c)
@@ -307,8 +307,27 @@ public static class SkiaPrimitiveRenderer
             return null;
         }
         int saved = canvas.Save();
-        canvas.ClipRect(c.ToSKRect(dpi));
+        ApplyClip(canvas, c, cornerRadius, dpi);
         return saved;
+    }
+
+    /// <summary>Clips the canvas to <paramref name="bounds"/>, rounding the corners by
+    /// <paramref name="cornerRadius"/> when it's positive (a container <c>Rectangle</c> with CornerRadius).
+    /// The caller is responsible for the surrounding Save/Restore.</summary>
+    public static void ApplyClip(SKCanvas canvas, Rectangle bounds, Unit cornerRadius, float dpi)
+    {
+        ArgumentNullException.ThrowIfNull(canvas);
+        var rect = bounds.ToSKRect(dpi);
+        if (cornerRadius > Unit.Zero)
+        {
+            float r = (float)cornerRadius.ToPixels(dpi);
+            using var rrect = new SKRoundRect(rect, r, r);
+            canvas.ClipRoundRect(rrect, antialias: true);
+        }
+        else
+        {
+            canvas.ClipRect(rect);
+        }
     }
 
     /// <summary>Restores the canvas to the count returned by <see cref="BeginClip"/> (no-op when null).</summary>
