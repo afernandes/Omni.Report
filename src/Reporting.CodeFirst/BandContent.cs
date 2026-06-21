@@ -85,6 +85,23 @@ public sealed class BandContent
         return this;
     }
 
+    /// <summary>Starts a CONTAINER rectangle and populates its <see cref="RectangleElement.Children"/>
+    /// from <paramref name="children"/> — nested elements are positioned RELATIVE to the rectangle's
+    /// top-left, drawn on top of its fill (no clipping). Subsequent config calls (At/Size/Fill/CornerRadius)
+    /// apply to the rectangle itself.</summary>
+    public BandContent Rectangle(Action<BandContent> children)
+    {
+        Flush();
+        var inner = new BandContent();
+        children(inner);
+        _pending = new RectangleElement
+        {
+            Bounds = Reporting.Geometry.Rectangle.Empty,
+            Children = inner.BuildElements(),
+        };
+        return this;
+    }
+
     public BandContent Ellipse()
     {
         Flush();

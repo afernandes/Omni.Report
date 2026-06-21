@@ -147,6 +147,22 @@ public class BandContentTests
     }
 
     [Fact]
+    public void Rectangle_as_container_holds_children_with_relative_bounds()
+    {
+        var b = Build(c => c
+            .Rectangle(box => box
+                .Label("Resumo").At(2, 2).Size(30, 6)
+                .Text("Fields.Total").At(2, 10).Size(40, 6))
+            .At(10, 10).Size(80, 40).Fill(Color.LightGray));
+        var r = (RectangleElement)b.BuildElements()[0];
+        r.FillColor.Should().Be(Color.LightGray);
+        r.Bounds.X.ToMm().Should().BeApproximately(10, 0.1); // config after Rectangle(...) applies to the rect
+        r.Children.Should().HaveCount(2);
+        r.Children[0].Should().BeOfType<LabelElement>().Which.Bounds.X.ToMm().Should().BeApproximately(2, 0.1);
+        r.Children[1].Should().BeOfType<TextBoxElement>();
+    }
+
+    [Fact]
     public void Ellipse_fill()
     {
         var b = Build(c => c.Ellipse().Fill(Color.Red));

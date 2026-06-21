@@ -375,6 +375,10 @@ internal static class RepxWriter
                 {
                     new("FillColor", rect.FillColor is null ? "" : Formats.FormatColor(rect.FillColor.Value)),
                     new("CornerRadius", Formats.FormatUnit(rect.CornerRadius)),
+                    // Nested container children (relative bounds) — recurse via the same element writer
+                    // (precedent: TablixCell.Content). Always emitted (an empty <Children/> reads back to the
+                    // empty default, so round-trip equality holds either way).
+                    new("Children", rect.Children.Select(WriteElement)),
                 }),
             EllipseElement ellipse => ("Ellipse",
                 new XElement[]

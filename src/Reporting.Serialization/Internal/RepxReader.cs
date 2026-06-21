@@ -390,6 +390,8 @@ internal static class RepxReader
             Bounds = bounds,
             FillColor = ReadOptionalColor(el.Element("FillColor")),
             CornerRadius = Formats.ParseUnit(el.Element("CornerRadius")?.Value),
+            // Nested container children (relative bounds) — recurse via the shared element reader.
+            Children = ReadElements(el.Element("Children")),
         };
 
     private static ImageElement ReadImageElement(XElement el, Rectangle bounds)

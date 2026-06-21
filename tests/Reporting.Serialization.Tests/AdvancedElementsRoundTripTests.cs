@@ -42,6 +42,41 @@ public class AdvancedElementsRoundTripTests
     }
 
     [Fact]
+    public void Rectangle_container_children_round_trip()
+    {
+        // A Rectangle-as-container with nested children (relative bounds), including a doubly-nested
+        // rectangle, must survive .repx and .repjson losslessly — children are serialized via the same
+        // recursive element (de)serializer as TablixCell.Content.
+        var rect = new RectangleElement
+        {
+            Bounds = new Rectangle(Unit.FromMm(10), Unit.FromMm(10), Unit.FromMm(80), Unit.FromMm(40)),
+            FillColor = Color.FromHex("#EEF2FF"),
+            Children = EquatableArray.Create<ReportElement>(
+                new LabelElement
+                {
+                    Text = "Resumo",
+                    Bounds = new Rectangle(Unit.FromMm(2), Unit.FromMm(2), Unit.FromMm(30), Unit.FromMm(6)),
+                },
+                new TextBoxElement
+                {
+                    Expression = "{Fields.Total:C}",
+                    Bounds = new Rectangle(Unit.FromMm(2), Unit.FromMm(10), Unit.FromMm(40), Unit.FromMm(6)),
+                },
+                new RectangleElement
+                {
+                    Bounds = new Rectangle(Unit.FromMm(2), Unit.FromMm(18), Unit.FromMm(40), Unit.FromMm(18)),
+                    Children = EquatableArray.Create<ReportElement>(
+                        new LabelElement
+                        {
+                            Text = "interno",
+                            Bounds = new Rectangle(Unit.FromMm(1), Unit.FromMm(1), Unit.FromMm(20), Unit.FromMm(5)),
+                        }),
+                }),
+        };
+        AssertRoundTrip(Wrap(rect));
+    }
+
+    [Fact]
     public void TextBox_autosize_flags_round_trip()
     {
         // Regression: the .repx writer dropped CanGrow/CanShrink (the reader already read them), so

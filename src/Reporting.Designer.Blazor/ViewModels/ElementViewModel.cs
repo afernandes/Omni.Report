@@ -216,6 +216,9 @@ public sealed class ElementViewModel : Notifying
     /// with multi-run text would silently lose its runs on any edit. There's no run editor yet — this only
     /// guarantees the runs round-trip; authoring them is a follow-up.</summary>
     private Reporting.Common.EquatableArray<TextRun> _textRuns = Reporting.Common.EquatableArray<TextRun>.Empty;
+    // Container-rectangle children: preserved verbatim across edit→save (no nested canvas editor yet — PR3),
+    // so opening a report with a Rectangle-as-container in the Designer and saving never drops its children.
+    private Reporting.Common.EquatableArray<ReportElement> _rectChildren = Reporting.Common.EquatableArray<ReportElement>.Empty;
 
     /// <summary>True for kinds rendered as an opaque placeholder — their full domain element is
     /// preserved in <see cref="_sourceElement"/> and re-emitted verbatim by <see cref="ToElement"/>.
@@ -955,7 +958,7 @@ public sealed class ElementViewModel : Notifying
             DesignerElementKind.Label => new LabelElement { Text = Text, Bounds = Bounds },
             DesignerElementKind.TextBox => new TextBoxElement { Expression = Expression, Bounds = Bounds, CanGrow = CanGrow, CanShrink = CanShrink, TextRuns = _textRuns },
             DesignerElementKind.Line => new LineElement { Bounds = Bounds, Direction = LineDir },
-            DesignerElementKind.Rectangle => new RectangleElement { Bounds = Bounds, FillColor = FillColor, CornerRadius = Unit.FromMm(CornerRadiusMm) },
+            DesignerElementKind.Rectangle => new RectangleElement { Bounds = Bounds, FillColor = FillColor, CornerRadius = Unit.FromMm(CornerRadiusMm), Children = _rectChildren },
             DesignerElementKind.Ellipse => new EllipseElement { Bounds = Bounds, FillColor = FillColor },
             DesignerElementKind.Image => new ImageElement
             {
@@ -1092,6 +1095,7 @@ public sealed class ElementViewModel : Notifying
             ImageSizing = ImageSizing, ImagePath = ImagePath, ImageExpression = ImageExpression,
         };
         c._textRuns = _textRuns; // EquatableArray is immutable → safe to share on clone
+        c._rectChildren = _rectChildren; // ditto — preserve container children on clone
         foreach (var rule in ConditionalFormats)
         {
             c.ConditionalFormats.Add(new ConditionalFormatRule
@@ -1231,7 +1235,7 @@ public sealed class ElementViewModel : Notifying
                 BarcodeShowText = bc.ShowText;
                 break;
             case LineElement ln: LineDir = ln.Direction; break;
-            case RectangleElement r: FillColor = r.FillColor; CornerRadiusMm = r.CornerRadius.ToMm(); break;
+            case RectangleElement r: FillColor = r.FillColor; CornerRadiusMm = r.CornerRadius.ToMm(); _rectChildren = r.Children; break;
             case EllipseElement e: FillColor = e.FillColor; break;
             case ImageElement img:
                 InlineImageData = img.InlineData.Count > 0 ? img.InlineData.ToArray() : null;

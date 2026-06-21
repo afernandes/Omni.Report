@@ -313,6 +313,8 @@ internal static class RepJsonReader
                 Bounds = bounds,
                 FillColor = (string?)o["fillColor"] is { } fc ? Formats.ParseColor(fc) : null,
                 CornerRadius = Formats.ParseUnit((string?)o["cornerRadius"]),
+                // Nested container children (relative bounds) — recurse via the shared element reader.
+                Children = ReadElements(o["children"]),
             },
             "Ellipse" => new EllipseElement
             {
