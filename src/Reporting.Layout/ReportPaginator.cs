@@ -83,9 +83,7 @@ public sealed partial class ReportPaginator : IReportPaginator
         PaginationRequest request, CancellationToken ct)
     {
         // Resolve the primary source name once. It drives the unqualified Fields.X scope.
-        var primaryName = request.PrimaryDataSource
-                          ?? request.Definition.DataSources.FirstOrDefault()?.Name
-                          ?? request.DataSources.Names.FirstOrDefault();
+        var primaryName = ResolvePrimaryName(request);
         var iteration = new List<IterationRow>();
         if (primaryName is null) return iteration;
         if (!request.DataSources.TryGet(primaryName, out var primaryDs)) return iteration;
@@ -180,6 +178,16 @@ public sealed partial class ReportPaginator : IReportPaginator
         }
         return iteration;
     }
+
+    // Resolves the dataset that drives the detail loop. Shared by MaterializeRowsAsync and ExecutePass so the
+    // two never drift (a drift would make materialization iterate one source while the render publishes/filters
+    // another). The DetailBand's explicit DataSetName wins (it's more specific than the host's request); when
+    // null the chain is the historical one — PrimaryDataSource, then first declared source, then any registered.
+    private static string? ResolvePrimaryName(PaginationRequest request)
+        => request.Definition.Detail.DataSetName
+           ?? request.PrimaryDataSource
+           ?? request.Definition.DataSources.FirstOrDefault()?.Name
+           ?? request.DataSources.Names.FirstOrDefault();
 
     private static object? ValueOf(IReadOnlyList<KeyValuePair<string, object?>> row, string fieldName)
     {
@@ -456,10 +464,9 @@ public sealed partial class ReportPaginator : IReportPaginator
         }
 
         // Resolve the primary-source name so we can also expose its current row via the
-        // qualified-source lookup ({Fields.SourceName.X}). Resolution mirrors MaterializeRowsAsync.
-        var primarySourceName = request.PrimaryDataSource
-                                ?? request.Definition.DataSources.FirstOrDefault()?.Name
-                                ?? request.DataSources.Names.FirstOrDefault();
+        // qualified-source lookup ({Fields.SourceName.X}). Same resolution as MaterializeRowsAsync
+        // (shared ResolvePrimaryName) — must stay identical or materialization and render diverge.
+        var primarySourceName = ResolvePrimaryName(request);
         // Look up the parent's DataSourceDefinition so EmitSubDetails can resolve relations
         // by name (e.g. "PedidosDeCliente" → ChildSource=Pedidos, ChildField=cliente_id).
         var primaryDef = primarySourceName is null

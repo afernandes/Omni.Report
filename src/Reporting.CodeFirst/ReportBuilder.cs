@@ -34,6 +34,7 @@ public sealed class ReportBuilderRoot
     private BandContent? _reportFooter;
     private readonly List<SubDetailBuilder> _subDetails = [];
     private string? _detailNoRows;
+    private string? _detailDataSet;
     private string? _detailFilter;
     private readonly List<Reporting.Data.SortDescriptor> _detailSorts = [];
     private PageBreak _detailPageBreak;
@@ -137,6 +138,11 @@ public sealed class ReportBuilderRoot
     /// <summary>RDL <c>&lt;NoRows&gt;</c>: message rendered centered in the Detail position
     /// when the bound data source produces zero rows (after filter).</summary>
     public ReportBuilderRoot DetailNoRows(string message) { _detailNoRows = message; return this; }
+
+    /// <summary>Binds the Detail band to a specific dataset by name (drives the detail loop). When not set,
+    /// the engine uses the request's primary source, then the first declared data source — the default.
+    /// Lets a report iterate a dataset other than the first declared one.</summary>
+    public ReportBuilderRoot DetailDataSet(string name) { _detailDataSet = name; return this; }
 
     /// <summary>RDL <c>&lt;Filters&gt;</c> at the Detail data region: boolean expression
     /// evaluated per row; non-matching rows are skipped.</summary>
@@ -312,6 +318,7 @@ public sealed class ReportBuilderRoot
                     FilterExpression = _detailFilter,
                     SortExpressions = sorts,
                     PageBreak = _detailPageBreak,
+                    DataSetName = _detailDataSet,
                 }
                 : detailFromGroup with
                 {
@@ -320,6 +327,7 @@ public sealed class ReportBuilderRoot
                     FilterExpression = _detailFilter,
                     SortExpressions = sorts,
                     PageBreak = _detailPageBreak,
+                    DataSetName = _detailDataSet,
                 })
             : new DetailBand(
                 _detail.BandHeight, _detail.BuildElements(),
@@ -329,7 +337,8 @@ public sealed class ReportBuilderRoot
                 NoRowsMessage: _detailNoRows,
                 FilterExpression: _detailFilter,
                 SortExpressions: sorts,
-                PageBreak: _detailPageBreak);
+                PageBreak: _detailPageBreak,
+                DataSetName: _detailDataSet);
 
         var definition = new ReportDefinition(_name, _pageSetup.Build(), detail)
         {

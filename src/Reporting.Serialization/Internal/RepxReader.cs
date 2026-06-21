@@ -201,7 +201,8 @@ internal static class RepxReader
                    NoRowsMessage: Attr(el, "NoRowsMessage"),
                    FilterExpression: Attr(el, "FilterExpression"),
                    SortExpressions: ReadSortExpressions(el.Element("SortExpressions")),
-                   PageBreak: ParsePageBreak(Attr(el, "PageBreak")));
+                   PageBreak: ParsePageBreak(Attr(el, "PageBreak")),
+                   DataSetName: Attr(el, "DataSetName"));
     }
 
     private static SubDetailBand ReadSubDetail(XElement el)

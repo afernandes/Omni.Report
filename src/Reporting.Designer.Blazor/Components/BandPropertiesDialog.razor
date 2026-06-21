@@ -66,6 +66,22 @@
                 </div>
             </div>
 
+            @if (Band.Kind is DesignerBandKind.Detail)
+            {
+                <div class="bp-section">
+                    <div class="bp-section-head">
+                        <Icon Name="database" Size="14" CssClass="icon icon-14" />
+                        <span>Dados</span>
+                    </div>
+                    <div class="bp-row">
+                        <label title="Nome do dataset que dirige o loop de Detail. Vazio = primário do request / primeira fonte declarada.">Dataset</label>
+                        <input type="text" value="@(Band.DataSetName ?? "")"
+                               @onchange="@(e => Band.DataSetName = AsNullable(e.Value?.ToString()))"
+                               placeholder="(primeira fonte declarada)" />
+                    </div>
+                </div>
+            }
+
             @if (IsDataRegion)
             {
                 <div class="bp-section">

@@ -214,7 +214,8 @@ internal static class RepJsonReader
                NoRowsMessage: (string?)o["noRowsMessage"],
                FilterExpression: (string?)o["filterExpression"],
                SortExpressions: ReadSorts(o),
-               PageBreak: Enum.Parse<PageBreak>((string?)o["pageBreak"] ?? nameof(PageBreak.None)));
+               PageBreak: Enum.Parse<PageBreak>((string?)o["pageBreak"] ?? nameof(PageBreak.None)),
+               DataSetName: (string?)o["dataSetName"]);
 
     private static SubDetailBand ReadSubDetail(JsonObject o)
         => new(Name: (string?)o["name"] ?? "",

@@ -106,6 +106,30 @@ public class RdlCodeFirstTests
     }
 
     [Fact]
+    public void DetailDataSet_sets_the_band_dataset_in_all_three_build_branches()
+    {
+        // Empty detail branch (no .Detail, no group).
+        ReportBuilder.Create("t").DetailDataSet("Pedidos").Build()
+            .Definition.Detail.DataSetName.Should().Be("Pedidos");
+
+        // Explicit .Detail branch.
+        ReportBuilder.Create("t")
+            .Detail(d => d.Text("{Fields.Total}").At(0, 0).Size(50, 6))
+            .DetailDataSet("Pedidos").Build()
+            .Definition.Detail.DataSetName.Should().Be("Pedidos");
+
+        // Detail-from-group branch.
+        ReportBuilder.Create("t")
+            .Group("PorCliente", "Fields.Cliente", g => g.Header(h => h.Text("{Fields.Cliente}").At(0, 0).Size(50, 6)))
+            .DetailDataSet("Pedidos").Build()
+            .Definition.Detail.DataSetName.Should().Be("Pedidos");
+
+        // Default: no DetailDataSet → null (additive).
+        ReportBuilder.Create("t").Detail(d => d.Text("x").At(0, 0).Size(10, 6)).Build()
+            .Definition.Detail.DataSetName.Should().BeNull();
+    }
+
+    [Fact]
     public void Band_page_break_propagates_to_report_band()
     {
         var def = ReportBuilder.Create("test")

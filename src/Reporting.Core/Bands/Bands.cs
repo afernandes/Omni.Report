@@ -71,7 +71,12 @@ public sealed record DetailBand(
     string? NoRowsMessage = null,
     string? FilterExpression = null,
     EquatableArray<SortDescriptor> SortExpressions = default,
-    PageBreak PageBreak = PageBreak.None)
+    PageBreak PageBreak = PageBreak.None,
+    // Dataset that drives the detail loop. null (default) → falls back to PrimaryDataSource then the first
+    // declared source (historical behaviour unchanged). Unlike SubDetailBand.DataMember (relation-or-source),
+    // this is a plain dataset name; if it matches no DataSourceDefinition the loop still iterates that
+    // registered source, just without its relations/calculated fields/filter.
+    string? DataSetName = null)
     : IBand
 {
     public BandKind Kind => BandKind.Detail;

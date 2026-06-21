@@ -113,6 +113,12 @@ public sealed class BandViewModel : Notifying
     /// <see cref="DesignerBandKind.SubDetail"/>.</summary>
     public string? NoRowsMessage { get => _noRowsMessage; set => Set(ref _noRowsMessage, value); }
 
+    private string? _dataSetName;
+    /// <summary>Dataset that drives the Detail loop (RDL data region's dataset). When empty, the engine uses
+    /// the request's primary source then the first declared source. Distinct from <see cref="DataMember"/>,
+    /// which on a Sub-Detail is a relation-or-source name.</summary>
+    public string? DataSetName { get => _dataSetName; set => Set(ref _dataSetName, value); }
+
     private string? _filterExpression;
     /// <summary>RDL <c>&lt;Filters&gt;</c> at this data region: rows whose expression evaluates
     /// false are skipped. Applies to Detail/SubDetail/Group bands.</summary>
@@ -164,7 +170,8 @@ public sealed class BandViewModel : Notifying
             NoRowsMessage: string.IsNullOrWhiteSpace(NoRowsMessage) ? null : NoRowsMessage,
             FilterExpression: string.IsNullOrWhiteSpace(FilterExpression) ? null : FilterExpression,
             SortExpressions: sorts,
-            PageBreak: PageBreak);
+            PageBreak: PageBreak,
+            DataSetName: string.IsNullOrWhiteSpace(DataSetName) ? null : DataSetName);
     }
 
     /// <summary>Builds the SubDetailBand core record from this designer band. Header/Footer
@@ -226,6 +233,7 @@ public sealed class BandViewModel : Notifying
             NoRowsMessage = band.NoRowsMessage,
             FilterExpression = band.FilterExpression,
             PageBreak = band.PageBreak,
+            DataSetName = band.DataSetName,
         };
         foreach (var s in band.SortExpressions)
         {
