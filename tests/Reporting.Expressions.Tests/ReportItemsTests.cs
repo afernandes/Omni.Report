@@ -26,4 +26,21 @@ public class ReportItemsTests
         var ctx = new ReportExpressionContext(ev);
         ev.Evaluate("ReportItems.Inexistente", ctx).Should().BeNull();
     }
+
+    [Fact]
+    public void ReportName_global_resolves_from_the_context()
+    {
+        var ev = new ExpressionEvaluator();
+        var ctx = new ReportExpressionContext(ev) { ReportName = "Vendas Q1" };
+        ev.Evaluate("ReportName", ctx).Should().Be("Vendas Q1");
+        ev.Evaluate("Concat('Relatório: ', ReportName)", ctx).Should().Be("Relatório: Vendas Q1");
+    }
+
+    [Fact]
+    public void ReportName_defaults_to_empty_not_null()
+    {
+        var ev = new ExpressionEvaluator();
+        var ctx = new ReportExpressionContext(ev); // ReportName unset
+        ev.Evaluate("ReportName", ctx).Should().Be(string.Empty);
+    }
 }

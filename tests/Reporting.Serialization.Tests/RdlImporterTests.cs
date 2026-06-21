@@ -281,6 +281,10 @@ public class RdlImporterTests
     }
 
     [Theory]
+    // Globals: ReportName stays a bare identifier (resolved by the evaluator); OverallPageNumber→PageNumber.
+    [InlineData("=Globals!ReportName", "ReportName")]
+    [InlineData("=Globals!OverallPageNumber", "PageNumber")]
+    [InlineData("=Globals!OverallTotalPages", "TotalPages")]
     [InlineData("=Fields!Nome.Value Like \"A*\"", "Like(Fields.Nome, \"A*\")")]
     [InlineData("=Campo Like \"A*\"", "Like(Campo, \"A*\")")] // non-.Value member left intact
     [InlineData("=Fields!A.Value Like Parameters!P.Value", "Like(Fields.A, Parameters.P)")]

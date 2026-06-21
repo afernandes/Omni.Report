@@ -120,6 +120,22 @@ public class BandRendererCoverageTests
     }
 
     [Fact]
+    public async Task ReportName_global_renders_the_report_name()
+    {
+        // Closed bug: =Globals!ReportName imports to the bare identifier "ReportName", which the evaluator
+        // used to resolve to null (empty). The paginator now seeds ctx.ReportName from def.Name.
+        var req = WithSingleRowDefinition(new TextBoxElement
+        {
+            Id = "tb",
+            Bounds = new Rectangle(0.Mm(), 0.Mm(), 60.Mm(), 8.Mm()),
+            Expression = "ReportName",
+        });
+        var report = await new ReportPaginator().PaginateAsync(req);
+        // WithSingleRowDefinition names the report "c" → that's what ReportName resolves to.
+        report.Pages[0].Primitives.OfType<DrawTextPrimitive>().Select(t => t.Text).Should().Contain("c");
+    }
+
+    [Fact]
     public async Task TextBox_without_BackColor_emits_no_background_fill()
     {
         var req = WithSingleRowDefinition(new TextBoxElement

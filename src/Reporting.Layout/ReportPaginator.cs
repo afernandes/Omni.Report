@@ -433,6 +433,7 @@ public sealed partial class ReportPaginator : IReportPaginator
         var ctx = new ReportExpressionContext(_evaluator);
         ApplyParameters(ctx, request);
         ctx.TotalPages = totalPagesHint;
+        ctx.ReportName = def.Name ?? string.Empty; // RDL Globals!ReportName
 
         // Expose every dataset's full rows for cross-dataset Lookup/LookupSet (SSRS-style).
         foreach (var (sourceName, sourceRows) in allSources)
