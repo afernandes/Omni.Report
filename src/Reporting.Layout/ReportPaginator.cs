@@ -41,7 +41,10 @@ public sealed partial class ReportPaginator : IReportPaginator
         var (iterationRows, allSources) = await MaterializeAsync(request, ct).ConfigureAwait(false);
 
         var firstPass = ExecutePass(request, iterationRows, allSources, measurer, totalPagesHint: 0);
-        if (!UsesTotalPages(request.Definition))
+        // A second pass is needed when an expression references Page.Total/TotalPages (so the count must be
+        // known), OR when a page header/footer must be suppressed on the last page (PrintOnLastPage=false) —
+        // the last page can't be identified during the forward-only first pass, only its total count can.
+        if (!UsesTotalPages(request.Definition) && !UsesLastPageGating(request.Definition))
         {
             return new RenderedReport(request.Definition.Name, new EquatableArray<RenderedPage>(firstPass.ToArray()));
         }
@@ -813,8 +816,15 @@ public sealed partial class ReportPaginator : IReportPaginator
         {
             return;
         }
-        // PrintOnFirstPage / PrintOnLastPage gating: respect first-page flag; last-page deferred.
+        // First-page suppression: known up front (page 1 is page 1 on both passes).
         if (page.PageNumber == 1 && !def.PageHeader.PrintOnFirstPage)
+        {
+            return;
+        }
+        // Last-page suppression: needs the total page count, which is only known on the second pass
+        // (ctx.TotalPages > 0). Suppressing the last page's header never changes the count — the content
+        // that fit on the last page WITH the header still fits without it, and nothing flows in after it.
+        if (ctx.TotalPages > 0 && page.PageNumber == ctx.TotalPages && !def.PageHeader.PrintOnLastPage)
         {
             return;
         }
@@ -825,6 +835,17 @@ public sealed partial class ReportPaginator : IReportPaginator
     private static void EmitPageFooter(ReportDefinition def, PageAccumulator page, BandRenderer renderer, IReportExpressionContext ctx)
     {
         if (def.PageFooter is null)
+        {
+            return;
+        }
+        // First-page / last-page suppression. The footer is bottom-anchored (EmitFixed below does NOT consume
+        // content Y), so suppressing it never reflows content — page count is unaffected on either page.
+        // Last-page gating needs the total, known only on the second pass (ctx.TotalPages > 0).
+        if (page.PageNumber == 1 && !def.PageFooter.PrintOnFirstPage)
+        {
+            return;
+        }
+        if (ctx.TotalPages > 0 && page.PageNumber == ctx.TotalPages && !def.PageFooter.PrintOnLastPage)
         {
             return;
         }
@@ -853,6 +874,12 @@ public sealed partial class ReportPaginator : IReportPaginator
 
     [GeneratedRegex(@"\bPage\.(Total|TotalPages)\b", RegexOptions.Compiled)]
     private static partial Regex PageTotalReference();
+
+    /// <summary>True when the page header or footer must be suppressed on the last page
+    /// (<c>PrintOnLastPage=false</c>). This requires a second pass to learn the total page count, because the
+    /// last page can't be identified during the forward-only first pass.</summary>
+    private static bool UsesLastPageGating(ReportDefinition def)
+        => def.PageHeader is { PrintOnLastPage: false } || def.PageFooter is { PrintOnLastPage: false };
 
     /// <summary>Checks whether the definition references <c>Page.Total</c> anywhere — used to
     /// decide whether a second pass is necessary.</summary>

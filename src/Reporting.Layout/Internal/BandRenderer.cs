@@ -54,15 +54,26 @@ internal sealed class BandRenderer
     public BandLayout Render(IBand band, Point origin, IReportExpressionContext ctx)
     {
         var primitives = new List<LayoutPrimitive>();
-        Unit actualHeight = band.Height;
+        // Accumulate the true content extent from zero (each element's effective bottom, grown/shrunk).
+        // The declared band.Height is applied as a FLOOR afterwards — unless the band opts into shrinking.
+        Unit contentExtent = Unit.Zero;
 
         foreach (var rawElement in band.Elements)
         {
-            actualHeight = RenderElement(rawElement, origin, origin, primitives, ctx, actualHeight);
+            contentExtent = RenderElement(rawElement, origin, origin, primitives, ctx, contentExtent);
         }
 
+        // Band-level CanShrink (opt-in) lets the band collapse below its declared height to wrap its content,
+        // pulling the next band up. Without it, band.Height stays the floor (historical grow-only behaviour).
+        var actualHeight = BandAllowsShrink(band) ? contentExtent : Max(band.Height, contentExtent);
         return new BandLayout(primitives, actualHeight);
     }
+
+    /// <summary>Whether a band may collapse below its declared height to fit its content. Opt-in via
+    /// <see cref="DetailBand.CanShrink"/>; other band kinds keep their declared height as the floor.</summary>
+    private static bool BandAllowsShrink(IBand band) => band is DetailBand { CanShrink: true };
+
+    private static Unit Max(Unit a, Unit b) => a > b ? a : b;
 
     /// <summary>Renders a single element — and, for a container <see cref="RectangleElement"/>, its
     /// <see cref="RectangleElement.Children"/> recursively — at <paramref name="parentOffset"/>, appending the
@@ -354,22 +365,43 @@ internal sealed class BandRenderer
     /// checks and page-fit pre-checks.</summary>
     public Unit Measure(IBand band, IReportExpressionContext ctx)
     {
-        Unit height = band.Height;
+        // Mirror Render's height computation: accumulate each visible element's EFFECTIVE bottom (text grows
+        // with CanGrow / shrinks with CanShrink), then apply band.Height as a floor unless the band shrinks.
+        // Keeping this identical to Render avoids the next band overlapping or leaving a gap.
+        Unit contentExtent = Unit.Zero;
         foreach (var element in band.Elements)
         {
-            if (element is TextBoxElement tb && tb.CanGrow && IsVisible(element, ctx))
+            if (!IsVisible(element, ctx))
+            {
+                continue;
+            }
+            Unit bottom;
+            if (element is TextBoxElement tb && (tb.CanGrow || tb.CanShrink))
             {
                 var style = BuildTextStyle(element.Style);
                 var text = ResolveTextBoxText(tb, ctx, element.Style.Format);
                 var size = _measurer.Measure(text, style, element.Bounds.Width);
-                var bottom = element.Bounds.Y + size.Height;
-                if (bottom > height)
+                var h = element.Bounds.Height;
+                if (tb.CanGrow && size.Height > h)
                 {
-                    height = bottom;
+                    h = size.Height;
                 }
+                else if (tb.CanShrink && size.Height < h)
+                {
+                    h = size.Height;
+                }
+                bottom = element.Bounds.Y + h;
+            }
+            else
+            {
+                bottom = element.Bounds.Bottom;
+            }
+            if (bottom > contentExtent)
+            {
+                contentExtent = bottom;
             }
         }
-        return height;
+        return BandAllowsShrink(band) ? contentExtent : Max(band.Height, contentExtent);
     }
 
     /// <summary>Resolves each of the element's per-property expression bindings against the current
