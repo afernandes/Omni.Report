@@ -546,8 +546,28 @@ public class RdlImporterTests
         ds.FilterExpression.Should().Be("Fields.Total > 0");
         ds.SortExpressions[0].Expression.Should().Be("Fields.Total");
         ds.SortExpressions[0].Direction.Should().Be(Reporting.Data.SortDirection.Descending);
-        ds.Parameters["CommandText"].Should().Be("SELECT * FROM Vendas");
-        ds.Parameters["QueryParameter:@Ano"].Should().Be("Parameters.Ano");
+        // Query maps to the designer's live convention (_sql / param:@x), so it opens in the designer.
+        ds.Parameters["_sql"].Should().Be("SELECT * FROM Vendas");
+        // @Ano bound to report parameter Ano → encoded "Ano|" (reportParam|literal).
+        ds.Parameters["param:@Ano"].Should().Be("Ano|");
+    }
+
+    [Fact]
+    public void Query_parameter_with_a_dynamic_expression_is_frozen_as_literal_with_a_warning()
+    {
+        var rdl = """
+            <Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition">
+              <DataSets><DataSet Name="DS"><Query>
+                <CommandText>SELECT 1</CommandText>
+                <QueryParameters><QueryParameter Name="@Hoje"><Value>=Today()</Value></QueryParameter></QueryParameters>
+              </Query></DataSet></DataSets>
+              <Body><Height>1cm</Height><ReportItems /></Body>
+            </Report>
+            """;
+        var def = new RdlImporter().ImportXml(rdl);
+        // Dynamic value → literal slot (best-effort) + warning (never silent).
+        def.DataSources.Single().Parameters["param:@Hoje"].Should().Be("|Today()");
+        def.Metadata["ImportWarnings"].Should().Contain("@Hoje");
     }
 
     [Fact]

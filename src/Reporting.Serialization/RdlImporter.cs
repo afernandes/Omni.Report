@@ -91,15 +91,20 @@ public sealed class RdlImporter
         var pageFooterEl = El(page, "PageFooter");
         var pageFooter = BandFrom(El(pageFooterEl, "ReportItems"), Val(pageFooterEl, "Height"), BandKind.PageFooter);
 
+        // Run every reader that can add warnings BEFORE snapshotting Metadata (which merges _warnings) —
+        // an object-initializer evaluates top-to-bottom, so reading DataSets after Metadata would drop their
+        // warnings.
+        var variables = ReadVariables(report);
+        var dataSources = ReadDataSets(report);
         return new ReportDefinition(reportName ?? "RdlReport", pageSetup, DetailBand.Empty)
         {
             Parameters = new EquatableArray<ReportParameter>(parameters),
             ReportHeader = reportHeader,
             PageHeader = pageHeader,
             PageFooter = pageFooter,
+            Variables = new EquatableArray<ReportVariable>(variables),
+            DataSources = new EquatableArray<DataSourceDefinition>(dataSources),
             Metadata = new EquatableDictionary<string, string>(MetadataWithWarnings(report)),
-            Variables = new EquatableArray<ReportVariable>(ReadVariables(report)),
-            DataSources = new EquatableArray<DataSourceDefinition>(ReadDataSets(report)),
         };
     }
 
@@ -107,13 +112,13 @@ public sealed class RdlImporter
     // delegated to the host's IReportDataSource). Maps Fields/CalculatedFields, structured <Filters> to a
     // boolean FilterExpression, <SortExpressions>, and preserves CommandText/QueryParameters in Parameters
     // (a dedicated Query record is a follow-up — PR-8).
-    private static DataSourceDefinition[] ReadDataSets(XElement report)
+    private DataSourceDefinition[] ReadDataSets(XElement report)
         => El(report, "DataSets")?.Elements().Where(e => e.Name.LocalName == "DataSet")
             .Where(d => d.Attribute("Name")?.Value is { Length: > 0 })
             .Select(ReadDataSet).ToArray()
             ?? Array.Empty<DataSourceDefinition>();
 
-    private static DataSourceDefinition ReadDataSet(XElement ds)
+    private DataSourceDefinition ReadDataSet(XElement ds)
     {
         var name = ds.Attribute("Name")!.Value;
         var fields = new List<DataField>();
@@ -139,20 +144,24 @@ public sealed class RdlImporter
 
         var query = El(ds, "Query");
         var ps = new Dictionary<string, string>(StringComparer.Ordinal);
+        // Write the DESIGNER's live query convention (_sql / _storedProc / param:@x) — the same keys
+        // DataSourceCatalog.ToDefinition/FromDefinition and the runtime DataSourceFactory consume. The old
+        // CommandText/CommandType/QueryParameter: keys were dead (nothing read them), so an imported query
+        // was silently lost; now it opens in the designer and executes.
         if (Val(query, "CommandText") is { Length: > 0 } sql)
         {
-            ps["CommandText"] = sql;
+            ps["_sql"] = sql;
         }
-        if (Val(query, "CommandType") is { Length: > 0 } ct)
+        if (string.Equals(Val(query, "CommandType"), "StoredProcedure", StringComparison.OrdinalIgnoreCase))
         {
-            ps["CommandType"] = ct;
+            ps["_storedProc"] = "true";
         }
         foreach (var qp in El(query, "QueryParameters")?.Elements().Where(e => e.Name.LocalName == "QueryParameter")
                  ?? Enumerable.Empty<XElement>())
         {
             if (qp.Attribute("Name")?.Value is { Length: > 0 } pn)
             {
-                ps[$"QueryParameter:{pn}"] = RdlExpression.Convert(Val(qp, "Value"));
+                ps[$"param:{pn}"] = QueryParamEncoding(Val(qp, "Value"), name, pn);
             }
         }
 
@@ -224,6 +233,32 @@ public sealed class RdlImporter
         return double.TryParse(raw, NumberStyles.Float | NumberStyles.AllowLeadingSign, Inv, out _)
             ? raw
             : $"\"{raw}\"";
+    }
+
+    // Encodes an RDL <QueryParameter><Value> into the designer's "reportParam|literal" form. A pure
+    // =Parameters!P.Value binds the SQL parameter to report parameter P; anything else becomes a literal.
+    private string QueryParamEncoding(string? rawValue, string dataSetName, string paramName)
+    {
+        if (rawValue is not { Length: > 0 })
+        {
+            return "|";
+        }
+        var converted = RdlExpression.Convert(rawValue);
+        const string prefix = "Parameters.";
+        if (RdlExpression.IsExpression(rawValue)
+            && converted.StartsWith(prefix, StringComparison.Ordinal)
+            && converted.Length > prefix.Length
+            && converted.IndexOf('.', prefix.Length) < 0) // exactly "Parameters.P", no further member
+        {
+            return converted[prefix.Length..] + "|"; // report-parameter binding
+        }
+        if (RdlExpression.IsExpression(rawValue))
+        {
+            // A dynamic value (e.g. =Today()) can't be a designer parameter binding, so it's frozen as a
+            // literal string and won't be re-evaluated — never silent, so warn.
+            _warnings.Add($"DataSet '{dataSetName}': parâmetro de query '{paramName}' com valor de expressão '{rawValue}' foi importado como literal (não será reavaliado; só =Parameters!P.Value vira binding).");
+        }
+        return "|" + converted; // literal (best-effort for non-parameter values)
     }
 
     private static List<SortDescriptor> ReadDataSetSorts(XElement? sorts)
