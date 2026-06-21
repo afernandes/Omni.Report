@@ -22,6 +22,11 @@ internal static partial class RdlExpression
     [GeneratedRegex(@"Globals!(\w+)")]
     private static partial Regex GlobalRef();
 
+    // ReportItems!Name.Value → ReportItems.Name (the value another named text box rendered to). Only the
+    // .Value member is rewritten, mirroring FieldRef — other members surface as a visible error.
+    [GeneratedRegex(@"ReportItems!([A-Za-z_][A-Za-z0-9_]*)\.Value")]
+    private static partial Regex ReportItemRef();
+
     [GeneratedRegex(@"User!(\w+)")]
     private static partial Regex UserRef();
 
@@ -46,6 +51,7 @@ internal static partial class RdlExpression
         var body = raw[1..];
         body = FieldRef().Replace(body, m => $"Fields.{m.Groups[1].Value}");
         body = ParameterRef().Replace(body, m => $"Parameters.{m.Groups[1].Value}");
+        body = ReportItemRef().Replace(body, m => $"ReportItems.{m.Groups[1].Value}");
         body = GlobalRef().Replace(body, m => m.Groups[1].Value switch
         {
             "PageNumber" => "PageNumber",

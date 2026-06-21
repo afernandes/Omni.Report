@@ -281,6 +281,31 @@ public class RdlImporterTests
     }
 
     [Fact]
+    public void ReportItems_reference_and_element_name_are_imported()
+    {
+        var rdl = """
+            <Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition">
+              <Body><Height>2cm</Height><ReportItems>
+                <Textbox Name="Titulo">
+                  <Top>0cm</Top><Left>0cm</Left><Width>8cm</Width><Height>1cm</Height>
+                  <Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!Capitulo.Value</Value></TextRun></TextRuns></Paragraph></Paragraphs>
+                </Textbox>
+                <Textbox Name="Eco">
+                  <Top>1cm</Top><Left>0cm</Left><Width>8cm</Width><Height>1cm</Height>
+                  <Paragraphs><Paragraph><TextRuns><TextRun><Value>=ReportItems!Titulo.Value</Value></TextRun></TextRuns></Paragraph></Paragraphs>
+                </Textbox>
+              </ReportItems></Body>
+            </Report>
+            """;
+        var els = new RdlImporter().ImportXml(rdl).ReportHeader!.Elements;
+        // The named text box keeps its RDL Name (enables ReportItems references).
+        els.Should().Contain(e => e.Name == "Titulo");
+        // The reference is converted to the OmniReport scope form.
+        var eco = els.OfType<Reporting.Elements.TextBoxElement>().Single(t => t.Name == "Eco");
+        eco.Expression.Should().Be("ReportItems.Titulo");
+    }
+
+    [Fact]
     public void Textbox_with_multiple_runs_imports_as_TextRuns()
     {
         var rdl = """

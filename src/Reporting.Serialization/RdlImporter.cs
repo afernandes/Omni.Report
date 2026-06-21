@@ -559,7 +559,10 @@ public sealed class RdlImporter
         var bookmark = ConvertOpt(Val(item, "Bookmark"));
         var docMap = ConvertOpt(Val(item, "DocumentMapLabel"));
         var action = ReadAction(El(item, "Action"));
-        return el switch
+        // The RDL item Name identifies the element for ReportItems!Name.Value references — capture it
+        // (was previously dropped). Applied after the per-type arm so every element kind keeps it.
+        var name = item.Attribute("Name")?.Value;
+        var withCommon = el switch
         {
             TextBoxElement t => t with { Style = style ?? t.Style, Visible = visible, VisibleExpression = visExpr, Bookmark = bookmark, DocumentMapLabel = docMap, Action = action },
             LabelElement l => l with { Style = style ?? l.Style, Visible = visible, VisibleExpression = visExpr, Bookmark = bookmark, DocumentMapLabel = docMap, Action = action },
@@ -575,6 +578,7 @@ public sealed class RdlImporter
             // Style/Visibility/Bookmark/Action would be silently dropped. Keep this in sync with AddItem.
             _ => el,
         };
+        return string.IsNullOrEmpty(name) ? withCommon : withCommon with { Name = name };
     }
 
     // RDL <Visibility><Hidden> is the inverse of OmniReport's Visible/VisibleExpression: a constant maps

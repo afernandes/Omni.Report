@@ -13,10 +13,10 @@ namespace Reporting.Expressions;
 /// </remarks>
 internal static partial class ExpressionRewriter
 {
-    private static readonly string[] Scopes = ["Fields", "Parameters", "Variables", "Page"];
+    private static readonly string[] Scopes = ["Fields", "Parameters", "Variables", "Page", "ReportItems"];
 
     [GeneratedRegex(
-        @"(?<str>'(?:[^'\\]|\\.)*')|(?<br>\[[^\]]*\])|(?<code>\bCode\.(?<method>[A-Za-z_][A-Za-z0-9_]*)\s*\()|(?<dot>\b(Fields|Parameters|Variables|Page)\.([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*))",
+        @"(?<str>'(?:[^'\\]|\\.)*')|(?<br>\[[^\]]*\])|(?<code>\bCode\.(?<method>[A-Za-z_][A-Za-z0-9_]*)\s*\()|(?<dot>\b(Fields|Parameters|Variables|Page|ReportItems)\.([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*))",
         RegexOptions.Compiled)]
     private static partial Regex Tokenizer();
 

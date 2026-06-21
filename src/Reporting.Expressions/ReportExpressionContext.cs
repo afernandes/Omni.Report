@@ -28,6 +28,9 @@ public sealed class ReportExpressionContext : IReportExpressionContext
     // All rows of each named dataset, for cross-dataset Lookup/LookupSet (SSRS-style). Distinct from
     // _sources, which holds only the current row of each source for qualified field references.
     private readonly Dictionary<string, List<DictionaryLookup>> _datasets = new(StringComparer.OrdinalIgnoreCase);
+    // ReportItems!Name.Value: the last value each named text box rendered to, filled as the renderer
+    // walks the bands so a later band can read an earlier one's value (e.g. a footer echoing the body).
+    private readonly Dictionary<string, object?> _reportItems = new(StringComparer.OrdinalIgnoreCase);
 
     public ReportExpressionContext(ExpressionEvaluator? evaluator = null, CultureInfo? culture = null)
     {
@@ -225,6 +228,17 @@ public sealed class ReportExpressionContext : IReportExpressionContext
         }
         value = null;
         return false;
+    }
+
+    public object? GetReportItem(string name)
+        => !string.IsNullOrEmpty(name) && _reportItems.TryGetValue(name, out var v) ? v : null;
+
+    public void SetReportItem(string name, object? value)
+    {
+        if (!string.IsNullOrEmpty(name))
+        {
+            _reportItems[name] = value;
+        }
     }
 
     public object? EvaluateAggregate(string function, string expression, AggregateScope scope)

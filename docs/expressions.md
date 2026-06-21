@@ -14,6 +14,7 @@ Toda expressão é avaliada contra um `ReportExpressionContext`. O contexto carr
 | `Parameters.<Nome>` | Parâmetros do relatório (`ReportParameter`) |
 | `Variables.<Nome>` | Variáveis acumuladas durante a execução |
 | `Page.Number`, `Page.Total` | Numeração de páginas (resolvida no two-pass) |
+| `ReportItems.<Nome>` | Valor que outro text box nomeado renderizou (RDL `ReportItems!Nome.Value`) — disponível em bandas renderizadas **depois** da referenciada (ex.: um rodapé ecoando um text box do corpo); `null` se ainda não renderizado (ex.: cabeçalho de página referenciando o corpo) |
 | `Report.Now`, `Report.Today`, `Report.UserName` | Funções de runtime |
 
 ```csharp
