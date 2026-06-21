@@ -14,7 +14,7 @@ Toda expressão é avaliada contra um `ReportExpressionContext`. O contexto carr
 | `Parameters.<Nome>` | Parâmetros do relatório (`ReportParameter`) |
 | `Variables.<Nome>` | Variáveis acumuladas durante a execução |
 | `Page.Number`, `Page.Total` | Numeração de páginas (resolvida no two-pass) |
-| `ReportName` | Nome do relatório (RDL `Globals!ReportName`) — identificador nu; vazio se não definido |
+| `ReportName` | Nome do relatório (RDL `Globals!ReportName`) — identificador nu; vazio se não definido. Como os outros globais nus, tem precedência sobre um campo de mesmo nome (use `Fields.ReportName` para o campo) |
 | `ReportItems.<Nome>` | Valor que outro text box nomeado renderizou (RDL `ReportItems!Nome.Value`) — disponível em bandas renderizadas **depois** da referenciada (ex.: um rodapé ecoando um text box do corpo); `null` se ainda não renderizado (ex.: cabeçalho de página referenciando o corpo). Detalhes do 1º corte: registra o **texto renderizado** (string formatada), não o valor tipado; só itens **visíveis** publicam; num rodapé de página, reflete o último valor renderizado **na ou antes daquela página** (numa página sem o item, o valor da página anterior) |
 | `Report.Now`, `Report.Today`, `Report.UserName` | Funções de runtime |
 
