@@ -86,8 +86,12 @@ var pdf = await new ReportEngine().RenderAsync(def, dataSources);
   `<Description>`/`<Author>`/`<AutoRefresh>` → `Metadata` (round-trip; `AutoRefresh` preservado como string,
   sem pipeline de auto-refresh na saída estática).
 - **Estilo e atributos** dos itens: nó `<Style>` (fonte/cores/borda/padding/alinhamento/format/`WrapMode`
-  →WordWrap, onde `NoWrap` desliga a quebra),
-  `Visibility/Hidden`, `Bookmark`, `DocumentMapLabel`, `Action`, `CanGrow`/`CanShrink`.
+  →WordWrap, onde `NoWrap` desliga a quebra), `<BackgroundImage>` External (path/expr esticado),
+  `Visibility/Hidden`, `Bookmark`, `DocumentMapLabel`, `Action`, `CanGrow`/`CanShrink`. Propriedades de
+  `<Style>` cujo valor é **expressão** (formatação condicional: negativo-em-vermelho, zebra, semáforo) viram
+  `PropertyExpressions` por-propriedade (`Color`→`Style.ForeColor`, `BackgroundColor`→`Style.BackColor`,
+  `Format`, `TextAlign`/`VerticalAlign`, `FontFamily`) — antes eram descartadas em silêncio; renderizam quando
+  a expressão resolve `#hex` (cor nomeada em expressão é follow-up de render).
 - **Expressões** VB → OmniReport (`RdlExpression`): `Fields!X.Value`→`Fields.X`,
   `Parameters!P.Value`→`Parameters.P`, `Globals!PageNumber`/`OverallPageNumber`→`PageNumber`,
   `Globals!TotalPages`/`OverallTotalPages`→`TotalPages`, `Globals!ReportName`→`ReportName` (resolve ao

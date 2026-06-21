@@ -959,8 +959,48 @@ public sealed class RdlImporter
             // Style/Visibility/Bookmark/Action would be silently dropped. Keep this in sync with AddItem.
             _ => el,
         };
+        // Style properties whose RDL value is an EXPRESSION (conditional formatting: negative-in-red, zebra,
+        // threshold colouring) map to per-property bindings — previously these were silently dropped because
+        // ReadStyle only parses literals. PropertyExpressions already round-trips and renders in every mode.
+        var styleBindings = ReadStyleExpressions(item);
+        if (styleBindings.Count > 0)
+        {
+            withCommon = withCommon with { PropertyExpressions = new EquatableDictionary<string, string>(styleBindings) };
+        }
         return string.IsNullOrEmpty(name) ? withCommon : withCommon with { Name = name };
     }
+
+    // RDL <Style> sub-properties whose value is an =expression → OmniReport PropertyExpressions (dotted path →
+    // converted expr), so conditional formatting renders/round-trips. Only paths the renderer coerces reliably
+    // are mapped; colour expressions render when they yield #hex (named-colour coercion is a render follow-up).
+    private static Dictionary<string, string> ReadStyleExpressions(XElement item)
+    {
+        var bindings = new Dictionary<string, string>(StringComparer.Ordinal);
+        var s = El(item, "Style");
+        if (s is null)
+        {
+            return bindings;
+        }
+        foreach (var (rdlProp, path) in StyleExpressionPaths)
+        {
+            var raw = Val(s, rdlProp);
+            if (!string.IsNullOrEmpty(raw) && RdlExpression.IsExpression(raw))
+            {
+                bindings[path] = RdlExpression.Convert(raw);
+            }
+        }
+        return bindings;
+    }
+
+    private static readonly (string Rdl, string Path)[] StyleExpressionPaths =
+    {
+        ("Color", "Style.ForeColor"),
+        ("BackgroundColor", "Style.BackColor"),
+        ("Format", "Style.Format"),
+        ("TextAlign", "Style.HorizontalAlignment"),
+        ("VerticalAlign", "Style.VerticalAlignment"),
+        ("FontFamily", "Style.Font.Family"),
+    };
 
     // RDL page break on a data region/band → OmniReport PageBreak. RDL 2008+ uses
     // <PageBreak><BreakLocation>Start|End|StartAndEnd|Between</BreakLocation></PageBreak>; the 2005 legacy
