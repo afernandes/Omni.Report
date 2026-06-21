@@ -37,6 +37,12 @@ public abstract record LayoutPrimitive
     /// (<c>RectangleElement.CornerRadius</c>). Zero = a plain rectangular clip. Backends round the clip region
     /// to this radius; ignored when <see cref="ClipBounds"/> is null.</summary>
     public Unit ClipCornerRadius { get; init; } = Unit.Zero;
+
+    /// <summary>True when this primitive belongs to a "visual" element (chart, gauge, sparkline, indicator,
+    /// data bar, barcode, map) — vector graphics rather than tabular text. Table-only exporters (Word/Excel)
+    /// use it to rasterise the whole visual as one image and keep its internal axis/legend text out of the
+    /// data grid. Set by the layout engine; the raster/vector backends ignore it (they draw everything).</summary>
+    public bool IsVisual { get; init; }
 }
 
 public sealed record DrawTextPrimitive : LayoutPrimitive

@@ -226,7 +226,7 @@ internal sealed class BandRenderer
                     foreach (var p in BarcodeRenderer.Render(barcode, elementBounds, bcValue,
                                                              style.ForeColor, style, out _))
                     {
-                        primitives.Add(p);
+                        primitives.Add(p with { IsVisual = true });
                     }
                     actualHeight = MaxHeight(actualHeight, elementBounds, bandOrigin, null);
                     break;
@@ -234,7 +234,7 @@ internal sealed class BandRenderer
                 case ChartElement chart:
                     foreach (var p in ChartRenderer.Render(chart, elementBounds, ResolveRows(), _evaluator, ctx, out _))
                     {
-                        primitives.Add(p);
+                        primitives.Add(p with { IsVisual = true });
                     }
                     actualHeight = MaxHeight(actualHeight, elementBounds, bandOrigin, null);
                     break;
@@ -242,7 +242,7 @@ internal sealed class BandRenderer
                 case SparklineElement sparkline:
                     foreach (var p in KpiRenderer.RenderSparkline(sparkline, elementBounds, ResolveRows(sparkline.DataSetName), _evaluator, ctx))
                     {
-                        primitives.Add(p);
+                        primitives.Add(p with { IsVisual = true });
                     }
                     actualHeight = MaxHeight(actualHeight, elementBounds, bandOrigin, null);
                     break;
@@ -250,7 +250,7 @@ internal sealed class BandRenderer
                 case IndicatorElement indicator:
                     foreach (var p in KpiRenderer.RenderIndicator(indicator, elementBounds, _evaluator, ctx))
                     {
-                        primitives.Add(p);
+                        primitives.Add(p with { IsVisual = true });
                     }
                     actualHeight = MaxHeight(actualHeight, elementBounds, bandOrigin, null);
                     break;
@@ -258,7 +258,7 @@ internal sealed class BandRenderer
                 case DataBarElement dataBar:
                     foreach (var p in KpiRenderer.RenderDataBar(dataBar, elementBounds, _evaluator, ctx))
                     {
-                        primitives.Add(p);
+                        primitives.Add(p with { IsVisual = true });
                     }
                     actualHeight = MaxHeight(actualHeight, elementBounds, bandOrigin, null);
                     break;
@@ -266,7 +266,7 @@ internal sealed class BandRenderer
                 case GaugeElement gauge:
                     foreach (var p in KpiRenderer.RenderGauge(gauge, elementBounds, _evaluator, ctx))
                     {
-                        primitives.Add(p);
+                        primitives.Add(p with { IsVisual = true });
                     }
                     actualHeight = MaxHeight(actualHeight, elementBounds, bandOrigin, null);
                     break;
@@ -285,7 +285,7 @@ internal sealed class BandRenderer
                 case MapElement mapEl:
                     foreach (var p in MapRenderer.Render(mapEl, elementBounds, ResolveRows(mapEl.DataSetName), _evaluator, ctx, _mapTileResolver))
                     {
-                        primitives.Add(p);
+                        primitives.Add(p with { IsVisual = true });
                     }
                     actualHeight = MaxHeight(actualHeight, elementBounds, bandOrigin, null);
                     break;
