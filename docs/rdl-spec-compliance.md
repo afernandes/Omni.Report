@@ -178,7 +178,7 @@ Legenda: ✅ pleno · 🟡 parcial · 🔴 ausente/crítico. (% e dimensões atu
 | LayoutDirection (LTR/RTL) | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | Sempre LTR | S | 3 |
 | TablixMember.SortExpressions | 🟡 | 🟡 | 🟡 | 🔴 | ✅ | 🟡 | 🟡 | Só 1 chave de sort por grupo | S | 2 |
 | Tablix.SortExpressions (top) | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | Sort só por grupo | S | 2 |
-| Subtotais/Total geral | 🟡 | 🟡 | 🟡 | 🔴 | 🟡 | 🟡 | 🟡 | Só subtotal de linha; rótulo pt-BR hardcoded; sem subtotal de coluna | M | 2 |
+| Subtotais/Total geral | 🟡 | 🟡 | 🟡 | 🟡 | 🟡 | 🟡 | 🟡 | Row+Column subtotals no model/render/serial/code-first; import detecta membro de total `<Group/>` vazio (#124, conservador); rótulo pt-BR hardcoded | M | 2 |
 | Member: HideIfNoRows/Repeat/Keep* | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | Não modelado | M | 2 |
 | Member.Visibility (toggle) | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | Drill-down por grupo ausente | M | 2 |
 | DataSetName | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — | S | 1 |
