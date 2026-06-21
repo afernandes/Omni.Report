@@ -69,6 +69,18 @@ public class TablixCodeFirstTests
     }
 
     [Fact]
+    public void Language_sugar_sets_the_Metadata_key()
+    {
+        var def = ReportBuilder.Create("t").Language("en-US")
+            .ReportHeader(h => h.Height(20)).Build().Definition;
+        def.Metadata.Should().ContainKey("Language").WhoseValue.Should().Be("en-US");
+
+        var def2 = ReportBuilder.Create("t").Culture(System.Globalization.CultureInfo.GetCultureInfo("pt-PT"))
+            .ReportHeader(h => h.Height(20)).Build().Definition;
+        def2.Metadata["Language"].Should().Be("pt-PT");
+    }
+
+    [Fact]
     public void Tablix_fluent_carries_NoRowsMessage()
     {
         var def = ReportBuilder.Create("t")

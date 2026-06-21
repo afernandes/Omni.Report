@@ -15,6 +15,7 @@ Toda expressão é avaliada contra um `ReportExpressionContext`. O contexto carr
 | `Variables.<Nome>` | Variáveis acumuladas durante a execução |
 | `Page.Number`, `Page.Total` | Numeração de páginas (resolvida no two-pass) |
 | `ReportName` | Nome do relatório (RDL `Globals!ReportName`) — identificador nu; vazio se não definido. Como os outros globais nus, tem precedência sobre um campo de mesmo nome (use `Fields.ReportName` para o campo) |
+| `Language` | Cultura ativa do relatório (RDL `Globals!Language` / `User!Language`) — identificador nu, retorna o nome da cultura (ex. `"en-US"`). Definida por `Metadata["Language"]` (que o import de `.rdl` preenche a partir de `<Report><Language>`, e o code-first via `.Language("en-US")`/`.Culture(...)`); ausente → cultura default do motor (pt-BR). Dirige `Format`/`FormatDateTime`/`Style.Format` no render |
 | `ReportItems.<Nome>` | Valor que outro text box nomeado renderizou (RDL `ReportItems!Nome.Value`) — disponível em bandas renderizadas **depois** da referenciada (ex.: um rodapé ecoando um text box do corpo); `null` se ainda não renderizado (ex.: cabeçalho de página referenciando o corpo). Detalhes do 1º corte: registra o **texto renderizado** (string formatada), não o valor tipado; só itens **visíveis** publicam; num rodapé de página, reflete o último valor renderizado **na ou antes daquela página** (numa página sem o item, o valor da página anterior) |
 | `Report.Now`, `Report.Today`, `Report.UserName` | Funções de runtime |
 
@@ -203,3 +204,4 @@ if (!diag.IsValid)
 - Sem null-conditional `?.` nativo — use `if(IsNull(Fields.X), 0, Fields.X)`.
 - Sem acesso a tipos `System.*` (sandboxing intencional contra injection).
 - Funções customizadas executam síncronas; sem suporte a `async`.
+- A cultura de `Metadata["Language"]` chega aos formatadores de banda e Tablix; os renderers de **Chart** e **KPI** ainda formatam em pt-BR fixo (não recebem o contexto) — follow-up para propagar a cultura até eles.

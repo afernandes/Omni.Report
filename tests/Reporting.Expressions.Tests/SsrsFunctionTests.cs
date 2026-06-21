@@ -96,6 +96,16 @@ public class SsrsFunctionTests
         System.Convert.ToDouble(ev.Evaluate("Fix(2.7)", ctx)).Should().Be(2d);
     }
 
+    [Theory]
+    [InlineData("en-US")]
+    [InlineData("pt-BR")]
+    public void Bare_Language_resolves_to_the_context_culture_name(string culture)
+    {
+        var (ctx, ev) = NewContext(culture);
+        // RDL Globals!Language / User!Language both collapse to bare 'Language'.
+        ev.Evaluate("Language", ctx).Should().Be(culture);
+    }
+
     [Fact]
     public void Vb_MonthName_uses_culture()
     {

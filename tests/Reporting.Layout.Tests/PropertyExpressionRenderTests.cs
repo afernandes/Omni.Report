@@ -47,6 +47,52 @@ public class PropertyExpressionRenderTests
         return report.Pages[0].Primitives.OfType<DrawTextPrimitive>().First();
     }
 
+    private static async Task<string> RenderNumber(double value, string? language)
+    {
+        var tb = new TextBoxElement
+        {
+            Id = "t",
+            Expression = "{Fields.Tamanho:N2}",
+            Bounds = new Rectangle(0.Mm(), 0.Mm(), 60.Mm(), 8.Mm()),
+            Style = Style.Default with { ForeColor = Color.Black, Font = new Font("Arial", 10) },
+        };
+        var detail = new DetailBand(20.Mm(), new EquatableArray<ReportElement>(new ReportElement[] { tb }));
+        var def = new ReportDefinition("e", PageSetup.A4Portrait, detail);
+        if (language is not null)
+        {
+            def = def with { Metadata = new EquatableDictionary<string, string>(new Dictionary<string, string> { ["Language"] = language }) };
+        }
+        var registry = new DataSourceRegistry();
+        registry.Register(new EnumerableDataSource<StyledRow>("Dados", [new StyledRow("A", "#000000", value)]));
+        var report = await new ReportPaginator().PaginateAsync(new PaginationRequest { Definition = def, DataSources = registry });
+        return report.Pages[0].Primitives.OfType<DrawTextPrimitive>().First().Text;
+    }
+
+    [Theory]
+    [InlineData("en-US")] // decimal point
+    [InlineData("pt-BR")] // decimal comma (also == the engine default)
+    public async Task Report_Language_metadata_drives_the_render_culture(string language)
+    {
+        // Compare against the culture's OWN N2 rendering (ICU/NLS-safe), proving Metadata["Language"] reaches ctx.Culture.
+        (await RenderNumber(1234.5, language))
+            .Should().Be((1234.5).ToString("N2", System.Globalization.CultureInfo.GetCultureInfo(language)));
+    }
+
+    [Fact]
+    public async Task Without_Language_metadata_the_render_keeps_the_default_culture()
+    {
+        // Opt-in: absent Language → default pt-BR (decimal comma). Proves the feature is additive, no regression.
+        (await RenderNumber(1234.5, language: null))
+            .Should().Be((1234.5).ToString("N2", System.Globalization.CultureInfo.GetCultureInfo("pt-BR")));
+    }
+
+    [Fact]
+    public async Task Invalid_Language_metadata_falls_back_to_the_default_culture()
+    {
+        (await RenderNumber(1234.5, "xx-INVALID"))
+            .Should().Be((1234.5).ToString("N2", System.Globalization.CultureInfo.GetCultureInfo("pt-BR")));
+    }
+
     [Fact]
     public async Task Binds_fore_colour_from_an_expression_overriding_the_static_value()
     {
