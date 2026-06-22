@@ -4,19 +4,23 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![.NET](https://img.shields.io/badge/.NET-10.0-blueviolet)](https://dotnet.microsoft.com/)
 [![NuGet](https://img.shields.io/nuget/v/AndersonN.Omni.Report.Core.svg)](https://www.nuget.org/packages/AndersonN.Omni.Report.Core)
-[![Tests](https://img.shields.io/badge/tests-726%20passing-success)](#)
+[![Tests](https://img.shields.io/badge/tests-1000%2B%20passing-success)](#)
 [![Coverage](https://img.shields.io/badge/core%20coverage-≥80%25-success)](#)
+[![RDL](https://img.shields.io/badge/RDL%20compat-~85%25-success)](docs/rdl-spec-compliance.md)
 
-**Motor profissional de relatórios bandados para .NET 10**, com duas modalidades de autoria
-(code-first fluent + designer visual Blazor) e pipeline de renderização pluggable
-(SkiaSharp, GDI/Windows, PDF vetorial, XLSX, HTML/SVG/CSV/JSON/Markdown, ESC/POS térmico,
-Android Print Framework). Gráficos nativos (barras/linhas/pizza), medidores KPI
-(gauge/data-bar/sparkline/indicator), Tablix, mapas vetoriais e códigos de barras/QR;
-conectores de dados para SQL (SQLite/PostgreSQL/SQL Server/MySQL), JSON, XML, REST e
-sistema de arquivos.
+**Motor profissional de relatórios bandados para .NET 10**, com **três modalidades de autoria**
+(code-first fluent, canvas low-level e designer visual Blazor — paridade total entre elas) e
+pipeline de renderização pluggable (SkiaSharp, GDI/Windows, PDF vetorial, XLSX, **Word/.docx**,
+HTML/SVG/CSV/JSON/Markdown, ESC/POS térmico, Android Print Framework). Gráficos nativos
+(barras/linhas/pizza/área/dispersão/bolha/stock/radar), medidores KPI
+(gauge/data-bar/sparkline/indicator), Tablix (tabela **+ matrix/pivô**), Rectangle como container,
+mapas vetoriais e códigos de barras/QR; conectores de dados para SQL
+(SQLite/PostgreSQL/SQL Server/MySQL), JSON, XML, REST e sistema de arquivos. Importa **.rdl do
+SSRS** (~85% de conformidade) e tem round-trip próprio lossless (`.repx`/`.repjson`).
 
 Equivalente em capacidade a Crystal Reports / SSRS / FastReport, original, MIT, com foco
-em cenários brasileiros (PDV, NFC-e, DANFE, ABNT NBR 5891).
+em cenários brasileiros (PDV, NFC-e, DANFE, ABNT NBR 5891). Veja a
+[comparação detalhada](docs/comparison.md) com o RDL oficial e outras engines.
 
 ## Galeria
 
@@ -49,7 +53,7 @@ em cenários brasileiros (PDV, NFC-e, DANFE, ABNT NBR 5891).
   - [Hospedando em ASP.NET Core / Blazor / MAUI](#hospedando-em-aspnet-core--blazor--maui)
 - [Samples](#samples)
 - [Status](#status)
-- [Documentação](#documentação)
+- [Documentação](#documentação) — [guia do usuário](docs/user-guide.md) · [guia do dev](docs/developer-guide.md) · [comparação](docs/comparison.md) · [apresentação HTML](docs/presentation.html)
 - [Contribuindo](#contribuindo)
 
 ## Arquitetura
@@ -329,38 +333,55 @@ dotnet run --project samples/Reporting.Samples.MauiHybrid -f net10.0-windows10.0
 ## Status
 
 A v0.1.0 entregou as 11 etapas do roteiro original (17 bibliotecas, 375 testes). Desde então o
-projeto **mais que dobrou**: hoje são **36 bibliotecas** em `src/`, **726 testes** verdes (22
-projetos de teste) e cobertura ≥ 80% no núcleo.
+projeto **mais que dobrou**: hoje são **38 bibliotecas** em `src/`, **1000+ testes** verdes (23
+projetos de teste) e cobertura ≥ 80% no núcleo. Conformidade com a especificação RDL da Microsoft
+em **~85%** (importador `.rdl` em ~80%) — veja [`docs/rdl-spec-compliance.md`](docs/rdl-spec-compliance.md).
 
 **Adicionado após a v0.1.0:**
 
 | Área | Módulos / recursos | Status |
 |---|---|---|
 | Conectores de dados | AdoNet · SQLite · PostgreSQL · SQL Server · MySQL · JSON · XML · WebService/REST · FileSystem | ✅ |
-| Exporters de texto | SVG · HTML · CSV · JSON · Markdown (com testes) | ✅ |
+| Exporters | SVG · HTML · CSV · JSON · Markdown · **Word/.docx** (tabela + imagens + charts rasterizados) · PNG/Image | ✅ |
 | Código de barras | `Reporting.Barcode` — 1D (Code128/39/Codabar/ITF/EAN/UPC/ISBN/ISSN) + QR Code 2D | ✅ |
 | Master-detail | sub-bandas + relações pai→filho (paginador e designer) | ✅ |
-| Designer | DataConnect (conexão/schema/query/preview/relações), impressão (browser + nativo), formatação condicional, RDL Phase 1, **editores visuais dos 7 elementos avançados**, réguas dual-axis com guias arrastáveis/snap, status bar e diálogo "Sobre" reais | ✅ |
-| Gráficos | `ChartElement` barras/linhas/pizza **renderizando** + fluente `.Chart()` | ✅ |
+| Designer | DataConnect (conexão/schema/query/preview/relações), impressão (browser + nativo), formatação condicional, **import `.rdl`**, editores visuais dos elementos avançados, **edição aninhada de Rectangle**, réguas dual-axis com guias arrastáveis/snap | ✅ |
+| Gráficos | `ChartElement` barras/linhas/pizza **+ área/dispersão/bolha/stock/radar** renderizando + fluente `.Chart()` | ✅ |
 | KPIs | Gauge · DataBar · Sparkline · Indicator **renderizando** + API fluente | ✅ |
-| Tablix (tabela) | data region bandada **renderizando** + fluente `.Tablix()` (matrix/grupos aninhados: futuro) | ✅ |
-| Map | **mapa vetorial**: projeção Web Mercator + graticule + shapes GeoJSON (basemap offline) + marcadores projetados · pacote opt-in `Reporting.Maps` com shapes embutidos · fluente `.Map().ShapeSet()/.Shapes()/.Graticule()` (tiles online: futuro) | ✅ |
+| Tablix | tabela bandada **+ matrix/pivô** (grupos de linha/coluna aninhados, subtotais, ColSpan) renderizando + fluente `.Tablix()` | ✅ |
+| Rectangle container | hierarquia de filhos + clip + cantos arredondados, nos 3 modos (designer com edição aninhada) | ✅ |
+| Paginação | duas passadas, multi-coluna (snake), `PrintOnFirstPage`/`PrintOnLastPage`, `CanGrow`/`CanShrink` (encolhe a banda), **split de banda por elemento** | ✅ |
+| Map | **mapa vetorial**: Web Mercator + graticule + shapes GeoJSON (offline) + **basemap por tiles** (OpenStreetMap) + marcadores · `Reporting.Maps` · fluente `.Map()` | ✅ |
+| Import RDL | DataSets, Tablix (flat→bandas + matrix), Chart/Gauge/Subreport, CustomReportItem→DataBar/Sparkline/Indicator, estilo, cores nomeadas, cultura, formatação condicional | ✅ ~80% |
 | Code (C#/Roslyn) | avaliação `Code.X(...)` via pacote **opt-in** `Reporting.Expressions.Roslyn` (executa C# — só fontes confiáveis) | ✅ |
 
 Veja [CHANGELOG.md](CHANGELOG.md) para o histórico, [docs/](docs/) para guias por área e a
-matriz completa de **render × round-trip** em [`docs/rdl-coverage.md`](docs/rdl-coverage.md).
+matriz completa de conformidade RDL em [`docs/rdl-spec-compliance.md`](docs/rdl-spec-compliance.md).
 
-### Roadmap (ainda não implementado)
+### Roadmap (diferido — decisão de produto)
 
-- **Tablix matrix** — grupos de linha/coluna aninhados e células de interseção (hoje: tabela
-  bandada com colunas fixas).
-- **Map · tiles online** — basemap raster (OSM/Bing) como camada opt-in (hoje: basemap vetorial
-  offline a partir de shapes GeoJSON).
-- **`Reporting.Maps`** — os shapes embutidos hoje cobrem apenas um contorno simplificado do Brasil;
-  conjuntos detalhados (estados, América do Sul, mundo) podem ser registrados pelo host via
-  `MapShapeRegistry.Register(nome, geoJson)`.
+A saída é sempre um **relatório estático** (sem interatividade/drill-down em runtime). Itens grandes
+registrados como follow-up, com a razão honesta de cada um, em
+[`docs/rdl-spec-compliance.md`](docs/rdl-spec-compliance.md):
+
+- **N-DetailBands / List** — múltiplas regiões de dados no nível raiz (toca o núcleo da paginação).
+- **ReportSections** (RDL 2016) — múltiplas seções com `PageSetup` por seção.
+- **`.rds`** — shared data sources / datasets externos.
+- **Canvas WYSIWYG real no Designer** — render real (hoje placeholder) de Chart/Gauge/Tablix no canvas.
+- **`Reporting.Maps`** — shapes embutidos cobrem um contorno simplificado do Brasil; conjuntos
+  detalhados registráveis pelo host via `MapShapeRegistry.Register(nome, geoJson)`.
 
 ## Documentação
+
+**Comece por aqui:**
+
+- 📘 [`docs/user-guide.md`](docs/user-guide.md) — **guia do usuário**: todos os recursos e como criar relatórios nos 3 modos
+- 🛠️ [`docs/developer-guide.md`](docs/developer-guide.md) — **guia do desenvolvedor**: arquitetura, pontos de extensão, como adicionar componentes
+- 📊 [`docs/comparison.md`](docs/comparison.md) — **comparação** com o RDL oficial da Microsoft e outras engines (.NET e Java)
+- 🎞️ [`docs/presentation.html`](docs/presentation.html) — apresentação visual (HTML/CSS/JS) — abra no navegador
+- 📐 [`docs/rdl-spec-compliance.md`](docs/rdl-spec-compliance.md) — matriz de conformidade RDL por área × dimensão + follow-ups
+
+**Guias por área:**
 
 - [`docs/rdl-coverage.md`](docs/rdl-coverage.md) — matriz de cobertura: o que renderiza × o que só faz round-trip
 - [`docs/expressions.md`](docs/expressions.md) — NCalc estendido, templates `{expr:fmt}`, agregados, scopes
