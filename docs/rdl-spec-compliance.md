@@ -23,28 +23,68 @@ Microsoft RDL, com **paridade integral entre os 3 modos de autoria** — **code-
 **low-level** (modelo imutável + serialização `.repx`/`.repjson`) e **Designer** (Blazor visual).
 Toda feature nasce nos 3 modos; nenhuma é "só import" ou "só render".
 
-### Diagnóstico em uma frase (atualizado após #89–#122)
+### Diagnóstico em uma frase (atualizado após #89–#146)
 
 O OmniReport tem um **núcleo (model + serialização + render + code-first + Designer) forte e maduro**, e o
 `RdlImporter` — que era o gargalo histórico (~20%) — agora **importa o grosso de um `.rdl` SSRS real**:
 DataSets com query funcional, Tablix (tabela plana → bandas paginantes + matrix + ColSpan + NoRowsMessage +
-PageBreak), Chart/Gauge/Subreport, estilo/visibilidade/ação/bookmark, variáveis, multi-coluna de página,
-cultura (`<Language>`) e metadados report-level (`Description`/`Author`). O que ainda é lossy gera **aviso
-explícito em `Metadata["ImportWarnings"]`** (nunca descarte silencioso): Map/DataBar/Sparkline/Indicator,
-shapes de Tablix exóticos (TablixHeader/Body nativos, RowSpan, repeat headers de matrix). O round-trip
-interno `.repx`/`.repjson` segue ~100% lossless.
+PageBreak), Chart/Gauge/Subreport, **CustomReportItem → DataBar/Sparkline/Indicator/Gauge**,
+estilo/visibilidade/ação/bookmark, **paleta de cores nomeadas CSS3 completa**, variáveis, multi-coluna de
+página, cultura (`<Language>`) e metadados report-level (`Description`/`Author`). O motor de **paginação**
+ficou completo para saída estática: `PrintOnLastPage`, `CanShrink` que encolhe a banda, e **split de banda
+por elemento** quando excede a página. O que ainda é lossy gera **aviso explícito em
+`Metadata["ImportWarnings"]`** (nunca descarte silencioso): Map (impedância espacial), shapes de Tablix
+exóticos (TablixHeader/Body nativos, RowSpan, repeat headers de matrix). O round-trip interno
+`.repx`/`.repjson` segue ~100% lossless.
 
 ### Conformidade global estimada
 
-| Indicador | Antes (#88) | Agora (#122) | Comentário |
+| Indicador | Antes (#88) | Agora (#146) | Comentário |
 |---|:--:|:--:|---|
 | **Round-trip interno (`.repx`/`.repjson`)** | ~98% | **~98%** | Praticamente lossless; auto-wiring por convenção |
-| **Render** | ~90% | **~93%** | BackColor, TextDecoration, Image Sizing, multi-coluna snake, ColSpan; faltam ticks de gauge, RowSpan, toggle interativo |
-| **Code-first** | ~88% | **~90%** | API cobre quase tudo; faltam spans no Tablix builder fluente |
-| **Designer** | ~82% | **~83%** | Toolbox completo; faltam editores ricos (TextRuns, Tablix inline, spans) |
-| **Model** | ~80% | **~85%** | Hidden/Nullable, DataSetName, ColSpan/RowSpan, Sizing; faltam TablixHeader/Body nativos, BackgroundImage/Gradient |
-| **Import (RdlImporter)** | ~20% | **~72%** | DataSets + Tablix + viz + estilo + cultura importam; lossy-com-aviso só em shapes exóticos / Map |
-| **CONFORMIDADE GLOBAL (ponderada por uso real)** | ~62% | **~81%** | Migração de SSRS real (`.rdl` → editar) saiu de ~25% para ~72% |
+| **Render** | ~90% | **~95%** | BackColor, TextDecoration, Image Sizing, multi-coluna snake, ColSpan, Rectangle-container + clip; paginação completa (PrintOnLastPage, CanShrink encolhe banda, split de banda por elemento); faltam ticks de gauge, RowSpan |
+| **Code-first** | ~88% | **~91%** | API cobre quase tudo; faltam spans no Tablix builder fluente, edição aninhada |
+| **Designer** | ~82% | **~85%** | Toolbox completo + edição aninhada de Rectangle; faltam editores ricos (TextRuns, Tablix inline, spans) e canvas WYSIWYG real |
+| **Model** | ~80% | **~85%** | Hidden/Nullable, DataSetName, ColSpan/RowSpan, Sizing, IsVisual; faltam TablixHeader/Body nativos, N-DetailBands, ReportSections |
+| **Import (RdlImporter)** | ~20% | **~80%** | DataSets + Tablix + viz + CustomReportItem + estilo + cores nomeadas + cultura importam; lossy-com-aviso só em Map / shapes exóticos |
+| **Output** | — | **novo** | Word (.docx) tabular + imagens + charts rasterizados (#127/#129/#138) |
+| **CONFORMIDADE GLOBAL (ponderada por uso real)** | ~62% | **~85%** | Migração de SSRS real (`.rdl` → editar) saiu de ~25% para ~80% |
+
+### Estado após #123–#146 (consolidação)
+
+Desde a foto do #122, entraram (cada um nos 3 modos de autoria quando aplicável + revisão adversarial):
+
+- **Rectangle como container de 1ª classe** — hierarquia, clip de filhos, cantos arredondados (#126/#128/#133)
+  + **edição aninhada no Designer** (filhos visíveis/selecionáveis/editáveis, #141).
+- **Output Word (.docx)** — tabela editável + imagens inline + charts/visuais rasterizados (#127/#129/#138).
+- **Paginação completa para saída estática** — `PrintOnLastPage`/`PrintOnFirstPage` no header/footer,
+  `CanShrink` que encolhe a banda (opt-in, com `Measure≡Render` garantido), e **split de banda por elemento**
+  quando excede a página, com terminação garantida (#142/#143).
+- **Import RDL** — `BackgroundImage` (#134), Gauge `ScaleRanges`/Min/Max (#135), formatação condicional via
+  `<Style>` com expressões (#136), **CustomReportItem → DataBar/Sparkline/Indicator/Gauge** (#145).
+- **Expressões / estilo** — agregados estatísticos Var/StDev (#130), coerção de **cor nomeada** (#137) +
+  **paleta CSS3 completa** nos 3 pontos (importer, readers, binding) (#144), **`MultiLookup`** (#146).
+
+#### Follow-ups deliberadamente diferidos (registrados; não bloqueiam uso real)
+
+Após leitura do código, alguns itens divergem do que um mapeamento de alto nível sugere — registrados aqui
+honestamente em vez de entregues pela metade:
+
+| Item | Categoria | Razão de diferir |
+|---|---|---|
+| **N-DetailBands / List** | XL | Múltiplas regiões de dados no nível raiz; toca o núcleo do pipeline de paginação. Fatiar modelo→render→import→designer com testes de paginação pesados. |
+| **ReportSections** (RDL 2016) | XL | Multi-seção com `PageSetup` por seção; baixa demanda real, alto custo (modelo+serial+import+paginator+designer). |
+| **`.rds` / shared datasource/dataset** | XL | Depende de infra de resolução no host; parar no round-trip lossless da referência seria o 1º corte. |
+| **Canvas WYSIWYG real no Designer** | XL (DX) | Render real de Chart/Gauge/Tablix no canvas (hoje placeholder); puro DX, perf-sensível. Não fecha compat RDL. |
+| **RowSpan render (vertical)** | Awkward | O renderer flat tem só 2 templates (header+detail-repeat) — não há grid multi-linha; exigiria reescrevê-lo. ColSpan já funciona. |
+| **Map import** | Awkward | Impedância espacial (RDL usa shapefiles/geometria vs nosso lat/long+GeoJSON); importaria mapas vazios. Aviso explícito mantido. |
+| **`Rectangle.CornerRadius` import** | Baixo valor | RDL padrão não tem elemento de canto arredondado; suportável só no code-first/Designer (já existe). |
+| **TextRuns: estilo/ação por-run no render, HTML real** | M/G | Mixed-font path no render dos 5 backends; runs já fazem round-trip e o texto concatena. |
+
+> **Veredito de consolidação:** conformidade global **~85%** (importador **~80%**), patamar sólido para
+> migração SSRS→OmniReport e autoria nos 3 modos. Os itens acima são XL (decisão de produto) ou de encaixe
+> ruim; nenhum bloqueia uso real. Drill-down/toggle **interativo** está fora de escopo por decisão de produto
+> (a saída é sempre um relatório **estático**) — visibilidade estática (`Visible`/`VisibleExpression`) funciona.
 
 ### Antes vs. Depois (#89–#122, 34 PRs)
 
