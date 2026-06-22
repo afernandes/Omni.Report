@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Linq;
 using System.Xml.Linq;
 using Reporting.Bands;
 using Reporting.Common;
@@ -40,29 +41,56 @@ internal static class RdlWriter
         // The Body is RDL's flat design canvas. The importer turns free Body items into a ReportHeader band,
         // so the inverse writes ReportHeader (and any static ReportFooter) items back into Body.ReportItems.
         var bodyItems = new XElement(Rdl + "ReportItems");
-        if (def.ReportHeader is { } rh)
+
+        // A data-bound Detail with a repeating column-header PageHeader and no Groups is exactly what the
+        // importer's TryFlatTablixBands produces by DECOMPOSING a single flat <Tablix> (column-header band +
+        // detail band). The inverse reconstructs that one flat <Tablix> as the sole Body item, suppressing the
+        // <PageHeader> section (the importer only re-decomposes when the page has no <PageHeader>).
+        //
+        // The shape must match UNAMBIGUOUSLY — only re-fold what the importer would have produced. A genuine
+        // page header (free-positioned, non-Label, or unaligned to the data columns), a ColSpan/gappy layout,
+        // or a filtered/sorted Detail are NOT flat tables; folding them would corrupt a legitimate report, so
+        // they fall through to a warning instead.
+        var flatTable = def.Detail is { DataSetName: not null, Elements.Count: > 0 }
+            && def.Groups.Count == 0
+            && (def.ReportHeader is null || def.ReportHeader.Elements.Count == 0)
+            && (def.ReportFooter is null || def.ReportFooter.Elements.Count == 0)
+            && def.Detail.FilterExpression is null
+            && def.Detail.SortExpressions.Count == 0
+            && IsReconstructableFlatTable(def.PageHeader, def.Detail);
+
+        if (flatTable)
         {
-            WriteReportItems(bodyItems, rh.Elements, warnings);
+            bodyItems.Add(WriteFlatTablix(def.PageHeader, def.Detail, warnings));
         }
-        if (def.ReportFooter is { Elements.Count: > 0 } rf)
+        else
         {
-            WriteReportItems(bodyItems, rf.Elements, warnings);
-        }
-        // A data-bound Detail (or any Groups) is a data region → <Tablix>, a later phase. A purely static
-        // Detail (no dataset, no groups) is written as Body items so static reports round-trip now.
-        if (def.Groups.Count > 0)
-        {
-            warnings.Add("Grupos (Groups) → <Tablix> hierarchy: exportação é uma fase posterior (PR4).");
-        }
-        if (def.Detail.Elements.Count > 0)
-        {
-            if (def.Detail.DataSetName is null && def.Groups.Count == 0)
+            if (def.ReportHeader is { } rh)
             {
-                WriteReportItems(bodyItems, def.Detail.Elements, warnings);
+                WriteReportItems(bodyItems, rh.Elements, warnings);
             }
-            else
+            if (def.ReportFooter is { Elements.Count: > 0 } rf)
             {
-                warnings.Add("DetailBand vinculada a dados → <Tablix>: exportação é uma fase posterior (PR4).");
+                WriteReportItems(bodyItems, rf.Elements, warnings);
+            }
+            if (def.Groups.Count > 0)
+            {
+                warnings.Add("Grupos (Groups) → <Tablix> hierarchy: exportação é uma fase posterior.");
+            }
+            if (def.Detail.Elements.Count > 0)
+            {
+                if (def.Detail.DataSetName is null && def.Groups.Count == 0)
+                {
+                    WriteReportItems(bodyItems, def.Detail.Elements, warnings); // purely static detail → Body items
+                }
+                else
+                {
+                    // Data-bound Detail that isn't a simple flat table (Groups/extra bands, ColSpan/gaps, a
+                    // genuine page header, or filters/sort) → the grouped/complex Tablix is a later phase. The
+                    // <PageHeader> is preserved (not suppressed) so a real page header is never corrupted.
+                    warnings.Add("DetailBand vinculada a dados não corresponde ao padrão flat-table simples " +
+                        "(Groups/bandas extras/ColSpan/gaps/PageHeader genuíno/filtros) → <Tablix> não reconstruído (fase posterior).");
+                }
             }
         }
 
@@ -77,7 +105,9 @@ internal static class RdlWriter
         report.Add(new XElement(Rdl + "Width", Size(page.ContentWidth)));
 
         var pageEl = new XElement(Rdl + "Page",
-            WriteBandSection(def.PageHeader, "PageHeader", warnings),
+            // When the flat-table Tablix was reconstructed, its column headers ARE the PageHeader — don't also
+            // emit a <PageHeader> section, or the importer won't re-decompose (it needs pageHasHeader==false).
+            flatTable ? null : WriteBandSection(def.PageHeader, "PageHeader", warnings),
             new XElement(Rdl + "PageHeight", Size(page.PageHeight)),
             new XElement(Rdl + "PageWidth", Size(page.PageWidth)),
             new XElement(Rdl + "LeftMargin", Size(page.Margins.Left)),
@@ -589,6 +619,138 @@ internal static class RdlWriter
         }
         return null;
     }
+
+    // True only when the bands UNAMBIGUOUSLY match the importer's flat-table decomposition, so re-folding them
+    // into a <Tablix> is lossless: the detail columns are contiguous (no gaps/overlap — those don't round-trip),
+    // and the page header (if any) is a genuine column-header row — one Label per detail column, aligned to the
+    // same X/Width (no ColSpan, no free-positioned page chrome). A real page header fails this and is preserved.
+    private static bool IsReconstructableFlatTable(ReportBand? pageHeader, DetailBand detail)
+    {
+        var cols = detail.Elements.OrderBy(e => e.Bounds.X.Mils).ToList();
+        for (var i = 1; i < cols.Count; i++)
+        {
+            if (cols[i].Bounds.X.Mils != cols[i - 1].Bounds.X.Mils + cols[i - 1].Bounds.Width.Mils)
+            {
+                return false; // a gap or overlap between columns → the import would re-pack them differently
+            }
+        }
+        if (pageHeader is null || pageHeader.Elements.Count == 0)
+        {
+            return true; // detail-only flat table
+        }
+        if (pageHeader.Elements.Count != cols.Count)
+        {
+            return false; // ColSpan-merged or unrelated header → not a 1:1 column-header row
+        }
+        var headers = pageHeader.Elements.OrderBy(e => e.Bounds.X.Mils).ToList();
+        for (var i = 0; i < headers.Count; i++)
+        {
+            if (headers[i] is not LabelElement
+                || headers[i].Bounds.X.Mils != cols[i].Bounds.X.Mils
+                || headers[i].Bounds.Width.Mils != cols[i].Bounds.Width.Mils)
+            {
+                return false; // a real page header (non-Label, or not aligned to the data columns)
+            }
+        }
+        return true;
+    }
+
+    // ── Flat-table Tablix — inverse of RdlImporter.TryFlatTablixBands ───────────────
+    // The importer decomposes a single flat <Tablix> (no dynamic groups) into a repeating PageHeader band
+    // (column-header Labels) + a data-bound DetailBand (one TextBox per column). This rebuilds that one flat
+    // <Tablix>: columns sized from the detail elements (ordered by X), a header row (literal Labels) and a
+    // detail row (=expression TextBoxes), with a detail member carrying a keyless <Group> so the importer
+    // re-classifies it as the detail row. The caller suppresses the <PageHeader> section.
+    private static XElement WriteFlatTablix(ReportBand? pageHeader, DetailBand detail, List<string> warnings)
+    {
+        var detailCols = detail.Elements.OrderBy(e => e.Bounds.X.Mils).ToList();
+        var headerCols = (pageHeader?.Elements ?? EquatableArray<ReportElement>.Empty)
+            .OrderBy(e => e.Bounds.X.Mils).ToList();
+        var hasHeader = headerCols.Count > 0;
+        if (hasHeader && headerCols.Count != detailCols.Count)
+        {
+            warnings.Add($"Flat-table: o PageHeader tem {headerCols.Count} célula(s) e o Detail {detailCols.Count} — colunas podem desalinhar no round-trip.");
+        }
+
+        var columns = new XElement(Rdl + "TablixColumns");
+        foreach (var c in detailCols)
+        {
+            columns.Add(new XElement(Rdl + "TablixColumn", new XElement(Rdl + "Width", Size(c.Bounds.Width))));
+        }
+        var rows = new XElement(Rdl + "TablixRows");
+        if (hasHeader)
+        {
+            rows.Add(FlatRow(pageHeader!.Height, headerCols));
+        }
+        rows.Add(FlatRow(detail.Height, detailCols));
+
+        var tablix = new XElement(Rdl + "Tablix", new XElement(Rdl + "TablixBody", columns, rows));
+
+        var colMembers = new XElement(Rdl + "TablixMembers");
+        for (var i = 0; i < detailCols.Count; i++)
+        {
+            colMembers.Add(new XElement(Rdl + "TablixMember")); // a static member per column
+        }
+        tablix.Add(new XElement(Rdl + "TablixColumnHierarchy", colMembers));
+
+        var rowMembers = new XElement(Rdl + "TablixMembers");
+        if (hasHeader)
+        {
+            rowMembers.Add(new XElement(Rdl + "TablixMember")); // static header row
+        }
+        // A <Group> WITHOUT a <GroupExpression> marks the detail row (El(m,"Group") is not null), and stays
+        // out of the dynamic-group count so TryFlatTablixBands still fires.
+        rowMembers.Add(new XElement(Rdl + "TablixMember",
+            new XElement(Rdl + "Group", new XAttribute("Name", "Details"))));
+        tablix.Add(new XElement(Rdl + "TablixRowHierarchy", rowMembers));
+
+        tablix.Add(new XElement(Rdl + "DataSetName", detail.DataSetName));
+        if (!string.IsNullOrEmpty(detail.NoRowsMessage))
+        {
+            tablix.Add(new XElement(Rdl + "NoRowsMessage", detail.NoRowsMessage)); // literal caption
+        }
+        if (detail.CanGrow || detail.CanShrink || detail.VisibleExpression is not null)
+        {
+            warnings.Add("Flat-table: CanGrow/CanShrink/VisibleExpression do Detail não são re-emitidos no <Tablix> (hint de render perdido).");
+        }
+        var pageBreak = WritePageBreak(detail.PageBreak);
+        if (pageBreak is not null)
+        {
+            tablix.Add(pageBreak);
+        }
+
+        // Bounds: anchor at the leftmost column (so the importer's scaled edges land on the original X) and
+        // Width = sum of column widths (so the import's scale = 1 and positions round-trip exactly).
+        var left = detailCols.Count > 0 ? detailCols[0].Bounds.X : Unit.Zero;
+        var width = Unit.Zero;
+        foreach (var c in detailCols)
+        {
+            width += c.Bounds.Width;
+        }
+        var height = (hasHeader ? pageHeader!.Height : Unit.Zero) + detail.Height;
+        tablix.Add(new XElement(Rdl + "Top", Size(Unit.Zero)),
+            new XElement(Rdl + "Left", Size(left)),
+            new XElement(Rdl + "Width", Size(width)),
+            new XElement(Rdl + "Height", Size(height)));
+        return tablix;
+    }
+
+    // One <TablixRow> of a flat table: a cell per element (Label → literal, TextBox → =expression, via the
+    // shared CellContents).
+    private static XElement FlatRow(Unit height, List<ReportElement> cells)
+    {
+        var tablixCells = new XElement(Rdl + "TablixCells");
+        foreach (var el in cells)
+        {
+            tablixCells.Add(new XElement(Rdl + "TablixCell", CellContents(el)));
+        }
+        return new XElement(Rdl + "TablixRow", new XElement(Rdl + "Height", Size(height)), tablixCells);
+    }
+
+    // Inverse of RdlImporter.ReadPageBreak (the 2008+ <PageBreak><BreakLocation> form).
+    private static XElement? WritePageBreak(PageBreak pageBreak) => pageBreak == PageBreak.None
+        ? null
+        : new XElement(Rdl + "PageBreak", new XElement(Rdl + "BreakLocation", pageBreak.ToString()));
 
     private static XElement Textbox(params object[] content)
         => new(Rdl + "Textbox", new XElement(Rdl + "Paragraphs",
