@@ -1,8 +1,10 @@
 using System.Globalization;
 using System.Xml.Linq;
 using Reporting.Bands;
+using Reporting.Data;
 using Reporting.Elements;
 using Reporting.Geometry;
+using Reporting.Parameters;
 using Reporting.Styling;
 
 namespace Reporting.Serialization.Internal;
@@ -22,12 +24,17 @@ internal static class RdlWriter
     internal static readonly XNamespace Rdl =
         "http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition";
 
+    // The MS report-designer extension namespace, carrying rd:TypeName on DataSet fields (SSRS emits it).
+    internal static readonly XNamespace RdlDesigner =
+        "http://schemas.microsoft.com/SQLServer/reporting/reportdesigner";
+
     public static XDocument Write(ReportDefinition def, List<string> warnings)
     {
         ArgumentNullException.ThrowIfNull(def);
         ArgumentNullException.ThrowIfNull(warnings);
         var page = def.PageSetup;
-        var report = new XElement(Rdl + "Report");
+        var report = new XElement(Rdl + "Report",
+            new XAttribute(XNamespace.Xmlns + "rd", RdlDesigner));
 
         // The Body is RDL's flat design canvas. The importer turns free Body items into a ReportHeader band,
         // so the inverse writes ReportHeader (and any static ReportFooter) items back into Body.ReportItems.
@@ -84,11 +91,310 @@ internal static class RdlWriter
         }
         report.Add(pageEl);
 
+        WriteParameters(report, def, warnings);
+        WriteDataSets(report, def, warnings);
+        WriteVariables(report, def, warnings);
+
         AddIfPresent(report, def, "Language", "Language");
         AddIfPresent(report, def, "Description", "Description");
         AddIfPresent(report, def, "Author", "Author");
 
         return new XDocument(new XDeclaration("1.0", "utf-8", null), report);
+    }
+
+    // ── ReportParameters ──────────────────────────────────────────────────────────
+
+    private static void WriteParameters(XElement report, ReportDefinition def, List<string> warnings)
+    {
+        if (def.Parameters.Count == 0)
+        {
+            return;
+        }
+        var ps = new XElement(Rdl + "ReportParameters");
+        foreach (var p in def.Parameters)
+        {
+            ps.Add(WriteParameter(p, warnings));
+        }
+        report.Add(ps);
+    }
+
+    private static XElement WriteParameter(ReportParameter p, List<string> warnings)
+    {
+        var el = new XElement(Rdl + "ReportParameter",
+            new XAttribute("Name", p.Name),
+            new XElement(Rdl + "DataType", ParameterDataType(p.ValueType, p.Name, warnings)));
+        if (p.Prompt is not null)
+        {
+            el.Add(new XElement(Rdl + "Prompt", p.Prompt));
+        }
+        // RDL booleans default to false; emit only when set (cleaner XML, same re-import).
+        if (p.Nullable) { el.Add(new XElement(Rdl + "Nullable", "true")); }
+        if (p.AllowBlank) { el.Add(new XElement(Rdl + "AllowBlank", "true")); }
+        if (p.Hidden) { el.Add(new XElement(Rdl + "Hidden", "true")); }
+        if (p.AllowMultiple) { el.Add(new XElement(Rdl + "MultiValue", "true")); } // RDL MultiValue ↔ AllowMultiple
+        if (p.DefaultValue is not null)
+        {
+            // DateTime must be ISO-8601 ("o") so it round-trips exactly (Convert.ToString drops sub-seconds and
+            // emits a non-ISO form SSRS rejects); other scalars use the invariant general form.
+            var raw = p.DefaultValue is DateTime dt
+                ? dt.ToString("o", CultureInfo.InvariantCulture)
+                : Convert.ToString(p.DefaultValue, CultureInfo.InvariantCulture) ?? string.Empty;
+            if (raw.StartsWith('='))
+            {
+                warnings.Add($"ReportParameter '{p.Name}': DefaultValue '{raw}' começa com '=' — o RDL o trata como expressão e o reimport o descarta (perda no round-trip).");
+            }
+            el.Add(new XElement(Rdl + "DefaultValue",
+                new XElement(Rdl + "Values", new XElement(Rdl + "Value", raw))));
+        }
+        var valid = WriteValidValues(p.AvailableValues, p.Name, warnings);
+        if (valid is not null)
+        {
+            el.Add(valid);
+        }
+        // Required is DERIVED on import (!Nullable && no <DefaultValue>); RDL has no <Required>, so a model
+        // whose Required disagrees with that derivation can't round-trip the flag — warn, don't drop silently.
+        var derivedRequired = !p.Nullable && p.DefaultValue is null;
+        if (p.Required != derivedRequired)
+        {
+            warnings.Add($"ReportParameter '{p.Name}': Required={p.Required} não é representável em RDL " +
+                $"(é derivado de Nullable/DefaultValue) — reimporta como {derivedRequired}.");
+        }
+        return el;
+    }
+
+    private static XElement? WriteValidValues(ParameterAvailableValues? av, string name, List<string> warnings)
+    {
+        if (av is null)
+        {
+            return null;
+        }
+        if (av.IsQuery)
+        {
+            // RDL <ValidValues> is query XOR static; a model carrying both loses the static list here.
+            if (av.Values.Count > 0)
+            {
+                warnings.Add($"ReportParameter '{name}': AvailableValues combina query e lista estática; o RDL <ValidValues> é exclusivo — a lista estática não é exportada.");
+            }
+            var dsRef = new XElement(Rdl + "DataSetReference",
+                new XElement(Rdl + "DataSetName", av.DataSet),
+                new XElement(Rdl + "ValueField", av.ValueField ?? string.Empty));
+            if (av.LabelField is not null)
+            {
+                dsRef.Add(new XElement(Rdl + "LabelField", av.LabelField));
+            }
+            return new XElement(Rdl + "ValidValues", dsRef);
+        }
+        if (av.Values.Count > 0)
+        {
+            var values = new XElement(Rdl + "ParameterValues");
+            foreach (var v in av.Values)
+            {
+                var item = new XElement(Rdl + "ParameterValue", new XElement(Rdl + "Value", v.Value));
+                if (v.Label is not null)
+                {
+                    item.Add(new XElement(Rdl + "Label", v.Label));
+                }
+                values.Add(item);
+            }
+            return new XElement(Rdl + "ValidValues", values);
+        }
+        return null;
+    }
+
+    private static string ParameterDataType(Type t, string name, List<string> warnings)
+    {
+        if (t == typeof(int)) { return "Integer"; }
+        if (t == typeof(double)) { return "Float"; }
+        if (t == typeof(decimal)) { return "Decimal"; }
+        if (t == typeof(bool)) { return "Boolean"; }
+        if (t == typeof(DateTime)) { return "DateTime"; }
+        if (t != typeof(string))
+        {
+            warnings.Add($"ReportParameter '{name}': tipo {t.Name} não tem equivalente RDL — exportado como String (reimporta como string).");
+        }
+        return "String";
+    }
+
+    // ── DataSets (a DataSourceDefinition maps to one <DataSet>) ─────────────────────
+
+    private static void WriteDataSets(XElement report, ReportDefinition def, List<string> warnings)
+    {
+        if (def.DataSources.Count == 0)
+        {
+            return;
+        }
+        var sets = new XElement(Rdl + "DataSets");
+        foreach (var ds in def.DataSources)
+        {
+            sets.Add(WriteDataSet(ds, warnings));
+        }
+        report.Add(sets);
+    }
+
+    private static XElement WriteDataSet(DataSourceDefinition ds, List<string> warnings)
+    {
+        var dataSet = new XElement(Rdl + "DataSet", new XAttribute("Name", ds.Name));
+
+        // <Query> rebuilt from the reserved Parameters keys (_sql / _storedProc / param:*) — inverse of
+        // ReadDataSet's encoding. Keys beginning with '_' (other than the two above) are designer connection
+        // metadata, NOT query parameters — never emit them as <QueryParameter> (would corrupt the re-import).
+        var query = new XElement(Rdl + "Query");
+        if (ds.Parameters.TryGetValue("_sql", out var sql) && !string.IsNullOrEmpty(sql))
+        {
+            query.Add(new XElement(Rdl + "DataSourceName", ds.Name + "DataSource")); // synthetic; importer ignores
+            if (ds.Parameters.TryGetValue("_storedProc", out var sp) &&
+                string.Equals(sp, "true", StringComparison.OrdinalIgnoreCase))
+            {
+                query.Add(new XElement(Rdl + "CommandType", "StoredProcedure"));
+            }
+            query.Add(new XElement(Rdl + "CommandText", sql)); // raw SQL — NOT through RdlExpressionReverse
+        }
+        var queryParams = new XElement(Rdl + "QueryParameters");
+        foreach (var kv in ds.Parameters)
+        {
+            if (!kv.Key.StartsWith("param:", StringComparison.Ordinal))
+            {
+                continue;
+            }
+            var sqlName = kv.Key["param:".Length..];
+            var parts = kv.Value.Split('|', 2);             // encoding: "reportParameter|literal"
+            var repParam = parts.Length > 0 ? parts[0] : string.Empty;
+            var literal = parts.Length > 1 ? parts[1] : string.Empty;
+            var value = !string.IsNullOrEmpty(repParam)
+                ? RdlExpressionReverse.ToRdl("Parameters." + repParam) // → =Parameters!P.Value
+                : literal;
+            // A literal that itself starts with '=' would be re-read as an RDL expression (and silently turned
+            // into a parameter binding or mangled) — warn rather than corrupt it on the round-trip.
+            if (string.IsNullOrEmpty(repParam) && literal.StartsWith('='))
+            {
+                warnings.Add($"DataSet '{ds.Name}', parâmetro '{sqlName}': valor literal '{literal}' começa com '=' e o RDL o trataria como expressão — não round-trippa como literal.");
+            }
+            queryParams.Add(new XElement(Rdl + "QueryParameter", new XAttribute("Name", sqlName),
+                new XElement(Rdl + "Value", value)));
+        }
+        // Designer connection metadata (provider/connection string/timeout) has no <DataSet> home and the
+        // importer doesn't read <DataSources>; flag the loss rather than dropping it silently.
+        if (ds.Parameters.ContainsKey("_kind") || ds.Parameters.ContainsKey("_connection") || ds.Parameters.ContainsKey("_timeout"))
+        {
+            warnings.Add($"DataSet '{ds.Name}': metadados de conexão do designer (provider/connection string/timeout) não são exportados para RDL — perda no round-trip.");
+        }
+        if (queryParams.HasElements)
+        {
+            query.Add(queryParams);
+        }
+        if (query.HasElements)
+        {
+            dataSet.Add(query);
+        }
+
+        // <Fields>: a DataField (no <Value>) carries <DataField> + optional rd:TypeName; a CalculatedField
+        // carries <Value> (the importer distinguishes by the presence of <Value>).
+        var fields = new XElement(Rdl + "Fields");
+        foreach (var f in ds.Fields)
+        {
+            var field = new XElement(Rdl + "Field", new XAttribute("Name", f.Name),
+                new XElement(Rdl + "DataField", f.Name)); // model has no physical column name → reuse Name
+            var typeName = ClrTypeName(f.FieldType, $"DataSet '{ds.Name}', campo '{f.Name}'", warnings);
+            if (typeName is not null)
+            {
+                field.Add(new XElement(RdlDesigner + "TypeName", typeName));
+            }
+            if (f.DisplayName is not null)
+            {
+                warnings.Add($"DataSet '{ds.Name}', campo '{f.Name}': DisplayName '{f.DisplayName}' não tem elemento RDL — perde no round-trip.");
+            }
+            fields.Add(field);
+        }
+        foreach (var c in ds.CalculatedFields)
+        {
+            // A calculated field carries <Value>; rd:TypeName round-trips its ResultType (read back below).
+            var calc = new XElement(Rdl + "Field", new XAttribute("Name", c.Name),
+                new XElement(Rdl + "Value", RdlExpressionReverse.ToRdl(c.Expression)));
+            var resultType = ClrTypeName(c.ResultType, $"DataSet '{ds.Name}', campo calculado '{c.Name}'", warnings);
+            if (resultType is not null)
+            {
+                calc.Add(new XElement(RdlDesigner + "TypeName", resultType));
+            }
+            fields.Add(calc);
+        }
+        if (fields.HasElements)
+        {
+            dataSet.Add(fields);
+        }
+
+        if (ds.SortExpressions.Count > 0)
+        {
+            var sorts = new XElement(Rdl + "SortExpressions");
+            foreach (var s in ds.SortExpressions)
+            {
+                var sort = new XElement(Rdl + "SortExpression",
+                    new XElement(Rdl + "Value", RdlExpressionReverse.ToRdl(s.Expression)));
+                if (s.Direction == SortDirection.Descending)
+                {
+                    sort.Add(new XElement(Rdl + "Direction", "Descending")); // Ascending is the default
+                }
+                sorts.Add(sort);
+            }
+            dataSet.Add(sorts);
+        }
+
+        // The importer folds N <Filter>s into a flat boolean FilterExpression; rebuilding the structured
+        // <Filters> that re-reads to the SAME expression isn't 1:1, so warn instead of emitting a lossy
+        // approximation (a structural-preservation read-fidelity item could revisit this).
+        if (!string.IsNullOrEmpty(ds.FilterExpression))
+        {
+            warnings.Add($"DataSet '{ds.Name}': FilterExpression → <Filters> estruturado não é reconstruído (perda conhecida).");
+        }
+        // Master-detail (DataMember/Relations) maps to nested data regions in RDL, not onto a flat <DataSet>.
+        if (ds.DataMember is not null || ds.Relations.Count > 0)
+        {
+            warnings.Add($"DataSet '{ds.Name}': DataMember/Relations (master-detail) não têm representação em <DataSet> RDL — perdem no round-trip.");
+        }
+        return dataSet;
+    }
+
+    // Inverse of RdlImporter.MapClrType — null (→ omit <TypeName>) for any type outside the mapped set,
+    // warning so an unrepresentable field type isn't dropped silently.
+    private static string? ClrTypeName(Type? t, string ctx, List<string> warnings)
+    {
+        if (t is null) { return null; }
+        if (t == typeof(int)) { return "System.Int32"; }
+        if (t == typeof(decimal)) { return "System.Decimal"; }
+        if (t == typeof(double)) { return "System.Double"; }
+        if (t == typeof(bool)) { return "System.Boolean"; }
+        if (t == typeof(DateTime)) { return "System.DateTime"; }
+        if (t == typeof(string)) { return "System.String"; }
+        warnings.Add($"{ctx}: tipo {t.Name} não tem equivalente RDL — <TypeName> omitido (reimporta sem tipo).");
+        return null;
+    }
+
+    // ── Variables (report-scope only — the importer re-reads no others) ─────────────
+
+    private static void WriteVariables(XElement report, ReportDefinition def, List<string> warnings)
+    {
+        if (def.Variables.Count == 0)
+        {
+            return;
+        }
+        var vars = new XElement(Rdl + "Variables");
+        foreach (var v in def.Variables)
+        {
+            if (v.Scope != VariableScope.Report)
+            {
+                warnings.Add($"Variable '{v.Name}' (escopo {v.Scope}): RDL só relê variáveis de escopo Report — perde no round-trip.");
+                continue;
+            }
+            if (v.InitialValue is not null)
+            {
+                warnings.Add($"Variable '{v.Name}': InitialValue não tem campo nativo em <Variable> RDL — perde no round-trip.");
+            }
+            vars.Add(new XElement(Rdl + "Variable", new XAttribute("Name", v.Name),
+                new XElement(Rdl + "Value", RdlExpressionReverse.ToRdl(v.Expression))));
+        }
+        if (vars.HasElements)
+        {
+            report.Add(vars);
+        }
     }
 
     // <PageHeader>/<PageFooter> carry Height + PrintOnFirstPage/PrintOnLastPage + ReportItems.

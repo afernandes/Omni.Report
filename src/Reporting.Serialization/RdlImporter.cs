@@ -156,7 +156,8 @@ public sealed class RdlImporter
             // A <Field> with a <Value> expression is a calculated field; otherwise it's a data column.
             if (Val(f, "Value") is { Length: > 0 } valueExpr)
             {
-                calculated.Add(new CalculatedField(fieldName, RdlExpression.Convert(valueExpr)));
+                // rd:TypeName on a calculated field carries its ResultType (the exporter round-trips it).
+                calculated.Add(new CalculatedField(fieldName, RdlExpression.Convert(valueExpr), MapClrType(Val(f, "TypeName"))));
             }
             else
             {
