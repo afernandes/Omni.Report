@@ -333,11 +333,10 @@ public class RdlTablixRoundTripTests
     }
 
     [Fact]
-    public void A_genuine_page_header_is_not_folded_into_a_flat_tablix()
+    public void A_graphical_page_header_is_preserved_and_the_data_is_not_dropped()
     {
-        // A real page header (a Label NOT aligned to the data column — different width) plus a data-bound
-        // Detail must NOT be re-folded; the <PageHeader> is preserved and the data region is deferred (warned),
-        // rather than the page header being corrupted into a Tablix column header.
+        // A page header carrying GRAPHICS (a Line) is genuine page chrome, not a column-header row, so it is
+        // preserved as <PageHeader> — and the data-bound detail is still emitted (as Body items), never dropped.
         var def = new ReportDefinition("Real", PageSetup.A4Portrait,
             new DetailBand(Unit.FromMm(6),
                 new EquatableArray<ReportElement>(new ReportElement[]
@@ -350,24 +349,209 @@ public class RdlTablixRoundTripTests
                 new EquatableArray<ReportElement>(new ReportElement[]
                 {
                     new LabelElement { Text = "Empresa XYZ", Bounds = new Rectangle(Unit.Zero, Unit.Zero, Unit.FromMm(120), Unit.FromMm(10)) },
+                    new LineElement { Bounds = new Rectangle(Unit.Zero, Unit.FromMm(11), Unit.FromMm(120), Unit.Zero) },
                 })),
         };
 
         var rdl = new RdlExporter();
         var xml = Encoding.UTF8.GetString(rdl.SaveToBytes(def));
 
-        xml.Should().Contain("<PageHeader>").And.Contain("Empresa XYZ"); // preserved, not folded into the Tablix
-        rdl.Warnings.Should().Contain(w => w.Contains("flat-table simples")); // data region deferred, not corrupted
+        xml.Should().Contain("<PageHeader>").And.Contain("Empresa XYZ"); // genuine chrome preserved, not folded
+        xml.Should().Contain("=Fields!Total.Value");                     // data NOT dropped — emitted as a Body item
+        rdl.Warnings.Should().Contain(w => w.Contains("itens estáticos")); // partial round-trip, warned (not silent)
     }
 
     [Fact]
-    public void A_filtered_detail_is_deferred_with_a_warning_not_folded()
+    public void A_filtered_detail_keeps_its_elements_and_warns_rather_than_dropping_them()
     {
         var rdl = new RdlExporter();
         var imported = rdl.LoadFromBytes(Encoding.UTF8.GetBytes(FlatTableRdl));
         var filtered = imported with { Detail = imported.Detail with { FilterExpression = "Fields.Total > 100" } };
 
-        Encoding.UTF8.GetString(rdl.SaveToBytes(filtered)); // populates Warnings
-        rdl.Warnings.Should().Contain(w => w.Contains("flat-table simples"));
+        var xml = Encoding.UTF8.GetString(rdl.SaveToBytes(filtered));
+        xml.Should().Contain("=Fields!Cliente.Value");                 // detail elements still emitted, not dropped
+        rdl.Warnings.Should().Contain(w => w.Contains("itens estáticos"));
+    }
+
+    // A header that tiles the same columns as the detail but leaves the MIDDLE column uncovered (no ColSpan):
+    // labels only at columns 0 and 2 of a 3-column detail. Guards the header-gap (empty-placeholder) path.
+    private const string HeaderGapRdl = """
+        <Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition">
+          <Body>
+            <Height>50mm</Height>
+            <ReportItems>
+              <Tablix Name="HG">
+                <TablixBody>
+                  <TablixColumns>
+                    <TablixColumn><Width>20mm</Width></TablixColumn>
+                    <TablixColumn><Width>20mm</Width></TablixColumn>
+                    <TablixColumn><Width>20mm</Width></TablixColumn>
+                  </TablixColumns>
+                  <TablixRows>
+                    <TablixRow><Height>8mm</Height><TablixCells>
+                      <TablixCell><CellContents><Textbox Name="h0"><Paragraphs><Paragraph><TextRuns><TextRun><Value>Início</Value></TextRun></TextRuns></Paragraph></Paragraphs></Textbox></CellContents></TablixCell>
+                      <TablixCell><CellContents><Textbox Name="he"><Paragraphs><Paragraph><TextRuns><TextRun><Value></Value></TextRun></TextRuns></Paragraph></Paragraphs></Textbox></CellContents></TablixCell>
+                      <TablixCell><CellContents><Textbox Name="h2"><Paragraphs><Paragraph><TextRuns><TextRun><Value>Fim</Value></TextRun></TextRuns></Paragraph></Paragraphs></Textbox></CellContents></TablixCell>
+                    </TablixCells></TablixRow>
+                    <TablixRow><Height>6mm</Height><TablixCells>
+                      <TablixCell><CellContents><Textbox Name="a"><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!A.Value</Value></TextRun></TextRuns></Paragraph></Paragraphs></Textbox></CellContents></TablixCell>
+                      <TablixCell><CellContents><Textbox Name="b"><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!B.Value</Value></TextRun></TextRuns></Paragraph></Paragraphs></Textbox></CellContents></TablixCell>
+                      <TablixCell><CellContents><Textbox Name="c"><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!C.Value</Value></TextRun></TextRuns></Paragraph></Paragraphs></Textbox></CellContents></TablixCell>
+                    </TablixCells></TablixRow>
+                  </TablixRows>
+                </TablixBody>
+                <TablixColumnHierarchy><TablixMembers><TablixMember/><TablixMember/><TablixMember/></TablixMembers></TablixColumnHierarchy>
+                <TablixRowHierarchy><TablixMembers><TablixMember/><TablixMember><Group Name="Details"/></TablixMember></TablixMembers></TablixRowHierarchy>
+                <DataSetName>D</DataSetName>
+                <Top>0mm</Top><Left>0mm</Left><Width>60mm</Width><Height>14mm</Height>
+              </Tablix>
+            </ReportItems>
+          </Body>
+          <Width>190mm</Width>
+          <Page><PageHeight>297mm</PageHeight><PageWidth>210mm</PageWidth>
+            <LeftMargin>10mm</LeftMargin><RightMargin>10mm</RightMargin><TopMargin>10mm</TopMargin><BottomMargin>10mm</BottomMargin></Page>
+        </Report>
+        """;
+
+    [Fact]
+    public void A_header_with_a_middle_gap_round_trips()
+    {
+        var rdl = new RdlExporter();
+        var imported = rdl.LoadFromBytes(Encoding.UTF8.GetBytes(HeaderGapRdl));
+
+        imported.PageHeader!.Elements.OfType<LabelElement>().Should().HaveCount(2); // middle header cell was empty
+        imported.Detail.Elements.Should().HaveCount(3);
+
+        var reimported = rdl.LoadFromBytes(rdl.SaveToBytes(imported));
+        reimported.Should().BeEquivalentTo(imported,
+            opts => opts.Excluding((IMemberInfo m) => m.Name == "Id").RespectingRuntimeTypes());
+    }
+
+    [Fact]
+    public void A_zero_width_detail_cell_is_not_folded_and_no_element_is_dropped()
+    {
+        // Two elements coincident at X=0 (one zero-width) aren't a clean column grid → don't fold; emit both as
+        // Body items so neither is silently dropped.
+        var def = new ReportDefinition("Z", PageSetup.A4Portrait,
+            new DetailBand(Unit.FromMm(6),
+                new EquatableArray<ReportElement>(new ReportElement[]
+                {
+                    new TextBoxElement { Expression = "Fields.A", Bounds = new Rectangle(Unit.Zero, Unit.Zero, Unit.Zero, Unit.FromMm(6)) },
+                    new TextBoxElement { Expression = "Fields.B", Bounds = new Rectangle(Unit.Zero, Unit.Zero, Unit.FromMm(20), Unit.FromMm(6)) },
+                }),
+                DataSetName: "DS"));
+
+        var rdl = new RdlExporter();
+        var xml = Encoding.UTF8.GetString(rdl.SaveToBytes(def));
+
+        xml.Should().Contain("=Fields!A.Value").And.Contain("=Fields!B.Value"); // both survive (not folded, no drop)
+        rdl.Warnings.Should().Contain(w => w.Contains("itens estáticos"));
+    }
+
+    // A header cell merged across all three data columns (<ColSpan>3</ColSpan>). The importer turns it into one
+    // wide Label; the exporter must re-emit the ColSpan so the width round-trips (not collapse to one column).
+    private const string ColSpanRdl = """
+        <Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition">
+          <Body>
+            <Height>50mm</Height>
+            <ReportItems>
+              <Tablix Name="Span">
+                <TablixBody>
+                  <TablixColumns>
+                    <TablixColumn><Width>20mm</Width></TablixColumn>
+                    <TablixColumn><Width>20mm</Width></TablixColumn>
+                    <TablixColumn><Width>20mm</Width></TablixColumn>
+                  </TablixColumns>
+                  <TablixRows>
+                    <TablixRow><Height>8mm</Height><TablixCells>
+                      <TablixCell><ColSpan>3</ColSpan><CellContents><Textbox Name="h"><Paragraphs><Paragraph><TextRuns><TextRun><Value>Resumo Geral</Value></TextRun></TextRuns></Paragraph></Paragraphs></Textbox></CellContents></TablixCell>
+                    </TablixCells></TablixRow>
+                    <TablixRow><Height>6mm</Height><TablixCells>
+                      <TablixCell><CellContents><Textbox Name="a"><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!A.Value</Value></TextRun></TextRuns></Paragraph></Paragraphs></Textbox></CellContents></TablixCell>
+                      <TablixCell><CellContents><Textbox Name="b"><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!B.Value</Value></TextRun></TextRuns></Paragraph></Paragraphs></Textbox></CellContents></TablixCell>
+                      <TablixCell><CellContents><Textbox Name="c"><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!C.Value</Value></TextRun></TextRuns></Paragraph></Paragraphs></Textbox></CellContents></TablixCell>
+                    </TablixCells></TablixRow>
+                  </TablixRows>
+                </TablixBody>
+                <TablixColumnHierarchy><TablixMembers><TablixMember/><TablixMember/><TablixMember/></TablixMembers></TablixColumnHierarchy>
+                <TablixRowHierarchy><TablixMembers><TablixMember/><TablixMember><Group Name="Details"/></TablixMember></TablixMembers></TablixRowHierarchy>
+                <DataSetName>D</DataSetName>
+                <Top>0mm</Top><Left>0mm</Left><Width>60mm</Width><Height>14mm</Height>
+              </Tablix>
+            </ReportItems>
+          </Body>
+          <Width>190mm</Width>
+          <Page><PageHeight>297mm</PageHeight><PageWidth>210mm</PageWidth>
+            <LeftMargin>10mm</LeftMargin><RightMargin>10mm</RightMargin><TopMargin>10mm</TopMargin><BottomMargin>10mm</BottomMargin></Page>
+        </Report>
+        """;
+
+    [Fact]
+    public void A_colspan_header_round_trips_keeping_its_merged_width()
+    {
+        var rdl = new RdlExporter();
+        var imported = rdl.LoadFromBytes(Encoding.UTF8.GetBytes(ColSpanRdl));
+
+        var header = imported.PageHeader!.Elements.OfType<LabelElement>().Should().ContainSingle().Subject;
+        header.Text.Should().Be("Resumo Geral");
+        header.Bounds.Width.ToMm().Should().BeApproximately(60, 0.1); // spans all 3 columns
+        imported.Detail.Elements.Should().HaveCount(3);
+
+        Encoding.UTF8.GetString(rdl.SaveToBytes(imported)).Should().Contain("<ColSpan>3</ColSpan>");
+
+        var reimported = rdl.LoadFromBytes(rdl.SaveToBytes(imported));
+        reimported.Should().BeEquivalentTo(imported,
+            opts => opts.Excluding((IMemberInfo m) => m.Name == "Id").RespectingRuntimeTypes());
+    }
+
+    // A detail row with an empty middle cell (=A, <empty>, =C). The importer drops the empty cell but keeps its
+    // column slot; the exporter must re-emit the empty placeholder so the gap (C's X) round-trips.
+    private const string GapRdl = """
+        <Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition">
+          <Body>
+            <Height>50mm</Height>
+            <ReportItems>
+              <Tablix Name="Gap">
+                <TablixBody>
+                  <TablixColumns>
+                    <TablixColumn><Width>20mm</Width></TablixColumn>
+                    <TablixColumn><Width>20mm</Width></TablixColumn>
+                    <TablixColumn><Width>20mm</Width></TablixColumn>
+                  </TablixColumns>
+                  <TablixRows>
+                    <TablixRow><Height>6mm</Height><TablixCells>
+                      <TablixCell><CellContents><Textbox Name="a"><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!A.Value</Value></TextRun></TextRuns></Paragraph></Paragraphs></Textbox></CellContents></TablixCell>
+                      <TablixCell><CellContents><Textbox Name="e"><Paragraphs><Paragraph><TextRuns><TextRun><Value></Value></TextRun></TextRuns></Paragraph></Paragraphs></Textbox></CellContents></TablixCell>
+                      <TablixCell><CellContents><Textbox Name="c"><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!C.Value</Value></TextRun></TextRuns></Paragraph></Paragraphs></Textbox></CellContents></TablixCell>
+                    </TablixCells></TablixRow>
+                  </TablixRows>
+                </TablixBody>
+                <TablixColumnHierarchy><TablixMembers><TablixMember/><TablixMember/><TablixMember/></TablixMembers></TablixColumnHierarchy>
+                <TablixRowHierarchy><TablixMembers><TablixMember><Group Name="Details"/></TablixMember></TablixMembers></TablixRowHierarchy>
+                <DataSetName>D</DataSetName>
+                <Top>0mm</Top><Left>0mm</Left><Width>60mm</Width><Height>6mm</Height>
+              </Tablix>
+            </ReportItems>
+          </Body>
+          <Width>190mm</Width>
+          <Page><PageHeight>297mm</PageHeight><PageWidth>210mm</PageWidth>
+            <LeftMargin>10mm</LeftMargin><RightMargin>10mm</RightMargin><TopMargin>10mm</TopMargin><BottomMargin>10mm</BottomMargin></Page>
+        </Report>
+        """;
+
+    [Fact]
+    public void A_gap_in_the_detail_row_round_trips()
+    {
+        var rdl = new RdlExporter();
+        var imported = rdl.LoadFromBytes(Encoding.UTF8.GetBytes(GapRdl));
+
+        // The empty middle cell is dropped, leaving a gap: A at X=0, C at X=40 (column 1 empty).
+        imported.Detail.Elements.OfType<TextBoxElement>().Should().HaveCount(2);
+        imported.Detail.Elements.OfType<TextBoxElement>().Single(t => t.Expression == "Fields.C")
+            .Bounds.X.ToMm().Should().BeApproximately(40, 0.1);
+
+        var reimported = rdl.LoadFromBytes(rdl.SaveToBytes(imported));
+        reimported.Should().BeEquivalentTo(imported,
+            opts => opts.Excluding((IMemberInfo m) => m.Name == "Id").RespectingRuntimeTypes());
     }
 }
