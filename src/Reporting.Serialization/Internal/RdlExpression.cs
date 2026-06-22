@@ -146,7 +146,8 @@ internal static partial class RdlExpression
     }
 
     // Index of the ')' matching the '(' at openIndex (or end-of-string if unbalanced), quote-aware.
-    private static int MatchingParen(string s, int openIndex)
+    // Internal so the reverse converter (RdlExpressionReverse) shares the same quote/paren-aware parsing.
+    internal static int MatchingParen(string s, int openIndex)
     {
         int depth = 0;
         bool inString = false;
@@ -174,7 +175,8 @@ internal static partial class RdlExpression
         return s.Length - 1;
     }
 
-    private static List<string> SplitTopLevel(string s, char separator)
+    // Internal so RdlExpressionReverse shares the same quote/paren-aware top-level splitter.
+    internal static List<string> SplitTopLevel(string s, char separator)
     {
         var parts = new List<string>();
         int depth = 0, start = 0;
