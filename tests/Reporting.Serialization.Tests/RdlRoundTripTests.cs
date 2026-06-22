@@ -229,11 +229,14 @@ public class RdlRoundTripTests
     }
 
     [Fact]
-    public void A_data_bound_detail_records_an_export_warning_instead_of_dropping_silently()
+    public void A_data_bound_detail_exports_a_flat_tablix_and_round_trips()
     {
+        // A data-bound Detail (no Groups, no extra bands) is the inverse of TryFlatTablixBands → a flat
+        // <Tablix>. (PR5 turned the old "deferred" warning into a real export.)
         var def = new ReportDefinition("WithData", PageSetup.A4Portrait,
             DetailBand.Empty with
             {
+                Height = Unit.FromMm(8),
                 DataSetName = "Vendas",
                 Elements = new EquatableArray<ReportElement>(new ReportElement[]
                 {
@@ -242,10 +245,12 @@ public class RdlRoundTripTests
             });
 
         var rdl = new RdlExporter();
-        using var ms = new MemoryStream();
-        rdl.Save(def, ms);
+        var xml = Encoding.UTF8.GetString(rdl.SaveToBytes(def));
+        xml.Should().Contain("<Tablix").And.Contain("<DataSetName>Vendas</DataSetName>");
+        rdl.Warnings.Should().NotContain(w => w.Contains("fase posterior")); // no longer deferred
 
-        rdl.Warnings.Should().NotBeEmpty();
-        rdl.Warnings.Should().Contain(w => w.Contains("Tablix"));
+        var back = rdl.LoadFromBytes(rdl.SaveToBytes(def));
+        back.Detail.DataSetName.Should().Be("Vendas");
+        back.Detail.Elements.OfType<TextBoxElement>().Should().ContainSingle(t => t.Expression == "Fields.Total");
     }
 }
