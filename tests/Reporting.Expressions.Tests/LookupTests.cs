@@ -79,6 +79,46 @@ public class LookupTests
         ((object?[])result!).Should().BeEmpty();
     }
 
+    // ── MultiLookup: vectorised single-value Lookup over an array of keys (SSRS) ────────
+
+    [Fact]
+    public void MultiLookup_returns_one_result_per_key_in_order()
+    {
+        var (ctx, ev) = NewContext();
+        ctx.SetCurrentRow(new Dictionary<string, object?> { ["Ids"] = new object[] { 1, 3 } });
+        var result = ev.Evaluate("MultiLookup(Fields.Ids, Fields.Id, Fields.Nome, 'Clientes')", ctx);
+        result.Should().BeAssignableTo<object?[]>();
+        ((object?[])result!).Should().Equal("Ana", "Cau");
+    }
+
+    [Fact]
+    public void MultiLookup_yields_null_for_keys_without_a_match()
+    {
+        var (ctx, ev) = NewContext();
+        ctx.SetCurrentRow(new Dictionary<string, object?> { ["Ids"] = new object[] { 2, 99 } });
+        var result = (object?[])ev.Evaluate("MultiLookup(Fields.Ids, Fields.Id, Fields.Nome, 'Clientes')", ctx)!;
+        result.Should().Equal(new object?[] { "Bia", null });
+    }
+
+    [Fact]
+    public void MultiLookup_treats_a_scalar_key_as_a_single_element()
+    {
+        var (ctx, ev) = NewContext();
+        ctx.SetCurrentRow(new Dictionary<string, object?> { ["Id"] = 1 });
+        var result = (object?[])ev.Evaluate("MultiLookup(Fields.Id, Fields.Id, Fields.Nome, 'Clientes')", ctx)!;
+        result.Should().Equal("Ana");
+    }
+
+    [Fact]
+    public void MultiLookup_does_not_explode_a_string_key_into_characters()
+    {
+        var (ctx, ev) = NewContext();
+        ctx.SetCurrentRow(new Dictionary<string, object?> { ["Cat"] = "VIP" });
+        // "VIP" is ONE key (not 'V','I','P'); the first VIP row is "Ana".
+        var result = (object?[])ev.Evaluate("MultiLookup(Fields.Cat, Fields.Cat, Fields.Nome, 'Clientes')", ctx)!;
+        result.Should().Equal("Ana");
+    }
+
     [Fact]
     public void Lookup_does_not_false_match_a_bool_against_its_string_form()
     {

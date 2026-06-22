@@ -209,9 +209,11 @@ public sealed class ExpressionEvaluator
     private static bool TryEvaluateLookup(string name, FunctionEventArgs args, IReportExpressionContext context, out object? result)
     {
         result = null;
+        bool multi = string.Equals(name, "MultiLookup", StringComparison.OrdinalIgnoreCase);
         bool all;
         if (string.Equals(name, "Lookup", StringComparison.OrdinalIgnoreCase)) { all = false; }
         else if (string.Equals(name, "LookupSet", StringComparison.OrdinalIgnoreCase)) { all = true; }
+        else if (multi) { all = false; }
         else { return false; }
         if (args.Parameters.Count < 4)
         {
@@ -223,8 +225,41 @@ public sealed class ExpressionEvaluator
         // The dataset name is an identifier, not a display value — convert invariantly so a non-string
         // arg never picks up culture-specific formatting that wouldn't match the registered key.
         var dataset = Convert.ToString(args.Parameters.Evaluate(3), System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty;
+        if (multi)
+        {
+            // SSRS MultiLookup: the first arg is an ARRAY of keys → run a single-value Lookup for each and
+            // return the results as an array (a vectorised Lookup, NOT a composite key). A scalar key is
+            // treated as a one-element array so MultiLookup(Fields.Id, ...) still works.
+            var results = new List<object?>();
+            foreach (var key in EnumerateValues(source))
+            {
+                results.Add(context.EvaluateLookup(key, destExpr, resultExpr, dataset, all: false));
+            }
+            result = results.ToArray();
+            return true;
+        }
         result = context.EvaluateLookup(source, destExpr, resultExpr, dataset, all);
         return true;
+    }
+
+    // Yields the elements of an array/IEnumerable source; a scalar (including a string, which is itself
+    // IEnumerable but must NOT be exploded into chars) or null is yielded as a single element.
+    private static IEnumerable<object?> EnumerateValues(object? source)
+    {
+        if (source is null or string)
+        {
+            yield return source;
+            yield break;
+        }
+        if (source is System.Collections.IEnumerable seq)
+        {
+            foreach (var item in seq)
+            {
+                yield return item;
+            }
+            yield break;
+        }
+        yield return source;
     }
 
     // SSRS positional functions over the current row's position within a scope:
