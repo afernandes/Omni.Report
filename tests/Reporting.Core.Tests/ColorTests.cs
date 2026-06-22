@@ -39,4 +39,37 @@ public class ColorTests
         Action act = () => Color.FromHex("#XYZ");
         act.Should().Throw<FormatException>();
     }
+
+    // ── Named colours (full CSS3 / RDL palette) ───────────────────────────────────
+
+    [Theory]
+    [InlineData("Maroon", "#800000")]
+    [InlineData("Teal", "#008080")]
+    [InlineData("Olive", "#808000")]
+    [InlineData("Crimson", "#DC143C")]
+    [InlineData("SteelBlue", "#4682B4")]
+    [InlineData("RebeccaPurple", "#663399")]
+    [InlineData("black", "#000000")]
+    [InlineData("WHITE", "#FFFFFF")]
+    public void FromName_resolves_extended_palette_case_insensitively(string name, string hex)
+        => Color.FromName(name)!.Value.ToHex().Should().Be(hex);
+
+    [Theory]
+    [InlineData("gray")]
+    [InlineData("grey")]
+    [InlineData("DarkGray")]
+    [InlineData("DarkGrey")]
+    public void FromName_accepts_both_gray_and_grey_spellings(string name)
+        => Color.FromName(name).Should().NotBeNull();
+
+    [Fact]
+    public void FromName_returns_null_for_unknown_name()
+        => Color.FromName("notacolour").Should().BeNull();
+
+    [Fact]
+    public void FromName_handles_null_and_whitespace()
+    {
+        Color.FromName(null).Should().BeNull();
+        Color.FromName("  teal  ").Should().NotBeNull("surrounding whitespace is trimmed");
+    }
 }

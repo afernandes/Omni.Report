@@ -81,8 +81,17 @@ internal static class Formats
     }
 
     public static string FormatColor(Color c) => c.ToHex();
-    public static Color ParseColor(string? text) =>
-        string.IsNullOrEmpty(text) ? Color.Transparent : Color.FromHex(text);
+    public static Color ParseColor(string? text)
+    {
+        if (string.IsNullOrEmpty(text))
+        {
+            return Color.Transparent;
+        }
+        text = text.Trim();
+        // Writer always emits #hex, but a hand-authored repx/repjson may carry a CSS/RDL colour name — accept
+        // both so the readers agree with the RDL importer and expression-binding coercion (Color.FromName).
+        return text.StartsWith('#') ? Color.FromHex(text) : Color.FromName(text) ?? Color.FromHex(text);
+    }
 
     public static string FormatType(Type type) => type.AssemblyQualifiedName ?? type.FullName ?? type.Name;
     public static Type ParseType(string? text)
