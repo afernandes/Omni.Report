@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>OmniReport — engine de relatórios .NET, open-source</title>
+<style>
+  :root{
+    --brand:#C2410C; --brand-2:#EA580C; --brand-soft:#FFF3ED;
+    --ink:#1A1A1E; --muted:#5B5B66; --line:#E7E5E4; --bg:#FFFFFF; --bg-2:#FAF7F5;
+    --card:#FFFFFF; --shadow:0 1px 3px rgba(0,0,0,.06),0 8px 24px rgba(0,0,0,.05);
+    --ok:#16A34A; --no:#DC2626; --part:#D97706;
+    --radius:14px; --maxw:1120px; --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:"SF Mono",ui-monospace,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{ --ink:#F4F2F0; --muted:#A8A29E; --line:#2A2A30; --bg:#141417; --bg-2:#1B1B1F;
+      --card:#1E1E23; --brand-soft:#2A1810; --shadow:0 1px 3px rgba(0,0,0,.4),0 12px 32px rgba(0,0,0,.35); }
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{font-family:var(--font);color:var(--ink);background:var(--bg);line-height:1.6;-webkit-font-smoothing:antialiased}
+  a{color:var(--brand);text-decoration:none}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px}
+  .eyebrow{font-size:13px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--brand)}
+  h2{font-size:clamp(26px,4vw,40px);line-height:1.15;letter-spacing:-.02em;margin:10px 0 14px}
+  h3{font-size:19px;letter-spacing:-.01em;margin-bottom:6px}
+  p.lead{color:var(--muted);font-size:18px;max-width:62ch}
+  section{padding:84px 0;border-top:1px solid var(--line)}
+  /* nav */
+  nav{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--bg) 82%,transparent);
+    backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+  nav .wrap{display:flex;align-items:center;gap:22px;height:60px}
+  .logo{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:-.02em;font-size:18px}
+  .logo .mark{width:26px;height:26px;border-radius:7px;background:linear-gradient(135deg,var(--brand),var(--brand-2));
+    display:grid;place-items:center;color:#fff;font-weight:900;font-size:15px}
+  nav .links{display:flex;gap:20px;margin-left:auto;font-size:14px;font-weight:600}
+  nav .links a{color:var(--muted)} nav .links a:hover{color:var(--ink)}
+  .btn{display:inline-flex;align-items:center;gap:8px;background:var(--brand);color:#fff;font-weight:700;
+    padding:11px 18px;border-radius:10px;font-size:14px;transition:transform .15s,filter .15s;border:0;cursor:pointer}
+  .btn:hover{filter:brightness(1.08);transform:translateY(-1px)}
+  .btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+  @media(max-width:760px){nav .links{display:none}}
+  /* hero */
+  .hero{padding:96px 0 72px;background:
+    radial-gradient(1200px 500px at 80% -10%,var(--brand-soft),transparent 60%);text-align:left}
+  .hero h1{font-size:clamp(38px,6.4vw,68px);line-height:1.04;letter-spacing:-.03em;font-weight:850;max-width:18ch}
+  .hero h1 .g{background:linear-gradient(120deg,var(--brand),var(--brand-2));-webkit-background-clip:text;
+    background-clip:text;color:transparent}
+  .hero p{margin-top:20px;font-size:20px;color:var(--muted);max-width:60ch}
+  .hero .cta{margin-top:30px;display:flex;gap:12px;flex-wrap:wrap}
+  .pills{margin-top:26px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-size:12.5px;font-weight:600;color:var(--muted);border:1px solid var(--line);
+    border-radius:999px;padding:5px 12px;background:var(--card)}
+  /* stats */
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-top:52px}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:22px;box-shadow:var(--shadow)}
+  .stat .n{font-size:38px;font-weight:850;letter-spacing:-.03em;color:var(--brand)}
+  .stat .l{font-size:13.5px;color:var(--muted);font-weight:600}
+  @media(max-width:760px){.stats{grid-template-columns:repeat(2,1fr)}}
+  /* cards grid */
+  .grid{display:grid;gap:18px}
+  .g3{grid-template-columns:repeat(3,1fr)} .g2{grid-template-columns:repeat(2,1fr)} .g4{grid-template-columns:repeat(4,1fr)}
+  @media(max-width:880px){.g3,.g4{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:560px){.g3,.g4,.g2{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:24px;box-shadow:var(--shadow)}
+  .card .ic{width:40px;height:40px;border-radius:10px;background:var(--brand-soft);color:var(--brand);
+    display:grid;place-items:center;font-size:20px;margin-bottom:14px}
+  .card p{color:var(--muted);font-size:15px}
+  /* tabs */
+  .tabs{display:flex;gap:6px;border:1px solid var(--line);border-radius:12px;padding:5px;background:var(--bg-2);width:max-content;max-width:100%;flex-wrap:wrap}
+  .tab{border:0;background:transparent;color:var(--muted);font-weight:700;font-size:14px;padding:9px 16px;border-radius:8px;cursor:pointer;font-family:var(--font)}
+  .tab.on{background:var(--brand);color:#fff}
+  pre{background:#0E0E12;color:#E6E6E6;border-radius:12px;padding:22px;overflow:auto;margin-top:18px;
+    font-family:var(--mono);font-size:13.5px;line-height:1.6;border:1px solid #23232b}
+  pre .k{color:#FF9E64} pre .s{color:#9ECE6A} pre .c{color:#5C6370;font-style:italic} pre .t{color:#7AA2F7} pre .m{color:#E0AF68}
+  .panel{display:none} .panel.on{display:block}
+  /* chips */
+  .chips{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
+  .chip{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:10px 14px;font-weight:600;font-size:14px;display:flex;gap:8px;align-items:center}
+  .chip b{color:var(--brand)}
+  /* table */
+  .tbl{width:100%;border-collapse:collapse;margin-top:22px;font-size:14px;background:var(--card);
+    border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+  .tbl th,.tbl td{padding:12px 14px;text-align:left;border-bottom:1px solid var(--line)}
+  .tbl th{background:var(--bg-2);font-size:12.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+  .tbl td.c{text-align:center;font-weight:700} .tbl tr:last-child td{border-bottom:0}
+  .y{color:var(--ok)} .n{color:var(--no)} .pt{color:var(--part)}
+  .tbl .me{background:var(--brand-soft)}
+  /* flow */
+  .flow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:24px}
+  .node{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 18px;font-weight:700;box-shadow:var(--shadow)}
+  .node small{display:block;color:var(--muted);font-weight:500;font-size:12px}
+  .arrow{color:var(--brand);font-weight:900;font-size:20px}
+  /* reveal */
+  .rv{opacity:0;transform:translateY(18px);transition:opacity .6s ease,transform .6s ease}
+  .rv.in{opacity:1;transform:none}
+  footer{border-top:1px solid var(--line);background:var(--bg-2);padding:48px 0;color:var(--muted);font-size:14px}
+  footer .wrap{display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap;align-items:center}
+  .note{font-size:13px;color:var(--muted);margin-top:14px}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <span class="logo"><span class="mark">O</span> OmniReport</span>
+    <span class="links">
+      <a href="#modos">Autoria</a><a href="#recursos">Recursos</a><a href="#saida">Saída</a>
+      <a href="#comparacao">Comparação</a><a href="#arq">Arquitetura</a>
+    </span>
+    <a class="btn" href="../README.md" style="margin-left:auto">Começar →</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <span class="eyebrow">Motor de relatórios · .NET 10 · MIT</span>
+    <h1>Relatórios profissionais, <span class="g">três formas de criar</span>, uma única engine.</h1>
+    <p>Engine de relatórios bandados <b>.NET-nativa e open-source</b>: autore por código fluente, por modelo
+       imutável ou no designer visual Blazor — com paridade real — e exporte para 9 formatos.</p>
+    <div class="cta">
+      <a class="btn" href="user-guide.md">📘 Guia do usuário</a>
+      <a class="btn ghost" href="comparison.md">📊 Comparar com RDL & concorrentes</a>
+    </div>
+    <div class="pills">
+      <span class="pill">PDF vetorial</span><span class="pill">Word / Excel</span><span class="pill">HTML / SVG</span>
+      <span class="pill">ESC/POS térmico</span><span class="pill">Importa .rdl do SSRS</span>
+      <span class="pill">Cross-platform (Skia)</span><span class="pill">Blazor + MAUI</span>
+    </div>
+    <div class="stats">
+      <div class="stat rv"><div class="n" data-to="3">3</div><div class="l">modos de autoria com paridade</div></div>
+      <div class="stat rv"><div class="n" data-to="9">9</div><div class="l">formatos de exportação</div></div>
+      <div class="stat rv"><div class="n" data-to="85" data-suffix="%">85%</div><div class="l">conformidade RDL (importa SSRS)</div></div>
+      <div class="stat rv"><div class="n" data-to="1000" data-suffix="+">1000+</div><div class="l">testes verdes (23 projetos)</div></div>
+    </div>
+  </div>
+</header>
+
+<section id="porque">
+  <div class="wrap">
+    <span class="eyebrow">Por que OmniReport</span>
+    <h2>Diferenciais que importam</h2>
+    <div class="grid g3" style="margin-top:30px">
+      <div class="card rv"><div class="ic">⚖️</div><h3>Open-source, MIT</h3><p>Sem royalties, sem licença por
+        desenvolvedor/servidor/deploy. Código auditável e forkável — diferente de DevExpress, Telerik e Stimulsoft.</p></div>
+      <div class="card rv"><div class="ic">🔁</div><h3>3 modos, 1 modelo</h3><p>Code-first fluente, records
+        imutáveis e Designer Blazor produzem o <b>mesmo</b> <code>ReportDefinition</code> e a mesma saída.
+        Não é "designer com export-only".</p></div>
+      <div class="card rv"><div class="ic">🟣</div><h3>100% .NET, cross-platform</h3><p>SkiaSharp para render
+        vetorial; roda em Blazor Server/WASM e MAUI Hybrid (Windows + Android). Sem amarras de plataforma.</p></div>
+      <div class="card rv"><div class="ic">🧾</div><h3>Nichos raros de saída</h3><p>ESC/POS térmico
+        (NFC-e/DANFE, 58/80 mm), Markdown GFM e JSON determinístico para snapshot/RAG — além de PDF/XLSX/DOCX/HTML.</p></div>
+      <div class="card rv"><div class="ic">↪️</div><h3>Migração de SSRS</h3><p>Importa <code>.rdl</code> real
+        (~80%) convertendo expressões VB-SSRS, com <b>avisos explícitos</b> de perda — nunca descarte silencioso.</p></div>
+      <div class="card rv"><div class="ic">🧩</div><h3>Extensível sem atrito</h3><p>Serialização auto-wired por
+        convenção: um elemento novo faz round-trip <b>sem editar serializers</b>. Interfaces limpas para dados,
+        exporters e impressoras.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="modos">
+  <div class="wrap">
+    <span class="eyebrow">Autoria</span>
+    <h2>Os três modos</h2>
+    <p class="lead">O mesmo relatório, escrito do jeito que faz sentido para o seu time.</p>
+    <div class="tabs rv" style="margin-top:26px" role="tablist">
+      <button class="tab on" data-p="cf">Code-first fluente</button>
+      <button class="tab" data-p="ll">Low-level (records)</button>
+      <button class="tab" data-p="ds">Designer Blazor</button>
+    </div>
+    <div class="panel on" id="cf"><pre><span class="k">var</span> report = <span class="t">ReportBuilder</span>.Create(<span class="s">"Vendas"</span>)
+    .Page(p => p.A4().Portrait().Margins(<span class="m">20</span>))
+    .DataSource(<span class="s">"Vendas"</span>, vendas)
+    .ReportHeader(h => h.Height(<span class="m">15</span>)
+        .Text(<span class="s">"Relatório de Vendas"</span>).At(<span class="m">0</span>,<span class="m">0</span>).Size(<span class="m">170</span>,<span class="m">12</span>).Bold().Center())
+    .Group(<span class="s">"PorCliente"</span>, <span class="s">"Fields.Cliente"</span>, g => g
+        .Header(h => h.Text(<span class="s">"Cliente: {Fields.Cliente}"</span>).At(<span class="m">0</span>,<span class="m">1</span>).Bold())
+        .Detail(d => d
+            .Text(<span class="s">"{Fields.Produto}"</span>).At(<span class="m">0</span>,<span class="m">0</span>).Size(<span class="m">100</span>,<span class="m">6</span>)
+            .Text(<span class="s">"{Fields.Total:C}"</span>).At(<span class="m">140</span>,<span class="m">0</span>).Size(<span class="m">30</span>,<span class="m">6</span>).AlignRight()))
+    .ReportFooter(f => f.Text(<span class="s">"Total: {Sum(Fields.Total):C}"</span>).Bold().AlignRight())
+    .Build();
+
+<span class="k">var</span> rendered = <span class="k">await</span> report.PaginateAsync();
+<span class="k">new</span> <span class="t">SkiaPdfExporter</span>().ExportToFile(rendered, <span class="s">"vendas.pdf"</span>);</pre></div>
+    <div class="panel" id="ll"><pre><span class="c">// Modelo imutável — ideal para geração programática / layouts computados</span>
+<span class="k">var</span> def = <span class="k">new</span> <span class="t">ReportDefinition</span>(<span class="s">"Etiqueta"</span>, <span class="t">PageSetup</span>.A4Portrait,
+    detail: <span class="k">new</span> <span class="t">DetailBand</span>(<span class="t">Unit</span>.FromMm(<span class="m">20</span>), <span class="k">new</span> <span class="t">EquatableArray</span>&lt;<span class="t">ReportElement</span>&gt;(
+        <span class="k">new</span> <span class="t">LabelElement</span> { Text = <span class="s">"Produto"</span>,
+            Bounds = <span class="k">new</span> <span class="t">Rectangle</span>(<span class="m">0</span>.Mm(), <span class="m">0</span>.Mm(), <span class="m">80</span>.Mm(), <span class="m">6</span>.Mm()) },
+        <span class="k">new</span> <span class="t">BarcodeElement</span> { Symbology = <span class="t">BarcodeSymbology</span>.QrCode,
+            Expression = <span class="s">"Fields.Sku"</span>,
+            Bounds = <span class="k">new</span> <span class="t">Rectangle</span>(<span class="m">0</span>.Mm(), <span class="m">8</span>.Mm(), <span class="m">30</span>.Mm(), <span class="m">30</span>.Mm()) })));
+
+<span class="c">// Mesmo pipeline de paginação e export do code-first.</span></pre></div>
+    <div class="panel" id="ds"><pre>@page <span class="s">"/designer"</span>
+@rendermode InteractiveServer
+@<span class="k">using</span> Reporting.Designer.Blazor
+
+&lt;<span class="t">ReportDesigner</span> OnSaved=<span class="s">"@HandleSaved"</span> /&gt;
+
+@code {
+    <span class="c">// O .repx salvo abre IGUAL no pipeline code-first — mesmo serializador.</span>
+    <span class="k">private async</span> <span class="t">Task</span> HandleSaved(<span class="k">byte</span>[] repx)
+        =&gt; <span class="k">await</span> <span class="t">File</span>.WriteAllBytesAsync(<span class="s">"user-report.repx"</span>, repx);
+}</pre>
+    <p class="note">Canvas drag-drop · réguas/guias/zoom · PropertyGrid por metadados · outline tree ·
+       browser de fontes · editor de expressões (Monaco) · undo/redo · edição aninhada de Rectangle · import .rdl.</p></div>
+  </div>
+</section>
+
+<section id="recursos">
+  <div class="wrap">
+    <span class="eyebrow">Recursos</span>
+    <h2>Tudo que você precisa para um relatório</h2>
+    <div class="grid g4" style="margin-top:28px">
+      <div class="card rv"><h3>Elementos</h3><p>Label, TextBox (multi-estilo), Line, Rectangle (container),
+        Ellipse, Image, Chart (8 tipos), Tablix (tabela + matrix/pivô), Barcode/QR, Subreport, Code.</p></div>
+      <div class="card rv"><h3>KPIs & viz</h3><p>Gauge radial/linear, DataBar, Sparkline, Indicator, mapa
+        vetorial (Web Mercator + graticule + GeoJSON + tiles OSM).</p></div>
+      <div class="card rv"><h3>Bandas & grupos</h3><p>Report/Page/Group/Detail/SubDetail headers e footers,
+        master-detail, KeepTogether, repeat-header, CanGrow/CanShrink.</p></div>
+      <div class="card rv"><h3>Estilo & binding</h3><p>Fonte/cor/borda/padding/format, cores nomeadas CSS,
+        PropertyExpressions (qualquer prop), formatação condicional, ações (link/bookmark/drillthrough).</p></div>
+      <div class="card rv"><h3>Dados</h3><p>IEnumerable, DataTable, SQL (SQLite/PostgreSQL/SQL Server/MySQL/
+        Oracle via AdoNet), JSON/XML/REST/FileSystem, campos calculados, relações, parâmetros tipados.</p></div>
+      <div class="card rv"><h3>Expressões</h3><p>NCalc + VB-SSRS: agregados com escopo (Sum/Avg/Var/StDev…),
+        Lookup/LookupSet/MultiLookup, posicionais, IIf/Switch, funções de texto/data/formatação.</p></div>
+      <div class="card rv"><h3>Paginação</h3><p>Duas passadas, multi-coluna (snake), PrintOnFirst/LastPage,
+        CanShrink que encolhe a banda, split de banda por elemento.</p></div>
+      <div class="card rv"><h3>Impressão</h3><p>Spooler Windows (duplex/bandejas/print-to-PDF) e ESC/POS
+        térmico (Bematech/Daruma/Elgin/Epson) — USB/serial/rede.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="saida">
+  <div class="wrap">
+    <span class="eyebrow">Saída</span>
+    <h2>9 formatos, um só modelo de render</h2>
+    <p class="lead">A paginação produz primitivas planas; qualquer exportador consome a mesma sequência → saída
+       consistente entre formatos.</p>
+    <div class="chips">
+      <span class="chip"><b>PDF</b> vetorial · texto selecionável · bookmarks</span>
+      <span class="chip"><b>DOCX</b> tabela + imagens + charts rasterizados</span>
+      <span class="chip"><b>XLSX</b> fórmulas =SUM · zebra · freeze</span>
+      <span class="chip"><b>HTML</b> SVG + overlay de links (a11y)</span>
+      <span class="chip"><b>SVG</b> / <b>PNG</b> vetorial & raster</span>
+      <span class="chip"><b>CSV</b> RFC 4180</span>
+      <span class="chip"><b>Markdown</b> GFM + front-matter</span>
+      <span class="chip"><b>JSON</b> determinístico (snapshot/RAG)</span>
+      <span class="chip"><b>ESC/POS</b> térmico 203 dpi</span>
+    </div>
+  </div>
+</section>
+
+<section id="comparacao">
+  <div class="wrap">
+    <span class="eyebrow">Comparação</span>
+    <h2>OmniReport × RDL oficial × concorrentes</h2>
+    <p class="lead">Comparação honesta — forças <b>e</b> limitações. Detalhes em
+       <a href="comparison.md">comparison.md</a>.</p>
+    <div style="overflow:auto">
+    <table class="tbl">
+      <thead><tr>
+        <th>Critério</th><th class="me">OmniReport</th><th>SSRS</th>
+        <th>DevExpress / Telerik / FastReport / Stimulsoft</th><th>JasperReports</th>
+      </tr></thead>
+      <tbody>
+        <tr><td>Licença</td><td class="c me y">MIT (grátis)</td><td class="c">SQL Server</td><td class="c">Comercial</td><td class="c">LGPL/AGPL + comercial</td></tr>
+        <tr><td>.NET-nativo</td><td class="c me y">✓</td><td class="c y">✓</td><td class="c y">✓</td><td class="c n">✗ (Java)</td></tr>
+        <tr><td>Cross-platform</td><td class="c me y">✓ (Skia)</td><td class="c pt">parcial</td><td class="c pt">parcial/✓</td><td class="c y">✓</td></tr>
+        <tr><td>3 modos c/ paridade</td><td class="c me y">✓</td><td class="c n">✗</td><td class="c pt">parcial</td><td class="c n">✗</td></tr>
+        <tr><td>Designer WYSIWYG</td><td class="c me pt">✓ (mais novo)</td><td class="c y">✓</td><td class="c y">✓✓ líder</td><td class="c y">✓</td></tr>
+        <tr><td>Importa .rdl</td><td class="c me y">✓ ~80%</td><td class="c y"><b>define</b></td><td class="c pt">parcial</td><td class="c n">✗</td></tr>
+        <tr><td>ESC/POS térmico</td><td class="c me y">✓</td><td class="c n">✗</td><td class="c pt">raro</td><td class="c n">✗</td></tr>
+        <tr><td>Markdown / JSON</td><td class="c me y">✓</td><td class="c n">✗</td><td class="c pt">raro</td><td class="c pt">parcial</td></tr>
+        <tr><td>Auditável / forkável</td><td class="c me y">✓</td><td class="c n">✗</td><td class="c n">✗</td><td class="c y">✓</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p class="note">⚠️ Onde os incumbentes lideram: maturidade do designer, fidelidade RDL total, drill-down
+       interativo em runtime e suporte comercial. A saída do OmniReport é sempre um <b>relatório estático</b>.</p>
+  </div>
+</section>
+
+<section id="arq">
+  <div class="wrap">
+    <span class="eyebrow">Arquitetura</span>
+    <h2>Modelo imutável → primitivas → qualquer backend</h2>
+    <div class="flow rv">
+      <span class="node"><small>autoria</small>ReportDefinition</span>
+      <span class="arrow">→</span>
+      <span class="node"><small>PaginateAsync()</small>RenderedReport</span>
+      <span class="arrow">→</span>
+      <span class="node"><small>primitivas planas</small>LayoutPrimitive[]</span>
+      <span class="arrow">→</span>
+      <span class="node"><small>exporter / renderer</small>PDF · DOCX · PNG · …</span>
+    </div>
+    <div class="grid g3" style="margin-top:30px">
+      <div class="card rv"><h3>Núcleo puro</h3><p><code>Reporting.Core</code> não depende de plataforma nem de
+        UI. Bandas e elementos são <code>sealed record</code> imutáveis com igualdade por valor.</p></div>
+      <div class="card rv"><h3>Plug-and-play</h3><p>Renderers (Skia/GDI), exporters e impressoras são
+        intercambiáveis via DI (<code>IRenderingContext</code> / <code>IReportExporter</code> / <code>IReportPrinter</code>).</p></div>
+      <div class="card rv"><h3>UI reutilizável</h3><p>Designer e Viewer são Razor Class Libraries — o mesmo
+        binário roda em Blazor Server, Web App e MAUI Hybrid.</p></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span class="logo"><span class="mark">O</span> OmniReport · MIT</span>
+    <span>
+      <a href="../README.md">README</a> · <a href="user-guide.md">Guia do usuário</a> ·
+      <a href="developer-guide.md">Guia do dev</a> · <a href="comparison.md">Comparação</a> ·
+      <a href="rdl-spec-compliance.md">Conformidade RDL</a>
+    </span>
+  </div>
+</footer>
+
+<script>
+  // Tabs
+  document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
+    document.querySelectorAll('.panel').forEach(x=>x.classList.remove('on'));
+    t.classList.add('on'); document.getElementById(t.dataset.p).classList.add('on');
+  }));
+  // Scroll reveal
+  const io=new IntersectionObserver((es)=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}}),{threshold:.12});
+  document.querySelectorAll('.rv').forEach((el,i)=>{el.style.transitionDelay=(i%6*40)+'ms';io.observe(el);});
+  // Animated counters
+  function animate(el){
+    const to=+el.dataset.to, suf=el.dataset.suffix||''; let cur=0; const step=Math.max(1,to/40);
+    const tick=()=>{cur=Math.min(to,cur+step); el.textContent=Math.round(cur)+suf;
+      if(cur<to)requestAnimationFrame(tick);}; tick();
+  }
+  const co=new IntersectionObserver((es)=>es.forEach(e=>{if(e.isIntersecting){animate(e.target.querySelector('.n'));co.unobserve(e.target);}}),{threshold:.5});
+  document.querySelectorAll('.stat').forEach(s=>co.observe(s));
+</script>
+</body>
+</html>
