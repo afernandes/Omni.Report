@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Xml.Linq;
 using Reporting.Bands;
+using Reporting.Common;
 using Reporting.Data;
 using Reporting.Elements;
 using Reporting.Geometry;
@@ -436,6 +437,7 @@ internal static class RdlWriter
             LineElement line => WriteLine(line),
             RectangleElement rect => WriteRectangle(rect, warnings),
             ImageElement img => WriteImage(img, warnings),
+            TablixElement tablix => WriteTablix(tablix, warnings),
             _ => Unsupported(el, warnings),
         };
         if (item is null)
@@ -449,6 +451,142 @@ internal static class RdlWriter
     private static XElement? Unsupported(ReportElement el, List<string> warnings)
     {
         warnings.Add($"{el.GetType().Name} '{el.Name ?? el.Id}': exportação RDL é uma fase posterior.");
+        return null;
+    }
+
+    // ── Tablix (matrix/crosstab) — inverse of RdlImporter.TablixItem ───────────────
+    // A matrix TablixElement carries RowGroups/ColumnGroups + a corner cell (0,0) and a body value cell (1,1).
+    // The importer reads exactly those (the corner via <TablixCorner>, the body via the first <Textbox> of
+    // <TablixBody>, the groups via the two hierarchies, subtotals via an empty <Group/> sibling). WriteCommon
+    // adds the Tablix's Name/Style/Top/Left/Width/Height afterwards (the importer's TablixBounds prefers the
+    // literal <Width>/<Height> when present, so bounds round-trip).
+    private static XElement WriteTablix(TablixElement tx, List<string> warnings)
+    {
+        var tablix = new XElement(Rdl + "Tablix");
+
+        var corner = FindCell(tx, 0, 0);
+        if (corner?.Content is not null)
+        {
+            tablix.Add(new XElement(Rdl + "TablixCorner",
+                new XElement(Rdl + "TablixCornerRows",
+                    new XElement(Rdl + "TablixCornerRow",
+                        new XElement(Rdl + "TablixCornerCell", CellContents(corner.Content))))));
+        }
+
+        // Body: a single column/row carrying the (1,1) value cell. The importer reads only the first <Textbox>
+        // of <TablixBody>; the column/row sizes are structural (bounds come from the literal <Width>/<Height>).
+        var body = FindCell(tx, 1, 1);
+        var colW = Size(tx.Bounds.Width.Mils > 0 ? tx.Bounds.Width : Unit.FromMm(25));
+        var rowH = Size(tx.Bounds.Height.Mils > 0 ? tx.Bounds.Height : Unit.FromMm(6));
+        tablix.Add(new XElement(Rdl + "TablixBody",
+            new XElement(Rdl + "TablixColumns",
+                new XElement(Rdl + "TablixColumn", new XElement(Rdl + "Width", colW))),
+            new XElement(Rdl + "TablixRows",
+                new XElement(Rdl + "TablixRow",
+                    new XElement(Rdl + "Height", rowH),
+                    new XElement(Rdl + "TablixCells",
+                        new XElement(Rdl + "TablixCell", CellContents(body?.Content)))))));
+
+        tablix.Add(WriteTablixHierarchy("TablixColumnHierarchy", tx.ColumnGroups, tx.ColumnSubtotals, warnings));
+        tablix.Add(WriteTablixHierarchy("TablixRowHierarchy", tx.RowGroups, tx.RowSubtotals, warnings));
+
+        if (tx.DataSetName is not null)
+        {
+            tablix.Add(new XElement(Rdl + "DataSetName", tx.DataSetName));
+        }
+        if (!string.IsNullOrEmpty(tx.NoRowsMessage))
+        {
+            // NoRowsMessage is a plain caption in the model (the importer stores it via Convert, never marked
+            // as an expression); emit it literally — running it through ValueOf would prepend '=' and re-import
+            // would mangle any '&'/'Like' as Concat/Like.
+            tablix.Add(new XElement(Rdl + "NoRowsMessage", tx.NoRowsMessage));
+        }
+        if (tx.SubtotalLabel is not null || tx.GrandTotalLabel is not null)
+        {
+            warnings.Add($"Tablix '{tx.Name ?? tx.Id}': SubtotalLabel/GrandTotalLabel não são lidos pelo importer — perdem no round-trip.");
+        }
+        return tablix;
+    }
+
+    // A <CellContents><Textbox> for a Tablix cell: a Label → literal value; a TextBox → "=expr"; plus the
+    // content's own <Style> (the importer reads the body cell's style via ReadStyle).
+    private static XElement CellContents(ReportElement? content)
+    {
+        var textbox = content switch
+        {
+            LabelElement l => Textbox(TextRunValue(l.Text ?? string.Empty)),
+            TextBoxElement t => Textbox(TextRunValue(ValueOf(t.Expression))),
+            _ => Textbox(TextRunValue(string.Empty)),
+        };
+        var style = content is null ? null : StyleElement(content.Style);
+        if (style is not null)
+        {
+            textbox.Add(style);
+        }
+        return new XElement(Rdl + "CellContents", textbox);
+    }
+
+    // <TablixRowHierarchy>/<TablixColumnHierarchy> from a group list (outer→inner, nested <TablixMembers>).
+    // No groups → a single static anchor member. Subtotals → an empty <Group/> sibling at the outer level
+    // (exactly what RdlImporter.HasSubtotalMember detects).
+    private static XElement WriteTablixHierarchy(string element, EquatableArray<TablixGroup> groups, bool subtotals,
+        List<string> warnings)
+    {
+        var members = new XElement(Rdl + "TablixMembers");
+        if (groups.Count == 0)
+        {
+            members.Add(new XElement(Rdl + "TablixMember")); // static anchor (no dynamic group)
+            return new XElement(Rdl + element, members);
+        }
+        XElement level = members;
+        foreach (var g in groups)
+        {
+            XElement member;
+            if (string.IsNullOrEmpty(g.GroupExpression))
+            {
+                // A keyless group is not a dynamic RDL group — an empty <GroupExpression> would be dropped by
+                // the importer (and could flip the whole element to the flat-table shape). Emit a static member
+                // and warn (the group identity/sort can't round-trip through RDL).
+                warnings.Add($"TablixGroup '{g.Name}': sem GroupExpression — exportado como membro estático (não round-trippa como grupo dinâmico).");
+                member = new XElement(Rdl + "TablixMember");
+            }
+            else
+            {
+                var group = new XElement(Rdl + "Group", new XAttribute("Name", g.Name),
+                    new XElement(Rdl + "GroupExpressions",
+                        new XElement(Rdl + "GroupExpression", ValueOf(g.GroupExpression))));
+                member = new XElement(Rdl + "TablixMember", group);
+                if (!string.IsNullOrEmpty(g.SortExpression))
+                {
+                    var sort = new XElement(Rdl + "SortExpression", new XElement(Rdl + "Value", ValueOf(g.SortExpression)));
+                    if (g.SortDescending)
+                    {
+                        sort.Add(new XElement(Rdl + "Direction", "Descending"));
+                    }
+                    member.Add(new XElement(Rdl + "SortExpressions", sort));
+                }
+            }
+            level.Add(member);
+            var inner = new XElement(Rdl + "TablixMembers"); // nest the next (inner) group beneath this member
+            member.Add(inner);
+            level = inner;
+        }
+        if (subtotals)
+        {
+            members.Add(new XElement(Rdl + "TablixMember", new XElement(Rdl + "Group"))); // empty = total
+        }
+        return new XElement(Rdl + element, members);
+    }
+
+    private static TablixCell? FindCell(TablixElement tx, int row, int col)
+    {
+        foreach (var c in tx.Cells)
+        {
+            if (c.RowIndex == row && c.ColumnIndex == col)
+            {
+                return c;
+            }
+        }
         return null;
     }
 
