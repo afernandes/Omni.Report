@@ -468,6 +468,9 @@ internal static class RdlWriter
             RectangleElement rect => WriteRectangle(rect, warnings),
             ImageElement img => WriteImage(img, warnings),
             TablixElement tablix => WriteTablix(tablix, warnings),
+            ChartElement chart => WriteChart(chart, warnings),
+            GaugeElement gauge => WriteGauge(gauge),
+            SubreportElement sub => WriteSubreport(sub, warnings),
             _ => Unsupported(el, warnings),
         };
         if (item is null)
@@ -482,6 +485,144 @@ internal static class RdlWriter
     {
         warnings.Add($"{el.GetType().Name} '{el.Name ?? el.Id}': exportação RDL é uma fase posterior.");
         return null;
+    }
+
+    // ── Data-viz (Chart/Gauge/Subreport) — inverses of ChartItem/GaugeItem/SubreportItem ──
+    // The importer reads a deliberately FLATTENED subset of each; these writers re-emit exactly that subset so
+    // an imported .rdl round-trips by value. Model fields with no RDL counterpart (Chart Title/Legend/series
+    // colour & Size/High/Low, Subreport InlineDefinition/DataExpression) are warned, never dropped silently.
+    //
+    // Value/expression fields use ValueRoundTrip (NOT plain ValueOf): the importer stores a literal RDL value
+    // verbatim, but ValueOf would mark it as an expression ('='-prefix) and re-import would fold '&'/'Like' into
+    // Concat/Like. ValueRoundTrip only uses ValueOf when it survives the importer's Convert; else emits literal.
+
+    private static XElement WriteChart(ChartElement chart, List<string> warnings)
+    {
+        var seriesCollection = new XElement(Rdl + "ChartSeriesCollection");
+        foreach (var s in chart.Series)
+        {
+            seriesCollection.Add(new XElement(Rdl + "ChartSeries", new XAttribute("Name", s.Name),
+                new XElement(Rdl + "Type", ChartTypeName(chart.Kind)),
+                new XElement(Rdl + "DataPoints",
+                    new XElement(Rdl + "DataPoint",
+                        new XElement(Rdl + "DataValues",
+                            new XElement(Rdl + "DataValue",
+                                new XElement(Rdl + "Value", ValueRoundTrip(s.ValueExpression))))))));
+            if (string.IsNullOrEmpty(s.ValueExpression))
+            {
+                warnings.Add($"ChartSeries '{s.Name}': sem ValueExpression — o importer descarta séries sem valor (a série não round-trippa).");
+            }
+            if (s.Color is not null || s.SizeExpression is not null || s.HighExpression is not null || s.LowExpression is not null)
+            {
+                warnings.Add($"ChartSeries '{s.Name}': Color/Size/High/Low não têm representação RDL lida — perdem no round-trip.");
+            }
+        }
+        if (chart.Series.Count == 0)
+        {
+            // No series → emit a value-less placeholder carrying only the Type so the chart Kind survives the
+            // round-trip (the importer reads Kind from the first series' <Type> before dropping value-less series).
+            seriesCollection.Add(new XElement(Rdl + "ChartSeries", new XAttribute("Name", "Series1"),
+                new XElement(Rdl + "Type", ChartTypeName(chart.Kind))));
+        }
+        var chartEl = new XElement(Rdl + "Chart", new XElement(Rdl + "ChartData", seriesCollection));
+
+        // The importer applies a single category (the first <GroupExpression>) to every series; emit the first
+        // series' category and warn if the model carries divergent ones.
+        var category = chart.Series.Count > 0 ? chart.Series[0].CategoryExpression : null;
+        if (!string.IsNullOrEmpty(category))
+        {
+            chartEl.Add(new XElement(Rdl + "ChartCategoryHierarchy",
+                new XElement(Rdl + "ChartMembers",
+                    new XElement(Rdl + "ChartMember",
+                        new XElement(Rdl + "Group",
+                            new XElement(Rdl + "GroupExpressions",
+                                new XElement(Rdl + "GroupExpression", ValueRoundTrip(category))))))));
+        }
+        if (chart.Series.Any(s => s.CategoryExpression != category))
+        {
+            warnings.Add($"Chart '{chart.Name ?? chart.Id}': séries com categorias divergentes — só a primeira é exportada (RDL tem uma só hierarquia de categoria).");
+        }
+        if (chart.Title is not null || !chart.ShowLegend)
+        {
+            warnings.Add($"Chart '{chart.Name ?? chart.Id}': Title/ShowLegend não são lidos pelo importer — perdem no round-trip.");
+        }
+        return chartEl;
+    }
+
+    // Inverse of RdlImporter.MapChartKind (N→1: re-imports to the same ChartKind).
+    private static string ChartTypeName(ChartKind kind) => kind switch
+    {
+        ChartKind.Line => "Line",
+        ChartKind.Area => "Area",
+        ChartKind.Pie => "Shape",
+        ChartKind.Scatter => "Scatter",
+        ChartKind.Bubble => "Bubble",
+        ChartKind.Radar => "Polar",
+        ChartKind.Stock => "Stock",
+        _ => "Column", // Bar
+    };
+
+    private static XElement WriteGauge(GaugeElement gauge)
+    {
+        var pointerName = gauge.Kind == GaugeKind.Linear ? "LinearPointer" : "RadialPointer";
+        var scale = new XElement(Rdl + (gauge.Kind == GaugeKind.Linear ? "LinearScale" : "RadialScale"),
+            new XElement(Rdl + "Maximum", new XElement(Rdl + "Value", ValueRoundTrip(gauge.MaximumExpression))),
+            new XElement(Rdl + "Minimum", new XElement(Rdl + "Value", ValueRoundTrip(gauge.MinimumExpression))),
+            new XElement(Rdl + "GaugePointers",
+                new XElement(Rdl + pointerName,
+                    new XElement(Rdl + "Value", ValueRoundTrip(gauge.ValueExpression)))));
+        if (gauge.Ranges.Count > 0)
+        {
+            var ranges = new XElement(Rdl + "ScaleRanges");
+            foreach (var r in gauge.Ranges)
+            {
+                ranges.Add(new XElement(Rdl + "ScaleRange",
+                    new XElement(Rdl + "StartValue", new XElement(Rdl + "Value", ValueRoundTrip(r.StartExpression))),
+                    new XElement(Rdl + "EndValue", new XElement(Rdl + "Value", ValueRoundTrip(r.EndExpression))),
+                    new XElement(Rdl + "BackgroundColor", r.ColorHex)));
+            }
+            scale.Add(ranges);
+        }
+        var gaugeBody = new XElement(Rdl + (gauge.Kind == GaugeKind.Linear ? "LinearGauge" : "RadialGauge"),
+            new XElement(Rdl + "GaugeScales", scale));
+        return new XElement(Rdl + "GaugePanel", new XElement(Rdl + "GaugePanelItems", gaugeBody));
+    }
+
+    private static XElement WriteSubreport(SubreportElement sub, List<string> warnings)
+    {
+        var subEl = new XElement(Rdl + "Subreport");
+        if (!string.IsNullOrEmpty(sub.ReportId))
+        {
+            subEl.Add(new XElement(Rdl + "ReportName", sub.ReportId)); // literal — the importer reads it raw
+        }
+        if (sub.ParameterBindings.Count > 0)
+        {
+            var parameters = new XElement(Rdl + "Parameters");
+            foreach (var kv in sub.ParameterBindings)
+            {
+                parameters.Add(new XElement(Rdl + "Parameter", new XAttribute("Name", kv.Key),
+                    new XElement(Rdl + "Value", ValueRoundTrip(kv.Value))));
+            }
+            subEl.Add(parameters);
+        }
+        if (sub.InlineDefinition is not null || sub.DataExpression is not null)
+        {
+            warnings.Add($"Subreport '{sub.Name ?? sub.Id}': InlineDefinition/DataExpression não têm representação em <Subreport> RDL — perdem no round-trip.");
+        }
+        return subEl;
+    }
+
+    // An RDL value body for an OmniReport expression that ALWAYS round-trips: ValueOf (=…) is used only when it
+    // survives the importer's Convert; otherwise the value is a literal that ValueOf would mangle (text with
+    // '&'/'Like', a dotted token, …), so it's emitted raw (the importer's Convert leaves a non-'=' value verbatim).
+    private static string ValueRoundTrip(string? expr)
+    {
+        if (string.IsNullOrEmpty(expr))
+        {
+            return string.Empty;
+        }
+        var asExpression = ValueOf(expr);
+        return RdlExpression.Convert(asExpression) == expr ? asExpression : expr;
     }
 
     // ── Tablix (matrix/crosstab) — inverse of RdlImporter.TablixItem ───────────────
