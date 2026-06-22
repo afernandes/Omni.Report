@@ -50,6 +50,17 @@ internal sealed class PageAccumulator
 
     public bool Fits(Unit height) => CurrentY + height <= ContentBottom;
 
+    /// <summary>Vertical space left in the current column from the current Y to the content bottom.</summary>
+    public Unit RemainingInColumn => ContentBottom - CurrentY;
+
+    /// <summary>The full usable height of a fresh column (column top → content bottom) — the most a band slice
+    /// can ever occupy. A band taller than this must be split across pages/columns.</summary>
+    public Unit FullColumnHeight => ContentBottom - _columnTop;
+
+    /// <summary>True when the current Y is at the top of the column (nothing emitted into it yet) — lets the
+    /// band-split loop detect a single element that can't fit even in a fresh column (terminate, don't loop).</summary>
+    public bool AtColumnTop => CurrentY <= _columnTop;
+
     /// <summary>Records where column content begins on the current physical page (after the report/page
     /// header). Snake columns reset their top to this Y on a column break, not to the page margin.</summary>
     public void MarkColumnTop() => _columnTop = CurrentY;

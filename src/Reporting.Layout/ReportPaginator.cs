@@ -662,12 +662,21 @@ public sealed partial class ReportPaginator : IReportPaginator
             }
             ctx.GroupKey = def.Groups.Count > 0 ? newKeys[def.Groups.Count - 1] : null;
 
-            // Phase 5: emit the detail band.
+            // Phase 5: emit the detail band. A band taller than a full column can never fit even on a fresh
+            // page, so it is split element-by-element across pages/columns (each element stays whole — text is
+            // not cut mid-line in this static engine); otherwise it's placed as one unit on the page it fits.
             var detail = def.Detail;
             var detailHeight = bandRenderer.Measure(detail, ctx);
-            EnsureRoom(page, detailHeight, def, bandRenderer, ctx);
-            var detailLayout = bandRenderer.Render(detail, page.Origin, ctx);
-            page.Emit(detailLayout.Primitives, detailLayout.Height);
+            if (detailHeight > page.FullColumnHeight)
+            {
+                EmitBandSplit(detail, page, bandRenderer, ctx, def, bandTarget: detailHeight);
+            }
+            else
+            {
+                EnsureRoom(page, detailHeight, def, bandRenderer, ctx);
+                var detailLayout = bandRenderer.Render(detail, page.Origin, ctx);
+                page.Emit(detailLayout.Primitives, detailLayout.Height);
+            }
 
             // Phase 6: emit every declared sub-detail band — each one runs a nested loop over
             // its own DataMember (relation name or registered source). The parent context
@@ -780,6 +789,114 @@ public sealed partial class ReportPaginator : IReportPaginator
         // RDL PageBreak End/StartAndEnd/Between → break after this group instance closes.
         var brk = group.EffectivePageBreak();
         if (brk == PageBreak.End || brk == PageBreak.StartAndEnd || brk == PageBreak.Between)
+        {
+            BreakPage(def, page, renderer, ctx);
+        }
+    }
+
+    /// <summary>Emits a band taller than a full column by splitting it ELEMENT-BY-ELEMENT across pages/columns:
+    /// each element is placed whole on the page where it fits (never cut mid-element — text is not line-split in
+    /// this static engine, which keeps VerticalAlignment well-defined). Elements are cut on a clean horizontal
+    /// line (top-to-bottom order). A single element taller than a whole column is emitted alone on its own page
+    /// so pagination always makes progress and terminates.</summary>
+    private void EmitBandSplit(IBand band, PageAccumulator page, BandRenderer renderer,
+        ReportExpressionContext ctx, ReportDefinition def, Unit bandTarget)
+    {
+        var remaining = band.Elements.OrderBy(e => e.Bounds.Y.Mils).ToList();
+        Unit sliceTop = Unit.Zero; // band-space Y where the current slice begins; maps to the page's current Y
+        Unit reached = Unit.Zero;  // band-space Y of the lowest content emitted so far (== contentExtent at the end)
+
+        while (remaining.Count > 0)
+        {
+            var available = page.RemainingInColumn;
+            var slice = new List<Elements.ReportElement>();
+            Unit sliceBottom = sliceTop;
+            foreach (var el in remaining)
+            {
+                var elemBottom = renderer.EffectiveElementBottom(el, ctx);
+                if (elemBottom - sliceTop <= available)
+                {
+                    slice.Add(el);
+                    if (elemBottom > sliceBottom)
+                    {
+                        sliceBottom = elemBottom;
+                    }
+                }
+                else
+                {
+                    break; // this element and everything below it spill to the next slice
+                }
+            }
+
+            if (slice.Count == 0)
+            {
+                // Nothing fits in the room left. If the column is already empty this element is taller than a
+                // whole column: emit it alone (it overflows — text isn't line-split) so we make progress.
+                if (page.AtColumnTop)
+                {
+                    var lone = remaining[0];
+                    var loneBottom = renderer.EffectiveElementBottom(lone, ctx);
+                    var loneOrigin = new Point(page.Origin.X, page.CurrentY - sliceTop);
+                    page.Emit(renderer.RenderElements([lone], loneOrigin, ctx), loneBottom - sliceTop);
+                    reached = loneBottom;
+                    remaining.RemoveAt(0);
+                    if (remaining.Count > 0)
+                    {
+                        sliceTop = remaining[0].Bounds.Y;
+                        BreakOrAdvance(page, def, renderer, ctx);
+                    }
+                }
+                else
+                {
+                    BreakOrAdvance(page, def, renderer, ctx); // just out of room → fresh column/page, full height
+                }
+                continue;
+            }
+
+            // Render the slice rebased so sliceTop lands at the page's current Y (top of the new page/column).
+            var origin = new Point(page.Origin.X, page.CurrentY - sliceTop);
+            page.Emit(renderer.RenderElements(slice, origin, ctx), sliceBottom - sliceTop);
+            reached = sliceBottom;
+
+            foreach (var el in slice)
+            {
+                remaining.Remove(el);
+            }
+            if (remaining.Count > 0)
+            {
+                sliceTop = remaining[0].Bounds.Y; // next slice starts at the first un-emitted element's top
+                BreakOrAdvance(page, def, renderer, ctx);
+            }
+        }
+
+        // Preserve the band's declared height: a band whose declared Height exceeds its content (intentional
+        // trailing whitespace), or an empty oversized band, must still consume that height — the same total the
+        // non-split path would (Measure = Max(band.Height, content)). Flow the trailing whitespace across pages.
+        // A shrink-opt-in band has bandTarget == content, so trailing is zero and this is a no-op.
+        var trailing = bandTarget - reached;
+        while (trailing > Unit.Zero)
+        {
+            var available = page.RemainingInColumn;
+            if (available <= Unit.Zero)
+            {
+                BreakOrAdvance(page, def, renderer, ctx);
+                continue;
+            }
+            if (trailing <= available)
+            {
+                page.Emit([], trailing);
+                break;
+            }
+            page.Emit([], available);
+            trailing -= available;
+            BreakOrAdvance(page, def, renderer, ctx);
+        }
+    }
+
+    /// <summary>Snake to the next column if one is available, otherwise break to a new page.</summary>
+    private void BreakOrAdvance(PageAccumulator page, ReportDefinition def, BandRenderer renderer, ReportExpressionContext ctx)
+    {
+        if (!page.AdvanceColumn())
         {
             BreakPage(def, page, renderer, ctx);
         }

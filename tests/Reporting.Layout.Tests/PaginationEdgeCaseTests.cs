@@ -575,4 +575,96 @@ public class PaginationEdgeCaseTests
         report.Pages.Should().OnlyContain(p => Has(p, "page-footer") && Has(p, "page-header"),
             "default PrintOnFirst/LastPage=true prints header+footer on every page");
     }
+
+    // ── Element-level band split: a band taller than a full column splits across pages ─────
+
+    // A detail band 60mm tall (3 stacked 20mm labels a/b/c) on a 50mm content column → it can't fit a fresh
+    // page, so it splits element-by-element: page 1 gets a+b (40mm), page 2 gets c. No label is cut in half.
+    private static DetailBand ThreeStackedLabels() =>
+        new(Unit.FromMm(60),
+            EquatableArray.Create<ReportElement>(
+                new LabelElement { Id = "a", Bounds = new Rectangle(0.Mm(), 0.Mm(), 40.Mm(), 20.Mm()), Text = "AAA" },
+                new LabelElement { Id = "b", Bounds = new Rectangle(0.Mm(), 20.Mm(), 40.Mm(), 20.Mm()), Text = "BBB" },
+                new LabelElement { Id = "c", Bounds = new Rectangle(0.Mm(), 40.Mm(), 40.Mm(), 20.Mm()), Text = "CCC" }));
+
+    [Fact]
+    public async Task Band_taller_than_page_splits_by_element_across_pages()
+    {
+        var def = new ReportDefinition("split", SmallPage(), ThreeStackedLabels());
+        var report = await new ReportPaginator().PaginateAsync(TestData.BuildRequest(def, [new Venda("x", "p", 1m)]))
+            .WaitAsync(TimeSpan.FromSeconds(10)); // termination guard
+
+        report.Pages.Count.Should().Be(2, "60mm of elements split across two 50mm columns");
+        foreach (var id in new[] { "a", "b", "c" })
+        {
+            report.Pages.SelectMany(p => p.Primitives).OfType<DrawTextPrimitive>()
+                .Count(t => t.SourceElementId == id).Should().Be(1, $"{id} is emitted whole, exactly once");
+        }
+        Has(report.Pages[0], "a").Should().BeTrue();
+        Has(report.Pages[0], "b").Should().BeTrue();
+        Has(report.Pages[1], "c").Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Split_repositions_remaining_elements_to_the_new_page_top()
+    {
+        var def = new ReportDefinition("split-y", SmallPage(), ThreeStackedLabels());
+        var report = await new ReportPaginator().PaginateAsync(TestData.BuildRequest(def, [new Venda("x", "p", 1m)]));
+
+        // "c" was at band-Y=40mm; after the split it must render near the second page's top margin (~5mm),
+        // not carried down to 40mm (which would leave a huge gap / overflow).
+        var c = report.Pages[1].Primitives.OfType<DrawTextPrimitive>().Single(t => t.SourceElementId == "c");
+        c.Bounds.Y.ToMm().Should().BeApproximately(5, 1.0, "the remaining element is rebased to the new page's top");
+    }
+
+    [Fact]
+    public async Task A_single_element_taller_than_a_column_is_emitted_whole_and_terminates()
+    {
+        var detail = new DetailBand(Unit.FromMm(80),
+            EquatableArray.Create<ReportElement>(new LabelElement
+            {
+                Id = "huge", Bounds = new Rectangle(0.Mm(), 0.Mm(), 40.Mm(), 80.Mm()), Text = "oversized",
+            }));
+        var def = new ReportDefinition("lone", SmallPage(), detail);
+        var report = await new ReportPaginator().PaginateAsync(TestData.BuildRequest(def, [new Venda("x", "p", 1m)]))
+            .WaitAsync(TimeSpan.FromSeconds(10));
+
+        report.Pages.SelectMany(p => p.Primitives).OfType<DrawTextPrimitive>()
+            .Count(t => t.SourceElementId == "huge").Should().Be(1, "the indivisible element is emitted once, whole");
+    }
+
+    [Fact]
+    public async Task Split_preserves_declared_band_height_when_it_exceeds_content()
+    {
+        // A band declared 70mm tall with only a 10mm label (60mm of intentional trailing whitespace) on a 50mm
+        // column → it exceeds a column so it enters the split path. The split must NOT collapse to 10mm: the
+        // declared 70mm is preserved (the same total the non-split path consumes), so two 70mm rows can't fit
+        // in one column. Without the floor fix both rows would collapse onto a single page.
+        var tall = new DetailBand(Unit.FromMm(70),
+            EquatableArray.Create<ReportElement>(new LabelElement
+            {
+                Id = "row", Bounds = new Rectangle(0.Mm(), 0.Mm(), 40.Mm(), 10.Mm()), Text = "r",
+            }));
+        var def = new ReportDefinition("floor", SmallPage(), tall);
+        var report = await new ReportPaginator().PaginateAsync(
+            TestData.BuildRequest(def, [new Venda("a", "p", 1m), new Venda("b", "p", 2m)]))
+            .WaitAsync(TimeSpan.FromSeconds(10));
+
+        report.Pages.Count.Should().BeGreaterThan(1,
+            "the declared 70mm height is preserved across pages — split does not collapse trailing whitespace");
+        report.Pages.SelectMany(p => p.Primitives).OfType<DrawTextPrimitive>()
+            .Count(t => t.SourceElementId == "row").Should().Be(2, "both rows are emitted");
+    }
+
+    [Fact]
+    public async Task A_band_that_fits_a_fresh_page_is_not_fragmented()
+    {
+        // Regression: a band that fits within a full column must NOT enter the split path — 3 rows of a 20mm
+        // band on a 50mm column flow normally, each row a single whole primitive.
+        var def = new ReportDefinition("nofrag", SmallPage(), LabelDetail(20, id: "row"));
+        var report = await new ReportPaginator().PaginateAsync(TestData.BuildRequest(def, TestData.ManyRows(3)));
+
+        report.Pages.SelectMany(p => p.Primitives).OfType<DrawTextPrimitive>()
+            .Count(t => t.SourceElementId == "row").Should().Be(3, "a fitting band is never fragmented");
+    }
 }

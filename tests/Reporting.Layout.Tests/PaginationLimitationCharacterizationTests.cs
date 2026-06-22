@@ -24,19 +24,15 @@ public class PaginationLimitationCharacterizationTests
 {
     // 10. ─────────────────────────────────────────────────────────────────────
     /// <summary>
-    /// LIMITATION: the paginator does NOT split a band that is taller than the page.
-    /// <para>
-    /// <see cref="ReportPaginator"/>.EnsureRoom only does <c>BreakPage</c> once when a band does
-    /// not fit; it then emits the band WHOLE on the fresh page even if it overflows the bottom
-    /// margin. There is no row/element split. This characterization locks two things: (a) an
-    /// oversized band is emitted intact (one primitive per row, never two halves on two pages),
-    /// and (b) pagination TERMINATES — the "doesn't fit → break → still doesn't fit" path does
-    /// not loop forever.
-    /// </para>
-    /// <para>Replace with a split-based assertion when band splitting is implemented.</para>
+    /// RESIDUAL (documented, not a bug): a SINGLE element taller than a whole column cannot be split — text is
+    /// not line-split in this static engine (which keeps VerticalAlignment well-defined). The band-split path
+    /// (see <c>PaginationEdgeCaseTests.Band_taller_than_page_splits_by_element_*</c>) distributes a multi-element
+    /// band across pages, but when one indivisible element exceeds a full column it is emitted WHOLE on its own
+    /// page (overflowing) and pagination still TERMINATES — never loops. This locks that termination + whole-
+    /// emission guarantee for the lone-oversized-element case.
     /// </summary>
     [Fact]
-    public async Task Band_taller_than_page_is_emitted_whole_on_one_page_without_splitting_or_looping()
+    public async Task Single_oversized_element_is_emitted_whole_and_pagination_terminates()
     {
         // Page content height = 60 - 2*5 = 50mm. Detail band = 80mm > 50mm: it cannot ever fit.
         var page = new PageSetup(new PaperSize("MiniA6", Unit.FromMm(60), Unit.FromMm(60)),
