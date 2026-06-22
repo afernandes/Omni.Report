@@ -209,6 +209,27 @@ public class RdlImporterTests
     }
 
     [Theory]
+    [InlineData("Maroon", "#800000")]   // previously fell to null (silent loss) — now in the palette
+    [InlineData("Teal", "#008080")]
+    [InlineData("#3366CC", "#3366CC")]  // hex still works
+    public void Named_colour_in_style_is_imported(string rdlColor, string expectedHex)
+    {
+        var rdl = $"""
+            <Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition">
+              <Body><Height>3cm</Height><ReportItems>
+                <Textbox Name="t"><Top>0cm</Top><Left>0cm</Left><Width>5cm</Width><Height>1cm</Height>
+                  <Style><Color>{rdlColor}</Color></Style>
+                  <Paragraphs><Paragraph><TextRuns><TextRun><Value>x</Value></TextRun></TextRuns></Paragraph></Paragraphs>
+                </Textbox>
+              </ReportItems></Body>
+            </Report>
+            """;
+        var el = new RdlImporter().ImportXml(rdl).ReportHeader!.Elements.Single();
+        el.Style.ForeColor.Should().NotBeNull();
+        el.Style.ForeColor!.Value.ToHex().Should().Be(expectedHex);
+    }
+
+    [Theory]
     [InlineData("logo.png", "logo.png", null)]                  // External literal path
     [InlineData("=Fields!Logo.Value", null, "Fields.Logo")]     // External expression
     public void Style_BackgroundImage_External_imports(string value, string? expectedPath, string? expectedExpr)
