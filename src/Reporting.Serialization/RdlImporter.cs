@@ -459,10 +459,46 @@ public sealed class RdlImporter
                 _warnings.Add($"Map '{item.Attribute("Name")?.Value}': não importado (mapas RDL são follow-up).");
                 break;
             case "CustomReportItem":
-                _warnings.Add($"CustomReportItem '{Val(item, "Type")}': não importado (DataBar/Sparkline/Indicator são follow-up).");
+                var criType = Val(item, "Type");
+                var cri = CustomReportItemItem(item, bounds, criType);
+                if (cri is not null)
+                {
+                    into.Add(ApplyCommon(cri, item));
+                }
+                else
+                {
+                    _warnings.Add($"CustomReportItem '{criType}': tipo não suportado (mapeados: DataBar/Sparkline/Indicator/Gauge).");
+                }
                 break;
             // Other report items — skipped, not errored.
         }
+    }
+
+    // RDL <CustomReportItem> (the 2008-style wrapper SSRS uses for DataBar/Sparkline/Indicator/Gauge). The
+    // rich vendor-specific config (states, ranges, palette) lives in a custom namespace and is a follow-up;
+    // we map the <Type> to the matching first-class element + its primary value binding so the item lands as
+    // the right EDITABLE element (completable in the Designer) instead of being silently dropped.
+    private ReportElement? CustomReportItemItem(XElement item, Rectangle bounds, string? type)
+    {
+        var value = FirstBoundValue(item);
+        return type switch
+        {
+            "DataBar" => new DataBarElement { Bounds = bounds, ValueExpression = value ?? "0" },
+            "Sparkline" => new SparklineElement { Bounds = bounds, ValueExpression = value ?? "Fields.Value" },
+            "Indicator" => new IndicatorElement { Bounds = bounds, ValueExpression = value ?? "0" },
+            "Gauge" or "RadialGauge" or "LinearGauge" => new GaugeElement { Bounds = bounds, ValueExpression = value ?? "0" },
+            _ => null,
+        };
+    }
+
+    // Best-effort scan for a CustomReportItem's primary data binding: the first leaf <Value> whose text is an
+    // expression (starts with '='), converted to OmniReport syntax. Covers the common
+    // <…><DataValue><Value>=Fields!X.Value shape without committing to one vendor's CRI schema.
+    private static string? FirstBoundValue(XElement cri)
+    {
+        var binding = cri.Descendants().FirstOrDefault(e =>
+            e.Name.LocalName == "Value" && !e.HasElements && e.Value.TrimStart().StartsWith('='));
+        return binding is null ? null : RdlExpression.Convert(binding.Value);
     }
 
     // RDL <Chart>: chart type from the first series' <Type>, category from the category hierarchy's first

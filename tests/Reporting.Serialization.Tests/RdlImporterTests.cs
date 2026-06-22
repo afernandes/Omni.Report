@@ -208,6 +208,64 @@ public class RdlImporterTests
         img.Expression.Should().Be("Fields.Foto");
     }
 
+    private static ReportElement ImportCri(string type, string? valueBinding = "=Fields!Total.Value")
+    {
+        var valueXml = valueBinding is null ? "" : $"<DataValue><Value>{valueBinding}</Value></DataValue>";
+        var rdl = $"""
+            <Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition">
+              <Body><Height>3cm</Height><ReportItems>
+                <CustomReportItem Name="cri"><Type>{type}</Type>
+                  <Top>0cm</Top><Left>0cm</Left><Width>5cm</Width><Height>1cm</Height>
+                  <CustomData>{valueXml}</CustomData>
+                </CustomReportItem>
+              </ReportItems></Body>
+            </Report>
+            """;
+        return new RdlImporter().ImportXml(rdl).ReportHeader!.Elements.Single();
+    }
+
+    [Fact]
+    public void CustomReportItem_DataBar_imports_as_DataBarElement_with_value()
+    {
+        var el = ImportCri("DataBar").Should().BeOfType<Reporting.Elements.DataBarElement>().Subject;
+        el.ValueExpression.Should().Be("Fields.Total", "the RDL data binding is converted to OmniReport syntax");
+    }
+
+    [Fact]
+    public void CustomReportItem_Sparkline_imports_as_SparklineElement()
+        => ImportCri("Sparkline").Should().BeOfType<Reporting.Elements.SparklineElement>()
+            .Which.ValueExpression.Should().Be("Fields.Total");
+
+    [Fact]
+    public void CustomReportItem_Indicator_imports_as_IndicatorElement()
+        => ImportCri("Indicator").Should().BeOfType<Reporting.Elements.IndicatorElement>();
+
+    [Fact]
+    public void CustomReportItem_Gauge_imports_as_GaugeElement()
+        => ImportCri("RadialGauge").Should().BeOfType<Reporting.Elements.GaugeElement>();
+
+    [Fact]
+    public void CustomReportItem_without_binding_uses_a_default_value()
+        => ImportCri("DataBar", valueBinding: null).Should().BeOfType<Reporting.Elements.DataBarElement>()
+            .Which.ValueExpression.Should().Be("0");
+
+    [Fact]
+    public void CustomReportItem_unknown_type_is_skipped_with_a_warning()
+    {
+        var rdl = """
+            <Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition">
+              <Body><Height>3cm</Height><ReportItems>
+                <CustomReportItem Name="x"><Type>SomeVendorWidget</Type>
+                  <Top>0cm</Top><Left>0cm</Left><Width>5cm</Width><Height>1cm</Height></CustomReportItem>
+              </ReportItems></Body>
+            </Report>
+            """;
+        var def = new RdlImporter().ImportXml(rdl);
+        (def.ReportHeader?.Elements.Count ?? 0).Should().Be(0, "an unknown CRI type is skipped, not guessed");
+        def.Metadata.Should().ContainKey("ImportWarnings")
+            .WhoseValue.Should().Contain("SomeVendorWidget", "unsupported types surface an actionable warning");
+    }
+
     [Theory]
     [InlineData("logo.png", "logo.png", null)]                  // External literal path
     [InlineData("=Fields!Logo.Value", null, "Fields.Logo")]     // External expression
