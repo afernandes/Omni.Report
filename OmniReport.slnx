@@ -4,6 +4,7 @@
     <Project Path="samples/Reporting.Samples.CodeFirst/Reporting.Samples.CodeFirst.csproj" />
     <Project Path="samples/Reporting.Samples.DatabaseReport/Reporting.Samples.DatabaseReport.csproj" />
     <Project Path="samples/Reporting.Samples.MauiHybrid/Reporting.Samples.MauiHybrid.csproj" />
+    <Project Path="samples/Reporting.Samples.RdlImport/Reporting.Samples.RdlImport.csproj" />
     <Project Path="samples/Reporting.Samples.WindowsPrinting/Reporting.Samples.WindowsPrinting.csproj" />
   </Folder>
   <Folder Name="/src/">

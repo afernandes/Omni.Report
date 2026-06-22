@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Um .rdl do SSRS de exemplo (esquema 2016). Demonstra o que o RdlImporter do OmniReport sabe ler:
+  página, DataSource/DataSet com Fields, ReportParameter com valor padrão, um Textbox de título com
+  expressão e estilo (cor nomeada "Maroon", negrito, centralizado) e um Tablix plano (cabeçalho + linha
+  de detalhe) com formatação de moeda. Os dados reais vêm do host em tempo de execução (Program.cs).
+-->
+<Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition"
+        xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner">
+  <Description>Relatório de vendas por produto</Description>
+  <Author>Equipe Comercial</Author>
+  <Language>pt-BR</Language>
+
+  <DataSources>
+    <DataSource Name="BancoVendas">
+      <ConnectionProperties>
+        <DataProvider>SQL</DataProvider>
+        <ConnectString>Data Source=.;Initial Catalog=Vendas</ConnectString>
+      </ConnectionProperties>
+    </DataSource>
+  </DataSources>
+
+  <DataSets>
+    <DataSet Name="Vendas">
+      <Query>
+        <DataSourceName>BancoVendas</DataSourceName>
+        <CommandText>SELECT Cliente, Produto, Total FROM Vendas ORDER BY Cliente</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="Cliente"><DataField>Cliente</DataField><rd:TypeName>System.String</rd:TypeName></Field>
+        <Field Name="Produto"><DataField>Produto</DataField><rd:TypeName>System.String</rd:TypeName></Field>
+        <Field Name="Total"><DataField>Total</DataField><rd:TypeName>System.Decimal</rd:TypeName></Field>
+      </Fields>
+    </DataSet>
+  </DataSets>
+
+  <ReportParameters>
+    <ReportParameter Name="Titulo">
+      <DataType>String</DataType>
+      <DefaultValue><Values><Value>Relatório de Vendas</Value></Values></DefaultValue>
+      <Prompt>Título do relatório</Prompt>
+    </ReportParameter>
+  </ReportParameters>
+
+  <Body>
+    <Height>4cm</Height>
+    <ReportItems>
+      <Textbox Name="Titulo">
+        <Top>0cm</Top><Left>0cm</Left><Width>17cm</Width><Height>1cm</Height>
+        <Style>
+          <FontSize>16pt</FontSize><FontWeight>Bold</FontWeight>
+          <Color>Maroon</Color><TextAlign>Center</TextAlign>
+        </Style>
+        <Paragraphs><Paragraph><TextRuns><TextRun>
+          <Value>=Parameters!Titulo.Value</Value>
+        </TextRun></TextRuns></Paragraph></Paragraphs>
+      </Textbox>
+
+      <Tablix Name="TabVendas">
+        <Top>1.5cm</Top><Left>0cm</Left>
+        <DataSetName>Vendas</DataSetName>
+        <TablixBody>
+          <TablixColumns>
+            <TablixColumn><Width>7cm</Width></TablixColumn>
+            <TablixColumn><Width>7cm</Width></TablixColumn>
+            <TablixColumn><Width>3cm</Width></TablixColumn>
+          </TablixColumns>
+          <TablixRows>
+            <TablixRow>
+              <Height>0.7cm</Height>
+              <TablixCells>
+                <TablixCell><CellContents><Textbox Name="hCliente"><Style><FontWeight>Bold</FontWeight></Style>
+                  <Paragraphs><Paragraph><TextRuns><TextRun><Value>Cliente</Value></TextRun></TextRuns></Paragraph></Paragraphs></Textbox></CellContents></TablixCell>
+                <TablixCell><CellContents><Textbox Name="hProduto"><Style><FontWeight>Bold</FontWeight></Style>
+                  <Paragraphs><Paragraph><TextRuns><TextRun><Value>Produto</Value></TextRun></TextRuns></Paragraph></Paragraphs></Textbox></CellContents></TablixCell>
+                <TablixCell><CellContents><Textbox Name="hTotal"><Style><FontWeight>Bold</FontWeight><TextAlign>Right</TextAlign></Style>
+                  <Paragraphs><Paragraph><TextRuns><TextRun><Value>Total</Value></TextRun></TextRuns></Paragraph></Paragraphs></Textbox></CellContents></TablixCell>
+              </TablixCells>
+            </TablixRow>
+            <TablixRow>
+              <Height>0.6cm</Height>
+              <TablixCells>
+                <TablixCell><CellContents><Textbox Name="dCliente">
+                  <Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!Cliente.Value</Value></TextRun></TextRuns></Paragraph></Paragraphs></Textbox></CellContents></TablixCell>
+                <TablixCell><CellContents><Textbox Name="dProduto">
+                  <Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!Produto.Value</Value></TextRun></TextRuns></Paragraph></Paragraphs></Textbox></CellContents></TablixCell>
+                <TablixCell><CellContents><Textbox Name="dTotal"><Style><Format>C</Format><TextAlign>Right</TextAlign></Style>
+                  <Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!Total.Value</Value></TextRun></TextRuns></Paragraph></Paragraphs></Textbox></CellContents></TablixCell>
+              </TablixCells>
+            </TablixRow>
+          </TablixRows>
+        </TablixBody>
+        <TablixColumnHierarchy>
+          <TablixMembers><TablixMember /><TablixMember /><TablixMember /></TablixMembers>
+        </TablixColumnHierarchy>
+        <TablixRowHierarchy>
+          <TablixMembers>
+            <TablixMember />
+            <TablixMember><Group Name="Detalhe" /></TablixMember>
+          </TablixMembers>
+        </TablixRowHierarchy>
+      </Tablix>
+    </ReportItems>
+  </Body>
+
+  <Page>
+    <PageHeight>29.7cm</PageHeight>
+    <PageWidth>21cm</PageWidth>
+    <LeftMargin>2cm</LeftMargin>
+    <RightMargin>2cm</RightMargin>
+    <TopMargin>2cm</TopMargin>
+    <BottomMargin>2cm</BottomMargin>
+  </Page>
+</Report>

@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Reporting.Samples.RdlImport</RootNamespace>
+    <AssemblyName>Reporting.Samples.RdlImport</AssemblyName>
+    <IsPackable>false</IsPackable>
+    <InvariantGlobalization>false</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- RdlImporter -->
+    <ProjectReference Include="..\..\src\Reporting.Serialization\Reporting.Serialization.csproj" />
+    <!-- data registry + in-memory source to feed the imported report -->
+    <ProjectReference Include="..\..\src\Reporting.DataSources\Reporting.DataSources.csproj" />
+    <!-- paginate + render + export -->
+    <ProjectReference Include="..\..\src\Reporting.Layout\Reporting.Layout.csproj" />
+    <ProjectReference Include="..\..\src\Reporting.Rendering.Skia\Reporting.Rendering.Skia.csproj" />
+    <ProjectReference Include="..\..\src\Reporting.Output.Pdf\Reporting.Output.Pdf.csproj" />
+    <ProjectReference Include="..\..\src\Reporting.Output.Html\Reporting.Output.Html.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The SSRS .rdl shipped next to the program; copied to the output so it can be read at runtime. -->
+    <None Include="sample-report.rdl" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

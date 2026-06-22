@@ -317,6 +317,7 @@ custom recebe via DI: `IRenderingContext`, `IReportPaginator`, `SkiaPdfExporter`
 |---|---|---|
 | `samples/Reporting.Samples.CodeFirst` | Console | 15 relatórios reais — Vendas, Produtos, Caixa, Cupom NFC-e, conectores (JSON/XML/REST/FileSystem/SQLite) e componentes visuais (Dashboard, Tablix, Mapa, bloco Code) → PDF/PNG/XLSX/HTML/SVG/CSV/JSON/Markdown/.repx/.repjson/.escpos.bin |
 | `samples/Reporting.Samples.DatabaseReport` | Console | Relatório a partir de banco SQLite via AdoNet/SqliteDataSource |
+| `samples/Reporting.Samples.RdlImport` | Console | **Lê um `.rdl` do SSRS** com `RdlImporter`, mostra a estrutura importada + avisos, pagina com dados in-memory e exporta PDF/HTML |
 | `samples/Reporting.Samples.WindowsPrinting` | Windows console | Lista impressoras + imprime sample 1 em "Microsoft Print to PDF" via WindowsSpoolerPrinter |
 | `samples/Reporting.Samples.BlazorServer` | Blazor Web App | Galeria com `<ReportViewer />` + rota `/designer` com `<ReportDesigner />` e faixa **Sandbox** que carrega os samples (Dashboard/Tablix/Mapa renderizam **com dados** no preview) |
 | `samples/Reporting.Samples.MauiHybrid` | MAUI (Windows + Android cond.) | Mesmos componentes Razor em desktop nativo e Android nativo |
@@ -324,6 +325,8 @@ custom recebe via DI: `IRenderingContext`, `IReportPaginator`, `SkiaPdfExporter`
 ```powershell
 # rodar os samples principais (gera PDFs, XLSX, .repx, .repjson):
 dotnet run --project samples/Reporting.Samples.CodeFirst -c Release -- ./out
+# ler/importar um .rdl do SSRS e exportar PDF/HTML:
+dotnet run --project samples/Reporting.Samples.RdlImport -c Release
 # iniciar Blazor Server (designer + viewer):
 dotnet run --project samples/Reporting.Samples.BlazorServer
 # Windows + designer/viewer in-process via MAUI WebView:
