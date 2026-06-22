@@ -20,11 +20,18 @@ public sealed class RdlExporter : IReportSerializer
     public string Format => "rdl";
     public string FileExtension => ".rdl";
 
+    /// <summary>Aspects of the last <see cref="Save"/> that don't yet map to RDL (data regions, embedded
+    /// images, unsupported items) — mirrors the importer's <c>ImportWarnings</c> so loss is never silent.
+    /// Reset on each <see cref="Save"/> call.</summary>
+    public IReadOnlyList<string> Warnings { get; private set; } = [];
+
     public void Save(ReportDefinition definition, Stream stream)
     {
         ArgumentNullException.ThrowIfNull(definition);
         ArgumentNullException.ThrowIfNull(stream);
-        var document = RdlWriter.Write(definition);
+        var warnings = new List<string>();
+        var document = RdlWriter.Write(definition, warnings);
+        Warnings = warnings;
         var settings = new XmlWriterSettings { Indent = true, Encoding = new UTF8Encoding(false) };
         using var writer = XmlWriter.Create(stream, settings);
         document.Save(writer);
