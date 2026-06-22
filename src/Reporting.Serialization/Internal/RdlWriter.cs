@@ -79,17 +79,17 @@ internal static class RdlWriter
             }
             if (def.Detail.Elements.Count > 0)
             {
-                if (def.Detail.DataSetName is null && def.Groups.Count == 0)
+                // A purely static detail → Body items. A data-bound detail that ISN'T a clean flat table (Groups,
+                // a graphical page header, overlapping/zero-width cells, filters/sort) still has its elements
+                // emitted as Body items so the DATA is never dropped — only the data-region binding (DataSetName)
+                // and band type can't round-trip without the flat shape, which is warned. A genuine page header
+                // is meanwhile preserved (the <PageHeader> section is not suppressed when flatTable is false).
+                WriteReportItems(bodyItems, def.Detail.Elements, warnings);
+                if (def.Detail.DataSetName is not null || def.Groups.Count > 0)
                 {
-                    WriteReportItems(bodyItems, def.Detail.Elements, warnings); // purely static detail → Body items
-                }
-                else
-                {
-                    // Data-bound Detail that isn't a simple flat table (Groups/extra bands, ColSpan/gaps, a
-                    // genuine page header, or filters/sort) → the grouped/complex Tablix is a later phase. The
-                    // <PageHeader> is preserved (not suppressed) so a real page header is never corrupted.
                     warnings.Add("DetailBand vinculada a dados não corresponde ao padrão flat-table simples " +
-                        "(Groups/bandas extras/ColSpan/gaps/PageHeader genuíno/filtros) → <Tablix> não reconstruído (fase posterior).");
+                        "(Groups/PageHeader gráfico/células sobrepostas-ou-largura-zero/filtros) → elementos exportados como " +
+                        "itens estáticos do Body; o vínculo DataSetName não round-trippa (round-trip parcial, sem perda de elementos).");
                 }
             }
         }
@@ -620,74 +620,94 @@ internal static class RdlWriter
         return null;
     }
 
-    // True only when the bands UNAMBIGUOUSLY match the importer's flat-table decomposition, so re-folding them
-    // into a <Tablix> is lossless: the detail columns are contiguous (no gaps/overlap — those don't round-trip),
-    // and the page header (if any) is a genuine column-header row — one Label per detail column, aligned to the
-    // same X/Width (no ColSpan, no free-positioned page chrome). A real page header fails this and is preserved.
+    // True when the bands can be re-folded into a flat <Tablix> losslessly via the column-boundary grid. The
+    // detail/header cells must not OVERLAP and must have positive width (those have no column-grid meaning);
+    // a page header, if present, must be a column-header row — all Labels (graphics like a Line/Image mark
+    // genuine page chrome, which is preserved as a <PageHeader> instead). The union-boundary grid handles any
+    // alignment (ColSpan, leading/trailing/interior gaps, differing extents), so no extent match is required.
     private static bool IsReconstructableFlatTable(ReportBand? pageHeader, DetailBand detail)
     {
-        var cols = detail.Elements.OrderBy(e => e.Bounds.X.Mils).ToList();
-        for (var i = 1; i < cols.Count; i++)
+        var detailEls = detail.Elements.OrderBy(e => e.Bounds.X.Mils).ToList();
+        if (HasOverlapOrZeroWidth(detailEls))
         {
-            if (cols[i].Bounds.X.Mils != cols[i - 1].Bounds.X.Mils + cols[i - 1].Bounds.Width.Mils)
-            {
-                return false; // a gap or overlap between columns → the import would re-pack them differently
-            }
+            return false;
         }
         if (pageHeader is null || pageHeader.Elements.Count == 0)
         {
             return true; // detail-only flat table
         }
-        if (pageHeader.Elements.Count != cols.Count)
+        var headerEls = pageHeader.Elements.OrderBy(e => e.Bounds.X.Mils).ToList();
+        return headerEls.All(e => e is LabelElement) && !HasOverlapOrZeroWidth(headerEls);
+    }
+
+    // True if any element (in X-sorted order) has non-positive width or starts before the previous one ends —
+    // either makes the elements something other than a clean left-to-right column grid.
+    private static bool HasOverlapOrZeroWidth(List<ReportElement> els)
+    {
+        for (var i = 0; i < els.Count; i++)
         {
-            return false; // ColSpan-merged or unrelated header → not a 1:1 column-header row
-        }
-        var headers = pageHeader.Elements.OrderBy(e => e.Bounds.X.Mils).ToList();
-        for (var i = 0; i < headers.Count; i++)
-        {
-            if (headers[i] is not LabelElement
-                || headers[i].Bounds.X.Mils != cols[i].Bounds.X.Mils
-                || headers[i].Bounds.Width.Mils != cols[i].Bounds.Width.Mils)
+            if (els[i].Bounds.Width.Mils <= 0)
             {
-                return false; // a real page header (non-Label, or not aligned to the data columns)
+                return true;
+            }
+            if (i > 0 && els[i].Bounds.X.Mils < els[i - 1].Bounds.X.Mils + els[i - 1].Bounds.Width.Mils)
+            {
+                return true;
             }
         }
-        return true;
+        return false;
     }
 
     // ── Flat-table Tablix — inverse of RdlImporter.TryFlatTablixBands ───────────────
     // The importer decomposes a single flat <Tablix> (no dynamic groups) into a repeating PageHeader band
     // (column-header Labels) + a data-bound DetailBand (one TextBox per column). This rebuilds that one flat
-    // <Tablix>: columns sized from the detail elements (ordered by X), a header row (literal Labels) and a
-    // detail row (=expression TextBoxes), with a detail member carrying a keyless <Group> so the importer
-    // re-classifies it as the detail row. The caller suppresses the <PageHeader> section.
+    // <Tablix>. The column grid is the sorted distinct X boundaries (start AND end) of every header+detail
+    // element, so a cell spanning several columns becomes a <ColSpan> and an uncovered column an empty cell —
+    // ColSpan-merged headers and gap layouts round-trip exactly. The caller suppresses the <PageHeader> section.
     private static XElement WriteFlatTablix(ReportBand? pageHeader, DetailBand detail, List<string> warnings)
     {
-        var detailCols = detail.Elements.OrderBy(e => e.Bounds.X.Mils).ToList();
-        var headerCols = (pageHeader?.Elements ?? EquatableArray<ReportElement>.Empty)
+        var detailEls = detail.Elements.OrderBy(e => e.Bounds.X.Mils).ToList();
+        var headerEls = (pageHeader?.Elements ?? EquatableArray<ReportElement>.Empty)
             .OrderBy(e => e.Bounds.X.Mils).ToList();
-        var hasHeader = headerCols.Count > 0;
-        if (hasHeader && headerCols.Count != detailCols.Count)
+        var hasHeader = headerEls.Count > 0;
+
+        // Cluster the X boundaries: independent mm→mil rounding can place the "same" physical boundary 1 mil
+        // apart (e.g. 20mm+20mm = 1574 mils vs 40mm = 1575), which would emit a spurious sliver column. Collapse
+        // boundaries within EdgeTolerance to one. (Imported tables share exact edges, so nothing merges there.)
+        var raw = new List<int>();
+        foreach (var e in detailEls.Concat(headerEls))
         {
-            warnings.Add($"Flat-table: o PageHeader tem {headerCols.Count} célula(s) e o Detail {detailCols.Count} — colunas podem desalinhar no round-trip.");
+            raw.Add(e.Bounds.X.Mils);
+            raw.Add(e.Bounds.X.Mils + e.Bounds.Width.Mils);
         }
+        raw.Sort();
+        var edgeList = new List<int>();
+        foreach (var v in raw)
+        {
+            if (edgeList.Count == 0 || v - edgeList[^1] > EdgeTolerance)
+            {
+                edgeList.Add(v);
+            }
+        }
+        var columnCount = Math.Max(edgeList.Count - 1, 0);
 
         var columns = new XElement(Rdl + "TablixColumns");
-        foreach (var c in detailCols)
+        for (var i = 0; i < columnCount; i++)
         {
-            columns.Add(new XElement(Rdl + "TablixColumn", new XElement(Rdl + "Width", Size(c.Bounds.Width))));
+            columns.Add(new XElement(Rdl + "TablixColumn",
+                new XElement(Rdl + "Width", Size(new Unit(edgeList[i + 1] - edgeList[i])))));
         }
         var rows = new XElement(Rdl + "TablixRows");
         if (hasHeader)
         {
-            rows.Add(FlatRow(pageHeader!.Height, headerCols));
+            rows.Add(FlatRow(pageHeader!.Height, headerEls, edgeList));
         }
-        rows.Add(FlatRow(detail.Height, detailCols));
+        rows.Add(FlatRow(detail.Height, detailEls, edgeList));
 
         var tablix = new XElement(Rdl + "Tablix", new XElement(Rdl + "TablixBody", columns, rows));
 
         var colMembers = new XElement(Rdl + "TablixMembers");
-        for (var i = 0; i < detailCols.Count; i++)
+        for (var i = 0; i < columnCount; i++)
         {
             colMembers.Add(new XElement(Rdl + "TablixMember")); // a static member per column
         }
@@ -719,14 +739,10 @@ internal static class RdlWriter
             tablix.Add(pageBreak);
         }
 
-        // Bounds: anchor at the leftmost column (so the importer's scaled edges land on the original X) and
-        // Width = sum of column widths (so the import's scale = 1 and positions round-trip exactly).
-        var left = detailCols.Count > 0 ? detailCols[0].Bounds.X : Unit.Zero;
-        var width = Unit.Zero;
-        foreach (var c in detailCols)
-        {
-            width += c.Bounds.Width;
-        }
+        // Bounds span the whole grid so the import's scale = edges-width / Σcolumn-widths = 1 and the
+        // reconstructed column edges land exactly on the original element X positions.
+        var left = edgeList.Count > 0 ? new Unit(edgeList[0]) : Unit.Zero;
+        var width = edgeList.Count > 0 ? new Unit(edgeList[^1] - edgeList[0]) : Unit.Zero;
         var height = (hasHeader ? pageHeader!.Height : Unit.Zero) + detail.Height;
         tablix.Add(new XElement(Rdl + "Top", Size(Unit.Zero)),
             new XElement(Rdl + "Left", Size(left)),
@@ -735,17 +751,55 @@ internal static class RdlWriter
         return tablix;
     }
 
-    // One <TablixRow> of a flat table: a cell per element (Label → literal, TextBox → =expression, via the
-    // shared CellContents).
-    private static XElement FlatRow(Unit height, List<ReportElement> cells)
+    // One <TablixRow> over the column grid: each element occupies the columns from its left edge to its right
+    // edge (emitted with <ColSpan> when it covers more than one); a column no element starts on becomes an
+    // empty placeholder cell. This is the inverse of the importer's edge/ColSpan walk (which drops empty cells
+    // but still advances the column index).
+    private static XElement FlatRow(Unit height, List<ReportElement> els, List<int> edges)
     {
         var tablixCells = new XElement(Rdl + "TablixCells");
-        foreach (var el in cells)
+        var columnCount = Math.Max(edges.Count - 1, 0);
+        var col = 0;
+        var elIdx = 0;
+        while (col < columnCount)
         {
-            tablixCells.Add(new XElement(Rdl + "TablixCell", CellContents(el)));
+            if (elIdx < els.Count && ColumnOf(edges, els[elIdx].Bounds.X.Mils) == col)
+            {
+                var el = els[elIdx++];
+                var endCol = ColumnOf(edges, el.Bounds.X.Mils + el.Bounds.Width.Mils);
+                var span = Math.Max(endCol - col, 1);
+                var cell = new XElement(Rdl + "TablixCell", CellContents(el));
+                if (span > 1)
+                {
+                    cell.Add(new XElement(Rdl + "ColSpan", span.ToString(CultureInfo.InvariantCulture)));
+                }
+                tablixCells.Add(cell);
+                col += span;
+            }
+            else
+            {
+                tablixCells.Add(new XElement(Rdl + "TablixCell", CellContents(null))); // gap → empty cell
+                col++;
+            }
         }
         return new XElement(Rdl + "TablixRow", new XElement(Rdl + "Height", Size(height)), tablixCells);
     }
+
+    // Index of the clustered grid edge nearest to a mils value (within EdgeTolerance), so an element whose edge
+    // was snapped during clustering still maps to its column. -1 if none (degenerate input).
+    private static int ColumnOf(List<int> edges, int mils)
+    {
+        for (var i = 0; i < edges.Count; i++)
+        {
+            if (Math.Abs(edges[i] - mils) <= EdgeTolerance)
+            {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private const int EdgeTolerance = 2; // mils (≈0.05mm) — collapses mm→mil rounding noise between bands
 
     // Inverse of RdlImporter.ReadPageBreak (the 2008+ <PageBreak><BreakLocation> form).
     private static XElement? WritePageBreak(PageBreak pageBreak) => pageBreak == PageBreak.None
