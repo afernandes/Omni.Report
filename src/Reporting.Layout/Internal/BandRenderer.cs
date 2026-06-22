@@ -68,6 +68,55 @@ internal sealed class BandRenderer
         return new BandLayout(primitives, EffectiveBandHeight(band, contentExtent));
     }
 
+    /// <summary>Renders a SUBSET of a band's elements at a shifted <paramref name="origin"/>. The paginator's
+    /// band-split path uses this to emit one slice of an oversized band per page: passing
+    /// <c>origin.Y = pageY - sliceTop</c> rebases an element at band-Y <c>ey</c> to <c>pageY + (ey - sliceTop)</c>,
+    /// so the slice starts at the top of the new page. Returns the primitives only — the caller controls how
+    /// much vertical space the slice consumes.</summary>
+    public IReadOnlyList<LayoutPrimitive> RenderElements(IEnumerable<ReportElement> elements, Point origin, IReportExpressionContext ctx)
+    {
+        var primitives = new List<LayoutPrimitive>();
+        Unit ignored = Unit.Zero;
+        foreach (var rawElement in elements)
+        {
+            ignored = RenderElement(rawElement, origin, origin, primitives, ctx, ignored);
+        }
+        return primitives;
+    }
+
+    /// <summary>The effective bottom of a single element in band-space (its <c>Bounds.Y</c> + the height it
+    /// will actually render at, honouring CanGrow/CanShrink on a TextBox and the same effective style the
+    /// renderer uses). Shared by <see cref="Measure"/> and the paginator's split cut so both agree.
+    /// An invisible element contributes nothing (returns zero).</summary>
+    internal Unit EffectiveElementBottom(ReportElement rawElement, IReportExpressionContext ctx)
+    {
+        var element = rawElement.PropertyExpressions.Count == 0
+            ? rawElement
+            : ApplyPropertyExpressions(rawElement, ctx);
+        if (!IsVisible(element, ctx))
+        {
+            return Unit.Zero;
+        }
+        if (element is TextBoxElement tb && (tb.CanGrow || tb.CanShrink))
+        {
+            var effectiveStyle = ResolveEffectiveStyle(element, ctx);
+            var style = BuildTextStyle(effectiveStyle);
+            var text = ResolveTextBoxText(tb, ctx, effectiveStyle.Format);
+            var size = _measurer.Measure(text, style, element.Bounds.Width);
+            var h = element.Bounds.Height;
+            if (tb.CanGrow && size.Height > h)
+            {
+                h = size.Height;
+            }
+            else if (tb.CanShrink && size.Height < h)
+            {
+                h = size.Height;
+            }
+            return element.Bounds.Y + h;
+        }
+        return element.Bounds.Bottom;
+    }
+
     /// <summary>Whether a band may collapse below its declared height to fit its content. Opt-in via
     /// <see cref="DetailBand.CanShrink"/>; other band kinds keep their declared height as the floor.</summary>
     private static bool BandAllowsShrink(IBand band)
@@ -383,43 +432,15 @@ internal sealed class BandRenderer
     /// checks and page-fit pre-checks.</summary>
     public Unit Measure(IBand band, IReportExpressionContext ctx)
     {
-        // Mirror Render's height computation EXACTLY (it shares EffectiveBandHeight): accumulate each visible
-        // element's effective bottom. The text branch resolves the SAME effective element + style as
-        // RenderElement (property-expression bindings → conditional formats → font/format) so a binding or
-        // conditional format that changes the measured height can't make Measure and Render disagree — which,
-        // on the floor-less shrink path, would overlap or gap the next band.
+        // Mirror Render's height computation EXACTLY (both apply EffectiveBandHeight): the per-element bottom
+        // comes from the shared EffectiveElementBottom, which resolves the SAME effective element + style as
+        // RenderElement (property bindings → conditional formats → font/format). Keeping a single source of
+        // truth means a binding/conditional that changes the measured height can't make Measure and Render
+        // disagree — which, on the floor-less shrink path, would overlap or gap the next band.
         Unit contentExtent = Unit.Zero;
         foreach (var rawElement in band.Elements)
         {
-            var element = rawElement.PropertyExpressions.Count == 0
-                ? rawElement
-                : ApplyPropertyExpressions(rawElement, ctx);
-            if (!IsVisible(element, ctx))
-            {
-                continue;
-            }
-            Unit bottom;
-            if (element is TextBoxElement tb && (tb.CanGrow || tb.CanShrink))
-            {
-                var effectiveStyle = ResolveEffectiveStyle(element, ctx);
-                var style = BuildTextStyle(effectiveStyle);
-                var text = ResolveTextBoxText(tb, ctx, effectiveStyle.Format);
-                var size = _measurer.Measure(text, style, element.Bounds.Width);
-                var h = element.Bounds.Height;
-                if (tb.CanGrow && size.Height > h)
-                {
-                    h = size.Height;
-                }
-                else if (tb.CanShrink && size.Height < h)
-                {
-                    h = size.Height;
-                }
-                bottom = element.Bounds.Y + h;
-            }
-            else
-            {
-                bottom = element.Bounds.Bottom;
-            }
+            var bottom = EffectiveElementBottom(rawElement, ctx);
             if (bottom > contentExtent)
             {
                 contentExtent = bottom;
