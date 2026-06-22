@@ -1076,6 +1076,74 @@ public class RdlImporterTests
     }
 
     [Fact]
+    public void Tablix_without_explicit_width_derives_extent_from_its_columns()
+    {
+        // Regression: RDL <Tablix> carries no <Width> — its extent is the sum of the column widths (7+7+3=17cm).
+        // The old 25mm fallback collapsed all three columns onto the same X (overlapping text). A sibling
+        // textbox keeps it on the TablixElement path (the matrix renderer fits columns into Bounds.Width).
+        var rdl = """
+            <Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition">
+              <Body><Height>4cm</Height><ReportItems>
+                <Textbox Name="titulo"><Top>0cm</Top><Left>0cm</Left><Width>17cm</Width><Height>1cm</Height><Paragraphs><Paragraph><TextRuns><TextRun><Value>T</Value></TextRun></TextRuns></Paragraph></Paragraphs></Textbox>
+                <Tablix Name="T"><Top>1.5cm</Top><Left>0cm</Left>
+                  <DataSetName>Vendas</DataSetName>
+                  <TablixBody>
+                    <TablixColumns><TablixColumn><Width>7cm</Width></TablixColumn><TablixColumn><Width>7cm</Width></TablixColumn><TablixColumn><Width>3cm</Width></TablixColumn></TablixColumns>
+                    <TablixRows><TablixRow><Height>0.6cm</Height><TablixCells>
+                      <TablixCell><CellContents><Textbox><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!Cliente.Value</Value></TextRun></TextRuns></Paragraph></Paragraphs></Textbox></CellContents></TablixCell>
+                      <TablixCell><CellContents><Textbox><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!Produto.Value</Value></TextRun></TextRuns></Paragraph></Paragraphs></Textbox></CellContents></TablixCell>
+                      <TablixCell><CellContents><Textbox><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!Total.Value</Value></TextRun></TextRuns></Paragraph></Paragraphs></Textbox></CellContents></TablixCell>
+                    </TablixCells></TablixRow></TablixRows>
+                  </TablixBody>
+                  <TablixColumnHierarchy><TablixMembers><TablixMember /><TablixMember /><TablixMember /></TablixMembers></TablixColumnHierarchy>
+                  <TablixRowHierarchy><TablixMembers><TablixMember><Group Name="Details" /></TablixMember></TablixMembers></TablixRowHierarchy>
+                </Tablix>
+              </ReportItems></Body>
+            </Report>
+            """;
+        var tablix = new RdlImporter().ImportXml(rdl).ReportHeader!.Elements
+            .OfType<Reporting.Elements.TablixElement>().Single();
+        tablix.Bounds.Width.ToCm().Should().BeApproximately(17, 0.1,
+            "the Tablix width is derived from the sum of its column widths (7+7+3), not the 25mm fallback");
+    }
+
+    [Fact]
+    public void Flat_Tablix_without_width_spreads_columns_across_their_real_widths()
+    {
+        // Same root cause on the flat→bands path: a lone width-less Tablix must place its detail columns at
+        // the real RDL X offsets (0, 7cm) instead of squeezing them into 25mm.
+        var rdl = """
+            <Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition">
+              <Body><Height>3cm</Height><ReportItems>
+                <Tablix Name="T"><Top>0cm</Top><Left>0cm</Left>
+                  <DataSetName>Vendas</DataSetName>
+                  <TablixBody>
+                    <TablixColumns><TablixColumn><Width>7cm</Width></TablixColumn><TablixColumn><Width>3cm</Width></TablixColumn></TablixColumns>
+                    <TablixRows>
+                      <TablixRow><TablixCells>
+                        <TablixCell><CellContents><Textbox><Paragraphs><Paragraph><TextRuns><TextRun><Value>Produto</Value></TextRun></TextRuns></Paragraph></Paragraphs></Textbox></CellContents></TablixCell>
+                        <TablixCell><CellContents><Textbox><Paragraphs><Paragraph><TextRuns><TextRun><Value>Total</Value></TextRun></TextRuns></Paragraph></Paragraphs></Textbox></CellContents></TablixCell>
+                      </TablixCells></TablixRow>
+                      <TablixRow><TablixCells>
+                        <TablixCell><CellContents><Textbox><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!Produto.Value</Value></TextRun></TextRuns></Paragraph></Paragraphs></Textbox></CellContents></TablixCell>
+                        <TablixCell><CellContents><Textbox><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!Total.Value</Value></TextRun></TextRuns></Paragraph></Paragraphs></Textbox></CellContents></TablixCell>
+                      </TablixCells></TablixRow>
+                    </TablixRows>
+                  </TablixBody>
+                  <TablixColumnHierarchy><TablixMembers><TablixMember /><TablixMember /></TablixMembers></TablixColumnHierarchy>
+                  <TablixRowHierarchy><TablixMembers><TablixMember /><TablixMember><Group Name="Details" /></TablixMember></TablixMembers></TablixRowHierarchy>
+                </Tablix>
+              </ReportItems></Body>
+            </Report>
+            """;
+        var details = new RdlImporter().ImportXml(rdl).Detail.Elements
+            .OfType<Reporting.Elements.TextBoxElement>().ToList();
+        details.Should().HaveCount(2);
+        details[0].Bounds.Width.ToCm().Should().BeApproximately(7, 0.1, "first column = 7cm");
+        details[1].Bounds.X.ToCm().Should().BeApproximately(7, 0.1, "second column starts at 7cm, not squeezed");
+    }
+
+    [Fact]
     public void Tablix_matrix_is_imported_with_groups_corner_and_body_value()
     {
         var rdl = """

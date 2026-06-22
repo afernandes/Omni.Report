@@ -444,7 +444,7 @@ public sealed class RdlImporter
                     item));
                 break;
             case "Tablix":
-                into.Add(ApplyCommon(TablixItem(item, bounds), item));
+                into.Add(ApplyCommon(TablixItem(item, TablixBounds(item, dx, dy)), item));
                 break;
             case "Chart":
                 into.Add(ApplyCommon(ChartItem(item, bounds), item));
@@ -813,7 +813,7 @@ public sealed class RdlImporter
             return false;
         }
 
-        var tbBounds = Bounds(tablix, Unit.Zero, Unit.Zero);
+        var tbBounds = TablixBounds(tablix, Unit.Zero, Unit.Zero);
         var tablixBody = El(tablix, "TablixBody");
         var bodyRows = (El(tablixBody, "TablixRows")?.Elements().Where(e => e.Name.LocalName == "TablixRow")
             ?? Enumerable.Empty<XElement>()).ToList();
@@ -1512,6 +1512,35 @@ public sealed class RdlImporter
         var width = ParseSize(Val(item, "Width")) ?? Unit.FromMm(25);
         var height = ParseSize(Val(item, "Height")) ?? Unit.FromMm(6);
         return new Rectangle(left, top, width, height);
+    }
+
+    // RDL <Tablix> carries NO <Width>/<Height> of its own — its extent is the sum of its column widths and
+    // row heights. Plain Bounds() would fall back to a tiny 25×6 mm box, collapsing every column onto the same
+    // X (text overlapping). Derive the real extent from the Tablix geometry; fall back to the declared value
+    // when one IS present (some tools emit it).
+    private static Rectangle TablixBounds(XElement item, Unit dx, Unit dy)
+    {
+        var b = Bounds(item, dx, dy);
+        var body = El(item, "TablixBody");
+        var colSum = SumChildSizes(El(body, "TablixColumns"), "TablixColumn", "Width");
+        var rowSum = SumChildSizes(El(body, "TablixRows"), "TablixRow", "Height");
+        var width = Val(item, "Width") is null && colSum > Unit.Zero ? colSum : b.Width;
+        var height = Val(item, "Height") is null && rowSum > Unit.Zero ? rowSum : b.Height;
+        return new Rectangle(b.X, b.Y, width, height);
+    }
+
+    private static Unit SumChildSizes(XElement? parent, string childName, string sizeName)
+    {
+        if (parent is null)
+        {
+            return Unit.Zero;
+        }
+        Unit sum = Unit.Zero;
+        foreach (var c in parent.Elements().Where(e => e.Name.LocalName == childName))
+        {
+            sum += ParseSize(Val(c, sizeName)) ?? Unit.Zero;
+        }
+        return sum;
     }
 
     private static Unit BoundsHeight(IEnumerable<ReportElement> elements)
