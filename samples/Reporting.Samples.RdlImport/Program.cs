@@ -16,6 +16,7 @@ using Reporting.DataSources.Enumerable; // EnumerableDataSource<T>
 using Reporting.Elements;              // ReportElement
 using Reporting.Layout;                // ReportPaginator, PaginationRequest
 using Reporting.Output.Html;           // SvgHtmlExporter
+using Reporting.Output.Image;          // PngImageExporter
 using Reporting.Output.Pdf;            // SkiaPdfExporter, PdfExportOptions
 using Reporting.Serialization;         // RdlImporter
 
@@ -85,15 +86,18 @@ var rendered = await new ReportPaginator().PaginateAsync(new PaginationRequest
     PrimaryDataSource = "Vendas",
 });
 
-// ── 5. Exportar ─────────────────────────────────────────────────────────────────────────
+// ── 5. Exportar (PDF + HTML + PNG de preview) ───────────────────────────────────────────
 var pdf = Path.Combine(outDir, "vendas-importado.pdf");
 var html = Path.Combine(outDir, "vendas-importado.html");
+var png = Path.Combine(outDir, "vendas-importado.png");
 new SkiaPdfExporter(new PdfExportOptions { Title = def.Name }).ExportToFile(rendered, pdf);
 new SvgHtmlExporter(new HtmlExportOptions { Title = def.Name }).ExportToFile(rendered, html);
+File.WriteAllBytes(png, new PngImageExporter(dpi: 144).RenderPages(rendered)[0]); // 1ª página, para preview
 
 Console.WriteLine($"\nGerado: {rendered.Pages.Count} página(s)");
 Console.WriteLine($"  PDF : {pdf}");
 Console.WriteLine($"  HTML: {html}");
+Console.WriteLine($"  PNG : {png}");
 return 0;
 
 // Lista nomeada das bandas de um ReportDefinition (para o resumo acima).

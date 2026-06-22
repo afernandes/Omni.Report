@@ -19,6 +19,7 @@
     <ProjectReference Include="..\..\src\Reporting.Rendering.Skia\Reporting.Rendering.Skia.csproj" />
     <ProjectReference Include="..\..\src\Reporting.Output.Pdf\Reporting.Output.Pdf.csproj" />
     <ProjectReference Include="..\..\src\Reporting.Output.Html\Reporting.Output.Html.csproj" />
+    <ProjectReference Include="..\..\src\Reporting.Output.Image\Reporting.Output.Image.csproj" />
   </ItemGroup>
 
   <ItemGroup>
