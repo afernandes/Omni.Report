@@ -102,9 +102,13 @@ internal static class RdlWriter
         // band's height back (preserving the round-trip). Falls back to the printable area / a default.
         var bodyHeight = def.ReportHeader is { } rhBand && rhBand.Height.Mils > 0 ? rhBand.Height
             : page.ContentHeight.ToMm() > 0 ? page.ContentHeight : Unit.FromMm(100);
-        var bodyEl = new XElement(Rdl + "Body",
-            new XElement(Rdl + "Height", Size(bodyHeight)),
-            bodyItems);
+        // <ReportItems> requires ≥1 item — omit it entirely when the body is empty (the <Body> stays valid via
+        // its <Height>); an empty <ReportItems> is XSD-invalid.
+        var bodyEl = new XElement(Rdl + "Body", new XElement(Rdl + "Height", Size(bodyHeight)));
+        if (bodyItems.HasElements)
+        {
+            bodyEl.Add(bodyItems);
+        }
 
         var pageEl = new XElement(Rdl + "Page",
             // When the flat-table Tablix was reconstructed, its column headers ARE the PageHeader — don't also
@@ -251,7 +255,9 @@ internal static class RdlWriter
     {
         if (t == typeof(int)) { return "Integer"; }
         if (t == typeof(double)) { return "Float"; }
-        if (t == typeof(decimal)) { return "Decimal"; }
+        // RDL's <DataType> enum has no "Decimal" — Float is its closest representable type (the value itself
+        // still round-trips exactly via the literal <Value>; only the declared type widens to double on reimport).
+        if (t == typeof(decimal)) { return "Float"; }
         if (t == typeof(bool)) { return "Boolean"; }
         if (t == typeof(DateTime)) { return "DateTime"; }
         if (t != typeof(string))
@@ -455,8 +461,13 @@ internal static class RdlWriter
         var section = new XElement(Rdl + element,
             new XElement(Rdl + "Height", Size(band.Height)),
             new XElement(Rdl + "PrintOnFirstPage", Bool(band.PrintOnFirstPage)),
-            new XElement(Rdl + "PrintOnLastPage", Bool(band.PrintOnLastPage)),
-            items);
+            new XElement(Rdl + "PrintOnLastPage", Bool(band.PrintOnLastPage)));
+        // Omit <ReportItems> if every element was unsupported/dropped — an empty <ReportItems> is XSD-invalid
+        // (the section still round-trips its Height).
+        if (items.HasElements)
+        {
+            section.Add(items);
+        }
         return section;
     }
 
@@ -518,11 +529,12 @@ internal static class RdlWriter
         {
             seriesCollection.Add(new XElement(Rdl + "ChartSeries", new XAttribute("Name", s.Name),
                 new XElement(Rdl + "Type", ChartTypeName(chart.Kind)),
-                new XElement(Rdl + "DataPoints",
-                    new XElement(Rdl + "DataPoint",
-                        new XElement(Rdl + "DataValues",
-                            new XElement(Rdl + "DataValue",
-                                new XElement(Rdl + "Value", ValueRoundTrip(s.ValueExpression))))))));
+                // RDL 2016: <ChartDataPoints><ChartDataPoint><ChartDataPointValues><Y> (the 2010 <DataPoints>
+                // /<DataPoint>/<DataValues>/<DataValue>/<Value> shape is invalid under the 2016 schema).
+                new XElement(Rdl + "ChartDataPoints",
+                    new XElement(Rdl + "ChartDataPoint",
+                        new XElement(Rdl + "ChartDataPointValues",
+                            new XElement(Rdl + "Y", ValueRoundTrip(s.ValueExpression)))))));
             if (string.IsNullOrEmpty(s.ValueExpression))
             {
                 warnings.Add($"ChartSeries '{s.Name}': sem ValueExpression — o importer descarta séries sem valor (a série não round-trippa).");
@@ -549,7 +561,7 @@ internal static class RdlWriter
             chartEl.Add(new XElement(Rdl + "ChartCategoryHierarchy",
                 new XElement(Rdl + "ChartMembers",
                     new XElement(Rdl + "ChartMember",
-                        new XElement(Rdl + "Group",
+                        new XElement(Rdl + "Group", new XAttribute("Name", SyntheticNamePrefix + chart.Id),
                             new XElement(Rdl + "GroupExpressions",
                                 new XElement(Rdl + "GroupExpression", ValueRoundTrip(category))))))));
         }

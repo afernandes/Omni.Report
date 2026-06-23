@@ -1,3 +1,5 @@
+using System.Xml;
+using System.Xml.Schema;
 using FluentAssertions;
 using Reporting;
 using Reporting.Bands;
@@ -44,10 +46,42 @@ public class PropertyRoundTripTests
         s.LoadFromBytes(s.SaveToBytes(def)).Should().Be(def, "seed {0}", seed);
     }
 
-    // Note: a property "any random report exports to XSD-valid RDL" (reusing the vendored 2016 schema) surfaced
-    // three real RDL-export validity gaps — <DataPoints> vs 2016 <ChartDataPoints>, an invalid <DataType>Decimal,
-    // and an empty <ReportItems>. Those are tracked for a focused exporter follow-up; this PR locks the native
-    // contract (repx/repjson full round-trip), which holds across all seeds.
+    [Theory]
+    [MemberData(nameof(Seeds))]
+    public void Any_report_exports_to_xsd_valid_rdl(int seed)
+    {
+        var def = Gen.Report(seed);
+        RdlSchema.ValidationErrors(new RdlExporter().SaveToBytes(def)).Should().BeEmpty("seed {0}", seed);
+    }
+
+    // ── Vendored RDL 2016 XSD (embedded in this test assembly, see RdlXsdValidationTests) ──
+    private static class RdlSchema
+    {
+        private static readonly XmlSchemaSet Set = Load();
+
+        private static XmlSchemaSet Load()
+        {
+            var asm = typeof(RdlSchema).Assembly;
+            var name = asm.GetManifestResourceNames().Single(n => n.EndsWith("ReportDefinition.xsd"));
+            using var stream = asm.GetManifestResourceStream(name)!;
+            var set = new XmlSchemaSet();
+            set.Add(null, XmlReader.Create(stream));
+            set.Compile();
+            return set;
+        }
+
+        public static IReadOnlyList<string> ValidationErrors(byte[] rdl)
+        {
+            var errors = new List<string>();
+            var settings = new XmlReaderSettings { ValidationType = ValidationType.Schema };
+            settings.Schemas.Add(Set);
+            settings.ValidationEventHandler += (_, e) => errors.Add($"{e.Severity} (line {e.Exception?.LineNumber}): {e.Message}");
+            using var ms = new MemoryStream(rdl);
+            using var reader = XmlReader.Create(ms, settings);
+            while (reader.Read()) { }
+            return errors;
+        }
+    }
 
     // ── Seeded generator over the round-trip-safe model surface ──
     private static class Gen
