@@ -2,6 +2,7 @@ using Bunit;
 using FluentAssertions;
 using Reporting.Designer.Blazor.Components;
 using Reporting.Designer.Blazor.ViewModels;
+using Reporting.Elements;
 using Reporting.Geometry;
 using Reporting.Paper;
 using Xunit;
@@ -90,5 +91,45 @@ public class BandWysiwygTests : BunitContext
         // We accept any value ≥ 70 so the test is resilient to small px-per-mm rounding.
         style.Should().MatchRegex(@"left:-(7[0-9]|8[0-9])",
             "strip must clear strip-width + marginLeft to sit outside the paper");
+    }
+
+    [Fact]
+    public void An_image_with_inline_bytes_renders_a_real_img_on_the_canvas()
+    {
+        var png = new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A }; // PNG signature
+        var vm = new ReportDefinitionViewModel("img");
+        foreach (var b in vm.Bands.ToList()) vm.RemoveBand(b);
+        var band = new BandViewModel(DesignerBandKind.Detail, Unit.FromMm(20));
+        band.AddElement(new ElementViewModel(DesignerElementKind.Image, "i1")
+        {
+            InlineImageData = png,
+            ImageSizing = ImageSizing.Fit,
+            Bounds = new Rectangle(Unit.Zero, Unit.Zero, Unit.FromMm(30), Unit.FromMm(20)),
+        });
+        vm.AddBand(band);
+
+        var cut = Render<BandCanvas>(p => p.Add(c => c.Report, vm));
+
+        var img = cut.Find("img");
+        (img.GetAttribute("src") ?? "").Should().StartWith("data:image/png;base64,", "embedded image renders WYSIWYG");
+        (img.GetAttribute("style") ?? "").Should().Contain("object-fit:contain", "ImageSizing.Fit → contain");
+    }
+
+    [Fact]
+    public void An_image_without_bytes_falls_back_to_the_placeholder()
+    {
+        var vm = new ReportDefinitionViewModel("noimg");
+        foreach (var b in vm.Bands.ToList()) vm.RemoveBand(b);
+        var band = new BandViewModel(DesignerBandKind.Detail, Unit.FromMm(20));
+        band.AddElement(new ElementViewModel(DesignerElementKind.Image, "i2")
+        {
+            Bounds = new Rectangle(Unit.Zero, Unit.Zero, Unit.FromMm(30), Unit.FromMm(20)),
+        });
+        vm.AddBand(band);
+
+        var cut = Render<BandCanvas>(p => p.Add(c => c.Report, vm));
+
+        cut.FindAll("img").Should().BeEmpty("no resolvable source → no <img>");
+        cut.Markup.Should().Contain("Imagem", "the placeholder caption is shown instead");
     }
 }
