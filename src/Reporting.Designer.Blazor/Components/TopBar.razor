@@ -15,13 +15,17 @@
             <button class="dropdown-item" type="button" @onclick="@(() => OnMenuCommand.InvokeAsync("file.new"))">
                 <Icon Name="plus" Size="12" CssClass="icon icon-12" /><span>Novo</span><span class="shortcut">Ctrl+N</span>
             </button>
-            <label class="dropdown-item" style="cursor:pointer;">
+            @* The no-op @onclick + stopPropagation keep the dropdown OPEN while the OS file dialog is up:
+               the panel's @onclick would otherwise close the menu, removing this <InputFile> from the DOM
+               before OnChange can fire (the file would silently never open). The label still triggers its
+               wrapped <InputFile> natively. *@
+            <label class="dropdown-item" style="cursor:pointer;" @onclick="NoOp" @onclick:stopPropagation="true">
                 <Icon Name="folder-open" Size="12" CssClass="icon icon-12" />
                 <span>Abrir .repx…</span>
                 <span class="shortcut">Ctrl+O</span>
                 <InputFile OnChange="OnLoadFile" accept=".repx" style="display:none" />
             </label>
-            <label class="dropdown-item" style="cursor:pointer;">
+            <label class="dropdown-item" style="cursor:pointer;" @onclick="NoOp" @onclick:stopPropagation="true">
                 <Icon Name="folder-open" Size="12" CssClass="icon icon-12" />
                 <span>Importar RDL…</span>
                 <span class="shortcut"></span>
@@ -208,4 +212,7 @@
     private Task OnSaveClicked()        => OnSave.InvokeAsync();
     private Task OnLoadFile(InputFileChangeEventArgs e) => OnLoad.InvokeAsync(e);
     private Task OnLoadRdlFile(InputFileChangeEventArgs e) => OnLoadRdl.InvokeAsync(e);
+    // A managed handler is required for the @onclick:stopPropagation modifier to take effect (the label's
+    // real work — opening the file dialog — happens via its wrapped <InputFile>, natively).
+    private void NoOp() { }
 }
