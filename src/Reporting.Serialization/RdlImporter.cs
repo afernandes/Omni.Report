@@ -1004,7 +1004,68 @@ public sealed class RdlImporter
         {
             withCommon = withCommon with { PropertyExpressions = new EquatableDictionary<string, string>(styleBindings) };
         }
+        // Model fields with no native RDL slot are restored from the element's <CustomProperties> (the inverse of
+        // RdlWriter.WriteCustomProperties) — keeping the RDL round-trip lossless without leaving the XSD.
+        var custom = ReadElementCustomProperties(item);
+        if (custom.Count > 0)
+        {
+            withCommon = ApplyCustomProperties(withCommon, custom);
+        }
         return string.IsNullOrEmpty(name) ? withCommon : withCommon with { Name = name };
+    }
+
+    // The element's own (direct-child) <CustomProperties> as a Name→Value map. Direct-child only (El), so it never
+    // captures a nested item's properties nor the report-level ones (those go to Metadata via ReadMetadata).
+    private static Dictionary<string, string> ReadElementCustomProperties(XElement item)
+    {
+        var props = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var cp in El(item, "CustomProperties")?.Elements().Where(e => e.Name.LocalName == "CustomProperty")
+                 ?? Enumerable.Empty<XElement>())
+        {
+            var name = Val(cp, "Name");
+            if (!string.IsNullOrEmpty(name))
+            {
+                props[name] = Val(cp, "Value") ?? string.Empty;
+            }
+        }
+        return props;
+    }
+
+    private static ReportElement ApplyCustomProperties(ReportElement el, Dictionary<string, string> props)
+    {
+        switch (el)
+        {
+            case SubreportElement sr:
+                if (props.TryGetValue("omni:DataExpression", out var de) && !string.IsNullOrEmpty(de))
+                {
+                    sr = sr with { DataExpression = de };
+                }
+                if (props.TryGetValue("omni:InlineDefinition", out var inl) && !string.IsNullOrEmpty(inl))
+                {
+                    // ReportId here is the synthetic placeholder ReportName the exporter emitted for XSD validity;
+                    // clear it, since InlineDefinition and ReportId are mutually exclusive.
+                    sr = sr with { InlineDefinition = DeserializeInline(inl), ReportId = null };
+                }
+                return sr;
+            case TablixElement tx:
+                if (props.TryGetValue("omni:SubtotalLabel", out var sl))
+                {
+                    tx = tx with { SubtotalLabel = sl };
+                }
+                if (props.TryGetValue("omni:GrandTotalLabel", out var gl))
+                {
+                    tx = tx with { GrandTotalLabel = gl };
+                }
+                return tx;
+            default:
+                return el;
+        }
+    }
+
+    private static ReportDefinition DeserializeInline(string json)
+    {
+        using var ms = new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(json));
+        return new RepJsonSerializer().Load(ms);
     }
 
     // RDL <Style> sub-properties whose value is an =expression → OmniReport PropertyExpressions (dotted path →
