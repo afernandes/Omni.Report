@@ -25,6 +25,10 @@ public sealed partial class ReportPaginator : IReportPaginator
     private readonly ExpressionEvaluator _evaluator;
     private readonly TemplateRenderer _templates;
 
+    // Currently-open groups whose header must REPRINT at the top of every continuation page
+    // (GroupBand.RepeatHeaderOnNewPage), outer→inner. Maintained by OpenGroup/CloseGroup; replayed by BreakPage.
+    private readonly List<GroupBand> _repeatHeaders = new();
+
     public ReportPaginator(ExpressionCompiler? compiler = null)
     {
         _compiler = compiler ?? new ExpressionCompiler();
@@ -519,6 +523,7 @@ public sealed partial class ReportPaginator : IReportPaginator
         page.MarkColumnTop(); // snake columns begin below the report/page header
 
         // Iterate rows with group detection
+        _repeatHeaders.Clear(); // defensive: no group is open at the start of a run (instance may be reused)
         var openGroupKeys = new object?[def.Groups.Count];
         var groupOpen = new bool[def.Groups.Count];
         var newKeys = new object?[def.Groups.Count];
@@ -773,11 +778,18 @@ public sealed partial class ReportPaginator : IReportPaginator
         ctx.GroupKey = key;
         var layout = renderer.Render(group.Header, page.Origin, ctx);
         page.Emit(layout.Primitives, layout.Height);
+        // Register AFTER the first emission (so the EnsureRoom above can't reprint a not-yet-emitted header).
+        if (group.RepeatHeaderOnNewPage)
+        {
+            _repeatHeaders.Add(group);
+        }
     }
 
     private void CloseGroup(GroupBand group, PageAccumulator page, BandRenderer renderer,
         ReportExpressionContext ctx, ReportDefinition def)
     {
+        // The group is closing — stop reprinting its header (regardless of whether it has a footer).
+        _repeatHeaders.Remove(group);
         if (group.Footer is null)
         {
             return;
@@ -924,6 +936,17 @@ public sealed partial class ReportPaginator : IReportPaginator
         ctx.ResetPage();
         ctx.PageNumber = page.PageNumber;
         EmitPageHeader(def, page, renderer, ctx);
+        // Reprint the headers of groups that span this break (RepeatHeaderOnNewPage), below the page header, so a
+        // continuation page still shows which group(s) the rows belong to. Outer→inner (registration order).
+        foreach (var group in _repeatHeaders)
+        {
+            if (group.Header is null)
+            {
+                continue;
+            }
+            var layout = renderer.Render(group.Header, page.Origin, ctx);
+            page.Emit(layout.Primitives, layout.Height);
+        }
         page.MarkColumnTop(); // snake columns on the new page begin below its page header
     }
 
