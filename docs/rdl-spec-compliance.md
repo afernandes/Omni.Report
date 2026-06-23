@@ -39,16 +39,17 @@ exóticos (TablixHeader/Body nativos, RowSpan, repeat headers de matrix). O roun
 
 ### Conformidade global estimada
 
-| Indicador | Antes (#88) | Agora (#146) | Comentário |
+| Indicador | Antes (#88) | Agora (#157) | Comentário |
 |---|:--:|:--:|---|
 | **Round-trip interno (`.repx`/`.repjson`)** | ~98% | **~98%** | Praticamente lossless; auto-wiring por convenção |
 | **Render** | ~90% | **~95%** | BackColor, TextDecoration, Image Sizing, multi-coluna snake, ColSpan, Rectangle-container + clip; paginação completa (PrintOnLastPage, CanShrink encolhe banda, split de banda por elemento); faltam ticks de gauge, RowSpan |
 | **Code-first** | ~88% | **~91%** | API cobre quase tudo; faltam spans no Tablix builder fluente, edição aninhada |
 | **Designer** | ~82% | **~85%** | Toolbox completo + edição aninhada de Rectangle; faltam editores ricos (TextRuns, Tablix inline, spans) e canvas WYSIWYG real |
-| **Model** | ~80% | **~85%** | Hidden/Nullable, DataSetName, ColSpan/RowSpan, Sizing, IsVisual; faltam TablixHeader/Body nativos, N-DetailBands, ReportSections |
-| **Import (RdlImporter)** | ~20% | **~80%** | DataSets + Tablix + viz + CustomReportItem + estilo + cores nomeadas + cultura importam; lossy-com-aviso só em Map / shapes exóticos |
+| **Model** | ~80% | **~85%** | Hidden/Nullable/AllowBlank, DataSetName, ColSpan/RowSpan, Sizing, IsVisual; faltam TablixHeader/Body nativos, N-DetailBands, ReportSections |
+| **Import (RdlImporter)** | ~20% | **~82%** | DataSets + Tablix + viz + CustomReportItem + estilo + cores nomeadas + cultura importam; `DefaultValue` de parâmetro com perda agora avisa (não dropa silencioso); lossy-com-aviso só em Map / shapes exóticos |
+| **Save / Export `.rdl` (RdlExporter)** | — | **novo ~90%** | Salvar `.rdl` nativo (#151–#157): TODO `ReportElement` exporta (página/itens/Style/DataSets/Params/Variables/Tablix matrix+flat com ColSpan/gaps/Chart/Gauge/Subreport). Fecha o ciclo `.rdl → ler → editar → salvar` por igualdade de valor; perdas sempre avisadas |
 | **Output** | — | **novo** | Word (.docx) tabular + imagens + charts rasterizados (#127/#129/#138) |
-| **CONFORMIDADE GLOBAL (ponderada por uso real)** | ~62% | **~85%** | Migração de SSRS real (`.rdl` → editar) saiu de ~25% para ~80% |
+| **CONFORMIDADE GLOBAL (ponderada por uso real)** | ~62% | **~88%** | Migração de SSRS real (`.rdl` → editar → **salvar `.rdl`**) saiu de ~25% para ~85%; o ciclo nativo de read→edit→save passou a existir |
 
 ### Estado após #123–#146 (consolidação)
 
@@ -157,13 +158,13 @@ Legenda: ✅ pleno · 🟡 parcial · 🔴 ausente/crítico. (% e dimensões atu
 | Elemento | Status | model | serial | import | render | code-first | designer | Gap | Esf. | Pri |
 |---|:--:|:--:|:--:|:--:|:--:|:--:|:--:|---|:--:|:--:|
 | DataType | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — | S | 1 |
-| DefaultValue | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — | S | 1 |
+| DefaultValue | ✅ | ✅ | ✅ | 🟡 | ✅ | ✅ | ✅ | Default literal lido/escrito; default de **expressão** (`=Today()`) ou inconversível agora **avisa** (não dropa silencioso); parse estrito invariante evita misconversão de número com vírgula | S | 2 |
 | ValidValues (estático) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🟡 | Designer sem reorder/editor rico | M | 2 |
 | ValidValues (query) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — | S | 1 |
 | MultiValue | ✅ | ✅ | ✅ | ✅ | n/a | ✅ | ✅ | `AllowMultiple` | S | 1 |
-| Hidden | 🔴 | 🔴 | 🔴 | 🔴 | n/a | 🔴 | 🔴 | Sem propriedade `Hidden` em lugar nenhum | M | 1 |
-| Nullable | 🟡 | 🔴 | 🔴 | 🔴 | ✅ | 🔴 | 🔴 | Mapeado como `Required = !Nullable`; sem campo explícito | M | 1 |
-| AllowBlank | 🔴 | 🔴 | 🔴 | 🔴 | n/a | 🔴 | 🔴 | Sem suporte | M | 2 |
+| Hidden | ✅ | ✅ | ✅ | ✅ | n/a | ✅ | 🟡 | `ReportParameter.Hidden` lido (RdlImporter) e escrito (.repx/.repjson + `.rdl` #153); editor no Designer é refino | S | 2 |
+| Nullable | ✅ | ✅ | ✅ | ✅ | n/a | ✅ | 🟡 | Campo `Nullable` explícito + `Required` derivado; lido/escrito (incl. `.rdl` #153) | S | 2 |
+| AllowBlank | ✅ | ✅ | ✅ | ✅ | n/a | ✅ | 🟡 | `ReportParameter.AllowBlank` lido/escrito (incl. `.rdl` #153) | S | 2 |
 | Prompt | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — | S | 1 |
 | UsedInQuery | 🔴 | 🔴 | 🔴 | 🔴 | n/a | 🔴 | 🔴 | Metadado; baixa prioridade | S | 3 |
 | Name (attr) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — | S | 1 |
