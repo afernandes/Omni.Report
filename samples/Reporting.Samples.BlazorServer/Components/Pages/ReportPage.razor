@@ -44,6 +44,7 @@ else
             "webservice" => Sample08_WebServiceApi.Build(),
             "filesystem" => Sample09_FileSystemLogs.Build(),
             "sqlite"     => Sample11_AdoNetSqlite.Build(),
+            "grande"     => Sample16_RelatorioGrandePaginado.Build(),
             _            => Sample01_VendasPorCliente.Build(),
         };
         _rendered = await report.PaginateAsync();
@@ -60,6 +61,7 @@ else
         "webservice" => "Catálogo (REST · WebService)",
         "filesystem" => "Auditoria de Arquivos (FileSystem)",
         "sqlite"     => "Vendas SQLite (ADO.NET)",
+        "grande"     => "Relatório Grande Paginado (26 páginas)",
         _            => "Relatório",
     };
 }
