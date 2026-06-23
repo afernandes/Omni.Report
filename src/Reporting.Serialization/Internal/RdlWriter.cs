@@ -601,6 +601,13 @@ internal static class RdlWriter
         {
             subEl.Add(new XElement(Rdl + "ReportName", sub.ReportId)); // literal — the importer reads it raw
         }
+        else if (sub.InlineDefinition is not null)
+        {
+            // RDL requires <ReportName> (minOccurs=1). For an inline subreport (no external ReportId) emit the
+            // inline def's name as a placeholder so the file stays XSD-valid; the real definition rides in
+            // omni:InlineDefinition, and ApplyCustomProperties clears this placeholder ReportId on import.
+            subEl.Add(new XElement(Rdl + "ReportName", sub.InlineDefinition.Name));
+        }
         if (sub.ParameterBindings.Count > 0)
         {
             var parameters = new XElement(Rdl + "Parameters");
@@ -611,10 +618,7 @@ internal static class RdlWriter
             }
             subEl.Add(parameters);
         }
-        if (sub.InlineDefinition is not null || sub.DataExpression is not null)
-        {
-            warnings.Add($"Subreport '{sub.Name ?? sub.Id}': InlineDefinition/DataExpression não têm representação em <Subreport> RDL — perdem no round-trip.");
-        }
+        // InlineDefinition/DataExpression are preserved losslessly via WriteCustomProperties (called by WriteCommon).
         return subEl;
     }
 
@@ -678,10 +682,7 @@ internal static class RdlWriter
             // would mangle any '&'/'Like' as Concat/Like.
             tablix.Add(new XElement(Rdl + "NoRowsMessage", tx.NoRowsMessage));
         }
-        if (tx.SubtotalLabel is not null || tx.GrandTotalLabel is not null)
-        {
-            warnings.Add($"Tablix '{tx.Name ?? tx.Id}': SubtotalLabel/GrandTotalLabel não são lidos pelo importer — perdem no round-trip.");
-        }
+        // SubtotalLabel/GrandTotalLabel are preserved losslessly via WriteCustomProperties (called by WriteCommon).
         return tablix;
     }
 
@@ -1098,6 +1099,56 @@ internal static class RdlWriter
         {
             item.Add(action);
         }
+        WriteCustomProperties(item, el);
+    }
+
+    // Model fields with no native slot in <Subreport>/<Tablix> are preserved LOSSLESSLY in RDL's own
+    // <CustomProperties> (part of the XSD; ignored by Report Builder, so the file still opens in SSRS). Names are
+    // 'omni:'-prefixed to avoid clashing with an author's own custom properties. RdlImporter.ReadElementCustomProperties
+    // + ApplyCustomProperties are the exact inverse.
+    private static void WriteCustomProperties(XElement item, ReportElement el)
+    {
+        var props = new List<(string Name, string Value)>();
+        switch (el)
+        {
+            case SubreportElement sub:
+                if (!string.IsNullOrEmpty(sub.DataExpression))
+                {
+                    props.Add(("omni:DataExpression", sub.DataExpression));
+                }
+                if (sub.InlineDefinition is not null)
+                {
+                    props.Add(("omni:InlineDefinition", SerializeInline(sub.InlineDefinition)));
+                }
+                break;
+            case TablixElement tx:
+                if (tx.SubtotalLabel is not null)
+                {
+                    props.Add(("omni:SubtotalLabel", tx.SubtotalLabel));
+                }
+                if (tx.GrandTotalLabel is not null)
+                {
+                    props.Add(("omni:GrandTotalLabel", tx.GrandTotalLabel));
+                }
+                break;
+        }
+        if (props.Count == 0)
+        {
+            return;
+        }
+        item.Add(new XElement(Rdl + "CustomProperties",
+            props.Select(p => new XElement(Rdl + "CustomProperty",
+                new XElement(Rdl + "Name", p.Name),
+                new XElement(Rdl + "Value", p.Value)))));
+    }
+
+    // An inline subreport definition is itself a full ReportDefinition; persist it as a compact repjson blob in the
+    // CustomProperty value, round-tripped by the same model serializer (RepJsonSerializer) the importer reads with.
+    private static string SerializeInline(ReportDefinition def)
+    {
+        using var ms = new System.IO.MemoryStream();
+        new RepJsonSerializer().Save(def, ms);
+        return System.Text.Encoding.UTF8.GetString(ms.ToArray());
     }
 
     private static XElement? WriteAction(ElementAction? action)

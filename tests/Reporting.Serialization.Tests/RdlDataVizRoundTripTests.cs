@@ -171,7 +171,9 @@ public class RdlDataVizRoundTripTests
         var w = string.Join("\n", rdl.Warnings);
 
         w.Should().Contain("Title/ShowLegend");
-        w.Should().Contain("InlineDefinition/DataExpression");
+        // DataExpression/InlineDefinition are no longer warned — they round-trip losslessly via <CustomProperties>
+        // (see RdlCustomPropertiesRoundTripTests).
+        w.Should().NotContain("InlineDefinition/DataExpression");
     }
 
     [Fact]
