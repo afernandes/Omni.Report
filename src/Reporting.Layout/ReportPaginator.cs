@@ -980,11 +980,31 @@ public sealed partial class ReportPaginator : IReportPaginator
         page.EmitFixed(fixedLayout.Primitives);
     }
 
-    private static void ApplyParameters(ReportExpressionContext ctx, PaginationRequest request)
+    private void ApplyParameters(ReportExpressionContext ctx, PaginationRequest request)
     {
         foreach (var p in request.Definition.Parameters)
         {
-            var value = request.Parameters.TryGetValue(p.Name, out var v) ? v : p.DefaultValue;
+            object? value;
+            if (request.Parameters.TryGetValue(p.Name, out var v))
+            {
+                value = v; // prompted/host-supplied value wins
+            }
+            else if (p.DefaultValue is not null)
+            {
+                value = p.DefaultValue; // literal default
+            }
+            else if (!string.IsNullOrEmpty(p.DefaultValueExpression))
+            {
+                // Expression default (=Today(), =DateAdd(...), =Parameters!Other.Value). Evaluated here, in
+                // declaration order, so a default referencing an earlier parameter sees its seeded value. A
+                // failing expression falls back to null rather than aborting the run.
+                try { value = _evaluator.Evaluate(p.DefaultValueExpression, ctx); }
+                catch { value = null; }
+            }
+            else
+            {
+                value = null;
+            }
             ctx.ParametersStore.Set(p.Name, value);
         }
     }

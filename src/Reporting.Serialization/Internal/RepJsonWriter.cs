@@ -101,6 +101,10 @@ internal static class RepJsonWriter
         {
             o["defaultValue"] = Convert.ToString(p.DefaultValue, Inv);
         }
+        if (p.DefaultValueExpression is not null)
+        {
+            o["defaultValueExpression"] = p.DefaultValueExpression;
+        }
         if (p.Nullable) { o["nullable"] = true; }
         if (p.AllowBlank) { o["allowBlank"] = true; }
         if (p.Hidden) { o["hidden"] = true; }

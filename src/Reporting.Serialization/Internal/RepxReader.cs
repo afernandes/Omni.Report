@@ -122,7 +122,10 @@ internal static class RepxReader
         return new ReportParameter(name, type, prompt, defaultValue, allowMultiple, required, available,
             Nullable: bool.Parse(Attr(el, "Nullable") ?? "false"),
             AllowBlank: bool.Parse(Attr(el, "AllowBlank") ?? "false"),
-            Hidden: bool.Parse(Attr(el, "Hidden") ?? "false"));
+            Hidden: bool.Parse(Attr(el, "Hidden") ?? "false"))
+        {
+            DefaultValueExpression = Attr(el, "DefaultValueExpression"),
+        };
     }
 
     private static ReportVariable ReadVariable(XElement el)

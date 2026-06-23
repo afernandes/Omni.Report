@@ -113,6 +113,10 @@ internal static class RepxWriter
             el.Add(new XElement("DefaultValue",
                 new XAttribute("Value", Convert.ToString(p.DefaultValue, Inv) ?? string.Empty)));
         }
+        if (p.DefaultValueExpression is not null)
+        {
+            el.SetAttributeValue("DefaultValueExpression", p.DefaultValueExpression);
+        }
         if (p.AvailableValues is { } av && (av.Values.Count > 0 || av.IsQuery))
         {
             var ave = new XElement("AvailableValues");

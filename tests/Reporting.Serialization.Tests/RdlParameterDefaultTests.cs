@@ -13,31 +13,56 @@ namespace Reporting.Serialization.Tests;
 /// </summary>
 public class RdlParameterDefaultTests
 {
+    private static string ParamRdl(string dataType, string value) => $"""
+        <Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition">
+          <ReportParameters><ReportParameter Name="P">
+            <DataType>{dataType}</DataType>
+            <DefaultValue><Values><Value>{value}</Value></Values></DefaultValue>
+          </ReportParameter></ReportParameters>
+          <Body><Height>10mm</Height><ReportItems/></Body>
+          <Width>100mm</Width>
+          <Page><PageHeight>297mm</PageHeight><PageWidth>210mm</PageWidth>
+            <LeftMargin>10mm</LeftMargin><RightMargin>10mm</RightMargin><TopMargin>10mm</TopMargin><BottomMargin>10mm</BottomMargin></Page>
+        </Report>
+        """;
+
     private static (ReportParameter Param, string Warnings) ImportParam(string dataType, string value)
     {
-        var rdl = $"""
-            <Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition">
-              <ReportParameters><ReportParameter Name="P">
-                <DataType>{dataType}</DataType>
-                <DefaultValue><Values><Value>{value}</Value></Values></DefaultValue>
-              </ReportParameter></ReportParameters>
-              <Body><Height>10mm</Height><ReportItems/></Body>
-              <Width>100mm</Width>
-              <Page><PageHeight>297mm</PageHeight><PageWidth>210mm</PageWidth>
-                <LeftMargin>10mm</LeftMargin><RightMargin>10mm</RightMargin><TopMargin>10mm</TopMargin><BottomMargin>10mm</BottomMargin></Page>
-            </Report>
-            """;
-        var def = new RdlImporter().ImportXml(rdl);
+        var def = new RdlImporter().ImportXml(ParamRdl(dataType, value));
         var warnings = def.Metadata.TryGetValue("ImportWarnings", out var w) ? w : string.Empty;
         return (def.Parameters[0], warnings);
     }
 
     [Fact]
-    public void Expression_default_is_warned_not_silently_dropped()
+    public void Expression_default_is_preserved_as_DefaultValueExpression()
     {
+        // An =expression default is no longer dropped: it's kept (in OmniReport syntax) to be evaluated at run start.
         var (p, warnings) = ImportParam("DateTime", "=Today()");
         p.DefaultValue.Should().BeNull();
-        warnings.Should().Contain("DefaultValue de expressão");
+        p.DefaultValueExpression.Should().Be("Today()");
+        warnings.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Expression_default_round_trips_through_rdl()
+    {
+        // import (=Today() → DefaultValueExpression) → export (back to =Today()) → reimport must preserve it.
+        var rdl = new RdlExporter();
+        var imported = new RdlImporter().ImportXml(ParamRdl("DateTime", "=Today()"));
+        var back = rdl.LoadFromBytes(rdl.SaveToBytes(imported));
+        back.Parameters[0].DefaultValueExpression.Should().Be("Today()");
+        back.Parameters[0].DefaultValue.Should().BeNull();
+    }
+
+    [Fact]
+    public void Expression_default_round_trips_through_repx_and_repjson()
+    {
+        var imported = new RdlImporter().ImportXml(ParamRdl("DateTime", "=Today()"));
+        foreach (IReportSerializer s in new IReportSerializer[] { new RepxSerializer(), new RepJsonSerializer() })
+        {
+            var back = s.LoadFromBytes(s.SaveToBytes(imported));
+            back.Parameters[0].DefaultValueExpression.Should().Be("Today()", "round-trip via {0}", s.GetType().Name);
+        }
     }
 
     [Fact]
