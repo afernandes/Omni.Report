@@ -1225,7 +1225,9 @@ public sealed class RdlImporter
         _ => ImageSizing.Fit,
     };
 
-    private static ReportParameter ReadParameter(XElement el)
+    // Instance (not static) so a dropped DefaultValue can be reported via _warnings — the importer never loses
+    // a value silently. (Called as a method group: .Select(ReadParameter).)
+    private ReportParameter ReadParameter(XElement el)
     {
         var name = el.Attribute("Name")?.Value ?? throw new FormatException("ReportParameter missing Name.");
         var type = MapType(Val(el, "DataType"));
@@ -1238,11 +1240,24 @@ public sealed class RdlImporter
         var defaultEl = El(el, "DefaultValue");
         object? defaultValue = null;
         var defaultRaw = El(El(defaultEl, "Values"), "Value")?.Value;
-        if (!string.IsNullOrEmpty(defaultRaw) && !RdlExpression.IsExpression(defaultRaw))
+        if (!string.IsNullOrEmpty(defaultRaw))
         {
-            try { defaultValue = System.Convert.ChangeType(defaultRaw, type, Inv); }
-            catch (FormatException) { }
-            catch (InvalidCastException) { }
+            if (RdlExpression.IsExpression(defaultRaw))
+            {
+                // The model holds DefaultValue as a literal scalar, not an expression — an =expression default
+                // (=Today(), =Parameters!X.Value) can't be preserved. Warn instead of dropping it silently.
+                _warnings.Add($"ReportParameter '{name}': DefaultValue de expressão '{defaultRaw}' não é preservado (o modelo só suporta default literal) — importado sem default.");
+            }
+            else if (TryParseScalar(defaultRaw, type, out defaultValue))
+            {
+                // parsed
+            }
+            else
+            {
+                // Strict invariant parse failed (wrong type, or a locale-formatted number like "3,14" that the
+                // old Convert.ChangeType would MISread as 314) — drop with a warning, never a silent/wrong value.
+                _warnings.Add($"ReportParameter '{name}': DefaultValue '{defaultRaw}' não pôde ser convertido para {type.Name} (cultura invariante) — importado sem default.");
+            }
         }
 
         ParameterAvailableValues? available = ReadAvailableValues(El(el, "ValidValues"));
@@ -1251,6 +1266,21 @@ public sealed class RdlImporter
         var required = !nullable && defaultEl is null;
         return new ReportParameter(name, type, prompt, defaultValue, multiValue, required, available,
             Nullable: nullable, AllowBlank: allowBlank, Hidden: hidden);
+    }
+
+    // Strict invariant parse of a literal default into the parameter's CLR type. Unlike Convert.ChangeType,
+    // numbers reject a thousands separator (so a comma-decimal "3,14" fails rather than silently becoming 314),
+    // and DateTime parses the ISO-8601 form the exporter emits. Returns false (value=null) on any mismatch.
+    private static bool TryParseScalar(string raw, Type type, out object? value)
+    {
+        if (type == typeof(int) && int.TryParse(raw, NumberStyles.Integer, Inv, out var i)) { value = i; return true; }
+        if (type == typeof(double) && double.TryParse(raw, NumberStyles.Float, Inv, out var d)) { value = d; return true; }
+        if (type == typeof(decimal) && decimal.TryParse(raw, NumberStyles.Float, Inv, out var m)) { value = m; return true; }
+        if (type == typeof(bool) && bool.TryParse(raw, out var b)) { value = b; return true; }
+        if (type == typeof(DateTime) && DateTime.TryParse(raw, Inv, DateTimeStyles.RoundtripKind, out var dt)) { value = dt; return true; }
+        if (type == typeof(string)) { value = raw; return true; }
+        value = null;
+        return false;
     }
 
     private static ParameterAvailableValues? ReadAvailableValues(XElement? validValues)
