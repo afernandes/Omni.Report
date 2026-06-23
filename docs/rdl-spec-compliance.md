@@ -288,7 +288,7 @@ Legenda: ✅ pleno · 🟡 parcial · 🔴 ausente/crítico. (% e dimensões atu
 | DataSets! | 🔴 | 🔴 | n/a | 🔴 | 🔴 | 🔴 | 🔴 | Sem metadados de dataset em expressão | L | 3 |
 | Sum/Avg/Count/Min/Max | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — | S | 1 |
 | Var/VarP/StDev/StDevP | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Agregados estatísticos amostral/populacional (#130) | S | 2 |
-| RunningValue/RunningTotal | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | RunningTotal com escopo (#93) | M | 2 |
+| RunningValue/RunningTotal | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | `RunningValue(expr, função, escopo)` SSRS de 3 args + `RunningTotal` com escopo (#93); função interna Sum/Count/Avg/Min/Max | S | 2 |
 | RowNumber | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Posicional com escopo (#93) | M | 1 |
 | Previous | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Linha anterior, null na 1ª (#93) | M | 1 |
 | First/Last/CountDistinct | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Reduções por escopo (#93) | M | 2 |

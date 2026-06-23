@@ -204,7 +204,7 @@
             defaultToken: "",
             tokenPostfix: ".omni",
             keywords: ["if", "then", "else", "and", "or", "not", "true", "false", "null"],
-            aggregates: ["Sum", "Avg", "Count", "Min", "Max", "RunningTotal"],
+            aggregates: ["Sum", "Avg", "Count", "Min", "Max", "RunningTotal", "RunningValue"],
             functions: ["IIF", "Format", "ToString", "Now", "Today", "PageNumber",
                         "TotalPages", "Upper", "Lower", "Trim", "Substring", "Length",
                         "Replace", "Concat", "Round", "Floor", "Ceiling", "Abs"],
