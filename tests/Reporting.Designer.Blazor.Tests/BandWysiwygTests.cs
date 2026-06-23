@@ -190,4 +190,29 @@ public class BandWysiwygTests : BunitContext
         cut.FindAll("table").Should().NotBeEmpty();
         cut.FindAll("th").Should().NotBeEmpty("a flat table preview has column headers");
     }
+
+    [Fact]
+    public void A_barcode_renders_sample_bars_not_the_expression_text()
+    {
+        var cut = RenderViz(DesignerElementKind.Barcode, e => e.Expression = "Fields.Ean");
+        cut.FindAll("svg").Should().NotBeEmpty();
+        cut.FindAll("rect").Count.Should().BeGreaterThan(5, "the barcode preview draws sample bars");
+    }
+
+    [Fact]
+    public void A_qrcode_renders_a_module_grid()
+    {
+        var cut = RenderViz(DesignerElementKind.QrCode);
+        cut.FindAll("svg").Should().NotBeEmpty();
+        cut.FindAll("rect").Count.Should().BeGreaterThan(10, "the QR preview draws modules");
+    }
+
+    [Fact]
+    public void A_map_renders_region_shapes_not_a_placeholder()
+    {
+        var cut = RenderViz(DesignerElementKind.Map);
+        cut.FindAll("svg").Should().NotBeEmpty();
+        cut.FindAll("path").Should().NotBeEmpty("the map preview draws region shapes + a pin");
+        cut.Markup.Should().NotContain("border:1px dashed", "no placeholder box");
+    }
 }

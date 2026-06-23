@@ -26,8 +26,63 @@ internal static class DesignViz
         DesignerElementKind.Sparkline => Sparkline(e),
         DesignerElementKind.Indicator => Indicator(),
         DesignerElementKind.Tablix => Tablix(e),
+        DesignerElementKind.Barcode => Barcode(),
+        DesignerElementKind.QrCode => QrCode(),
+        DesignerElementKind.Map => Map(),
         _ => null,
     };
+
+    // ── Barcode (linear bars) / QR (module grid) / Map (land + regions + pin) — representative samples ──
+    private static string Barcode()
+    {
+        var widths = new[] { 2.0, 1, 3, 1, 1, 2, 1, 4, 1, 2, 1, 1, 3, 2, 1, 1, 2, 3, 1, 2, 1, 1, 2, 1, 3, 1, 2, 1 };
+        double total = widths.Sum(), x = 6, scale = 88.0 / total;
+        var sb = new System.Text.StringBuilder("<svg viewBox=\"0 0 100 44\" preserveAspectRatio=\"none\" width=\"100%\" height=\"100%\" xmlns=\"http://www.w3.org/2000/svg\" style=\"display:block;\"><rect width=\"100\" height=\"44\" fill=\"#fff\"/>");
+        var bar = true;
+        foreach (var w in widths)
+        {
+            var ww = w * scale;
+            if (bar) sb.Append($"<rect x=\"{F(x)}\" y=\"6\" width=\"{F(ww)}\" height=\"26\" fill=\"#111\"/>");
+            x += ww;
+            bar = !bar;
+        }
+        sb.Append("<text x=\"50\" y=\"40\" text-anchor=\"middle\" font-size=\"6\" fill=\"#444\" font-family=\"monospace\">7 891234 567895</text></svg>");
+        return sb.ToString();
+    }
+
+    private static string QrCode()
+    {
+        const int n = 11;
+        // A fixed pseudo-pattern (deterministic) plus three finder squares — reads as a QR code.
+        var sb = new System.Text.StringBuilder("<svg viewBox=\"0 0 100 100\" preserveAspectRatio=\"xMidYMid meet\" width=\"100%\" height=\"100%\" xmlns=\"http://www.w3.org/2000/svg\" style=\"display:block;\"><rect width=\"100\" height=\"100\" fill=\"#fff\"/>");
+        var cell = 92.0 / n;
+        bool Finder(int r, int c) => (r < 3 && c < 3) || (r < 3 && c >= n - 3) || (r >= n - 3 && c < 3);
+        for (var r = 0; r < n; r++)
+        {
+            for (var c = 0; c < n; c++)
+            {
+                var on = Finder(r, c) || ((r * 7 + c * 3 + r * c) % 5 == 0);
+                if (on)
+                {
+                    sb.Append($"<rect x=\"{F(4 + c * cell)}\" y=\"{F(4 + r * cell)}\" width=\"{F(cell)}\" height=\"{F(cell)}\" fill=\"#111\"/>");
+                }
+            }
+        }
+        // clear the finder centres to the classic concentric look
+        foreach (var (fr, fc) in new[] { (0, 0), (0, n - 3), (n - 3, 0) })
+        {
+            sb.Append($"<rect x=\"{F(4 + (fc + 1) * cell)}\" y=\"{F(4 + (fr + 1) * cell)}\" width=\"{F(cell)}\" height=\"{F(cell)}\" fill=\"#fff\"/>");
+        }
+        return sb.Append("</svg>").ToString();
+    }
+
+    private static string Map() =>
+        "<svg viewBox=\"0 0 100 60\" preserveAspectRatio=\"none\" width=\"100%\" height=\"100%\" xmlns=\"http://www.w3.org/2000/svg\" style=\"display:block;\">" +
+        "<rect width=\"100\" height=\"60\" fill=\"#dceaf3\"/>" + // water
+        "<path d=\"M6,40 L24,18 L46,26 L40,48 L18,52 Z\" fill=\"#cfe3c4\" stroke=\"#9bbf8a\" stroke-width=\"0.6\"/>" +
+        "<path d=\"M52,12 L82,8 L94,30 L74,44 L54,34 Z\" fill=\"#d8e8cb\" stroke=\"#9bbf8a\" stroke-width=\"0.6\"/>" +
+        "<path d=\"M70,24 m-2.6,0 a2.6,2.6 0 1,0 5.2,0 a2.6,2.6 0 1,0 -5.2,0\" fill=\"#C2410C\"/>" + // pin head
+        "<path d=\"M70,24 L67.6,20 L72.4,20 Z\" fill=\"#C2410C\"/></svg>";
 
     // ── Tablix: structural grid (HTML table). Matrix → corner/row-group/col-group/body; else flat columns. ──
     private static string Tablix(ElementViewModel e)
