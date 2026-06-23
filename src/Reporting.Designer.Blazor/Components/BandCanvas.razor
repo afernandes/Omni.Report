@@ -550,10 +550,25 @@
                 break;
 
             case DesignerElementKind.Image:
-                builder.OpenElement(0, "span");
-                builder.AddAttribute(1, "style", "display:flex;align-items:center;justify-content:center;width:100%;height:100%;background:var(--bg-panel);border:1px dashed var(--text-tertiary);color:var(--text-tertiary);font-size:11px;");
-                builder.AddContent(2, "Imagem");
-                builder.CloseElement();
+                // WYSIWYG for an embedded image (the common case): render the real bytes as a data-URI <img>,
+                // honouring ImageSizing. Path/Expression sources can't resolve at design time → keep the box.
+                if (e.InlineImageData is { Length: > 0 } imgBytes)
+                {
+                    builder.OpenElement(0, "img");
+                    builder.AddAttribute(1, "src", ImageDataUri(imgBytes));
+                    builder.AddAttribute(2, "alt", "");
+                    builder.AddAttribute(3, "draggable", "false");
+                    builder.AddAttribute(4, "style",
+                        $"display:block;width:100%;height:100%;object-fit:{ObjectFit(e.ImageSizing)};{(e.ImageSizing == ImageSizing.Native ? "object-position:left top;" : "")}");
+                    builder.CloseElement();
+                }
+                else
+                {
+                    builder.OpenElement(0, "span");
+                    builder.AddAttribute(1, "style", "display:flex;align-items:center;justify-content:center;width:100%;height:100%;background:var(--bg-panel);border:1px dashed var(--text-tertiary);color:var(--text-tertiary);font-size:11px;");
+                    builder.AddContent(2, e.ImagePath is { Length: > 0 } ? "🖼 " + e.ImagePath : "Imagem");
+                    builder.CloseElement();
+                }
                 break;
 
             case DesignerElementKind.Chart:
@@ -579,6 +594,28 @@
                 break;
         }
     };
+
+    // CSS object-fit for each ImageSizing (mirrors the runtime image renderer's intent on the design canvas).
+    private static string ObjectFit(ImageSizing sizing) => sizing switch
+    {
+        ImageSizing.Stretch => "fill",
+        ImageSizing.Fit => "contain",
+        ImageSizing.Fill => "cover",
+        ImageSizing.Native => "none",
+        _ => "contain",
+    };
+
+    private static string ImageDataUri(byte[] bytes)
+        => $"data:{SniffImageMime(bytes)};base64,{Convert.ToBase64String(bytes)}";
+
+    // Detect the MIME from the magic bytes so the data-URI is correct (browsers also sniff, but be explicit).
+    private static string SniffImageMime(byte[] b)
+        => b.Length >= 4 && b[0] == 0x89 && b[1] == 0x50 && b[2] == 0x4E && b[3] == 0x47 ? "image/png"
+        : b.Length >= 2 && b[0] == 0xFF && b[1] == 0xD8 ? "image/jpeg"
+        : b.Length >= 3 && b[0] == 0x47 && b[1] == 0x49 && b[2] == 0x46 ? "image/gif"
+        : b.Length >= 2 && b[0] == 0x42 && b[1] == 0x4D ? "image/bmp"
+        : b.Length >= 1 && b[0] == 0x3C ? "image/svg+xml"
+        : "image/png";
 
     public async ValueTask DisposeAsync()
     {
