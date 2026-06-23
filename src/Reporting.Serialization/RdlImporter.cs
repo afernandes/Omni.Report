@@ -1239,14 +1239,15 @@ public sealed class RdlImporter
 
         var defaultEl = El(el, "DefaultValue");
         object? defaultValue = null;
+        string? defaultExpression = null;
         var defaultRaw = El(El(defaultEl, "Values"), "Value")?.Value;
         if (!string.IsNullOrEmpty(defaultRaw))
         {
             if (RdlExpression.IsExpression(defaultRaw))
             {
-                // The model holds DefaultValue as a literal scalar, not an expression — an =expression default
-                // (=Today(), =Parameters!X.Value) can't be preserved. Warn instead of dropping it silently.
-                _warnings.Add($"ReportParameter '{name}': DefaultValue de expressão '{defaultRaw}' não é preservado (o modelo só suporta default literal) — importado sem default.");
+                // An =expression default (=Today(), =Parameters!X.Value) is preserved as DefaultValueExpression
+                // (OmniReport syntax) and evaluated at run start to seed the value.
+                defaultExpression = RdlExpression.Convert(defaultRaw);
             }
             else if (TryParseScalar(defaultRaw, type, out defaultValue))
             {
@@ -1265,7 +1266,10 @@ public sealed class RdlImporter
         // RDL: a parameter is required only when it's neither nullable nor has a default supplied.
         var required = !nullable && defaultEl is null;
         return new ReportParameter(name, type, prompt, defaultValue, multiValue, required, available,
-            Nullable: nullable, AllowBlank: allowBlank, Hidden: hidden);
+            Nullable: nullable, AllowBlank: allowBlank, Hidden: hidden)
+        {
+            DefaultValueExpression = defaultExpression,
+        };
     }
 
     // Strict invariant parse of a literal default into the parameter's CLR type. Unlike Convert.ChangeType,

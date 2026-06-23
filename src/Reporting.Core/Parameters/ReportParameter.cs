@@ -14,7 +14,13 @@ public sealed record ReportParameter(
     ParameterAvailableValues? AvailableValues = null,
     bool Nullable = false,
     bool AllowBlank = false,
-    bool Hidden = false);
+    bool Hidden = false)
+{
+    /// <summary>An expression default (SSRS <c>=Today()</c>, <c>=DateAdd(...)</c>, <c>=Parameters!Other.Value</c>)
+    /// in OmniReport syntax, evaluated at run start to seed the value when no literal <see cref="DefaultValue"/>
+    /// and no prompted value are supplied. Mutually exclusive with <see cref="DefaultValue"/>.</summary>
+    public string? DefaultValueExpression { get; init; }
+}
 
 /// <summary>Domain of allowed values for a parameter — a static list and/or a query over a dataset, so a
 /// host can render a validated dropdown instead of a free-text box (SSRS "Available Values"). Query-driven

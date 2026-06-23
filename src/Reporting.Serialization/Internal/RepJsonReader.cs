@@ -126,7 +126,10 @@ internal static class RepJsonReader
         return new ReportParameter(name, type, prompt, defaultValue, allowMultiple, required, available,
             Nullable: (bool?)o["nullable"] ?? false,
             AllowBlank: (bool?)o["allowBlank"] ?? false,
-            Hidden: (bool?)o["hidden"] ?? false);
+            Hidden: (bool?)o["hidden"] ?? false)
+        {
+            DefaultValueExpression = (string?)o["defaultValueExpression"],
+        };
     }
 
     private static ReportVariable ReadVariable(JsonObject o)

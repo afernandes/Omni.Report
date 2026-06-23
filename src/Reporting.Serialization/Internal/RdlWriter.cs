@@ -177,6 +177,12 @@ internal static class RdlWriter
             el.Add(new XElement(Rdl + "DefaultValue",
                 new XElement(Rdl + "Values", new XElement(Rdl + "Value", raw))));
         }
+        else if (!string.IsNullOrEmpty(p.DefaultValueExpression))
+        {
+            // Expression default → RDL <Value> with the leading '=' form (the importer's Convert reverses it).
+            el.Add(new XElement(Rdl + "DefaultValue",
+                new XElement(Rdl + "Values", new XElement(Rdl + "Value", ValueOf(p.DefaultValueExpression)))));
+        }
         var valid = WriteValidValues(p.AvailableValues, p.Name, warnings);
         if (valid is not null)
         {
@@ -184,7 +190,7 @@ internal static class RdlWriter
         }
         // Required is DERIVED on import (!Nullable && no <DefaultValue>); RDL has no <Required>, so a model
         // whose Required disagrees with that derivation can't round-trip the flag — warn, don't drop silently.
-        var derivedRequired = !p.Nullable && p.DefaultValue is null;
+        var derivedRequired = !p.Nullable && p.DefaultValue is null && p.DefaultValueExpression is null;
         if (p.Required != derivedRequired)
         {
             warnings.Add($"ReportParameter '{p.Name}': Required={p.Required} não é representável em RDL " +
