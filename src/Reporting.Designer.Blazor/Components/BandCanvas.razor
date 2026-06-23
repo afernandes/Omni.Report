@@ -576,11 +576,12 @@
             case DesignerElementKind.DataBar:
             case DesignerElementKind.Sparkline:
             case DesignerElementKind.Indicator:
-                // Representative design-time SVG (stylised sample, like SSRS/DevExpress) — real data only in Preview.
-                builder.AddMarkupContent(0, DesignViz.Svg(e) ?? "");
+            case DesignerElementKind.Tablix:
+                // Representative design-time markup (stylised SVG / structural HTML grid, like SSRS/DevExpress) —
+                // real data only in Preview.
+                builder.AddMarkupContent(0, DesignViz.Markup(e) ?? "");
                 break;
 
-            case DesignerElementKind.Tablix:
             case DesignerElementKind.Map:
             case DesignerElementKind.Subreport:
             case DesignerElementKind.Code:

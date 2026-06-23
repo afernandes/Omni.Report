@@ -173,4 +173,21 @@ public class BandWysiwygTests : BunitContext
         cut.FindAll("svg").Should().NotBeEmpty();
         cut.FindAll("rect").Count.Should().BeGreaterThanOrEqualTo(2, "track + fill");
     }
+
+    [Fact]
+    public void A_matrix_tablix_renders_a_structural_grid()
+    {
+        var cut = RenderViz(DesignerElementKind.Tablix, e => { e.SetTablixMatrix(true); e.TablixCorner = "Região"; });
+        cut.FindAll("table").Should().NotBeEmpty("the tablix shows a structural grid, not a dashed box");
+        cut.Markup.Should().Contain("Região", "the corner label appears in the grid");
+        cut.Markup.Should().NotContain("border:1px dashed", "no placeholder box");
+    }
+
+    [Fact]
+    public void A_flat_tablix_renders_header_cells()
+    {
+        var cut = RenderViz(DesignerElementKind.Tablix, e => e.AddTablixColumn());
+        cut.FindAll("table").Should().NotBeEmpty();
+        cut.FindAll("th").Should().NotBeEmpty("a flat table preview has column headers");
+    }
 }
