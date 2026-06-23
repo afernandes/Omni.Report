@@ -479,6 +479,12 @@ public sealed class DesignerParameter : Notifying
     private string? _defaultValue;
     public string? DefaultValue { get => _defaultValue; set => Set(ref _defaultValue, value); }
 
+    private string? _defaultValueExpression;
+    /// <summary>An expression default (SSRS <c>=Today()</c>, <c>=DateAdd(...)</c>) evaluated at run start when no
+    /// literal <see cref="DefaultValue"/> and no prompted value are supplied. Mutually exclusive with
+    /// <see cref="DefaultValue"/>.</summary>
+    public string? DefaultValueExpression { get => _defaultValueExpression; set => Set(ref _defaultValueExpression, value); }
+
     private string? _prompt;
     /// <summary>RDL <c>&lt;Prompt&gt;</c>: label shown to the user when the report runs.</summary>
     public string? Prompt { get => _prompt; set => Set(ref _prompt, value); }
@@ -543,7 +549,10 @@ public sealed class DesignerParameter : Notifying
             AvailableValues: BuildAvailableValues(),
             Nullable: Nullable,
             AllowBlank: AllowBlank,
-            Hidden: Hidden);
+            Hidden: Hidden)
+        {
+            DefaultValueExpression = string.IsNullOrWhiteSpace(DefaultValueExpression) ? null : DefaultValueExpression,
+        };
 
     /// <summary>Builds the core <see cref="Reporting.Parameters.ParameterAvailableValues"/> from the
     /// editor's static text + query fields, or <c>null</c> when neither is configured.</summary>
@@ -626,6 +635,7 @@ public sealed class DesignerParameter : Notifying
     internal static DesignerParameter From(Reporting.Parameters.ReportParameter p)
         => new(p.Name, ClassifyClr(p.ValueType), p.DefaultValue?.ToString())
         {
+            DefaultValueExpression = p.DefaultValueExpression,
             Prompt = p.Prompt,
             Required = p.Required,
             AllowMultiple = p.AllowMultiple,

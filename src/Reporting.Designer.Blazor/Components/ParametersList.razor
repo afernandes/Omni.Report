@@ -24,6 +24,10 @@
                     <input type="text" placeholder="default" value="@p.DefaultValue"
                            @onchange="@(e => p.DefaultValue = e.Value?.ToString())"
                            style="font-family:var(--font-mono);font-size:11px;background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--r-1);padding:2px 4px;" />
+                    <input type="text" placeholder="=Today() (expr)" value="@p.DefaultValueExpression"
+                           @onchange="@(e => p.DefaultValueExpression = e.Value?.ToString())"
+                           title="Default por expressão (=Today(), =DateAdd(...)) — avaliado no início do run quando não há default literal nem valor do prompt"
+                           style="font-family:var(--font-mono);font-size:11px;background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--r-1);padding:2px 4px;" />
                     <button class="icon-btn" type="button" title="Remover"
                             @onclick="@(() => OnRemove.InvokeAsync(p))"
                             style="width:18px;height:18px;color:var(--danger);cursor:pointer;">×</button>
