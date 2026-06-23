@@ -11,6 +11,7 @@
                 OnOpenPalette="OnOpenPalette"
                 OnSave="OnSave"
                 OnLoad="OnLoadFile"
+                OnLoadRdl="OnLoadRdlFile"
                 OnMenuCommand="OnMenuCommand" />
 
         <TabBar Tabs="State.Tabs"
@@ -985,6 +986,27 @@
         catch (Exception ex) { Console.Error.WriteLine($"Falha ao carregar .repx: {ex.Message}"); }
     }
 
+    private async Task OnLoadRdlFile(InputFileChangeEventArgs e)
+    {
+        if (e.File is null) return;
+        using var ms = new MemoryStream();
+        await using var src = e.File.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024);
+        await src.CopyToAsync(ms);
+        try { State.LoadRdl(ms.ToArray()); }
+        catch (Exception ex) { Console.Error.WriteLine($"Falha ao importar .rdl: {ex.Message}"); }
+    }
+
+    // RDL export is a DEFINITION serialization (the native model projected to RDL), not a render export — so it
+    // goes straight through the RDL serializer, not the IExporterRegistry (which renders to PDF/XLSX/…).
+    private async Task OnExportRdl()
+    {
+        var bytes = State.SaveRdl();
+        var fileName = (State.Report.Name ?? "report") + ".rdl";
+        try { await Js.InvokeVoidAsync("omniViewer.download", fileName, "application/xml", bytes); }
+        catch (JSException) { }
+        catch (InvalidOperationException) { }
+    }
+
     // ─── Preview ────────────────────────────────────────────────────────────────
     /// <summary>Triggers preview/export. If any report parameter has no cached value and the
     /// user hasn't explicitly skipped prompting, opens the <see cref="ParameterPromptDialog"/>
@@ -1497,6 +1519,9 @@
             case "file.new":    OnNewTab(); break;
             case "file.save":   await OnSave(); break;
             case "file.saveas": await OnSave(); break;
+            // RDL export is a definition serializer, not a render exporter — handle it before the generic
+            // file.export.* case (which would look "rdl" up in the render registry and find nothing).
+            case "file.export.rdl": await OnExportRdl(); break;
             // file.export.<format> — looks up the format in the registry and exports.
             // The pattern is generic: any new exporter registered in DI becomes
             // automatically available as a palette command via its Format slug, no

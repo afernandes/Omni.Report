@@ -11,6 +11,7 @@ namespace Reporting.Designer.Blazor.ViewModels;
 public sealed class DesignerState : Notifying
 {
     private static readonly RepxSerializer _serializer = new();
+    private static readonly RdlExporter _rdl = new(); // RDL (.rdl) import/export — IReportSerializer, Format "rdl"
 
     public DesignerState()
         : this(new ReportDefinitionViewModel("Untitled")) { }
@@ -239,11 +240,23 @@ public sealed class DesignerState : Notifying
     public void Load(byte[] repxBytes)
     {
         ArgumentNullException.ThrowIfNull(repxBytes);
-        var definition = _serializer.LoadFromBytes(repxBytes);
+        LoadDefinition(_serializer.LoadFromBytes(repxBytes));
+    }
+
+    /// <summary>Loads an RDL (<c>.rdl</c>) blob via the RDL importer and replaces the active tab's report
+    /// (same restore path as <see cref="Load"/> — data sources, relations, parameters, variables).</summary>
+    public void LoadRdl(byte[] rdlBytes)
+    {
+        ArgumentNullException.ThrowIfNull(rdlBytes);
+        LoadDefinition(_rdl.LoadFromBytes(rdlBytes));
+    }
+
+    private void LoadDefinition(ReportDefinition definition)
+    {
         ReplaceActiveReport(ReportDefinitionViewModel.FromDefinition(definition));
 
         // Restore designer-side catalogs from the loaded definition. We replace wholesale —
-        // .repx is the source of truth for the just-opened report.
+        // the just-opened file is the source of truth for this report.
         DataSources.Clear();
         if (definition.DataSources.Count > 0)
         {
@@ -289,6 +302,10 @@ public sealed class DesignerState : Notifying
         RaiseChanged();
         return bytes;
     }
+
+    /// <summary>Serializes the active tab's report definition to an RDL (<c>.rdl</c>) byte array via the RDL
+    /// exporter (the native model is the source of truth; RDL is an interop projection — see docs/spec §8).</summary>
+    public byte[] SaveRdl() => _rdl.SaveToBytes(BuildDefinition());
 
     /// <summary>Builds the immutable <see cref="ReportDefinition"/> with the designer's
     /// current data sources and master-detail relations attached.</summary>
