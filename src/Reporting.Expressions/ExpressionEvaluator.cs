@@ -183,6 +183,30 @@ public sealed class ExpressionEvaluator
     private static bool TryEvaluateAggregate(string name, FunctionEventArgs args, IReportExpressionContext context, out object? result)
     {
         result = null;
+
+        // SSRS RunningValue(expression, aggregateFunction, [scope]) — a cumulative aggregate. Unlike the others
+        // the 2nd arg is the inner aggregate's NAME (a bare identifier like Sum), so it's extracted as RAW text,
+        // not evaluated. The running/cumulative behaviour is inherent to the scope buffer (which grows per row
+        // and resets at group boundaries), exactly as RunningTotal already relies on.
+        if (string.Equals(name, "RunningValue", StringComparison.OrdinalIgnoreCase))
+        {
+            if (args.Parameters.Count < 2)
+            {
+                return false; // RunningValue needs at least (expression, function)
+            }
+            var rvExpr = ExtractRawExpression(args.Parameters[0]);
+            var innerFunc = ExtractRawExpression(args.Parameters[1]).Trim();
+            if (!AggregateNames.Contains(innerFunc))
+            {
+                innerFunc = "Sum"; // unrecognised inner function → Sum (RunningValue's most common form)
+            }
+            var rvScope = args.Parameters.Count >= 3
+                ? ParseScope(args.Parameters.Evaluate(2))
+                : AggregateScope.Running;
+            result = context.EvaluateAggregate(innerFunc, rvExpr, rvScope);
+            return true;
+        }
+
         if (!AggregateNames.Contains(name))
         {
             return false;
