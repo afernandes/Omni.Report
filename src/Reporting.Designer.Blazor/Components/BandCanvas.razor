@@ -516,8 +516,6 @@
                 break;
 
             case DesignerElementKind.TextBox:
-            case DesignerElementKind.Barcode:
-            case DesignerElementKind.QrCode:
                 var expr = string.IsNullOrEmpty(e.Expression) ? "{expressão}" : e.Expression;
                 builder.OpenElement(0, "span");
                 builder.AddAttribute(1, "style", "color:var(--data-bound);font-family:var(--font-mono);");
@@ -577,12 +575,14 @@
             case DesignerElementKind.Sparkline:
             case DesignerElementKind.Indicator:
             case DesignerElementKind.Tablix:
+            case DesignerElementKind.Barcode:
+            case DesignerElementKind.QrCode:
+            case DesignerElementKind.Map:
                 // Representative design-time markup (stylised SVG / structural HTML grid, like SSRS/DevExpress) —
                 // real data only in Preview.
                 builder.AddMarkupContent(0, DesignViz.Markup(e) ?? "");
                 break;
 
-            case DesignerElementKind.Map:
             case DesignerElementKind.Subreport:
             case DesignerElementKind.Code:
                 builder.OpenElement(0, "span");
