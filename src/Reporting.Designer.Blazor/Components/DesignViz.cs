@@ -16,16 +16,48 @@ internal static class DesignViz
     private static readonly string[] Palette = { "#C2410C", "#0EA5E9", "#16A34A", "#A855F7", "#EAB308" };
     private static readonly double[] Sample = { 0.45, 0.7, 0.32, 0.85, 0.55, 0.62 }; // fixed dummy series (0..1)
 
-    /// <summary>Returns the preview SVG markup for a data-viz element, or null when the kind has no viz preview.</summary>
-    public static string? Svg(ElementViewModel e) => e.Kind switch
+    /// <summary>Returns the design-time preview markup (SVG for data-viz, an HTML table for Tablix), or null when
+    /// the kind has no viz preview.</summary>
+    public static string? Markup(ElementViewModel e) => e.Kind switch
     {
         DesignerElementKind.Chart => Chart(e),
         DesignerElementKind.Gauge => Gauge(e),
         DesignerElementKind.DataBar => DataBar(e),
         DesignerElementKind.Sparkline => Sparkline(e),
         DesignerElementKind.Indicator => Indicator(),
+        DesignerElementKind.Tablix => Tablix(e),
         _ => null,
     };
+
+    // ── Tablix: structural grid (HTML table). Matrix → corner/row-group/col-group/body; else flat columns. ──
+    private static string Tablix(ElementViewModel e)
+    {
+        const string t = "border-collapse:collapse;width:100%;height:100%;font-size:9px;background:#fff;table-layout:fixed;font-family:sans-serif;";
+        const string th = "border:1px solid #d4d4d4;background:#f5f4f0;padding:1px 3px;text-align:left;overflow:hidden;white-space:nowrap;color:#555;font-weight:600;";
+        const string td = "border:1px solid #ececec;padding:1px 3px;overflow:hidden;white-space:nowrap;color:#0a7a55;font-family:monospace;";
+        const string faded = "border:1px solid #f0f0f0;padding:1px 3px;color:#c4c4c4;text-align:center;";
+
+        if (e.TablixIsMatrix)
+        {
+            string Cell(string s, string st) => $"<td style=\"{st}\">{Esc(s)}</td>";
+            return $"<table style=\"{t}\">" +
+                $"<tr>{Cell(e.TablixCorner, th)}{Cell(Strip(e.TablixColumnGroup), th)}{Cell("…", faded)}</tr>" +
+                $"<tr>{Cell(Strip(e.TablixRowGroup), th)}{Cell(e.TablixCellExpr, td)}{Cell("…", faded)}</tr>" +
+                $"<tr>{Cell("…", faded)}{Cell("…", faded)}{Cell("…", faded)}</tr></table>";
+        }
+
+        var cols = e.TablixColumns;
+        if (cols.Count == 0)
+        {
+            return $"<table style=\"{t}\"><tr><th style=\"{th}\">Coluna</th></tr><tr><td style=\"{td}\">Fields.Valor</td></tr></table>";
+        }
+        var head = string.Concat(cols.Select(c => $"<th style=\"{th}\">{Esc(string.IsNullOrWhiteSpace(c.Header) ? c.Expression : c.Header)}</th>"));
+        var detail = string.Concat(cols.Select(c => $"<td style=\"{td}\">{Esc(c.Expression)}</td>"));
+        var dots = string.Concat(cols.Select(_ => $"<td style=\"{faded}\">…</td>"));
+        return $"<table style=\"{t}\"><thead><tr>{head}</tr></thead><tbody><tr>{detail}</tr><tr>{dots}</tr></tbody></table>";
+    }
+
+    private static string Strip(string s) => string.IsNullOrWhiteSpace(s) ? "Grupo" : s;
 
     private static string Frame(string inner, string aspect = "none") =>
         $"<svg viewBox=\"0 0 100 60\" preserveAspectRatio=\"x{aspect}\" width=\"100%\" height=\"100%\" " +
