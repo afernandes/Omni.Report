@@ -522,7 +522,9 @@ public sealed class RdlImporter
         }
         foreach (var s in seriesEls)
         {
-            var valueRaw = TextOfFirst(El(s, "DataPoints"), "Value"); // the series' data value (scoped)
+            // 2016 <ChartDataPoints>…<Y> (value axis), falling back to the legacy 2010 <DataPoints>…<Value>.
+            var valueRaw = TextOfFirst(El(s, "ChartDataPoints"), "Y")
+                ?? TextOfFirst(El(s, "DataPoints"), "Value");
             if (string.IsNullOrEmpty(valueRaw))
             {
                 continue;
