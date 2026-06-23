@@ -49,6 +49,33 @@ public class DesignerParameterRoundTripTests
     }
 
     [Fact]
+    public void Parameter_default_value_expression_persists_through_designer_and_repx()
+    {
+        // Regression: DesignerParameter ignored ReportParameter.DefaultValueExpression on both BuildDefinition
+        // (ToReportParameter) and Load (From), so loading a report with an =expression default and re-saving in
+        // the designer silently dropped it.
+        var state = new DesignerState();
+        state.Parameters.Clear();
+        state.Parameters.Add(new DesignerParameter("dataRef", DesignerFieldType.Date)
+        {
+            DefaultValueExpression = "Today()",
+            Prompt = "Data de referência",
+        });
+
+        // Build → the core parameter must carry the expression default.
+        var definition = state.BuildDefinition();
+        definition.Parameters.Should().ContainSingle();
+        definition.Parameters[0].DefaultValueExpression.Should().Be("Today()");
+
+        // Save → load into a fresh designer → the expression default surfaces again for editing.
+        var bytes = new RepxSerializer().SaveToBytes(definition);
+        var reloaded = new DesignerState();
+        reloaded.Load(bytes);
+        reloaded.Parameters.Should().ContainSingle();
+        reloaded.Parameters[0].DefaultValueExpression.Should().Be("Today()");
+    }
+
+    [Fact]
     public void Parameter_available_values_persist_through_designer_and_repx()
     {
         var state = new DesignerState();
