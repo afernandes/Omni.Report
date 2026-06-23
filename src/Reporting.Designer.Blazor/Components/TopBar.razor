@@ -21,6 +21,12 @@
                 <span class="shortcut">Ctrl+O</span>
                 <InputFile OnChange="OnLoadFile" accept=".repx" style="display:none" />
             </label>
+            <label class="dropdown-item" style="cursor:pointer;">
+                <Icon Name="folder-open" Size="12" CssClass="icon icon-12" />
+                <span>Importar RDL…</span>
+                <span class="shortcut"></span>
+                <InputFile OnChange="OnLoadRdlFile" accept=".rdl" style="display:none" />
+            </label>
             <button class="dropdown-item" type="button" @onclick="@(() => OnMenuCommand.InvokeAsync("file.save"))">
                 <Icon Name="save" Size="12" CssClass="icon icon-12" /><span>Salvar</span><span class="shortcut">Ctrl+S</span>
             </button>
@@ -33,6 +39,9 @@
             </button>
             <button class="dropdown-item" type="button" @onclick="@(() => OnMenuCommand.InvokeAsync("file.export.xlsx"))">
                 <Icon Name="file-spreadsheet" Size="12" CssClass="icon icon-12" /><span>Exportar XLSX</span><span class="shortcut"></span>
+            </button>
+            <button class="dropdown-item" type="button" @onclick="@(() => OnMenuCommand.InvokeAsync("file.export.docx"))">
+                <Icon Name="file-text" Size="12" CssClass="icon icon-12" /><span>Exportar DOCX</span><span class="shortcut"></span>
             </button>
             <button class="dropdown-item" type="button" @onclick="@(() => OnMenuCommand.InvokeAsync("file.export.html"))">
                 <Icon Name="file-code" Size="12" CssClass="icon icon-12" /><span>Exportar HTML</span><span class="shortcut"></span>
@@ -48,6 +57,10 @@
             </button>
             <button class="dropdown-item" type="button" @onclick="@(() => OnMenuCommand.InvokeAsync("file.export.markdown"))">
                 <Icon Name="file" Size="12" CssClass="icon icon-12" /><span>Exportar Markdown</span><span class="shortcut"></span>
+            </button>
+            <div class="dropdown-sep"></div>
+            <button class="dropdown-item" type="button" @onclick="@(() => OnMenuCommand.InvokeAsync("file.export.rdl"))">
+                <Icon Name="file-code" Size="12" CssClass="icon icon-12" /><span>Exportar RDL (.rdl)</span><span class="shortcut"></span>
             </button>
             <div class="dropdown-sep"></div>
             <button class="dropdown-item" type="button" @onclick="@(() => OnMenuCommand.InvokeAsync("view.preview"))">
@@ -187,10 +200,12 @@
     [Parameter] public EventCallback OnOpenPalette { get; set; }
     [Parameter] public EventCallback OnSave { get; set; }
     [Parameter] public EventCallback<InputFileChangeEventArgs> OnLoad { get; set; }
+    [Parameter] public EventCallback<InputFileChangeEventArgs> OnLoadRdl { get; set; }
     [Parameter] public EventCallback<string> OnMenuCommand { get; set; }
 
     private Task OnToggleThemeClicked() => OnToggleTheme.InvokeAsync();
     private Task OnOpenPaletteClicked() => OnOpenPalette.InvokeAsync();
     private Task OnSaveClicked()        => OnSave.InvokeAsync();
     private Task OnLoadFile(InputFileChangeEventArgs e) => OnLoad.InvokeAsync(e);
+    private Task OnLoadRdlFile(InputFileChangeEventArgs e) => OnLoadRdl.InvokeAsync(e);
 }
