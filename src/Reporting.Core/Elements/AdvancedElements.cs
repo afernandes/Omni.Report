@@ -3,20 +3,16 @@ using Reporting.Metadata;
 
 namespace Reporting.Elements;
 
-// ─── RDL F2 scaffold ─────────────────────────────────────────────────────────────
+// ─── Advanced RDL data regions ─────────────────────────────────────────────────────
 //
-// These records carry every RDL element kind that the renderer doesn't yet draw
-// natively. The goal is **lossless round-trip**: a .repx authored against SSRS or
-// edited in a third-party tool that places, say, a Tablix or a Gauge, can still be
-// loaded by our pipeline, edited, saved, and reopened without losing the element's
-// configuration. The renderer treats them as placeholder rectangles (a labelled
-// box at the element's Bounds) until a future iteration implements the dedicated
-// drawing pipelines.
+// The richer RDL element kinds beyond the basic report items. Each is a sealed record with the
+// minimum fields the RDL spec needs plus the OmniReport common shape (Id / Bounds / Style inherited
+// from ReportElement), so a .repx/.rdl authored in SSRS or a third-party tool round-trips losslessly.
 //
-// Each type is a sealed record with the minimum fields required by the RDL spec
-// plus the OmniReport common shape (Id / Bounds / Style / etc. inherited from
-// ReportElement). Adding render support later is purely additive — the wire
-// format and the .repx schema stay the same.
+// Rendering is REAL (Reporting.Layout): Chart → ChartRenderer; Gauge/DataBar/Sparkline/Indicator →
+// KpiRenderer; Tablix → TablixRenderer; Map → MapRenderer. Code (custom helpers) executes via the
+// opt-in Roslyn resolver — RCE by design, disabled by default, trusted sources only. Adding fields
+// stays additive — the wire format and the .repx schema don't change.
 
 /// <summary>
 /// RDL <c>Tablix</c> — unified Table + Matrix + List data region. The shape is a
@@ -24,10 +20,9 @@ namespace Reporting.Elements;
 /// dynamically (by an expression). The body cells hold child report items.
 /// </summary>
 /// <remarks>
-/// For Phase 2 scaffold we capture <see cref="RowGroups"/>/<see cref="ColumnGroups"/>
-/// + a flat list of <see cref="Cells"/> (each cell carries its row/column indices
-/// + the child element). Render strategy: paginator emits a placeholder rectangle
-/// with "Tablix" label; full grid layout planned for Phase 3.
+/// Captures <see cref="RowGroups"/>/<see cref="ColumnGroups"/> + a flat list of <see cref="Cells"/>
+/// (each cell carries its row/column indices + the child element). <c>TablixRenderer</c> lays out
+/// the full grid (groups, subtotals, no-rows message); the band adapts to its grown height.
 /// </remarks>
 public sealed record TablixElement : ReportElement
 {
@@ -44,8 +39,7 @@ public sealed record TablixElement : ReportElement
     public EquatableArray<TablixGroup> ColumnGroups { get; init; } = EquatableArray<TablixGroup>.Empty;
 
     /// <summary>Body cells — each one references the (row, column) coordinate and
-    /// the child element (typically a TextBox). The renderer will iterate this when
-    /// full Tablix support lands.</summary>
+    /// the child element (typically a TextBox). <c>TablixRenderer</c> iterates these to fill the grid.</summary>
     public EquatableArray<TablixCell> Cells { get; init; } = EquatableArray<TablixCell>.Empty;
 
     /// <summary>Optional relative column widths (weights). Empty → every column is equal. When
@@ -101,12 +95,12 @@ public sealed record TablixCell(int RowIndex, int ColumnIndex, ReportElement? Co
 /// RDL <c>Code</c> element — a block of custom C# (originally VB.NET in SSRS) that
 /// declares helper functions reachable from expressions as <c>Code.MethodName(...)</c>.
 /// We keep the source text alongside the optional language tag (default C#) so the
-/// .repx round-trips lossless even before a Roslyn-based compile/load path lands.
+/// .repx round-trips lossless independently of whether code execution is enabled.
 /// </summary>
 /// <remarks>
-/// Phase 2 scaffold: source code is preserved verbatim; calls to <c>Code.X</c> in
-/// expressions currently throw <c>NotImplementedException</c>. Phase 3 plugs in
-/// Roslyn-script compilation (cached AssemblyLoadContext per report).
+/// Source is preserved verbatim and round-trips losslessly. Execution is OPT-IN via the Roslyn
+/// code resolver (<c>Reporting.Expressions.Roslyn</c>) — RCE by design, disabled by default; enable
+/// only for trusted report sources. Without a resolver configured, <c>Code.X</c> calls are unavailable.
 /// </remarks>
 public sealed record CodeElement : ReportElement
 {
@@ -125,12 +119,12 @@ public enum CodeLanguage { CSharp, VisualBasic }
 /// <summary>
 /// RDL <c>Map</c> — geographic visualisation. Renders a Web-Mercator view with an optional
 /// vector basemap (GeoJSON shapes and/or a lat/long graticule) and a marker layer plotting each
-/// row's latitude/longitude. Tile basemaps (OpenStreetMap/Bing) are a future opt-in layer.
+/// row's latitude/longitude. Online tile basemaps (OpenStreetMap) are an opt-in layer via a tile resolver.
 /// </summary>
 public sealed record MapElement : ReportElement
 {
-    /// <summary>Tile / basemap provider (e.g. "BingMaps", "OpenStreetMap", "None"). Reserved for
-    /// the future online tile layer; the offline vector basemap is driven by the fields below.</summary>
+    /// <summary>Tile / basemap provider (e.g. "OpenStreetMap", "None"). Drives the online tile layer
+    /// when a tile resolver is configured; the offline vector basemap is driven by the fields below.</summary>
     [PropertyGrid(Category = "Mapa", Order = 1, Label = "Basemap (tiles)", Placeholder = "OpenStreetMap / (nenhum)")]
     public string? Basemap { get; init; }
 
@@ -178,7 +172,7 @@ public sealed record MapElement : ReportElement
 
 /// <summary>
 /// RDL <c>Gauge</c> — radial / linear gauge showing a single value against a range.
-/// Captures Min/Max/Value expressions + gauge kind. Renderer placeholder for now.
+/// Captures Min/Max/Value expressions + gauge kind. Rendered by <c>KpiRenderer</c> (radial arc / linear track).
 /// </summary>
 public sealed record GaugeElement : ReportElement
 {
@@ -207,8 +201,7 @@ public sealed record GaugeRange(
 
 /// <summary>
 /// RDL <c>DataBar</c> — horizontal bar that fills proportionally to <see cref="ValueExpression"/>.
-/// Typically appears inside a Tablix cell to highlight a metric. Scaffold: round-trip
-/// only; renderer placeholder.
+/// Typically appears inside a Tablix cell to highlight a metric. Rendered by <c>KpiRenderer</c>.
 /// </summary>
 public sealed record DataBarElement : ReportElement
 {
@@ -227,7 +220,7 @@ public sealed record DataBarElement : ReportElement
 
 /// <summary>
 /// RDL <c>Sparkline</c> — miniature line / bar chart embedded in a cell. Trades full
-/// chart fidelity for compactness. Scaffold: round-trip + future renderer.
+/// chart fidelity for compactness. Rendered by <c>KpiRenderer</c>.
 /// </summary>
 public sealed record SparklineElement : ReportElement
 {
@@ -248,8 +241,7 @@ public enum SparklineKind { Line, Column, Area }
 
 /// <summary>
 /// RDL <c>Indicator</c> — KPI icon (up arrow / star / signal bars) that swaps
-/// visualisation based on which "state" range the value falls into. Scaffold: round-trip;
-/// the renderer draws a placeholder labelled with <see cref="ValueExpression"/>.
+/// visualisation based on which "state" range the value falls into. Rendered by <c>KpiRenderer</c>.
 /// </summary>
 public sealed record IndicatorElement : ReportElement
 {
