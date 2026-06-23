@@ -67,7 +67,11 @@ public sealed class RdlImporter
         _embeddedImages = ReadEmbeddedImages(report);
         _warnings.Clear();
 
-        var page = El(report, "Page");
+        // RDL 2016 nests <Body>/<Width>/<Page> in <ReportSections><ReportSection>; legacy RDL (2010 and earlier)
+        // puts them directly under <Report>. This "section scope" reads both (first section, or the report itself).
+        var section = El(El(report, "ReportSections"), "ReportSection") ?? report;
+
+        var page = El(section, "Page");
         var marginHost = page ?? report;
         var pageWidth = ParseSize(Val(marginHost, "PageWidth")) ?? PaperSize.A4.Width;
         var pageHeight = ParseSize(Val(marginHost, "PageHeight")) ?? PaperSize.A4.Height;
@@ -89,7 +93,7 @@ public sealed class RdlImporter
             ?? Array.Empty<ReportParameter>();
 
         // Body's free report items render once → a ReportHeader band. Page header/footer map directly.
-        var body = El(report, "Body");
+        var body = El(section, "Body");
         var pageHeaderEl = El(page, "PageHeader");
         var pageFooterEl = El(page, "PageFooter");
         var pageFooter = BandFrom(El(pageFooterEl, "ReportItems"), Val(pageFooterEl, "Height"), BandKind.PageFooter);
@@ -980,6 +984,10 @@ public sealed class RdlImporter
         // The RDL item Name identifies the element for ReportItems!Name.Value references — capture it
         // (was previously dropped). Applied after the per-type arm so every element kind keeps it.
         var name = item.Attribute("Name")?.Value;
+        if (name is not null && name.StartsWith(Internal.RdlWriter.SyntheticNamePrefix, StringComparison.Ordinal))
+        {
+            name = null; // a @Name the exporter synthesized for XSD validity — not part of the model
+        }
         var withCommon = el switch
         {
             TextBoxElement t => t with { Style = style ?? t.Style, Visible = visible, VisibleExpression = visExpr, Bookmark = bookmark, DocumentMapLabel = docMap, Action = action },
