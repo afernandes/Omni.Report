@@ -132,4 +132,45 @@ public class BandWysiwygTests : BunitContext
         cut.FindAll("img").Should().BeEmpty("no resolvable source → no <img>");
         cut.Markup.Should().Contain("Imagem", "the placeholder caption is shown instead");
     }
+
+    private IRenderedComponent<BandCanvas> RenderViz(DesignerElementKind kind, Action<ElementViewModel>? configure = null)
+    {
+        var vm = new ReportDefinitionViewModel(kind.ToString());
+        foreach (var b in vm.Bands.ToList()) vm.RemoveBand(b);
+        var band = new BandViewModel(DesignerBandKind.Detail, Unit.FromMm(40));
+        var el = new ElementViewModel(kind, "e1")
+        {
+            Bounds = new Rectangle(Unit.Zero, Unit.Zero, Unit.FromMm(50), Unit.FromMm(40)),
+        };
+        configure?.Invoke(el);
+        band.AddElement(el);
+        vm.AddBand(band);
+        return Render<BandCanvas>(p => p.Add(c => c.Report, vm));
+    }
+
+    [Fact]
+    public void A_bar_chart_renders_a_representative_svg_not_a_placeholder()
+    {
+        var cut = RenderViz(DesignerElementKind.Chart, e => { e.ChartKind = ChartKind.Bar; e.ChartTitle = "Vendas"; });
+        cut.FindAll("svg").Should().NotBeEmpty("the chart shows a design-time SVG");
+        cut.FindAll("rect").Count.Should().BeGreaterThan(3, "the bar-chart preview draws sample bars");
+        cut.Markup.Should().Contain("Vendas", "the chart title shows in the preview");
+        cut.Markup.Should().NotContain("📊", "no dashed placeholder caption");
+    }
+
+    [Fact]
+    public void A_radial_gauge_renders_an_arc_preview()
+    {
+        var cut = RenderViz(DesignerElementKind.Gauge, e => e.GaugeType = GaugeKind.Radial);
+        cut.FindAll("svg").Should().NotBeEmpty();
+        cut.FindAll("path").Should().NotBeEmpty("the radial gauge preview draws an arc path");
+    }
+
+    [Fact]
+    public void A_databar_renders_a_filled_bar_preview()
+    {
+        var cut = RenderViz(DesignerElementKind.DataBar);
+        cut.FindAll("svg").Should().NotBeEmpty();
+        cut.FindAll("rect").Count.Should().BeGreaterThanOrEqualTo(2, "track + fill");
+    }
 }
