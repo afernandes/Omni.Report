@@ -30,6 +30,10 @@ internal static class RdlWriter
     internal static readonly XNamespace RdlDesigner =
         "http://schemas.microsoft.com/SQLServer/reporting/reportdesigner";
 
+    // Prefix for a report-item @Name synthesized when the model element has none (RDL requires @Name). The
+    // importer strips it so synthetic names never leak into the model. Reserved — authors should not use it.
+    internal const string SyntheticNamePrefix = "omni_auto_";
+
     public static XDocument Write(ReportDefinition def, List<string> warnings)
     {
         ArgumentNullException.ThrowIfNull(def);
@@ -98,11 +102,9 @@ internal static class RdlWriter
         // band's height back (preserving the round-trip). Falls back to the printable area / a default.
         var bodyHeight = def.ReportHeader is { } rhBand && rhBand.Height.Mils > 0 ? rhBand.Height
             : page.ContentHeight.ToMm() > 0 ? page.ContentHeight : Unit.FromMm(100);
-        report.Add(new XElement(Rdl + "Body",
+        var bodyEl = new XElement(Rdl + "Body",
             new XElement(Rdl + "Height", Size(bodyHeight)),
-            bodyItems));
-
-        report.Add(new XElement(Rdl + "Width", Size(page.ContentWidth)));
+            bodyItems);
 
         var pageEl = new XElement(Rdl + "Page",
             // When the flat-table Tablix was reconstructed, its column headers ARE the PageHeader — don't also
@@ -120,7 +122,14 @@ internal static class RdlWriter
             pageEl.Add(new XElement(Rdl + "Columns", page.Columns.ToString(CultureInfo.InvariantCulture)));
             pageEl.Add(new XElement(Rdl + "ColumnSpacing", Size(page.ColumnSpacing)));
         }
-        report.Add(pageEl);
+
+        // RDL 2016: <Report> no longer takes a direct <Body>; Body/Width/Page live inside
+        // <ReportSections><ReportSection>. OmniReport's single-canvas model maps to exactly one section.
+        report.Add(new XElement(Rdl + "ReportSections",
+            new XElement(Rdl + "ReportSection",
+                bodyEl,
+                new XElement(Rdl + "Width", Size(page.ContentWidth)),
+                pageEl)));
 
         WriteParameters(report, def, warnings);
         WriteDataSets(report, def, warnings);
@@ -696,6 +705,10 @@ internal static class RdlWriter
             TextBoxElement t => Textbox(TextRunValue(ValueOf(t.Expression))),
             _ => Textbox(TextRunValue(string.Empty)),
         };
+        // A cell's <Textbox> also requires @Name (XSD). Use the content's name, else synthesize (importer strips it).
+        textbox.SetAttributeValue("Name", content is { Name: { Length: > 0 } cellName }
+            ? cellName
+            : SyntheticNamePrefix + (content?.Id ?? Guid.NewGuid().ToString("n")));
         var style = content is null ? null : StyleElement(content.Style);
         if (style is not null)
         {
@@ -717,8 +730,9 @@ internal static class RdlWriter
             return new XElement(Rdl + element, members);
         }
         XElement level = members;
-        foreach (var g in groups)
+        for (var gi = 0; gi < groups.Count; gi++)
         {
+            var g = groups[gi];
             XElement member;
             if (string.IsNullOrEmpty(g.GroupExpression))
             {
@@ -745,9 +759,14 @@ internal static class RdlWriter
                 }
             }
             level.Add(member);
-            var inner = new XElement(Rdl + "TablixMembers"); // nest the next (inner) group beneath this member
-            member.Add(inner);
-            level = inner;
+            // Only nest a child <TablixMembers> when there's an inner group; an empty one is XSD-invalid
+            // (TablixMembers requires ≥1 TablixMember).
+            if (gi < groups.Count - 1)
+            {
+                var inner = new XElement(Rdl + "TablixMembers"); // nest the next (inner) group beneath this member
+                member.Add(inner);
+                level = inner;
+            }
         }
         if (subtotals)
         {
@@ -1059,10 +1078,10 @@ internal static class RdlWriter
 
     private static void WriteCommon(XElement item, ReportElement el)
     {
-        if (!string.IsNullOrEmpty(el.Name))
-        {
-            item.SetAttributeValue("Name", el.Name);
-        }
+        // RDL requires @Name on every report item (XSD minOccurs + ReportItems!Name references). When the model
+        // has no name, synthesize a stable unique one from the element Id; RdlImporter strips this synthetic
+        // prefix back to null on import, so the round-trip stays clean.
+        item.SetAttributeValue("Name", string.IsNullOrEmpty(el.Name) ? SyntheticNamePrefix + el.Id : el.Name);
         var style = StyleElement(el.Style);
         // Style sub-properties driven by an expression (conditional formatting) — inverse of ReadStyleExpressions.
         WriteStyleExpressions(ref style, el.PropertyExpressions);

@@ -12,6 +12,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Official Microsoft RDL 2016/01 schema (vendored from the [MS-RDL] spec) — see RdlXsdValidationTests. -->
+    <EmbeddedResource Include="..\..\schemas\rdl\2016-01\ReportDefinition.xsd" Link="ReportDefinition.xsd" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio" />
