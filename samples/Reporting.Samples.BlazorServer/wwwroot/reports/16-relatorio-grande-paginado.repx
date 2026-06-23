@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Report SchemaVersion="1.0" Name="Relatório Grande Paginado">
+  <PageSetup Orientation="Portrait" Margins="591,591,591,591" Columns="1" ColumnSpacing="0">
+    <Paper Name="A4" Width="8268" Height="11693" />
+  </PageSetup>
+  <DataSources>
+    <DataSource Name="Vendas">
+      <Fields>
+        <Field Name="Cliente" Type="System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" />
+        <Field Name="Produto" Type="System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" />
+        <Field Name="Quantidade" Type="System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" />
+        <Field Name="PrecoUnitario" Type="System.Decimal, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" />
+        <Field Name="DataVenda" Type="System.DateTime, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" />
+        <Field Name="Total" Type="System.Decimal, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" />
+      </Fields>
+    </DataSource>
+  </DataSources>
+  <ReportHeader Kind="ReportHeader" Height="709" Visible="true" PrintOnFirstPage="true" PrintOnLastPage="true">
+    <Elements>
+      <TextBox Id="ead6246faf12402fa98e2bcc1d3df66d" Bounds="0,0,7087,472" Visible="true">
+        <Style HorizontalAlignment="Center" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Arial" Size="16" Style="Bold" />
+        </Style>
+        <Expression>Relatório de Vendas — grande e paginado</Expression>
+      </TextBox>
+      <TextBox Id="e1bf608d7d6643c5977e66404e49d238" Bounds="0,512,7087,197" Visible="true">
+        <Style HorizontalAlignment="Center" VerticalAlignment="Top" WordWrap="true">
+          <ForeColor>#808080</ForeColor>
+        </Style>
+        <Expression>{Count(Fields.Total)} linhas · gerado para validar paginação</Expression>
+      </TextBox>
+    </Elements>
+  </ReportHeader>
+  <PageHeader Kind="PageHeader" Height="354" Visible="true" PrintOnFirstPage="true" PrintOnLastPage="true">
+    <Elements>
+      <Label Id="747049f0d4984b708c4d88ffd5ecf97f" Bounds="0,0,3622,236" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Arial" Size="10" Style="Bold" />
+        </Style>
+        <Text>Produto</Text>
+      </Label>
+      <Label Id="cd31bb7d9b854888bb74315fd03f98a4" Bounds="3622,0,709,236" Visible="true">
+        <Style HorizontalAlignment="Right" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Arial" Size="10" Style="Bold" />
+        </Style>
+        <Text>Qtd</Text>
+      </Label>
+      <Label Id="a2fcc89595684511b50c065308277245" Bounds="4409,0,1260,236" Visible="true">
+        <Style HorizontalAlignment="Right" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Arial" Size="10" Style="Bold" />
+        </Style>
+        <Text>Preço Unitário</Text>
+      </Label>
+      <Label Id="668065e38bac4b47931a187c3ebdfb08" Bounds="5748,0,1339,236" Visible="true">
+        <Style HorizontalAlignment="Right" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Arial" Size="10" Style="Bold" />
+        </Style>
+        <Text>Total</Text>
+      </Label>
+      <Line Id="a00a13dab0114d57ad12650c92839df0" Bounds="0,295,7087,0" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true" />
+        <Direction>Horizontal</Direction>
+        <Pen Style="Solid" Thickness="4" Color="#000000" />
+      </Line>
+    </Elements>
+  </PageHeader>
+  <Groups>
+    <Group Name="PorCliente" GroupExpression="Fields.Cliente" KeepTogether="false" NewPageBefore="false" NewPageAfter="false" RepeatHeaderOnNewPage="true" Visible="true">
+      <Header Kind="GroupHeader" Height="315" Visible="true" PrintOnFirstPage="true" PrintOnLastPage="true">
+        <Elements>
+          <TextBox Id="bd16d0d253414306b0c4a012b4ce6a7e" Bounds="0,39,7087,236" Visible="true">
+            <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true">
+              <Font Family="Arial" Size="11" Style="Bold" />
+              <ForeColor>#C2410C</ForeColor>
+            </Style>
+            <Expression>Cliente: {Fields.Cliente}</Expression>
+          </TextBox>
+        </Elements>
+      </Header>
+      <Footer Kind="GroupFooter" Height="315" Visible="true" PrintOnFirstPage="true" PrintOnLastPage="true">
+        <Elements>
+          <Line Id="00fdcfea35614a3e8d70fc5a79415021" Bounds="0,0,7087,0" Visible="true">
+            <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true" />
+            <Direction>Horizontal</Direction>
+            <Pen Style="Solid" Thickness="3" Color="#000000" />
+          </Line>
+          <TextBox Id="47a01400ee9c483baae88b7352f2867f" Bounds="0,39,7087,236" Visible="true">
+            <Style HorizontalAlignment="Right" VerticalAlignment="Top" WordWrap="true">
+              <Font Family="Arial" Size="10" Style="Bold" />
+            </Style>
+            <Expression>Subtotal {Fields.Cliente}: {Sum(Fields.Total, 'Group'):C}</Expression>
+          </TextBox>
+        </Elements>
+      </Footer>
+    </Group>
+  </Groups>
+  <Detail Height="236" Visible="true" CanGrow="false" CanShrink="false">
+    <Elements>
+      <TextBox Id="dac2bedb11a24406a386e54311302180" Bounds="0,0,3622,236" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true" />
+        <Expression>{Fields.Produto}</Expression>
+      </TextBox>
+      <TextBox Id="18f02347edc24985a789b9225c236119" Bounds="3622,0,709,236" Visible="true">
+        <Style HorizontalAlignment="Right" VerticalAlignment="Top" WordWrap="true" />
+        <Expression>{Fields.Quantidade:N0}</Expression>
+      </TextBox>
+      <TextBox Id="da5e2878e0794260a4c41ca6ea7df326" Bounds="4409,0,1260,236" Visible="true">
+        <Style HorizontalAlignment="Right" VerticalAlignment="Top" WordWrap="true" />
+        <Expression>{Fields.PrecoUnitario:C}</Expression>
+      </TextBox>
+      <TextBox Id="988ade97c5a24bf7ab48116ee50f2cbc" Bounds="5748,0,1339,236" Visible="true">
+        <Style HorizontalAlignment="Right" VerticalAlignment="Top" WordWrap="true" />
+        <Expression>{Fields.Total:C}</Expression>
+      </TextBox>
+    </Elements>
+  </Detail>
+  <PageFooter Kind="PageFooter" Height="315" Visible="true" PrintOnFirstPage="true" PrintOnLastPage="true">
+    <Elements>
+      <TextBox Id="57e49a06bd2245d0a8b73d628f182410" Bounds="0,39,7087,236" Visible="true">
+        <Style HorizontalAlignment="Right" VerticalAlignment="Top" WordWrap="true">
+          <ForeColor>#808080</ForeColor>
+        </Style>
+        <Expression>Página {Page.Number} de {Page.Total}</Expression>
+      </TextBox>
+    </Elements>
+  </PageFooter>
+  <ReportFooter Kind="ReportFooter" Height="472" Visible="true" PrintOnFirstPage="true" PrintOnLastPage="true">
+    <Elements>
+      <Line Id="4f9bd3818ebf452f8b7d90beb2c5b7eb" Bounds="0,0,7087,0" Visible="true">
+        <Style HorizontalAlignment="Left" VerticalAlignment="Top" WordWrap="true" />
+        <Direction>Horizontal</Direction>
+        <Pen Style="Solid" Thickness="7" Color="#000000" />
+      </Line>
+      <TextBox Id="c27ee9312725406eb51f4db85c300170" Bounds="0,79,7087,394" Visible="true">
+        <Style HorizontalAlignment="Right" VerticalAlignment="Top" WordWrap="true">
+          <Font Family="Arial" Size="12" Style="Bold" />
+        </Style>
+        <Expression>TOTAL GERAL: {Sum(Fields.Total):C}</Expression>
+      </TextBox>
+    </Elements>
+  </ReportFooter>
+</Report>
