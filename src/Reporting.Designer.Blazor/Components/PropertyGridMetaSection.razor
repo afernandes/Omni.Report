@@ -184,7 +184,7 @@
                                 @if (isCustom)
                                 {
                                     <input type="text" value="@fmt" placeholder="ex: #,##0.00"
-                                           @onchange="@(e => Element.ApplyMetaSet(d, string.IsNullOrEmpty(e.Value?.ToString()) ? null : e.Value!.ToString()))"
+                                           @onchange="@(e => OnCustomFormatTyped(d, e.Value?.ToString()))"
                                            style="width:120px;font-family:var(--font-mono);font-size:11.5px;" />
                                 }
                                 break;
@@ -270,6 +270,17 @@
             return;
         }
         _customFormat.Remove(d.Path);
+        Element.ApplyMetaSet(d, string.IsNullOrEmpty(value) ? null : value);
+    }
+
+    // Custom format box: if the author types a string that IS a known preset, leave Custom mode so the dropdown
+    // re-syncs to that preset (otherwise it stayed stuck on "Custom…").
+    private void OnCustomFormatTyped(PropertyGridDescriptor d, string? value)
+    {
+        if (!string.IsNullOrEmpty(value) && KnownFormats.Contains(value))
+        {
+            _customFormat.Remove(d.Path);
+        }
         Element.ApplyMetaSet(d, string.IsNullOrEmpty(value) ? null : value);
     }
 
