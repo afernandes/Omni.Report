@@ -657,6 +657,15 @@ internal static class RepxWriter
             if (bg.Expression is not null) bgEl.SetAttributeValue("Expression", bg.Expression);
             el.Add(bgEl);
         }
+        // Gradient: emit only when active, so existing solid-fill styles round-trip byte-identical.
+        if (style.BackgroundGradient != BackgroundGradientType.None)
+        {
+            el.SetAttributeValue("BackgroundGradient", style.BackgroundGradient);
+        }
+        if (style.BackColorEnd is not null)
+        {
+            el.Add(new XElement("BackColorEnd", Formats.FormatColor(style.BackColorEnd.Value)));
+        }
         return el;
     }
 

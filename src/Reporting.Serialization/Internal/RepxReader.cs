@@ -641,7 +641,9 @@ internal static class RepxReader
         var backgroundImage = el.Element("BackgroundImage") is { } bgEl
             ? new BackgroundImage(Attr(bgEl, "Path"), Attr(bgEl, "Expression"))
             : null;
-        return new Style(font, foreColor, backColor, border, padding, horizontal, vertical, wordWrap, format, backgroundImage);
+        var backgroundGradient = Enum.TryParse<BackgroundGradientType>(Attr(el, "BackgroundGradient"), out var bg) ? bg : BackgroundGradientType.None;
+        var backColorEnd = ReadOptionalColor(el.Element("BackColorEnd"));
+        return new Style(font, foreColor, backColor, border, padding, horizontal, vertical, wordWrap, format, backgroundImage, backColorEnd, backgroundGradient);
     }
 
     private static Font ReadFont(XElement el)

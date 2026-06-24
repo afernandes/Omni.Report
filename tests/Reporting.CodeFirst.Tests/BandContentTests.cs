@@ -74,6 +74,17 @@ public class BandContentTests
         tb.Style.Font!.Size.Should().Be(14);
     }
 
+    [Fact]
+    public void BackgroundGradient_sets_start_end_and_direction()
+    {
+        var b = Build(c => c.Text("e").BackgroundGradient(
+            Color.FromRgb(255, 0, 0), Color.FromRgb(0, 0, 255), BackgroundGradientType.LeftRight));
+        var tb = (TextBoxElement)b.BuildElements()[0];
+        tb.Style.BackColor.Should().Be(Color.FromRgb(255, 0, 0), "start is the BackColor");
+        tb.Style.BackColorEnd.Should().Be(Color.FromRgb(0, 0, 255));
+        tb.Style.BackgroundGradient.Should().Be(BackgroundGradientType.LeftRight);
+    }
+
     [Theory]
     [InlineData("AlignLeft", HorizontalAlignment.Left)]
     [InlineData("AlignRight", HorizontalAlignment.Right)]

@@ -1240,6 +1240,14 @@ internal static class RdlWriter
         {
             s.Add(new XElement(Rdl + "BackgroundColor", back.ToHex()));
         }
+        // RDL gradient: BackgroundColor (above) is the start; emit type + end colour only as a complete pair, so a
+        // None gradient never carries a dangling end colour on RDL round-trip (the canonical .repx/.repjson keep both
+        // independently for full losslessness).
+        if (style.BackgroundGradient != BackgroundGradientType.None && style.BackColorEnd is { } backEnd)
+        {
+            s.Add(new XElement(Rdl + "BackgroundGradientType", style.BackgroundGradient.ToString()));
+            s.Add(new XElement(Rdl + "BackgroundGradientEndColor", backEnd.ToHex()));
+        }
         WriteBorder(s, style.Border);
         WritePadding(s, style.Padding);
         if (style.HorizontalAlignment != HorizontalAlignment.Left)

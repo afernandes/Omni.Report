@@ -220,7 +220,7 @@ public static class SkiaPrimitiveRenderer
         var rect = bounds.ToSKRect(dpi);
         if (fill is not null && fill.IsVisible)
         {
-            using var paint = new SKPaint { Color = fill.Color.ToSKColor(), Style = SKPaintStyle.Fill, IsAntialias = true };
+            using var paint = CreateFillPaint(fill, rect);
             canvas.DrawRect(rect, paint);
         }
         if (pen is not null && pen.IsVisible)
@@ -236,7 +236,7 @@ public static class SkiaPrimitiveRenderer
         var rect = bounds.ToSKRect(dpi);
         if (fill is not null && fill.IsVisible)
         {
-            using var paint = new SKPaint { Color = fill.Color.ToSKColor(), Style = SKPaintStyle.Fill, IsAntialias = true };
+            using var paint = CreateFillPaint(fill, rect);
             canvas.DrawOval(rect, paint);
         }
         if (pen is not null && pen.IsVisible)
@@ -286,7 +286,7 @@ public static class SkiaPrimitiveRenderer
         using var path = builder.Path;
         if (fill is not null && fill.IsVisible)
         {
-            using var paint = new SKPaint { Color = fill.Color.ToSKColor(), Style = SKPaintStyle.Fill, IsAntialias = true };
+            using var paint = CreateFillPaint(fill, path.Bounds);
             canvas.DrawPath(path, paint);
         }
         if (pen is not null && pen.IsVisible)
@@ -295,6 +295,42 @@ public static class SkiaPrimitiveRenderer
             canvas.DrawPath(path, paint);
         }
     }
+
+    /// <summary>Builds the fill paint for a primitive: a solid colour, or a two-colour gradient shader when the
+    /// brush carries one. <paramref name="bounds"/> (already in pixels) anchors the gradient's start/end points;
+    /// <see cref="BackgroundGradientType.Center"/> is a radial blend, the rest are linear.</summary>
+    private static SKPaint CreateFillPaint(BrushStyle fill, SKRect bounds)
+    {
+        var paint = new SKPaint { Color = fill.Color.ToSKColor(), Style = SKPaintStyle.Fill, IsAntialias = true };
+        if (fill.HasGradient && fill.GradientEndColor is { } end)
+        {
+            var colors = new[] { fill.Color.ToSKColor(), end.ToSKColor() };
+            paint.Shader = fill.Gradient == BackgroundGradientType.Center
+                ? SKShader.CreateRadialGradient(
+                    new SKPoint(bounds.MidX, bounds.MidY), Math.Max(bounds.Width, bounds.Height) / 2f,
+                    colors, null, SKShaderTileMode.Clamp)
+                : SKShader.CreateLinearGradient(
+                    GradientStart(fill.Gradient, bounds), GradientEnd(fill.Gradient, bounds),
+                    colors, null, SKShaderTileMode.Clamp);
+        }
+        return paint;
+    }
+
+    private static SKPoint GradientStart(BackgroundGradientType kind, SKRect r) => kind switch
+    {
+        BackgroundGradientType.LeftRight     => new SKPoint(r.Left, r.MidY),
+        BackgroundGradientType.DiagonalLeft  => new SKPoint(r.Left, r.Top),
+        BackgroundGradientType.DiagonalRight => new SKPoint(r.Right, r.Top),
+        _                                    => new SKPoint(r.MidX, r.Top), // TopBottom + fallback
+    };
+
+    private static SKPoint GradientEnd(BackgroundGradientType kind, SKRect r) => kind switch
+    {
+        BackgroundGradientType.LeftRight     => new SKPoint(r.Right, r.MidY),
+        BackgroundGradientType.DiagonalLeft  => new SKPoint(r.Right, r.Bottom),
+        BackgroundGradientType.DiagonalRight => new SKPoint(r.Left, r.Bottom),
+        _                                    => new SKPoint(r.MidX, r.Bottom), // TopBottom + fallback
+    };
 
     /// <summary>Applies <paramref name="clip"/> (if any) to the canvas and returns the save-count to restore
     /// after the primitive is drawn (null = nothing pushed). Shared by every SKCanvas-based replay loop

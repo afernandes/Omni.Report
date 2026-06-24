@@ -729,9 +729,16 @@ internal static class TablixRenderer
         ExpressionEvaluator ev, IReportExpressionContext ctx, string? id)
     {
         var s = content is null ? null : StyleResolver.Resolve(content, ev, ctx);
-        if (s?.BackColor is { } bg)
+        // Honour the cell's gradient (BackColor → BackColorEnd) — not just the solid start — so Tablix cells match band fills.
+        if (s is not null && StyleResolver.BackgroundBrush(s) is { } bgBrush)
         {
-            list.Add(Fill(xMm, yMm, wMm, RowHeightMm, bg, id));
+            list.Add(new DrawRectanglePrimitive
+            {
+                Bounds = Rect(xMm, yMm, wMm, RowHeightMm),
+                Fill = bgBrush,
+                Pen = null,
+                SourceElementId = id,
+            });
         }
         var font = s?.Font ?? new Font("Arial", 8.5, defaultBold ? FontStyle.Bold : FontStyle.Regular);
         var align = s?.HorizontalAlignment ?? HorizontalAlignment.Left;

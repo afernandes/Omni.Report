@@ -813,6 +813,15 @@ internal static class RepJsonWriter
             if (bg.Expression is not null) bgObj["expression"] = bg.Expression;
             o["backgroundImage"] = bgObj;
         }
+        // Gradient: emit only when active, so existing solid-fill styles round-trip unchanged.
+        if (style.BackgroundGradient != BackgroundGradientType.None)
+        {
+            o["backgroundGradient"] = style.BackgroundGradient.ToString();
+        }
+        if (style.BackColorEnd is not null)
+        {
+            o["backColorEnd"] = Formats.FormatColor(style.BackColorEnd.Value);
+        }
         return o;
     }
 
