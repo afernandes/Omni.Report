@@ -181,7 +181,8 @@ internal sealed class BandRenderer
                 {
                     Bounds = elementBounds,
                     SourceElementId = element.Id,
-                    Fill = new BrushStyle(backColor),
+                    // backColor is the gradient start; the renderer paints a solid fill unless a direction is set.
+                    Fill = new BrushStyle(backColor, effectiveStyle.BackColorEnd, effectiveStyle.BackgroundGradient),
                 });
             }
 

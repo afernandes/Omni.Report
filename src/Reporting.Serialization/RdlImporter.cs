@@ -1423,7 +1423,10 @@ public sealed class RdlImporter
             VerticalAlignment: ParseVAlign(Val(s, "VerticalAlign")),
             WordWrap: ParseWrapMode(Val(s, "WrapMode")),
             Format: Val(s, "Format") is { Length: > 0 } fmt ? fmt : null,
-            BackgroundImage: ReadBackgroundImage(s));
+            BackgroundImage: ReadBackgroundImage(s),
+            BackColorEnd: ParseColor(Val(s, "BackgroundGradientEndColor")),
+            // RDL has a couple of extra directions (HorizontalCenter/VerticalCenter) we don't model — fall back to None.
+            BackgroundGradient: Enum.TryParse<BackgroundGradientType>(Val(s, "BackgroundGradientType"), out var gt) ? gt : BackgroundGradientType.None);
         return style == Style.Default ? null : style;
     }
 

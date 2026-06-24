@@ -635,7 +635,9 @@ internal static class RepJsonReader
             Enum.Parse<VerticalAlignment>((string?)o["verticalAlignment"] ?? nameof(VerticalAlignment.Top)),
             (bool?)o["wordWrap"] ?? true,
             (string?)o["format"],
-            backgroundImage);
+            backgroundImage,
+            (string?)o["backColorEnd"] is { } bce ? Formats.ParseColor(bce) : null,
+            Enum.Parse<BackgroundGradientType>((string?)o["backgroundGradient"] ?? nameof(BackgroundGradientType.None)));
     }
 
     private static Border ReadBorder(JsonObject o)

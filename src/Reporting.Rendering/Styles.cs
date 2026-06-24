@@ -33,12 +33,21 @@ public sealed record PenStyle(
         => side.IsVisible ? new PenStyle(side.Color, side.Thickness, side.Style) : null;
 }
 
-/// <summary>Fill style for shapes. Currently solid; gradients/patterns reserved for future.</summary>
-public sealed record BrushStyle(Color Color)
+/// <summary>Fill style for shapes — solid, or a two-colour gradient. <see cref="Color"/> is the solid colour
+/// (and the gradient start); when <see cref="Gradient"/> is not <see cref="BackgroundGradientType.None"/> and
+/// <see cref="GradientEndColor"/> is set, the fill blends <see cref="Color"/> → <see cref="GradientEndColor"/>
+/// along that direction. Optional params keep every existing <c>new BrushStyle(color)</c> call solid.</summary>
+public sealed record BrushStyle(
+    Color Color,
+    Color? GradientEndColor = null,
+    BackgroundGradientType Gradient = BackgroundGradientType.None)
 {
     public static readonly BrushStyle Black = new(Color.Black);
     public static readonly BrushStyle White = new(Color.White);
     public static readonly BrushStyle Transparent = new(Color.Transparent);
 
     public bool IsVisible => Color.A > 0;
+
+    /// <summary>True when a real gradient should be drawn (direction set AND an end colour present).</summary>
+    public bool HasGradient => Gradient != BackgroundGradientType.None && GradientEndColor is not null;
 }

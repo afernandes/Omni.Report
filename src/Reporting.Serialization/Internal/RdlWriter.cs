@@ -1240,6 +1240,15 @@ internal static class RdlWriter
         {
             s.Add(new XElement(Rdl + "BackgroundColor", back.ToHex()));
         }
+        // RDL gradient: BackgroundColor (above) is the start; type + end color complete the fill.
+        if (style.BackgroundGradient != BackgroundGradientType.None)
+        {
+            s.Add(new XElement(Rdl + "BackgroundGradientType", style.BackgroundGradient.ToString()));
+        }
+        if (style.BackColorEnd is { } backEnd)
+        {
+            s.Add(new XElement(Rdl + "BackgroundGradientEndColor", backEnd.ToHex()));
+        }
         WriteBorder(s, style.Border);
         WritePadding(s, style.Padding);
         if (style.HorizontalAlignment != HorizontalAlignment.Left)

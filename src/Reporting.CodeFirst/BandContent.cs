@@ -174,6 +174,11 @@ public sealed class BandContent
     public BandContent Color(Color color) => MutateStyle(s => s with { ForeColor = color });
     public BandContent Background(Color color) => MutateStyle(s => s with { BackColor = color });
 
+    /// <summary>Two-colour gradient background: <paramref name="start"/> blends to <paramref name="end"/>
+    /// along <paramref name="type"/> (default top→bottom; <see cref="BackgroundGradientType.Center"/> is radial).</summary>
+    public BandContent BackgroundGradient(Color start, Color end, BackgroundGradientType type = BackgroundGradientType.TopBottom)
+        => MutateStyle(s => s with { BackColor = start, BackColorEnd = end, BackgroundGradient = type });
+
     public BandContent Center() => MutateStyle(s => s with { HorizontalAlignment = HorizontalAlignment.Center });
     public BandContent AlignLeft() => MutateStyle(s => s with { HorizontalAlignment = HorizontalAlignment.Left });
     public BandContent AlignRight() => MutateStyle(s => s with { HorizontalAlignment = HorizontalAlignment.Right });

@@ -96,6 +96,65 @@ public class SkiaRenderPrimitivesTests
         outsideInk.Should().BeGreaterThan(0, "drawing after PopClip must not be clipped away");
     }
 
+    // ---- 4b. Gradient fills ---------------------------------------------------------------
+
+    private static (SKBitmap Bmp, int W, int H) RenderFullPageFill(BrushStyle fill)
+    {
+        var page = PageSetup.A4Portrait with
+        {
+            Paper = new PaperSize("Small", Unit.FromMm(40), Unit.FromMm(40)),
+            Margins = new Thickness(Unit.Zero, Unit.Zero, Unit.Zero, Unit.Zero),
+        };
+        var rect = new Rectangle(0.Mm(), 0.Mm(), 40.Mm(), 40.Mm());
+        using var ctx = new SkiaRenderingContext(dpi: Dpi);
+        ctx.BeginPage(page);
+        ctx.DrawRectangle(rect, pen: null, fill: fill);
+        ctx.EndPage();
+        var bmp = SKBitmap.Decode(ctx.Pages[0].PngBytes);
+        return (bmp, bmp.Width, bmp.Height);
+    }
+
+    [Fact]
+    public void TopBottom_gradient_blends_start_at_top_to_end_at_bottom()
+    {
+        // Red (start) at the top → blue (end) at the bottom. Sampling mid-width avoids the corners.
+        var (bmp, w, h) = RenderFullPageFill(
+            new BrushStyle(Color.FromRgb(255, 0, 0), Color.FromRgb(0, 0, 255), BackgroundGradientType.TopBottom));
+        using (bmp)
+        {
+            var top = bmp.GetPixel(w / 2, 2);
+            var bottom = bmp.GetPixel(w / 2, h - 3);
+            top.Red.Should().BeGreaterThan(top.Blue, "the top is the red gradient start");
+            bottom.Blue.Should().BeGreaterThan(bottom.Red, "the bottom is the blue gradient end");
+        }
+    }
+
+    [Fact]
+    public void LeftRight_gradient_blends_start_at_left_to_end_at_right()
+    {
+        var (bmp, w, h) = RenderFullPageFill(
+            new BrushStyle(Color.FromRgb(255, 0, 0), Color.FromRgb(0, 0, 255), BackgroundGradientType.LeftRight));
+        using (bmp)
+        {
+            bmp.GetPixel(2, h / 2).Red.Should().BeGreaterThan(bmp.GetPixel(2, h / 2).Blue, "left edge is the red start");
+            bmp.GetPixel(w - 3, h / 2).Blue.Should().BeGreaterThan(bmp.GetPixel(w - 3, h / 2).Red, "right edge is the blue end");
+        }
+    }
+
+    [Fact]
+    public void Center_gradient_is_radial_start_at_centre_end_at_corner()
+    {
+        var (bmp, w, h) = RenderFullPageFill(
+            new BrushStyle(Color.FromRgb(255, 0, 0), Color.FromRgb(0, 0, 255), BackgroundGradientType.Center));
+        using (bmp)
+        {
+            var centre = bmp.GetPixel(w / 2, h / 2);
+            var corner = bmp.GetPixel(2, 2);
+            centre.Red.Should().BeGreaterThan(centre.Blue, "the centre is the red start of the radial blend");
+            corner.Blue.Should().BeGreaterThan(corner.Red, "the corner reaches the blue end");
+        }
+    }
+
     // ---- 5. DrawImage sizing modes --------------------------------------------------------
 
     [Theory]
