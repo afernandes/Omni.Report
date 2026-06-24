@@ -45,6 +45,7 @@ else
             "filesystem" => Sample09_FileSystemLogs.Build(),
             "sqlite"     => Sample11_AdoNetSqlite.Build(),
             "grande"     => Sample16_RelatorioGrandePaginado.Build(),
+            "estilos"    => Sample17_EstilosVisuais.Build(),
             _            => Sample01_VendasPorCliente.Build(),
         };
         _rendered = await report.PaginateAsync();

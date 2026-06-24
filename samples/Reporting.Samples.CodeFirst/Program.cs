@@ -48,6 +48,7 @@ var samples = new (string Name, Func<Report> Build)[]
     ("13-tabela-produtos",     () => Sample13_TabelaProdutos.Build()),
     ("14-mapa-filiais",        () => Sample14_MapaFiliais.Build()),
     ("16-relatorio-grande-paginado", () => Sample16_RelatorioGrandePaginado.Build()),
+    ("17-estilos-visuais",     () => Sample17_EstilosVisuais.Build()),
 };
 
 foreach (var (name, build) in samples)
