@@ -6,7 +6,7 @@
 
 ## Panorama
 
-> ⚠️ **O headline original "96 completas · 18 parciais · 32 ausentes (~66%)" está defasado.** Após a leva de jun/2026 (gradients #16, named styles #15 com UI completa, matrix style-aware, exporter XML #19, **cascading params #4 nos 3 modos**), dos **20 gaps rastreados** nas tabelas abaixo **~17 estão DONE, ~2 PARTIAL e 0 totalmente MISSING** (o que resta de cada parcial está descrito); 1 item (#9) é **vedado por decisão de produto**. A taxa de fechamento dos rastreados é >90%, não 66%. Um re-audit completo dos 146 itens daria um número global novo; aqui reconciliamos só os rastreados (verificados um a um).
+> ⚠️ **O headline original "96 completas · 18 parciais · 32 ausentes (~66%)" está defasado.** Após a leva de jun/2026 (gradients #16, named styles #15 com UI completa, matrix style-aware, exporter XML #19, **cascading params #4 nos 3 modos**), dos **20 gaps rastreados** nas tabelas abaixo **~18 estão DONE, ~1 PARTIAL e 0 totalmente MISSING** (o que resta de cada parcial está descrito); 1 item (#9) é **vedado por decisão de produto**. A taxa de fechamento dos rastreados é >90%, não 66%. Um re-audit completo dos 146 itens daria um número global novo; aqui reconciliamos só os rastreados (verificados um a um).
 
 O engine cobre os 17 report items com render nativo (8 tipos de chart, matrix/pivô com sort+subtotais, KPIs), expressões com vocabulário SSRS (condicional/texto/data/agregação + Lookup/LookupSet/MultiLookup + Previous/RunningValue/ReportItems), **import e export `.rdl`** (XML SSRS ↔ ReportDefinition, lossless via CustomProperties), e 9 exporters (PDF/XLSX/DOCX/HTML/SVG/CSV/Markdown/PNG/JSON). Os 3 modos de autoria existem para o que está implementado.
 
@@ -46,17 +46,16 @@ O engine cobre os 17 report items com render nativo (8 tipos de chart, matrix/pi
 | 16 | **Gradients** (linear/radial) | ✅ **DONE** | fill 2 cores + direção (`Style.BackColorEnd`/`BackgroundGradient`, RDL-aligned); render Skia linear/radial; 3 modos (PR #179/180). GDI = follow-up | Sim |
 | 17 | **Shared data sources / datasets** | ⚠️ **PARTIAL (por design)** | tudo embedded (`ReportDefinition.cs:25`) — escolha arquitetural (arquivo único); RDL separa | — |
 | 18 | **Export Word `.docx`** | ✅ **DONE** | `DocxExporter.cs` (grid tabular + rasterização de charts/gauges via `RegionRasterizer`) | Sim (`DocxExporterTests`, 13) |
-| 19 | **Export imagem público (PNG) + XML/TIFF** | ⚠️ **PARTIAL** (PNG + XML ✅; TIFF ❌) | PNG (`Reporting.Output.Image`) + **XML** (`Reporting.Output.Xml`, PR #185) públicos; **TIFF ausente** (Skia não encoda TIFF nativamente — precisa de lib externa) | Sim |
+| 19 | **Export imagem público (PNG + TIFF) + XML** | ✅ **DONE** | PNG + **TIFF multi-página** (`Reporting.Output.Image`, encoder baseline manual sem dep, decode verificado via GDI+) + **XML** (`Reporting.Output.Xml`, PR #185), todos públicos | Sim (estrutural cross-plat + decode Windows) |
 | — | **Tablix matrix style-aware** | ✅ **DONE** | células de valor da matrix honram ForeColor/Font/alinhamento do template (antes só `Format`); `.Cell(expr, style)` no code-first (PR #184). Fill/CF por-célula na matrix = follow-up | Sim |
 
 ## Trabalho genuinamente restante (verificado)
 
-> **Atualização (jun/2026):** os gaps de **estilo** (gradients #16, named/reusable styles #15 com UI de gerência, matrix style-aware, exporter XML #19) e o **cascading de parâmetros** (#4, nos 3 modos) foram fechados nesta leva. O que resta abaixo é **niche, depende de lib externa, ou é mudança de modelo maior** — cada item se beneficia de priorização/decisão antes de implementar (não são quick-wins autônomos).
+> **Atualização (jun/2026):** os gaps de **estilo** (gradients #16, named/reusable styles #15 com UI de gerência, matrix style-aware, exporter XML #19), o **cascading de parâmetros** (#4, nos 3 modos) e o **exporter TIFF** (#19, encoder baseline manual sem dep) foram fechados nesta leva. O que resta abaixo é **niche ou mudança de modelo/arquitetura maior** — cada item se beneficia de priorização/decisão antes de implementar (não são quick-wins autônomos).
 
 1. **#7 rowSpan no corpo do Tablix** — a matrix já faz o "merged look" de headers de row group aninhados (`TablixRenderer.cs:349`); o gap restante é `RowSpan` **explícito** em célula de flat table, cuja semântica numa região que repete por linha é ambígua. Niche; definir o comportamento primeiro.
 2. **#8 StaticMember/DynamicMember** — crosstabs assimétricos. O caso comum (coluna "Total") já é coberto por subtotais (#6); o gap real (membros estáticos arbitrários) é niche + mudança de modelo maior.
-3. **#19 TIFF exporter** — Skia não encoda TIFF nativamente → precisa de **dependência externa** (decisão do produto) ou encoder manual baseline (risco de compat).
-4. **#14 `Globals.RenderFormat`** — exige passar o formato-alvo no `PaginationRequest`, acoplando layout a formato (hoje paginado uma vez p/ todos os formatos). Decisão arquitetural antes de implementar.
+3. **#14 `Globals.RenderFormat`** — exige passar o formato-alvo no `PaginationRequest`, acoplando layout a formato (hoje paginado uma vez p/ todos os formatos). Decisão arquitetural antes de implementar.
 
 **Fora de escopo (decisão de produto):** #9 drill-down/toggle interativo em runtime — o output é sempre estático.
 

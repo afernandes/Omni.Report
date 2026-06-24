@@ -24,6 +24,8 @@
     <PackageReference Include="xunit.runner.visualstudio" />
     <PackageReference Include="FluentAssertions" />
     <PackageReference Include="coverlet.collector" />
+    <!-- Independent TIFF decoder (GDI+) for the Windows-only round-trip check of the hand-rolled encoder. -->
+    <PackageReference Include="System.Drawing.Common" />
   </ItemGroup>
 
 </Project>
