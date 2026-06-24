@@ -528,6 +528,15 @@ public sealed class DesignerParameter : Notifying
     /// <summary>Field providing the display label (falls back to the value), when query-driven.</summary>
     public string? AvailableValuesLabelField { get => _availableValuesLabelField; set => Set(ref _availableValuesLabelField, value); }
 
+    private string? _availableValuesFilterField;
+    /// <summary>Cascading: the query dataset field matched against the parent parameter's value
+    /// (e.g. "Estado" to restrict cities). Requires <see cref="AvailableValuesDependsOn"/>.</summary>
+    public string? AvailableValuesFilterField { get => _availableValuesFilterField; set => Set(ref _availableValuesFilterField, value); }
+
+    private string? _availableValuesDependsOn;
+    /// <summary>Cascading: the parent parameter whose value restricts this query-driven domain.</summary>
+    public string? AvailableValuesDependsOn { get => _availableValuesDependsOn; set => Set(ref _availableValuesDependsOn, value); }
+
     /// <summary>CLR type the runtime coerces prompted input to (maps from <see cref="Type"/>).</summary>
     public System.Type ClrType => Type switch
     {
@@ -571,6 +580,8 @@ public sealed class DesignerParameter : Notifying
             DataSet = hasQuery ? AvailableValuesDataSet : null,
             ValueField = hasQuery ? AvailableValuesValueField : null,
             LabelField = hasQuery && !string.IsNullOrWhiteSpace(AvailableValuesLabelField) ? AvailableValuesLabelField : null,
+            FilterField = hasQuery && !string.IsNullOrWhiteSpace(AvailableValuesFilterField) ? AvailableValuesFilterField : null,
+            DependsOn = hasQuery && !string.IsNullOrWhiteSpace(AvailableValuesDependsOn) ? AvailableValuesDependsOn : null,
         };
     }
 
@@ -648,6 +659,8 @@ public sealed class DesignerParameter : Notifying
             AvailableValuesDataSet = p.AvailableValues?.DataSet,
             AvailableValuesValueField = p.AvailableValues?.ValueField,
             AvailableValuesLabelField = p.AvailableValues?.LabelField,
+            AvailableValuesFilterField = p.AvailableValues?.FilterField,
+            AvailableValuesDependsOn = p.AvailableValues?.DependsOn,
         };
 
     private static DesignerFieldType ClassifyClr(System.Type t)

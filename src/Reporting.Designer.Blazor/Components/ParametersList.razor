@@ -68,6 +68,16 @@
                                @onchange="@(e => p.AvailableValuesLabelField = e.Value?.ToString())"
                                style="flex:1;font-size:10.5px;background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--r-1);padding:2px 4px;" />
                     </div>
+                    @* Cascading (dependent) parameter: restrict the query domain by a parent parameter's value. *@
+                    <div style="display:flex;gap:4px;align-items:center;margin-top:3px;" title="Cascata: filtra o dataset por outro parâmetro (ex.: Cidade depende de Estado)">
+                        <span style="font-size:10px;color:var(--text-muted);">↳ cascata</span>
+                        <input type="text" value="@p.AvailableValuesDependsOn" placeholder="depende de (param)"
+                               @onchange="@(e => p.AvailableValuesDependsOn = e.Value?.ToString())"
+                               style="flex:1;font-size:10.5px;background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--r-1);padding:2px 4px;" />
+                        <input type="text" value="@p.AvailableValuesFilterField" placeholder="campo filtro"
+                               @onchange="@(e => p.AvailableValuesFilterField = e.Value?.ToString())"
+                               style="flex:1;font-size:10.5px;background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--r-1);padding:2px 4px;" />
+                    </div>
                 </div>
             </div>
         }

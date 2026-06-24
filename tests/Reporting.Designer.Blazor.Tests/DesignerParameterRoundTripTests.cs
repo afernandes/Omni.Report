@@ -110,6 +110,34 @@ public class DesignerParameterRoundTripTests
     }
 
     [Fact]
+    public void Cascading_parameter_fields_persist_through_designer_and_repx()
+    {
+        var state = new DesignerState();
+        state.Parameters.Clear();
+        // "Cidade" depends on "Estado": its query domain ("Cidades") is filtered by the "Estado" field.
+        state.Parameters.Add(new DesignerParameter("Cidade", DesignerFieldType.Text)
+        {
+            AvailableValuesDataSet = "Cidades",
+            AvailableValuesValueField = "Nome",
+            AvailableValuesFilterField = "Estado",
+            AvailableValuesDependsOn = "Estado",
+        });
+
+        var definition = state.BuildDefinition();
+        var av = definition.Parameters[0].AvailableValues!;
+        av.IsCascading.Should().BeTrue();
+        av.FilterField.Should().Be("Estado");
+        av.DependsOn.Should().Be("Estado");
+
+        // Through .repx and back into a fresh designer, the cascade fields surface again for editing.
+        var reloaded = new DesignerState();
+        reloaded.Load(new RepxSerializer().SaveToBytes(definition));
+        var cidade = reloaded.Parameters[0];
+        cidade.AvailableValuesFilterField.Should().Be("Estado");
+        cidade.AvailableValuesDependsOn.Should().Be("Estado");
+    }
+
+    [Fact]
     public void Report_variables_persist_through_designer_and_repx()
     {
         var state = new DesignerState();
