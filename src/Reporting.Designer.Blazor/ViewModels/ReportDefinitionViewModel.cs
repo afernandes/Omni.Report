@@ -4,6 +4,7 @@ using Reporting.Common;
 using Reporting.Data;
 using Reporting.Geometry;
 using Reporting.Paper;
+using Reporting.Styling;
 
 namespace Reporting.Designer.Blazor.ViewModels;
 
@@ -25,6 +26,11 @@ public sealed class ReportDefinitionViewModel : Notifying
 
     private PageSetup _pageSetup = PageSetup.A4Portrait;
     public PageSetup PageSetup { get => _pageSetup; set => Set(ref _pageSetup, value); }
+
+    // Report-level tables preserved opaquely across load→save (no dedicated Designer editor yet), so opening and
+    // re-saving a report never silently drops its Metadata (e.g. Language) or its named styles.
+    private EquatableDictionary<string, string> _metadata = EquatableDictionary<string, string>.Empty;
+    private EquatableDictionary<string, Style> _namedStyles = EquatableDictionary<string, Style>.Empty;
 
     public ObservableCollection<BandViewModel> Bands { get; }
 
@@ -127,6 +133,8 @@ public sealed class ReportDefinitionViewModel : Notifying
             Variables    = variables is null
                 ? EquatableArray<Reporting.Parameters.ReportVariable>.Empty
                 : new EquatableArray<Reporting.Parameters.ReportVariable>(variables.Select(v => v.ToVariable()).ToArray()),
+            Metadata     = _metadata,
+            NamedStyles  = _namedStyles,
         };
     }
 
@@ -206,6 +214,8 @@ public sealed class ReportDefinitionViewModel : Notifying
     {
         ArgumentNullException.ThrowIfNull(definition);
         var vm = new ReportDefinitionViewModel(definition.Name) { PageSetup = definition.PageSetup };
+        vm._metadata = definition.Metadata;       // preserved opaquely (no editor yet) so save doesn't drop them
+        vm._namedStyles = definition.NamedStyles;
         vm.Bands.Clear();
         if (definition.ReportHeader is { } rh)
         {

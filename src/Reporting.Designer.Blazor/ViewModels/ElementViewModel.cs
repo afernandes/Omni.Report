@@ -332,6 +332,11 @@ public sealed class ElementViewModel : Notifying
     /// <summary>Background gradient direction (<see cref="Style.BackgroundGradient"/>); None = solid fill.</summary>
     public BackgroundGradientType BackgroundGradient { get => _backgroundGradient; set => Set(ref _backgroundGradient, value); }
 
+    private string? _basedOn;
+    /// <summary>Named style this element inherits as a base (<see cref="Style.BasedOn"/>). Preserved across edits
+    /// even without a dedicated editor, so editing other properties doesn't drop it.</summary>
+    public string? BasedOn { get => _basedOn; set => Set(ref _basedOn, value); }
+
     private HorizontalAlignment _horizontalAlignment = HorizontalAlignment.Left;
     public HorizontalAlignment HorizontalAlignment { get => _horizontalAlignment; set => Set(ref _horizontalAlignment, value); }
 
@@ -1007,7 +1012,8 @@ public sealed class ElementViewModel : Notifying
             Format: Format,
             BackgroundImage: _backgroundImage,
             BackColorEnd: BackColorEnd,
-            BackgroundGradient: BackgroundGradient);
+            BackgroundGradient: BackgroundGradient,
+            BasedOn: BasedOn);
 
         ReportElement element = Kind switch
         {
@@ -1149,7 +1155,7 @@ public sealed class ElementViewModel : Notifying
             IsBold = IsBold, IsItalic = IsItalic, IsUnderline = IsUnderline, IsStrikethrough = IsStrikethrough,
             FontFamily = FontFamily, FontSize = FontSize,
             ForeColor = ForeColor, FillColor = FillColor, BackColor = BackColor,
-            BackColorEnd = BackColorEnd, BackgroundGradient = BackgroundGradient,
+            BackColorEnd = BackColorEnd, BackgroundGradient = BackgroundGradient, BasedOn = BasedOn,
             HorizontalAlignment = HorizontalAlignment, VerticalAlignment = VerticalAlignment,
             WordWrap = WordWrap, Padding = Padding, Border = Border, Format = Format,
             IsVisible = IsVisible, VisibleExpr = VisibleExpr, CanGrow = CanGrow, CanShrink = CanShrink, KeepTogether = KeepTogether,
@@ -1276,6 +1282,7 @@ public sealed class ElementViewModel : Notifying
         BackColor = element.Style.BackColor;
         BackColorEnd = element.Style.BackColorEnd;
         BackgroundGradient = element.Style.BackgroundGradient;
+        BasedOn = element.Style.BasedOn;
         _backgroundImage = element.Style.BackgroundImage; // preserved (no editor yet) so edits don't drop it
         Padding = element.Style.Padding;
         FontFamily = element.Style.Font?.Family ?? "Arial";
