@@ -122,6 +122,8 @@ internal static class RepxReader
                 DataSet = Attr(ave, "DataSet"),
                 ValueField = Attr(ave, "ValueField"),
                 LabelField = Attr(ave, "LabelField"),
+                FilterField = Attr(ave, "FilterField"),
+                DependsOn = Attr(ave, "DependsOn"),
             };
         }
         return new ReportParameter(name, type, prompt, defaultValue, allowMultiple, required, available,

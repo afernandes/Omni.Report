@@ -131,6 +131,8 @@ internal static class RepJsonReader
                 DataSet = (string?)avo["dataSet"],
                 ValueField = (string?)avo["valueField"],
                 LabelField = (string?)avo["labelField"],
+                FilterField = (string?)avo["filterField"],
+                DependsOn = (string?)avo["dependsOn"],
             };
         }
         return new ReportParameter(name, type, prompt, defaultValue, allowMultiple, required, available,

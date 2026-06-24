@@ -132,6 +132,8 @@ internal static class RepJsonWriter
             if (av.DataSet is not null) { avo["dataSet"] = av.DataSet; }
             if (av.ValueField is not null) { avo["valueField"] = av.ValueField; }
             if (av.LabelField is not null) { avo["labelField"] = av.LabelField; }
+            if (av.FilterField is not null) { avo["filterField"] = av.FilterField; }
+            if (av.DependsOn is not null) { avo["dependsOn"] = av.DependsOn; }
             o["availableValues"] = avo;
         }
         return o;

@@ -130,6 +130,8 @@ internal static class RepxWriter
             if (av.DataSet is not null) { ave.SetAttributeValue("DataSet", av.DataSet); }
             if (av.ValueField is not null) { ave.SetAttributeValue("ValueField", av.ValueField); }
             if (av.LabelField is not null) { ave.SetAttributeValue("LabelField", av.LabelField); }
+            if (av.FilterField is not null) { ave.SetAttributeValue("FilterField", av.FilterField); }
+            if (av.DependsOn is not null) { ave.SetAttributeValue("DependsOn", av.DependsOn); }
             foreach (var v in av.Values)
             {
                 var ve = new XElement("Value", new XAttribute("Value", v.Value));

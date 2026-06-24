@@ -12,7 +12,8 @@ namespace Reporting.DataSources;
 public static class ParameterValueResolver
 {
     public static async Task<IReadOnlyList<ParameterValue>> ResolveAsync(
-        ParameterAvailableValues available, DataSourceRegistry sources, CancellationToken cancellationToken = default)
+        ParameterAvailableValues available, DataSourceRegistry sources,
+        IReadOnlyDictionary<string, object?>? parameterValues = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(available);
         ArgumentNullException.ThrowIfNull(sources);
@@ -28,12 +29,25 @@ public static class ParameterValueResolver
             }
         }
 
+        // Cascading: restrict rows to those whose FilterField equals the parent (DependsOn) parameter's value.
+        // When the parent value is absent, no rows match — the dependent list is empty until the parent is chosen.
+        var cascadeActive = available.IsCascading;
+        var cascadeField = available.FilterField;
+        var cascadeValue = cascadeActive && parameterValues is not null && parameterValues.TryGetValue(available.DependsOn!, out var pv)
+            ? Convert.ToString(pv, CultureInfo.InvariantCulture)
+            : null;
+
         if (available.IsQuery
             && !string.IsNullOrWhiteSpace(available.ValueField)
             && sources.TryGet(available.DataSet!, out var ds))
         {
             await foreach (var record in ds.ReadAsync(cancellationToken).ConfigureAwait(false))
             {
+                if (cascadeActive && !string.Equals(
+                        Convert.ToString(record[cascadeField!], CultureInfo.InvariantCulture), cascadeValue, StringComparison.Ordinal))
+                {
+                    continue; // row's parent-key doesn't match the selected parent value
+                }
                 var raw = record[available.ValueField!];
                 if (raw is null)
                 {
