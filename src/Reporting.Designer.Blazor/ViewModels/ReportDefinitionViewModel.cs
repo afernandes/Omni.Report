@@ -35,6 +35,20 @@ public sealed class ReportDefinitionViewModel : Notifying
     /// <summary>Names of the report's named styles (sorted), for the PropertyGrid's <c>BasedOn</c> picker.</summary>
     public IReadOnlyList<string> NamedStyleNames => _namedStyles.Keys.OrderBy(k => k, StringComparer.Ordinal).ToList();
 
+    /// <summary>Adds or replaces a named style — the Designer's "save as named style" (capture an element's style
+    /// as a reusable one). Raises <c>Changed</c> so the BasedOn picker refreshes.</summary>
+    public void SetNamedStyle(string name, Style style)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return;
+        }
+        var dict = _namedStyles.ToDictionary(kv => kv.Key, kv => kv.Value, StringComparer.Ordinal);
+        dict[name] = style;
+        _namedStyles = new EquatableDictionary<string, Style>(dict);
+        RaiseChanged();
+    }
+
     public ObservableCollection<BandViewModel> Bands { get; }
 
     public BandViewModel AddBand(BandViewModel band)

@@ -4,6 +4,7 @@ using Reporting.Designer.Blazor.Components;
 using Reporting.Designer.Blazor.ViewModels;
 using Reporting.Elements;
 using Reporting.Geometry;
+using Reporting.Styling;
 using Xunit;
 
 namespace Reporting.Designer.Blazor.Tests;
@@ -59,5 +60,43 @@ public class PropertyGridBasedOnTests : Bunit.BunitContext
         select.Change("titulo");
 
         vm.BasedOn.Should().Be("titulo", "choosing a named style sets the element's BasedOn");
+    }
+
+    [Fact]
+    public void Save_as_named_style_fires_with_the_element_name()
+    {
+        string? captured = null;
+        var vm = TextBoxVm();
+        vm.Name = "cabecalho";
+        var cut = Render<PropertyGrid>(p => p
+            .Add(x => x.Element, vm)
+            .Add(x => x.NamedStyleNames, Array.Empty<string>())
+            .Add(x => x.OnCreateNamedStyle, (string n) => captured = n));
+
+        cut.FindAll("button").First(b => b.TextContent.Contains("Salvar como estilo")).Click();
+
+        captured.Should().Be("cabecalho", "the named style takes the element's name when set");
+    }
+
+    [Fact]
+    public void Save_as_named_style_auto_names_an_unnamed_element()
+    {
+        string? captured = null;
+        var cut = Render<PropertyGrid>(p => p
+            .Add(x => x.Element, TextBoxVm()) // no Name
+            .Add(x => x.NamedStyleNames, Array.Empty<string>())
+            .Add(x => x.OnCreateNamedStyle, (string n) => captured = n));
+
+        cut.FindAll("button").First(b => b.TextContent.Contains("Salvar como estilo")).Click();
+
+        captured.Should().Be("Estilo 1", "an unnamed element gets a generated style name");
+    }
+
+    [Fact]
+    public void SetNamedStyle_adds_to_the_report_vm()
+    {
+        var report = new ReportDefinitionViewModel("r");
+        report.SetNamedStyle("titulo", new Style(ForeColor: Color.FromRgb(1, 2, 3)));
+        report.NamedStyleNames.Should().Contain("titulo");
     }
 }
