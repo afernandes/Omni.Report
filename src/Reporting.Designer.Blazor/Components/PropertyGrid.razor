@@ -427,7 +427,17 @@ else
                                title="Fore" style="width:24px;height:16px;cursor:pointer;" />
                         <input type="color" value="@(rule.BackColor is null ? "#ffffff" : ColorHex(rule.BackColor.Value))"
                                @onchange="@(e => rule.BackColor = TryColor(e.Value?.ToString()))"
-                               title="Back" style="width:24px;height:16px;cursor:pointer;" />
+                               title="Back (início)" style="width:24px;height:16px;cursor:pointer;" />
+                        <input type="color" value="@(rule.BackColorEnd is null ? "#ffffff" : ColorHex(rule.BackColorEnd.Value))"
+                               @onchange="@(e => rule.BackColorEnd = TryColor(e.Value?.ToString()))"
+                               title="Back (fim do gradiente)" style="width:24px;height:16px;cursor:pointer;" />
+                        <select title="Gradiente" style="font-size:10px;"
+                                @onchange="@(e => rule.BackgroundGradient = Enum.Parse<BackgroundGradientType>(e.Value?.ToString() ?? nameof(BackgroundGradientType.None)))">
+                            @foreach (var g in Enum.GetValues<BackgroundGradientType>())
+                            {
+                                <option value="@g" selected="@(rule.BackgroundGradient == g)">@g</option>
+                            }
+                        </select>
                     </div>
                 </div>
             }
