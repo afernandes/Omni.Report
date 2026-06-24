@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Reporting.Output.Xml</RootNamespace>
+    <AssemblyName>Reporting.Output.Xml</AssemblyName>
+    <Description>OmniReport — structured XML exporter (SSRS "XML rendering extension" equivalent). Dumps each rendered page as positioned primitives (texts, lines, rects, ellipses, images) for enterprise integration, snapshot tests, and automation.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Reporting.Core\Reporting.Core.csproj" />
+    <ProjectReference Include="..\Reporting.Layout\Reporting.Layout.csproj" />
+    <ProjectReference Include="..\Reporting.Output.Pdf\Reporting.Output.Pdf.csproj" />
+  </ItemGroup>
+
+</Project>
