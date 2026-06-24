@@ -6,7 +6,7 @@
 
 ## Panorama
 
-> ⚠️ **O headline original "96 completas · 18 parciais · 32 ausentes (~66%)" está defasado.** Após a leva de jun/2026 (gradients #16, named styles #15, matrix style-aware, exporter XML #19), dos **20 gaps rastreados** nas tabelas abaixo **~16 estão DONE, ~3 PARTIAL e 0 totalmente MISSING** (o que resta de cada parcial está descrito); 1 item (#9) é **vedado por decisão de produto**. A taxa de fechamento dos rastreados é >90%, não 66%. Um re-audit completo dos 146 itens daria um número global novo; aqui reconciliamos só os rastreados (verificados um a um).
+> ⚠️ **O headline original "96 completas · 18 parciais · 32 ausentes (~66%)" está defasado.** Após a leva de jun/2026 (gradients #16, named styles #15 com UI completa, matrix style-aware, exporter XML #19, **cascading params #4 nos 3 modos**), dos **20 gaps rastreados** nas tabelas abaixo **~17 estão DONE, ~2 PARTIAL e 0 totalmente MISSING** (o que resta de cada parcial está descrito); 1 item (#9) é **vedado por decisão de produto**. A taxa de fechamento dos rastreados é >90%, não 66%. Um re-audit completo dos 146 itens daria um número global novo; aqui reconciliamos só os rastreados (verificados um a um).
 
 O engine cobre os 17 report items com render nativo (8 tipos de chart, matrix/pivô com sort+subtotais, KPIs), expressões com vocabulário SSRS (condicional/texto/data/agregação + Lookup/LookupSet/MultiLookup + Previous/RunningValue/ReportItems), **import e export `.rdl`** (XML SSRS ↔ ReportDefinition, lossless via CustomProperties), e 9 exporters (PDF/XLSX/DOCX/HTML/SVG/CSV/Markdown/PNG/JSON). Os 3 modos de autoria existem para o que está implementado.
 
@@ -21,7 +21,7 @@ O engine cobre os 17 report items com render nativo (8 tipos de chart, matrix/pi
 | 1 | **Import `.rdl`** (SSRS XML → ReportDefinition) | ✅ **DONE** | `RdlImporter.cs:424-479` importa Textbox/Line/Rectangle(aninhado)/Image/Tablix/Chart/Gauge/Subreport + CustomReportItem (DataBar/Sparkline/Indicator); Map é skip-com-warning. CustomProperties lossless. | Sim (`RdlImporterTests`, 62) |
 | 2 | **Parameters: Available Values** (estático + query) | ✅ **DONE** | `ReportParameter.cs:29-54`, import `RdlImporter.cs:1361-1381`, resolver `ParameterValueResolver.cs`, dropdown no prompt | Sim |
 | 3 | **`Lookup`/`LookupSet`/`MultiLookup`** | ✅ **DONE (as 3)** | `ExpressionEvaluator.cs:230-267` | Sim (`LookupTests`, 12) |
-| 4 | **Parameters: Cascading/dependentes** | ⚠️ **PARTIAL** | `DefaultValueExpression` ✅ (`ReportParameter.cs:22`) + validação Required ✅ (prompt). **Falta** cascata real (Estado→Cidade): nenhum `DependsOn`/AvailableValues ligado a outro parâmetro. | DefaultValueExpr/validação: sim · cascata: não |
+| 4 | **Parameters: Cascading/dependentes** | ✅ **DONE** | cascata real Estado→Cidade nos 3 modos: `ParameterAvailableValues.FilterField`/`DependsOn` + resolver filtrando por valor do pai (`ParameterValueResolver`, PR #191); autoria no Designer (`DesignerParameter`, PR #192); re-query interativo no prompt do Preview com propagação multinível + drop de stale (`ParameterPromptDialog`, PR #193) | Sim (resolver + serial + 5 bUnit de cascata) |
 
 ## Tier 2 — relatórios ricos (Tablix + paginação)
 
@@ -42,7 +42,7 @@ O engine cobre os 17 report items com render nativo (8 tipos de chart, matrix/pi
 | 12 | **`Previous()`** | ✅ **DONE** | `ExpressionEvaluator.cs:302-312`, `ReportExpressionContext.cs:291-315` | Sim (`PositionalFunctionsTests`) |
 | 13 | **`ReportItems.X`** | ✅ **DONE** | `ExpressionEvaluator.cs:104`, `ReportExpressionContext.cs:234-242` (Get/SetReportItem) | Integrado no render |
 | 14 | **Globals / Variables** | ⚠️ **PARTIAL** | PageNumber/TotalPages/Now/Today/UserName/ReportName/Language ✅; ReportVariable (Row/Report/Group) ✅. **Falta** `Globals.RenderFormat` (awkward: o layout é format-agnóstico, paginado uma vez p/ todos os formatos) | parcial |
-| 15 | **Named/reusable styles** (`Style[@Name]`) | ✅ **DONE** (low-level + code-first + Designer round-trip) | `ReportDefinition.NamedStyles` + `Style.BasedOn`; resolução via `StyleResolver.FlattenNamedStyles`/`MergeNamedBase` (PR #181/182/183). UI de autoria no Designer = follow-up | Sim |
+| 15 | **Named/reusable styles** (`Style[@Name]`) | ✅ **DONE** (low-level + code-first + Designer completo) | `ReportDefinition.NamedStyles` + `Style.BasedOn`; resolução via `StyleResolver.FlattenNamedStyles`/`MergeNamedBase` (PR #181/182/183). UI no Designer: picker `BasedOn` + criar (#188/189) + **renomear/excluir com atualização de referências** | Sim |
 | 16 | **Gradients** (linear/radial) | ✅ **DONE** | fill 2 cores + direção (`Style.BackColorEnd`/`BackgroundGradient`, RDL-aligned); render Skia linear/radial; 3 modos (PR #179/180). GDI = follow-up | Sim |
 | 17 | **Shared data sources / datasets** | ⚠️ **PARTIAL (por design)** | tudo embedded (`ReportDefinition.cs:25`) — escolha arquitetural (arquivo único); RDL separa | — |
 | 18 | **Export Word `.docx`** | ✅ **DONE** | `DocxExporter.cs` (grid tabular + rasterização de charts/gauges via `RegionRasterizer`) | Sim (`DocxExporterTests`, 13) |
@@ -51,14 +51,12 @@ O engine cobre os 17 report items com render nativo (8 tipos de chart, matrix/pi
 
 ## Trabalho genuinamente restante (verificado)
 
-> **Atualização (jun/2026):** os gaps de **estilo** foram fechados nesta leva — gradients (#16), named/reusable styles (#15), matrix style-aware, e o exporter XML (#19). O que resta abaixo é **UX-cêntrico, depende de lib externa, ou é mudança de modelo maior** — cada item se beneficia de priorização/decisão antes de implementar (não são quick-wins autônomos).
+> **Atualização (jun/2026):** os gaps de **estilo** (gradients #16, named/reusable styles #15 com UI de gerência, matrix style-aware, exporter XML #19) e o **cascading de parâmetros** (#4, nos 3 modos) foram fechados nesta leva. O que resta abaixo é **niche, depende de lib externa, ou é mudança de modelo maior** — cada item se beneficia de priorização/decisão antes de implementar (não são quick-wins autônomos).
 
-1. **#4 Cascading parameters** — `DependsOn` no modelo + AvailableValues filtrado por outro parâmetro + resolver. **UX-cêntrico**: o payoff é o re-query interativo no prompt (Designer.Blazor), e o `ParameterValueResolver` (DataSources) não referencia Expressions — a filtragem teria que viver na camada do prompt. Exige decisão de design + verificação no browser.
-2. **#7 rowSpan no corpo do Tablix** — modelo já tem `RowSpan`; mas a semântica de span vertical numa região que **repete por linha** é ambígua (≠ flat table). Definir o comportamento primeiro.
-3. **#8 StaticMember/DynamicMember** — crosstabs assimétricos. Mudança de modelo maior.
-4. **#19 TIFF exporter** — Skia não encoda TIFF nativamente → precisa de **dependência externa** (decisão do produto) ou encoder manual.
-5. **Designer: UI de autoria de named styles** — gerenciar named styles + dropdown de `BasedOn` no PropertyGrid (hoje round-trippam, mas não há editor). UI dedicada.
-6. **#14 `Globals.RenderFormat`** — exige passar o formato-alvo no `PaginationRequest`, acoplando layout a formato (hoje paginado uma vez p/ todos os formatos). Decisão arquitetural antes de implementar.
+1. **#7 rowSpan no corpo do Tablix** — a matrix já faz o "merged look" de headers de row group aninhados (`TablixRenderer.cs:349`); o gap restante é `RowSpan` **explícito** em célula de flat table, cuja semântica numa região que repete por linha é ambígua. Niche; definir o comportamento primeiro.
+2. **#8 StaticMember/DynamicMember** — crosstabs assimétricos. O caso comum (coluna "Total") já é coberto por subtotais (#6); o gap real (membros estáticos arbitrários) é niche + mudança de modelo maior.
+3. **#19 TIFF exporter** — Skia não encoda TIFF nativamente → precisa de **dependência externa** (decisão do produto) ou encoder manual baseline (risco de compat).
+4. **#14 `Globals.RenderFormat`** — exige passar o formato-alvo no `PaginationRequest`, acoplando layout a formato (hoje paginado uma vez p/ todos os formatos). Decisão arquitetural antes de implementar.
 
 **Fora de escopo (decisão de produto):** #9 drill-down/toggle interativo em runtime — o output é sempre estático.
 
