@@ -90,4 +90,41 @@ public class ParameterValueResolverTests
 
         result.Should().BeEmpty();
     }
+
+    // ── Cascading (dependent) parameters ──────────────────────────────────────────
+
+    private sealed record Cidade(string Nome, string Estado);
+
+    private static DataSourceRegistry WithCidades(params Cidade[] cidades)
+    {
+        var registry = new DataSourceRegistry();
+        registry.Register(new EnumerableDataSource<Cidade>("Cidades", cidades));
+        return registry;
+    }
+
+    [Fact]
+    public async Task Cascading_restricts_rows_to_the_parent_parameter_value()
+    {
+        var available = ParameterAvailableValues.FromCascadingQuery("Cidades", "Nome", filterField: "Estado", dependsOn: "Estado");
+        var registry = WithCidades(new Cidade("Porto Alegre", "RS"), new Cidade("Curitiba", "PR"), new Cidade("Caxias", "RS"));
+
+        var rs = await ParameterValueResolver.ResolveAsync(available, registry,
+            new Dictionary<string, object?> { ["Estado"] = "RS" });
+        rs.Select(v => v.Value).Should().BeEquivalentTo(new[] { "Porto Alegre", "Caxias" });
+
+        var pr = await ParameterValueResolver.ResolveAsync(available, registry,
+            new Dictionary<string, object?> { ["Estado"] = "PR" });
+        pr.Select(v => v.Value).Should().Equal("Curitiba");
+    }
+
+    [Fact]
+    public async Task Cascading_with_no_parent_value_yields_nothing()
+    {
+        var available = ParameterAvailableValues.FromCascadingQuery("Cidades", "Nome", "Estado", "Estado");
+        var registry = WithCidades(new Cidade("Porto Alegre", "RS"));
+
+        // The parent hasn't been chosen yet → the dependent list is empty until it is.
+        var result = await ParameterValueResolver.ResolveAsync(available, registry, parameterValues: null);
+        result.Should().BeEmpty();
+    }
 }
