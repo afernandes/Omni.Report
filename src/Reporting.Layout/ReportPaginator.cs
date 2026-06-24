@@ -501,9 +501,12 @@ public sealed partial class ReportPaginator : IReportPaginator
         // totals are unchanged; this only fixes the previously-empty header/early-band case.
         ctx.PrimeReportScope(rows.Select(r => r.Fields));
 
+        // Pre-flatten the named-style BasedOn chains once (independent of row data) so per-element resolution is O(1).
+        var namedStyles = def.NamedStyles.Count > 0 ? StyleResolver.FlattenNamedStyles(def.NamedStyles) : null;
         var bandRenderer = new BandRenderer(_evaluator, _templates, measurer, allSources, primarySourceName,
             renderSubreport: (sub, subBounds, subCtx) => RenderSubreport(sub, subBounds, subCtx, request, measurer),
-            mapTileResolver: request.MapTileResolver);
+            mapTileResolver: request.MapTileResolver,
+            namedStyles: namedStyles);
         var page = new PageAccumulator(def.PageSetup);
 
         var pageHeaderHeight = def.PageHeader?.Height ?? Unit.Zero;

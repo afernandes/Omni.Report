@@ -46,6 +46,15 @@ internal static class RepJsonReader
             }
         }
 
+        var namedStyles = new Dictionary<string, Style>();
+        if (root["namedStyles"] is JsonObject ns)
+        {
+            foreach (var kv in ns)
+            {
+                namedStyles[kv.Key] = ReadStyle(kv.Value?.AsObject());
+            }
+        }
+
         return new ReportDefinition(name, pageSetup, detail)
         {
             SchemaVersion = version.ToString(),
@@ -58,6 +67,7 @@ internal static class RepJsonReader
             PageFooter = pageFooter,
             ReportFooter = reportFooter,
             Metadata = new EquatableDictionary<string, string>(metadata),
+            NamedStyles = new EquatableDictionary<string, Style>(namedStyles),
         };
     }
 
@@ -637,7 +647,8 @@ internal static class RepJsonReader
             (string?)o["format"],
             backgroundImage,
             (string?)o["backColorEnd"] is { } bce ? Formats.ParseColor(bce) : null,
-            Enum.TryParse<BackgroundGradientType>((string?)o["backgroundGradient"], out var bg) ? bg : BackgroundGradientType.None);
+            Enum.TryParse<BackgroundGradientType>((string?)o["backgroundGradient"], out var bg) ? bg : BackgroundGradientType.None,
+            (string?)o["basedOn"]);
     }
 
     private static Border ReadBorder(JsonObject o)

@@ -73,6 +73,13 @@ internal static class RepxWriter
                     new XElement("Entry", new XAttribute("Key", kv.Key), new XAttribute("Value", kv.Value)))));
         }
 
+        if (definition.NamedStyles.Count > 0)
+        {
+            root.Add(new XElement("NamedStyles",
+                definition.NamedStyles.Select(kv =>
+                    new XElement("NamedStyle", new XAttribute("Name", kv.Key), WriteStyle(kv.Value)))));
+        }
+
         return new XDocument(new XDeclaration("1.0", "utf-8", null), root);
     }
 
@@ -665,6 +672,10 @@ internal static class RepxWriter
         if (style.BackColorEnd is not null)
         {
             el.Add(new XElement("BackColorEnd", Formats.FormatColor(style.BackColorEnd.Value)));
+        }
+        if (style.BasedOn is not null)
+        {
+            el.SetAttributeValue("BasedOn", style.BasedOn);
         }
         return el;
     }

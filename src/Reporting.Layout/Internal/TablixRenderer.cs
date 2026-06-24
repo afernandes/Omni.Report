@@ -34,6 +34,7 @@ internal static class TablixRenderer
         ExpressionEvaluator ev,
         TemplateRenderer templates,
         IReportExpressionContext baseCtx,
+        IReadOnlyDictionary<string, Style>? namedStyles,
         out Unit actualHeight)
     {
         var list = new List<LayoutPrimitive>();
@@ -100,7 +101,7 @@ internal static class TablixRenderer
                 cells.TryGetValue(c, out var cell);
                 int span = cell is null ? 1 : Math.Clamp(cell.ColumnSpan, 1, colCount - c);
                 EmitStyledCell(list, cell?.Content, Text(cell?.Content, ev, templates, ctx),
-                    colLeft[c], rowY, colLeft[c + span] - colLeft[c], bold, color, ev, ctx, tablix.Id);
+                    colLeft[c], rowY, colLeft[c + span] - colLeft[c], bold, color, ev, ctx, tablix.Id, namedStyles);
                 for (int k = c + 1; k < c + span; k++)
                 {
                     interior.Add(k);
@@ -726,9 +727,10 @@ internal static class TablixRenderer
     // textbox. Falls back to the table defaults per property when the cell leaves it unset.
     private static void EmitStyledCell(List<LayoutPrimitive> list, ReportElement? content, string text,
         double xMm, double yMm, double wMm, bool defaultBold, Color defaultColor,
-        ExpressionEvaluator ev, IReportExpressionContext ctx, string? id)
+        ExpressionEvaluator ev, IReportExpressionContext ctx, string? id,
+        IReadOnlyDictionary<string, Style>? namedStyles = null)
     {
-        var s = content is null ? null : StyleResolver.Resolve(content, ev, ctx);
+        var s = content is null ? null : StyleResolver.Resolve(content, ev, ctx, namedStyles);
         // Honour the cell's gradient (BackColor → BackColorEnd) — not just the solid start — so Tablix cells match band fills.
         if (s is not null && StyleResolver.BackgroundBrush(s) is { } bgBrush)
         {

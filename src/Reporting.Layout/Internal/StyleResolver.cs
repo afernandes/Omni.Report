@@ -13,10 +13,18 @@ namespace Reporting.Layout.Internal;
 /// </summary>
 internal static class StyleResolver
 {
-    /// <summary>The element's <see cref="Style"/> with every conditional format whose condition is true applied.</summary>
-    public static Style Resolve(ReportElement element, ExpressionEvaluator evaluator, IReportExpressionContext ctx)
+    /// <summary>The element's effective <see cref="Style"/>: its named-style base (<see cref="Style.BasedOn"/>,
+    /// looked up in <paramref name="namedStyles"/>) overlaid by the element's inline style, then by every matching
+    /// conditional format in declaration order. <paramref name="namedStyles"/> should be the FLATTENED table from
+    /// <see cref="FlattenNamedStyles"/> (BasedOn chains already resolved); null = no named styles.</summary>
+    public static Style Resolve(ReportElement element, ExpressionEvaluator evaluator, IReportExpressionContext ctx,
+        IReadOnlyDictionary<string, Style>? namedStyles = null)
     {
         var style = element.Style;
+        if (style.BasedOn is { } name && namedStyles is not null && namedStyles.TryGetValue(name, out var baseStyle))
+        {
+            style = Merge(baseStyle, style); // named base ← inline overlay
+        }
         foreach (var cf in element.ConditionalFormats)
         {
             if (evaluator.Evaluate<bool>(cf.Condition, ctx))
@@ -25,6 +33,35 @@ internal static class StyleResolver
             }
         }
         return style;
+    }
+
+    /// <summary>Pre-resolves every named style's <see cref="Style.BasedOn"/> chain ONCE (cycle-guarded) so the
+    /// per-element/per-row lookup in <see cref="Resolve"/> is a single O(1) merge. The named base is independent of
+    /// row data, so this runs once per paginate.</summary>
+    public static Dictionary<string, Style> FlattenNamedStyles(IReadOnlyDictionary<string, Style> table)
+    {
+        var flat = new Dictionary<string, Style>(table.Count, StringComparer.Ordinal);
+        foreach (var name in table.Keys)
+        {
+            flat[name] = ResolveChain(name, table, new HashSet<string>(StringComparer.Ordinal));
+        }
+        return flat;
+    }
+
+    private static Style ResolveChain(string name, IReadOnlyDictionary<string, Style> table, HashSet<string> visiting)
+    {
+        if (!table.TryGetValue(name, out var style))
+        {
+            return Style.Default;
+        }
+        // No base, or we're already resolving this name (cycle) → use it as-is, breaking the chain.
+        if (style.BasedOn is not { } baseName || !visiting.Add(name))
+        {
+            return style;
+        }
+        var baseStyle = ResolveChain(baseName, table, visiting);
+        visiting.Remove(name);
+        return Merge(baseStyle, style);
     }
 
     /// <summary>

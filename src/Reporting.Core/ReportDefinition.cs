@@ -3,6 +3,7 @@ using Reporting.Common;
 using Reporting.Data;
 using Reporting.Paper;
 using Reporting.Parameters;
+using Reporting.Styling;
 
 namespace Reporting;
 
@@ -33,6 +34,12 @@ public sealed record ReportDefinition(
     public ReportBand? ReportFooter { get; init; }
 
     public EquatableDictionary<string, string> Metadata { get; init; } = EquatableDictionary<string, string>.Empty;
+
+    /// <summary>Reusable named styles (SSRS <c>Style[@Name]</c>): a table of styles an element's
+    /// <see cref="Style.BasedOn"/> can inherit from. Resolved at render — the named style is the base, the
+    /// element's inline <see cref="Style"/> overlays it. A named style may itself have a <see cref="Style.BasedOn"/>
+    /// (chained, cycle-guarded at resolution).</summary>
+    public EquatableDictionary<string, Style> NamedStyles { get; init; } = EquatableDictionary<string, Style>.Empty;
 
     /// <summary>Creates a minimal valid definition: A4 portrait, empty detail band.</summary>
     public static ReportDefinition Empty(string name)
