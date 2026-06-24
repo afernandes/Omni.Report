@@ -46,7 +46,8 @@ public sealed record BrushStyle(
     public static readonly BrushStyle White = new(Color.White);
     public static readonly BrushStyle Transparent = new(Color.Transparent);
 
-    public bool IsVisible => Color.A > 0;
+    /// <summary>Visible when the solid/start colour OR (for a gradient) the end colour has any opacity.</summary>
+    public bool IsVisible => Color.A > 0 || (HasGradient && GradientEndColor!.Value.A > 0);
 
     /// <summary>True when a real gradient should be drawn (direction set AND an end colour present).</summary>
     public bool HasGradient => Gradient != BackgroundGradientType.None && GradientEndColor is not null;

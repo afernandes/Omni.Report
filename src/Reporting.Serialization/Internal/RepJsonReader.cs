@@ -637,7 +637,7 @@ internal static class RepJsonReader
             (string?)o["format"],
             backgroundImage,
             (string?)o["backColorEnd"] is { } bce ? Formats.ParseColor(bce) : null,
-            Enum.Parse<BackgroundGradientType>((string?)o["backgroundGradient"] ?? nameof(BackgroundGradientType.None)));
+            Enum.TryParse<BackgroundGradientType>((string?)o["backgroundGradient"], out var bg) ? bg : BackgroundGradientType.None);
     }
 
     private static Border ReadBorder(JsonObject o)

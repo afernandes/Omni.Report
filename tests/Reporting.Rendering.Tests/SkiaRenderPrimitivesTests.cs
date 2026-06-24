@@ -155,6 +155,18 @@ public class SkiaRenderPrimitivesTests
         }
     }
 
+    [Fact]
+    public void DiagonalLeft_gradient_runs_top_left_to_bottom_right()
+    {
+        var (bmp, w, h) = RenderFullPageFill(
+            new BrushStyle(Color.FromRgb(255, 0, 0), Color.FromRgb(0, 0, 255), BackgroundGradientType.DiagonalLeft));
+        using (bmp)
+        {
+            bmp.GetPixel(2, 2).Red.Should().BeGreaterThan(bmp.GetPixel(2, 2).Blue, "top-left is the red start");
+            bmp.GetPixel(w - 3, h - 3).Blue.Should().BeGreaterThan(bmp.GetPixel(w - 3, h - 3).Red, "bottom-right is the blue end");
+        }
+    }
+
     // ---- 5. DrawImage sizing modes --------------------------------------------------------
 
     [Theory]

@@ -174,15 +174,16 @@ internal sealed class BandRenderer
             // except Tablix cells). Emitted before the content so text/image draws on top; its bounds are
             // patched below if the element grows (CanGrow), so the fill always matches the final size.
             int bgIndex = -1;
-            if (effectiveStyle.BackColor is { } backColor)
+            // BackColor (start) → BackColorEnd (end) along BackgroundGradient; BackgroundBrush centralises the
+            // null-start fallback so an imported gradient without a BackgroundColor still paints.
+            if (StyleResolver.BackgroundBrush(effectiveStyle) is { } bgBrush)
             {
                 bgIndex = primitives.Count;
                 primitives.Add(new DrawRectanglePrimitive
                 {
                     Bounds = elementBounds,
                     SourceElementId = element.Id,
-                    // backColor is the gradient start; the renderer paints a solid fill unless a direction is set.
-                    Fill = new BrushStyle(backColor, effectiveStyle.BackColorEnd, effectiveStyle.BackgroundGradient),
+                    Fill = bgBrush,
                 });
             }
 
