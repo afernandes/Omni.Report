@@ -179,6 +179,10 @@ public sealed class BandContent
     public BandContent BackgroundGradient(Color start, Color end, BackgroundGradientType type = BackgroundGradientType.TopBottom)
         => MutateStyle(s => s with { BackColor = start, BackColorEnd = end, BackgroundGradient = type });
 
+    /// <summary>Inherits a report-level named style (defined via <c>ReportBuilderRoot.NamedStyle</c>): it becomes the
+    /// base, and any inline style set here overlays it. See <see cref="Style.BasedOn"/>.</summary>
+    public BandContent BasedOn(string namedStyle) => MutateStyle(s => s with { BasedOn = namedStyle });
+
     public BandContent Center() => MutateStyle(s => s with { HorizontalAlignment = HorizontalAlignment.Center });
     public BandContent AlignLeft() => MutateStyle(s => s with { HorizontalAlignment = HorizontalAlignment.Left });
     public BandContent AlignRight() => MutateStyle(s => s with { HorizontalAlignment = HorizontalAlignment.Right });

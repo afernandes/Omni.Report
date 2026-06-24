@@ -5,6 +5,7 @@ using Reporting.Data;
 using Reporting.DataSources;
 using Reporting.DataSources.Enumerable;
 using Reporting.Parameters;
+using Reporting.Styling;
 
 namespace Reporting.CodeFirst;
 
@@ -25,6 +26,7 @@ public sealed class ReportBuilderRoot
     private readonly List<DataSourceDefinition> _dataSourceDefinitions = [];
     private readonly List<GroupBuilder> _groups = [];
     private readonly Dictionary<string, string> _metadata = [];
+    private readonly Dictionary<string, Style> _namedStyles = [];
     private readonly List<Reporting.Parameters.ReportVariable> _variables = [];
 
     private BandContent? _reportHeader;
@@ -106,6 +108,18 @@ public sealed class ReportBuilderRoot
     public ReportBuilderRoot Metadata(string key, string value)
     {
         _metadata[key] = value;
+        return this;
+    }
+
+    /// <summary>Defines a reusable named style (SSRS <c>Style[@Name]</c>). Elements reference it with
+    /// <c>BandContent.BasedOn(name)</c>; at render the named style is the base and the element's inline style
+    /// overlays it. <paramref name="configure"/> builds the style from <see cref="Style.Default"/> — e.g.
+    /// <c>.NamedStyle("titulo", s =&gt; s with { ForeColor = Color.Navy, HorizontalAlignment = HorizontalAlignment.Center })</c>.</summary>
+    public ReportBuilderRoot NamedStyle(string name, Func<Style, Style> configure)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+        ArgumentNullException.ThrowIfNull(configure);
+        _namedStyles[name] = configure(Style.Default);
         return this;
     }
 
@@ -350,6 +364,7 @@ public sealed class ReportBuilderRoot
             PageFooter = _pageFooter is null ? null : GroupBuilder.BuildReportBand(_pageFooter, BandKind.PageFooter),
             ReportFooter = _reportFooter is null ? null : GroupBuilder.BuildReportBand(_reportFooter, BandKind.ReportFooter),
             Metadata = new EquatableDictionary<string, string>(_metadata),
+            NamedStyles = new EquatableDictionary<string, Style>(_namedStyles),
             Variables = new EquatableArray<Reporting.Parameters.ReportVariable>(_variables),
         };
         return new Report(definition, _dataSources);
