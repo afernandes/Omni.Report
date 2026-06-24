@@ -20,7 +20,8 @@
                 }
                 else
                 {
-                    <PropertyGrid Element="Selected" BandLabel="@BandLabel" NamedStyleNames="Report.NamedStyleNames" OnOpenExpressionEditor="OnOpenExpressionEditor" />
+                    <PropertyGrid Element="Selected" BandLabel="@BandLabel" NamedStyleNames="Report.NamedStyleNames"
+                                  OnCreateNamedStyle="HandleCreateNamedStyle" OnOpenExpressionEditor="OnOpenExpressionEditor" />
                 }
                 break;
             case 1:
@@ -53,4 +54,13 @@
     [Parameter] public System.Collections.ObjectModel.ObservableCollection<DesignerRelation>? Relations { get; set; }
 
     private int _tab;
+
+    // Captures the selected element's current style as a reusable report-level named style.
+    private void HandleCreateNamedStyle(string name)
+    {
+        if (Selected is not null)
+        {
+            Report.SetNamedStyle(name, Selected.ToElement().Style);
+        }
+    }
 }

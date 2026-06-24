@@ -39,25 +39,37 @@ else
         @Row("Height", ToMm(Element.Height), v => Element.Height = ParseMm(v) ?? Element.Height)
     </div>
 
-    @* Named-style picker: when the report defines named styles, an element can inherit one as its base
-       (Style.BasedOn). The named style is resolved at Preview/render; the design canvas shows representative
-       styling (SSRS norm), so selecting here persists the reference without re-painting the canvas. *@
-    @if (Element.IsTextStyled && NamedStyleNames is { Count: > 0 })
+    @* Named styles: "Salvar como estilo nomeado" captures this element's style as a reusable one (so OTHER
+       elements can inherit it via the BasedOn picker below). The picker shows once the report has named styles.
+       Resolved at Preview/render — the canvas shows representative styling (SSRS norm). *@
+    @if (Element.IsTextStyled)
     {
         <div class="prop-section">
             <div class="prop-section-head"><Icon Name="chevron-down" Size="12" CssClass="chev icon icon-12" /><span>Estilo nomeado</span></div>
+            @if (NamedStyleNames is { Count: > 0 })
+            {
+                <div class="prop-row">
+                    <div class="p-label">Estilo base</div>
+                    <div class="p-editor">
+                        <select value="@Element.BasedOn"
+                                @onchange="@(e => Element.BasedOn = string.IsNullOrEmpty(e.Value?.ToString()) ? null : e.Value!.ToString())"
+                                style="flex:1;font-family:var(--font-mono);font-size:11.5px;">
+                            <option value="">(nenhum)</option>
+                            @foreach (var n in NamedStyleNames)
+                            {
+                                <option value="@n" selected="@(Element.BasedOn == n)">@n</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+            }
             <div class="prop-row">
-                <div class="p-label">Estilo base</div>
                 <div class="p-editor">
-                    <select value="@Element.BasedOn"
-                            @onchange="@(e => Element.BasedOn = string.IsNullOrEmpty(e.Value?.ToString()) ? null : e.Value!.ToString())"
-                            style="flex:1;font-family:var(--font-mono);font-size:11.5px;">
-                        <option value="">(nenhum)</option>
-                        @foreach (var n in NamedStyleNames)
-                        {
-                            <option value="@n" selected="@(Element.BasedOn == n)">@n</option>
-                        }
-                    </select>
+                    <button class="icon-btn" type="button" @onclick="CreateNamedStyle"
+                            style="font-size:10.5px;padding:2px 8px;align-self:flex-start;"
+                            title="Captura o estilo atual deste elemento como um estilo nomeado reutilizável">
+                        + Salvar como estilo nomeado
+                    </button>
                 </div>
             </div>
         </div>
@@ -579,6 +591,31 @@ else
     [Parameter] public string BandLabel { get; set; } = "Detail";
     /// <summary>Report-level named-style names for the BasedOn picker (empty = no picker shown).</summary>
     [Parameter] public IReadOnlyList<string>? NamedStyleNames { get; set; }
+    /// <summary>Raised when the user saves the selected element's style as a named style; the arg is the chosen name.</summary>
+    [Parameter] public EventCallback<string> OnCreateNamedStyle { get; set; }
+
+    // Derives a name (the element's Name if free, else "Estilo N") and asks the host to capture the current style.
+    private async Task CreateNamedStyle()
+    {
+        if (Element is null)
+        {
+            return;
+        }
+        var existing = new HashSet<string>(NamedStyleNames ?? Array.Empty<string>(), StringComparer.Ordinal);
+        var name = !string.IsNullOrWhiteSpace(Element.Name) && !existing.Contains(Element.Name!)
+            ? Element.Name!
+            : NextStyleName(existing);
+        await OnCreateNamedStyle.InvokeAsync(name);
+    }
+
+    private static string NextStyleName(HashSet<string> existing)
+    {
+        for (var i = 1; ; i++)
+        {
+            var n = $"Estilo {i}";
+            if (!existing.Contains(n)) return n;
+        }
+    }
     /// <summary>Asks the host to open the rich expression editor. A null argument edits the element's
     /// primary Text/Expression (legacy "Data" fx); a non-null property path edits that property's
     /// expression binding (the metadata grid's per-property "fx").</summary>
