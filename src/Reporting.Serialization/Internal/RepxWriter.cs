@@ -740,6 +740,8 @@ internal static class RepxWriter
         if (t.SubtotalLabel is not null) content.Add(new XElement("SubtotalLabel", t.SubtotalLabel));
         if (t.GrandTotalLabel is not null) content.Add(new XElement("GrandTotalLabel", t.GrandTotalLabel));
         if (t.NoRowsMessage is not null) content.Add(new XElement("NoRowsMessage", t.NoRowsMessage));
+        if (!t.RepeatColumnHeaders) content.Add(new XElement("RepeatColumnHeaders", "false")); // default true
+        if (t.KeepTogether) content.Add(new XElement("KeepTogether", "true")); // default false
         if (t.ColumnWidths.Count > 0)
         {
             content.Add(new XElement("ColumnWidths",

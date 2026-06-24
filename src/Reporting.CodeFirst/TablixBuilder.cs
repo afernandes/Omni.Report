@@ -43,6 +43,8 @@ public sealed class TablixBuilder
     private string? _subtotalLabel;
     private string? _grandTotalLabel;
     private string? _noRowsMessage;
+    private bool _repeatColumnHeaders = true;
+    private bool _keepTogether;
 
     /// <summary>Turns the Tablix into a matrix/crosstab: groups data rows by this expression down
     /// the left axis. Call more than once to <b>nest</b> row groups (outer→inner). Pair with
@@ -103,6 +105,14 @@ public sealed class TablixBuilder
         return this;
     }
 
+    /// <summary>When the matrix is taller than the page it splits across pages by row; this controls whether the
+    /// column header is reprinted at the top of each continuation page (default <c>true</c>, SSRS-style). Matrix mode.</summary>
+    public TablixBuilder RepeatColumnHeaders(bool enabled = true) { _repeatColumnHeaders = enabled; return this; }
+
+    /// <summary>Keeps the whole matrix together on one page instead of paginating it by row (it overflows if it
+    /// doesn't fit). The opt-out of row-level pagination — default is to paginate. Matrix mode.</summary>
+    public TablixBuilder KeepTogether(bool enabled = true) { _keepTogether = enabled; return this; }
+
     internal TablixElement Build()
     {
         // Matrix mode: one or more row groups + column groups (nested outer→inner) + a body value
@@ -123,6 +133,8 @@ public sealed class TablixBuilder
                 SubtotalLabel = _subtotalLabel,
                 GrandTotalLabel = _grandTotalLabel,
                 NoRowsMessage = _noRowsMessage,
+                RepeatColumnHeaders = _repeatColumnHeaders,
+                KeepTogether = _keepTogether,
                 Cells = new EquatableArray<TablixCell>(
                 [
                     new TablixCell(0, 0, new LabelElement { Text = _corner ?? string.Empty, Bounds = Rectangle.Empty }),

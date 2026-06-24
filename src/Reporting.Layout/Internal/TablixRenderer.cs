@@ -24,7 +24,7 @@ internal static class TablixRenderer
     private static readonly Color GridColor = Color.FromHex("#CBD5E1");  // slate-300
     private static readonly Color HeaderText = Color.FromHex("#0F172A"); // slate-900
     private static readonly Color BodyText = Color.FromHex("#1F2937");   // gray-800
-    private const double RowHeightMm = 6.5;
+    internal const double RowHeightMm = 6.5;
     private const double PadMm = 1.0;
 
     public static IEnumerable<LayoutPrimitive> Render(
@@ -179,9 +179,48 @@ internal static class TablixRenderer
         IReportExpressionContext baseCtx,
         IReadOnlyDictionary<string, Style>? namedStyles,
         out Unit actualHeight)
+        => RenderMatrixCore(tablix, bounds, rows, ev, templates, baseCtx, namedStyles,
+            sliceStart: -1, sliceMaxHeightMm: 0, out _, out _, out actualHeight);
+
+    /// <summary>Renders a vertical SLICE of the matrix beginning at body-row <paramref name="startRow"/> that
+    /// fits within <paramref name="maxHeight"/>. The column header is reprinted at the top of every slice when
+    /// <see cref="TablixElement.RepeatColumnHeaders"/> is true (default), so a matrix taller than a page
+    /// continues across pages with its headers intact. <paramref name="nextRow"/> is the first un-emitted body
+    /// row, or <c>-1</c> when the matrix is fully drawn.</summary>
+    internal static List<LayoutPrimitive> RenderMatrixSlice(
+        TablixElement tablix,
+        Rectangle bounds,
+        IReadOnlyList<IReadOnlyList<KeyValuePair<string, object?>>> rows,
+        ExpressionEvaluator ev,
+        TemplateRenderer templates,
+        IReportExpressionContext baseCtx,
+        IReadOnlyDictionary<string, Style>? namedStyles,
+        int startRow,
+        Unit maxHeight,
+        out int consumedRows,
+        out int nextRow,
+        out Unit sliceHeight)
+        => RenderMatrixCore(tablix, bounds, rows, ev, templates, baseCtx, namedStyles,
+            Math.Max(0, startRow), maxHeight.ToMm(), out consumedRows, out nextRow, out sliceHeight);
+
+    private static List<LayoutPrimitive> RenderMatrixCore(
+        TablixElement tablix,
+        Rectangle bounds,
+        IReadOnlyList<IReadOnlyList<KeyValuePair<string, object?>>> rows,
+        ExpressionEvaluator ev,
+        TemplateRenderer templates,
+        IReportExpressionContext baseCtx,
+        IReadOnlyDictionary<string, Style>? namedStyles,
+        int sliceStart,
+        double sliceMaxHeightMm,
+        out int consumedRows,
+        out int nextRow,
+        out Unit actualHeight)
     {
         var list = new List<LayoutPrimitive>();
         actualHeight = bounds.Height;
+        consumedRows = 0;
+        nextRow = -1;
 
         var rowGroups = tablix.RowGroups.Where(g => !string.IsNullOrWhiteSpace(g.GroupExpression)).ToList();
         var colGroups = tablix.ColumnGroups.Where(g => !string.IsNullOrWhiteSpace(g.GroupExpression)).ToList();
@@ -297,85 +336,14 @@ internal static class TablixRenderer
             return t;
         }
 
-        // Header band (corner + column-header rows) gets the header fill.
-        list.Add(Fill(x0, y0, w, headerH, HeaderBg, tablix.Id));
-        list.Add(CellText(cornerText, x0, y0, colW, bold: true, HeaderText, tablix.Id));
-
-        // Column headers: leaf columns get each level's value spanning the columns it covers (true span);
-        // a subtotal/grand column gets one label across the whole header band.
-        int vh = 0;
-        while (vh < vcols.Count)
-        {
-            if (vcols[vh].IsSubtotal)
-            {
-                list.Add(CellText(vcols[vh].Label, x0 + (nRowLevels + vh) * colW, y0, colW, bold: true, HeaderText, tablix.Id));
-                vh++;
-                continue;
-            }
-            int runEnd = vh; // a maximal run of consecutive leaf columns, spanned per level
-            while (runEnd + 1 < vcols.Count && !vcols[runEnd + 1].IsSubtotal) runEnd++;
-            for (int cl = 0; cl < nColLevels; cl++)
-            {
-                int k = vh;
-                while (k <= runEnd)
-                {
-                    string prefix = string.Join(Sep, colLeaves[vcols[k].Leaf].Take(cl + 1));
-                    int span = 1;
-                    while (k + span <= runEnd && string.Join(Sep, colLeaves[vcols[k + span].Leaf].Take(cl + 1)) == prefix)
-                    {
-                        span++;
-                    }
-                    list.Add(CellText(colLeaves[vcols[k].Leaf][cl], x0 + (nRowLevels + k) * colW, y0 + cl * RowHeightMm,
-                        span * colW, bold: true, HeaderText, tablix.Id));
-                    k += span;
-                }
-            }
-            vh = runEnd + 1;
-        }
-
-        // Emits one total row (subtotal of a group block, or the grand total): a spanning label over the
-        // row-header columns + each visual column's block sum, all bold on the header fill.
-        void TotalRow(double yy, string label, int start, int end)
-        {
-            list.Add(Fill(x0, yy, w, RowHeightMm, HeaderBg, tablix.Id));
-            list.Add(CellText(label, x0, yy, nRowLevels * colW, bold: true, HeaderText, tablix.Id));
-            for (int vIdx = 0; vIdx < vcols.Count; vIdx++)
-            {
-                list.Add(CellText(FormatNumber(CellValue(start, end, vcols[vIdx]), format, baseCtx.Culture),
-                    x0 + (nRowLevels + vIdx) * colW, yy, colW, bold: true, HeaderText, tablix.Id));
-            }
-        }
-
-        // Data rows: nested row headers (merged look) + each visual column's value, optionally with SSRS-style
-        // subtotal rows after each outer group block and a grand total at the bottom.
+        // Build the visual body-row PLAN: each data row, plus SSRS-style subtotal rows after each outer group
+        // block and a grand total at the bottom. Materialising the plan (instead of rendering inline) lets the
+        // matrix render a vertical WINDOW of its rows — the basis for paginating a matrix taller than a page.
         bool rowSub = tablix.RowSubtotals;
-        double y = y0 + headerH;
-        int bodyRows = 0; // visual rows below the header band (data + subtotals + grand total) for grid lines
-        var prevRowPrefix = new string?[nRowLevels];
+        var plan = new List<MatrixRow>();
         for (int i = 0; i < rowLeaves.Count; i++)
         {
-            for (int rl = 0; rl < nRowLevels; rl++)
-            {
-                string prefix = string.Join(Sep, rowLeaves[i].Take(rl + 1));
-                if (prefix != prevRowPrefix[rl])
-                {
-                    list.Add(CellText(rowLeaves[i][rl], x0 + rl * colW, y, colW, bold: true, HeaderText, tablix.Id));
-                    prevRowPrefix[rl] = prefix;
-                    for (int d = rl + 1; d < nRowLevels; d++) prevRowPrefix[d] = null; // deeper levels restart
-                }
-            }
-            for (int vIdx = 0; vIdx < vcols.Count; vIdx++)
-            {
-                bool sub = vcols[vIdx].IsSubtotal;
-                list.Add(CellText(FormatNumber(CellValue(i, i, vcols[vIdx]), format, baseCtx.Culture),
-                    x0 + (nRowLevels + vIdx) * colW, y, colW, bold: sub, sub ? HeaderText : BodyText, tablix.Id,
-                    cellStyle: sub ? null : bodyStyle)); // value cells honour the body template's style; subtotals stay default
-
-            }
-            y += RowHeightMm;
-            bodyRows++;
-
-            // Subtotal each outer group level (innermost-outer first) whose block ends at this leaf.
+            plan.Add(new MatrixRow(IsTotal: false, Leaf: i, Label: string.Empty, Start: 0, End: 0, ResetLevel: 0));
             if (rowSub && nRowLevels >= 2)
             {
                 for (int level = nRowLevels - 2; level >= 0; level--)
@@ -392,23 +360,113 @@ internal static class TablixRenderer
                     {
                         start--;
                     }
-                    TotalRow(y, SafeLabel(subLabelFmt, rowLeaves[i][level], baseCtx.Culture), start, i);
-                    y += RowHeightMm;
-                    bodyRows++;
-                    for (int d = level; d < nRowLevels; d++) prevRowPrefix[d] = null; // next block redraws headers
+                    plan.Add(new MatrixRow(IsTotal: true, Leaf: 0,
+                        Label: SafeLabel(subLabelFmt, rowLeaves[i][level], baseCtx.Culture),
+                        Start: start, End: i, ResetLevel: level));
                 }
             }
         }
         if (rowSub)
         {
-            TotalRow(y, grandLabel, 0, rowLeaves.Count - 1);
-            y += RowHeightMm;
-            bodyRows++;
+            plan.Add(new MatrixRow(IsTotal: true, Leaf: 0, Label: grandLabel, Start: 0, End: rowLeaves.Count - 1, ResetLevel: nRowLevels));
         }
 
-        double totalH = y - y0;
+        // Choose the window: the whole plan for a full render, or a page-sized slice from sliceStart. A slice
+        // reprints the header (unless RepeatColumnHeaders is off on a continuation) and always emits ≥1 row.
+        bool isSlice = sliceStart >= 0;
+        bool renderHeader = !isSlice || sliceStart == 0 || tablix.RepeatColumnHeaders;
+        double effHeaderH = renderHeader ? headerH : 0;
+        int windowStart = isSlice ? Math.Min(sliceStart, plan.Count) : 0;
+        int windowCount = isSlice
+            ? Math.Max(1, (int)Math.Floor((sliceMaxHeightMm - effHeaderH) / RowHeightMm))
+            : plan.Count - windowStart;
+        int windowEnd = Math.Min(windowStart + windowCount, plan.Count);
+        int visibleRows = windowEnd - windowStart;
+
+        // Header band (corner + column-header rows). Reprinted at the top of each slice when enabled.
+        if (renderHeader)
+        {
+            list.Add(Fill(x0, y0, w, headerH, HeaderBg, tablix.Id));
+            list.Add(CellText(cornerText, x0, y0, colW, bold: true, HeaderText, tablix.Id));
+
+            // Column headers: leaf columns get each level's value spanning the columns it covers (true span);
+            // a subtotal/grand column gets one label across the whole header band.
+            int vh = 0;
+            while (vh < vcols.Count)
+            {
+                if (vcols[vh].IsSubtotal)
+                {
+                    list.Add(CellText(vcols[vh].Label, x0 + (nRowLevels + vh) * colW, y0, colW, bold: true, HeaderText, tablix.Id));
+                    vh++;
+                    continue;
+                }
+                int runEnd = vh; // a maximal run of consecutive leaf columns, spanned per level
+                while (runEnd + 1 < vcols.Count && !vcols[runEnd + 1].IsSubtotal) runEnd++;
+                for (int cl = 0; cl < nColLevels; cl++)
+                {
+                    int k = vh;
+                    while (k <= runEnd)
+                    {
+                        string prefix = string.Join(Sep, colLeaves[vcols[k].Leaf].Take(cl + 1));
+                        int span = 1;
+                        while (k + span <= runEnd && string.Join(Sep, colLeaves[vcols[k + span].Leaf].Take(cl + 1)) == prefix)
+                        {
+                            span++;
+                        }
+                        list.Add(CellText(colLeaves[vcols[k].Leaf][cl], x0 + (nRowLevels + k) * colW, y0 + cl * RowHeightMm,
+                            span * colW, bold: true, HeaderText, tablix.Id));
+                        k += span;
+                    }
+                }
+                vh = runEnd + 1;
+            }
+        }
+
+        // Render the windowed body rows. The merged-look row headers reset at the window top so a continuation
+        // page redraws each group's label (SSRS RepeatOnNewPage semantics for row-group headers).
+        double y = y0 + effHeaderH;
+        var prevRowPrefix = new string?[nRowLevels];
+        for (int k = windowStart; k < windowEnd; k++)
+        {
+            var rowPlan = plan[k];
+            if (rowPlan.IsTotal)
+            {
+                list.Add(Fill(x0, y, w, RowHeightMm, HeaderBg, tablix.Id));
+                list.Add(CellText(rowPlan.Label, x0, y, nRowLevels * colW, bold: true, HeaderText, tablix.Id));
+                for (int vIdx = 0; vIdx < vcols.Count; vIdx++)
+                {
+                    list.Add(CellText(FormatNumber(CellValue(rowPlan.Start, rowPlan.End, vcols[vIdx]), format, baseCtx.Culture),
+                        x0 + (nRowLevels + vIdx) * colW, y, colW, bold: true, HeaderText, tablix.Id));
+                }
+                for (int d = rowPlan.ResetLevel; d < nRowLevels; d++) prevRowPrefix[d] = null; // next block redraws headers
+            }
+            else
+            {
+                int i = rowPlan.Leaf;
+                for (int rl = 0; rl < nRowLevels; rl++)
+                {
+                    string prefix = string.Join(Sep, rowLeaves[i].Take(rl + 1));
+                    if (prefix != prevRowPrefix[rl])
+                    {
+                        list.Add(CellText(rowLeaves[i][rl], x0 + rl * colW, y, colW, bold: true, HeaderText, tablix.Id));
+                        prevRowPrefix[rl] = prefix;
+                        for (int d = rl + 1; d < nRowLevels; d++) prevRowPrefix[d] = null; // deeper levels restart
+                    }
+                }
+                for (int vIdx = 0; vIdx < vcols.Count; vIdx++)
+                {
+                    bool sub = vcols[vIdx].IsSubtotal;
+                    list.Add(CellText(FormatNumber(CellValue(i, i, vcols[vIdx]), format, baseCtx.Culture),
+                        x0 + (nRowLevels + vIdx) * colW, y, colW, bold: sub, sub ? HeaderText : BodyText, tablix.Id,
+                        cellStyle: sub ? null : bodyStyle)); // value cells honour the body template's style; subtotals stay default
+                }
+            }
+            y += RowHeightMm;
+        }
+
+        double sliceH = effHeaderH + visibleRows * RowHeightMm;
         var pen = new PenStyle(GridColor, Unit.FromPoint(0.5));
-        int gridRows = nColLevels + bodyRows;
+        int gridRows = (renderHeader ? nColLevels : 0) + visibleRows;
         for (int r = 0; r <= gridRows; r++)
         {
             double ly = y0 + r * RowHeightMm;
@@ -417,12 +475,19 @@ internal static class TablixRenderer
         for (int c = 0; c <= totalCols; c++)
         {
             double lx = x0 + c * colW;
-            list.Add(Line(lx, y0, lx, y0 + totalH, pen, tablix.Id));
+            list.Add(Line(lx, y0, lx, y0 + sliceH, pen, tablix.Id));
         }
 
-        actualHeight = Unit.FromMm(totalH);
+        consumedRows = visibleRows;
+        nextRow = windowEnd < plan.Count ? windowEnd : -1;
+        actualHeight = Unit.FromMm(sliceH);
         return list;
     }
+
+    /// <summary>One planned visual row of a matrix body: a data row (<c>IsTotal=false</c>, <c>Leaf</c> = row-leaf
+    /// index) or a subtotal/grand-total row (<c>IsTotal=true</c>, summing leaf block <c>[Start..End]</c>).
+    /// <c>ResetLevel</c> is the row-group level whose merged-look headers redraw after a subtotal.</summary>
+    private readonly record struct MatrixRow(bool IsTotal, int Leaf, string Label, int Start, int End, int ResetLevel);
 
     /// <summary>A rendered matrix column: either a single leaf data column (<c>Leaf</c> ≥ 0, summing just
     /// that column-leaf), or a subtotal/grand-total column (<see cref="IsSubtotal"/>, summing the column-leaf

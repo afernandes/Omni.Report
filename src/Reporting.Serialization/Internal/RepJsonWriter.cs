@@ -572,6 +572,14 @@ internal static class RepJsonWriter
                 {
                     o["noRowsMessage"] = tablix.NoRowsMessage;
                 }
+                if (!tablix.RepeatColumnHeaders)
+                {
+                    o["repeatColumnHeaders"] = false; // default true
+                }
+                if (tablix.KeepTogether)
+                {
+                    o["keepTogether"] = true; // default false
+                }
                 if (tablix.ColumnWidths.Count > 0)
                 {
                     o["columnWidths"] = new JsonArray(tablix.ColumnWidths.Select(wt => (JsonNode?)wt).ToArray());
