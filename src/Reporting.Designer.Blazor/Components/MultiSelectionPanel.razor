@@ -34,6 +34,47 @@
     @MixedRow("Height", Selection.Select(e => e.Height.ToMm()).ToArray(), v => Apply(e => e.Height = Unit.FromMm(v)))
 </div>
 
+@* Positional align / distribute — moves the selected elements relative to each other (≠ the text alignment below). *@
+<div class="prop-section">
+    <div class="prop-section-head">
+        <Icon Name="chevron-down" Size="12" CssClass="chev icon icon-12" />
+        <span>Organizar</span><span class="count">@(Selection.Count >= 3 ? 8 : 6)</span>
+    </div>
+    <div class="prop-row">
+        <div class="p-label">Alinhar</div>
+        <div class="p-editor">
+            <span class="align-row" aria-label="Alinhar posição">
+                <button type="button" title="Alinhar bordas à esquerda" aria-label="Alinhar à esquerda"
+                        @onclick="@(() => ApplyArrange(Arrange.Op.AlignLeft))"><Icon Name="align-left" Size="12" CssClass="icon icon-12" /></button>
+                <button type="button" title="Centralizar horizontalmente" aria-label="Centralizar horizontal"
+                        @onclick="@(() => ApplyArrange(Arrange.Op.AlignHCenter))"><Icon Name="align-center" Size="12" CssClass="icon icon-12" /></button>
+                <button type="button" title="Alinhar bordas à direita" aria-label="Alinhar à direita"
+                        @onclick="@(() => ApplyArrange(Arrange.Op.AlignRight))"><Icon Name="align-right" Size="12" CssClass="icon icon-12" /></button>
+                <button type="button" title="Alinhar topos" aria-label="Alinhar ao topo" style="font-size:11px;font-weight:600;"
+                        @onclick="@(() => ApplyArrange(Arrange.Op.AlignTop))">T</button>
+                <button type="button" title="Centralizar verticalmente" aria-label="Centralizar vertical" style="font-size:11px;font-weight:600;"
+                        @onclick="@(() => ApplyArrange(Arrange.Op.AlignVCenter))">M</button>
+                <button type="button" title="Alinhar bases" aria-label="Alinhar à base" style="font-size:11px;font-weight:600;"
+                        @onclick="@(() => ApplyArrange(Arrange.Op.AlignBottom))">B</button>
+            </span>
+        </div>
+    </div>
+    @if (Selection.Count >= 3)
+    {
+        <div class="prop-row">
+            <div class="p-label">Distribuir</div>
+            <div class="p-editor">
+                <span class="align-row" aria-label="Distribuir">
+                    <button type="button" title="Distribuir espaçamento horizontal" aria-label="Distribuir horizontalmente" style="font-size:12px;"
+                            @onclick="@(() => ApplyArrange(Arrange.Op.DistributeH))">↔</button>
+                    <button type="button" title="Distribuir espaçamento vertical" aria-label="Distribuir verticalmente" style="font-size:12px;"
+                            @onclick="@(() => ApplyArrange(Arrange.Op.DistributeV))">↕</button>
+                </span>
+            </div>
+        </div>
+    }
+</div>
+
 @if (Selection.Any(HasTextContent))
 {
     <div class="prop-section">
@@ -169,6 +210,19 @@
     private void Apply(Action<ElementViewModel> mutate)
     {
         foreach (var el in Selection) mutate(el);
+    }
+
+    // Positional align / distribute: compute every new top-left from the whole selection's bounds first,
+    // then write them back (each X/Y setter raises Changed, re-rendering the canvas).
+    private void ApplyArrange(Arrange.Op op)
+    {
+        if (Selection.Count < 2) return;
+        var positions = Arrange.Compute(op, Selection.Select(e => e.Bounds).ToList());
+        for (var i = 0; i < Selection.Count; i++)
+        {
+            var b = Selection[i].Bounds;
+            Selection[i].Bounds = new Rectangle(positions[i].X, positions[i].Y, b.Width, b.Height);
+        }
     }
 
     private string CommonValue(Func<ElementViewModel, string?> selector, string fallback)
