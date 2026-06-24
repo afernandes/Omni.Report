@@ -6,7 +6,7 @@
 
 ## Panorama
 
-> ⚠️ **O headline original "96 completas · 18 parciais · 32 ausentes (~66%)" está defasado.** Dos **19 gaps rastreados** nas tabelas abaixo, **~13 estão DONE, ~4 PARTIAL e ~3 MISSING** (1 deles **vedado por decisão de produto**, não por falta de implementação). A taxa de fechamento dos gaps rastreados é ~85–90%, não 66%. Um re-audit completo dos 146 itens daria um número global novo; aqui reconciliamos só os rastreados (verificados um a um).
+> ⚠️ **O headline original "96 completas · 18 parciais · 32 ausentes (~66%)" está defasado.** Após a leva de jun/2026 (gradients #16, named styles #15, matrix style-aware, exporter XML #19), dos **20 gaps rastreados** nas tabelas abaixo **~16 estão DONE, ~3 PARTIAL e 0 totalmente MISSING** (o que resta de cada parcial está descrito); 1 item (#9) é **vedado por decisão de produto**. A taxa de fechamento dos rastreados é >90%, não 66%. Um re-audit completo dos 146 itens daria um número global novo; aqui reconciliamos só os rastreados (verificados um a um).
 
 O engine cobre os 17 report items com render nativo (8 tipos de chart, matrix/pivô com sort+subtotais, KPIs), expressões com vocabulário SSRS (condicional/texto/data/agregação + Lookup/LookupSet/MultiLookup + Previous/RunningValue/ReportItems), **import e export `.rdl`** (XML SSRS ↔ ReportDefinition, lossless via CustomProperties), e 9 exporters (PDF/XLSX/DOCX/HTML/SVG/CSV/Markdown/PNG/JSON). Os 3 modos de autoria existem para o que está implementado.
 
@@ -42,23 +42,23 @@ O engine cobre os 17 report items com render nativo (8 tipos de chart, matrix/pi
 | 12 | **`Previous()`** | ✅ **DONE** | `ExpressionEvaluator.cs:302-312`, `ReportExpressionContext.cs:291-315` | Sim (`PositionalFunctionsTests`) |
 | 13 | **`ReportItems.X`** | ✅ **DONE** | `ExpressionEvaluator.cs:104`, `ReportExpressionContext.cs:234-242` (Get/SetReportItem) | Integrado no render |
 | 14 | **Globals / Variables** | ⚠️ **PARTIAL** | PageNumber/TotalPages/Now/Today/UserName/ReportName/Language ✅; ReportVariable (Row/Report/Group) ✅. **Falta** `Globals.RenderFormat` (awkward: o layout é format-agnóstico, paginado uma vez p/ todos os formatos) | parcial |
-| 15 | **Named/reusable styles** (`Style[@Name]`) | ❌ **MISSING** | todo `Style` é inline (`Style.cs:12`, sem `Name`/registry) | Não |
-| 16 | **Gradients** (linear/radial) | ❌ **MISSING** (background image ✅) | `BackgroundImage.cs` ✅; nenhum gradient fill no modelo de Style | bg image: sim |
+| 15 | **Named/reusable styles** (`Style[@Name]`) | ✅ **DONE** (low-level + code-first + Designer round-trip) | `ReportDefinition.NamedStyles` + `Style.BasedOn`; resolução via `StyleResolver.FlattenNamedStyles`/`MergeNamedBase` (PR #181/182/183). UI de autoria no Designer = follow-up | Sim |
+| 16 | **Gradients** (linear/radial) | ✅ **DONE** | fill 2 cores + direção (`Style.BackColorEnd`/`BackgroundGradient`, RDL-aligned); render Skia linear/radial; 3 modos (PR #179/180). GDI = follow-up | Sim |
 | 17 | **Shared data sources / datasets** | ⚠️ **PARTIAL (por design)** | tudo embedded (`ReportDefinition.cs:25`) — escolha arquitetural (arquivo único); RDL separa | — |
 | 18 | **Export Word `.docx`** | ✅ **DONE** | `DocxExporter.cs` (grid tabular + rasterização de charts/gauges via `RegionRasterizer`) | Sim (`DocxExporterTests`, 13) |
-| 19 | **Export imagem público (PNG) + TIFF/XML** | ⚠️ **PARTIAL** | PNG público ✅ (`Reporting.Output.Image/PngImageExporter.cs`); **TIFF/XML ausentes** (Skia não encoda TIFF nativamente; XML não existe — há JSON) | PNG: sim |
+| 19 | **Export imagem público (PNG) + XML/TIFF** | ⚠️ **PARTIAL** (PNG + XML ✅; TIFF ❌) | PNG (`Reporting.Output.Image`) + **XML** (`Reporting.Output.Xml`, PR #185) públicos; **TIFF ausente** (Skia não encoda TIFF nativamente — precisa de lib externa) | Sim |
+| — | **Tablix matrix style-aware** | ✅ **DONE** | células de valor da matrix honram ForeColor/Font/alinhamento do template (antes só `Format`); `.Cell(expr, style)` no code-first (PR #184). Fill/CF por-célula na matrix = follow-up | Sim |
 
 ## Trabalho genuinamente restante (verificado)
 
-Em ordem de valor/tração para quem for continuar:
+> **Atualização (jun/2026):** os gaps de **estilo** foram fechados nesta leva — gradients (#16), named/reusable styles (#15), matrix style-aware, e o exporter XML (#19). O que resta abaixo é **UX-cêntrico, depende de lib externa, ou é mudança de modelo maior** — cada item se beneficia de priorização/decisão antes de implementar (não são quick-wins autônomos).
 
-1. **#16 Gradients (linear/radial fill)** — modelo de fill no `Style` + shader Skia (`SKShader.CreateLinearGradient`, bem-suportado) + serializer (4 switches ou auto-wiring) + 3 modos + render Skia (verificar visualmente). Feature multi-PR, alto valor visual, caminho claro.
-2. **#15 Named/reusable styles** — tabela de estilos + referência por nome + resolução no render; toca serialização. Médio-grande.
-3. **#4 Cascading parameters** — `DependsOn` no modelo + AvailableValues ligado a outro parâmetro + resolver + UI no prompt. Médio.
-4. **#7 rowSpan no corpo do Tablix** — estender o colSpan existente p/ rowSpan na grade do corpo (modelo já tem `RowSpan`). Geometria de grade fiddly, testável.
-5. **#8 StaticMember/DynamicMember** — crosstabs assimétricos. Mudança de modelo maior.
-6. **#19 TIFF/XML exporters** — TIFF precisa de lib externa (Skia não encoda); XML é formato novo. Baixa prioridade.
-7. **#14 `Globals.RenderFormat`** — exige passar o formato-alvo no `PaginationRequest`, acoplando layout a formato (hoje paginado uma vez p/ todos os formatos). Decisão arquitetural antes de implementar.
+1. **#4 Cascading parameters** — `DependsOn` no modelo + AvailableValues filtrado por outro parâmetro + resolver. **UX-cêntrico**: o payoff é o re-query interativo no prompt (Designer.Blazor), e o `ParameterValueResolver` (DataSources) não referencia Expressions — a filtragem teria que viver na camada do prompt. Exige decisão de design + verificação no browser.
+2. **#7 rowSpan no corpo do Tablix** — modelo já tem `RowSpan`; mas a semântica de span vertical numa região que **repete por linha** é ambígua (≠ flat table). Definir o comportamento primeiro.
+3. **#8 StaticMember/DynamicMember** — crosstabs assimétricos. Mudança de modelo maior.
+4. **#19 TIFF exporter** — Skia não encoda TIFF nativamente → precisa de **dependência externa** (decisão do produto) ou encoder manual.
+5. **Designer: UI de autoria de named styles** — gerenciar named styles + dropdown de `BasedOn` no PropertyGrid (hoje round-trippam, mas não há editor). UI dedicada.
+6. **#14 `Globals.RenderFormat`** — exige passar o formato-alvo no `PaginationRequest`, acoplando layout a formato (hoje paginado uma vez p/ todos os formatos). Decisão arquitetural antes de implementar.
 
 **Fora de escopo (decisão de produto):** #9 drill-down/toggle interativo em runtime — o output é sempre estático.
 
