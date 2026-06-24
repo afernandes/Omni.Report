@@ -22,12 +22,12 @@ namespace Reporting.Serialization;
 /// <para>First-cut coverage: page setup (size + margins), report parameters (incl. Available Values —
 /// static <c>&lt;ParameterValues&gt;</c> and query <c>&lt;DataSetReference&gt;</c>), and free-form
 /// report items in the Body / Page header / Page footer — <c>Textbox</c> (→ TextBox/Label),
-/// <c>Line</c>, <c>Rectangle</c> (shape + nested items, offset to absolute), and external
-/// <c>Image</c>. VB expressions (<c>=Fields!X.Value</c>, …) are translated by
-/// <see cref="RdlExpression"/>.</para>
-/// <para>Not yet imported (follow-ups): Tablix/Matrix and Chart data regions, dataset queries,
-/// subreports, and Database images. These are skipped, not errored — the structural import always
-/// succeeds.</para>
+/// <c>Line</c>, <c>Rectangle</c> (shape + nested items, offset to absolute), <c>Image</c>
+/// (external + embedded + database), <c>Tablix</c>/Matrix (flat + crosstab), <c>Chart</c>,
+/// <c>GaugePanel</c>, <c>Subreport</c>, and <c>CustomReportItem</c> (DataBar/Sparkline/Indicator).
+/// VB expressions (<c>=Fields!X.Value</c>, …) are translated by <see cref="RdlExpression"/>.</para>
+/// <para>Not yet imported (follow-ups): <c>Map</c> (skipped with a warning) and shared (non-embedded)
+/// datasets. Unknown items are skipped, not errored — the structural import always succeeds.</para>
 /// <para>Not thread-safe: an instance carries per-import state (the resolved embedded-image map). Use
 /// one instance per import, or guard external concurrency.</para>
 /// </remarks>
