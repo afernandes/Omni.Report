@@ -1,6 +1,7 @@
 using Reporting.Common;
 using Reporting.Elements;
 using Reporting.Geometry;
+using Reporting.Styling;
 
 namespace Reporting.CodeFirst;
 
@@ -36,6 +37,7 @@ public sealed class TablixBuilder
     private readonly List<(string Expr, string? Sort, bool Desc)> _columnGroups = [];
     private string? _corner;
     private string? _cellExpression;
+    private Func<Style, Style>? _cellStyle;
     private bool _rowSubtotals;
     private bool _columnSubtotals;
     private string? _subtotalLabel;
@@ -65,7 +67,14 @@ public sealed class TablixBuilder
     public TablixBuilder Corner(string label) { _corner = label; return this; }
 
     /// <summary>The matrix body value expression — SUMmed over each (row × column) intersection.</summary>
-    public TablixBuilder Cell(string valueExpression) { _cellExpression = valueExpression; return this; }
+    /// <summary>The matrix body cell's value expression, optionally styled (ForeColor/Font/alignment honoured by the
+    /// matrix renderer; e.g. <c>.Cell("Fields.Total", s =&gt; s with { HorizontalAlignment = HorizontalAlignment.Right })</c>).</summary>
+    public TablixBuilder Cell(string valueExpression, Func<Style, Style>? style = null)
+    {
+        _cellExpression = valueExpression;
+        _cellStyle = style;
+        return this;
+    }
 
     /// <summary>Enables SSRS-style group totals: a subtotal row after each outer row-group block plus a
     /// grand total row at the bottom (each summing the body per column). Matrix mode only.</summary>
@@ -117,7 +126,7 @@ public sealed class TablixBuilder
                 Cells = new EquatableArray<TablixCell>(
                 [
                     new TablixCell(0, 0, new LabelElement { Text = _corner ?? string.Empty, Bounds = Rectangle.Empty }),
-                    new TablixCell(1, 1, new TextBoxElement { Expression = _cellExpression ?? "0", Bounds = Rectangle.Empty }),
+                    new TablixCell(1, 1, new TextBoxElement { Expression = _cellExpression ?? "0", Bounds = Rectangle.Empty, Style = _cellStyle?.Invoke(Style.Default) ?? Style.Default }),
                 ]),
             };
         }

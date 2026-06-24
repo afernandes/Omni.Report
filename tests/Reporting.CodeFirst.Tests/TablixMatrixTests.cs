@@ -1,6 +1,7 @@
 using FluentAssertions;
 using Reporting.CodeFirst;
 using Reporting.Layout.Primitives;
+using Reporting.Styling;
 using Xunit;
 
 namespace Reporting.CodeFirst.Tests;
@@ -55,6 +56,32 @@ public class TablixMatrixTests
         // Intersections are summed: Sul/Jan = 100 + 25 = 125; Norte/Fev = 70.
         texts.Should().Contain(t => t.Contains("125"), "Sul×Jan sums the two matching rows");
         texts.Should().Contain(t => t.Contains("70"), "Norte×Fev");
+    }
+
+    [Fact]
+    public async Task Matrix_body_value_cells_honour_the_cell_style()
+    {
+        // The matrix renderer used to paint body values with a hardcoded colour/font, ignoring the cell style.
+        var report = ReportBuilder.Create("Crosstab")
+            .DataSource("Vendas", Rows)
+            .ReportHeader(h => h.Height(60)
+                .Tablix(t => t
+                    .RowGroup("Fields.Regiao")
+                    .ColumnGroup("Fields.Mes")
+                    .Corner("Região")
+                    .Cell("Fields.Total", s => s with
+                    {
+                        ForeColor = Color.FromRgb(220, 38, 38),
+                        HorizontalAlignment = HorizontalAlignment.Right,
+                    }))
+                .At(0, 0).Size(150, 40))
+            .Build();
+
+        var value = (await report.PaginateAsync()).Pages
+            .SelectMany(p => p.Primitives).OfType<DrawTextPrimitive>()
+            .First(t => t.Text.Contains("125")); // Sul×Jan body value
+        value.Style.ForeColor.Should().Be(Color.FromRgb(220, 38, 38), "the value cell honours the cell ForeColor");
+        value.Style.HorizontalAlignment.Should().Be(HorizontalAlignment.Right, "and its alignment");
     }
 
     [Fact]

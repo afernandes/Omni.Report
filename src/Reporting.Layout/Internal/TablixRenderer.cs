@@ -58,7 +58,7 @@ internal static class TablixRenderer
         // (any number of nested levels on each axis).
         if (tablix.RowGroups.Count >= 1 && tablix.ColumnGroups.Count >= 1)
         {
-            return RenderMatrix(tablix, bounds, rows, ev, templates, baseCtx, out actualHeight);
+            return RenderMatrix(tablix, bounds, rows, ev, templates, baseCtx, namedStyles, out actualHeight);
         }
 
         // Split cells into the header template (row 0) and the detail template (row 1),
@@ -177,6 +177,7 @@ internal static class TablixRenderer
         ExpressionEvaluator ev,
         TemplateRenderer templates,
         IReportExpressionContext baseCtx,
+        IReadOnlyDictionary<string, Style>? namedStyles,
         out Unit actualHeight)
     {
         var list = new List<LayoutPrimitive>();
@@ -200,7 +201,10 @@ internal static class TablixRenderer
             if (cell.RowIndex >= 1 && cell.ColumnIndex >= 1 && cell.Content is TextBoxElement tb) body ??= tb;
         }
         string valueExpr = body?.Expression ?? string.Empty;
-        string? format = body?.Style.Format;
+        // Resolve the body cell template's style (named base ← inline; conditional formats are out of scope here —
+        // matrix aggregate cells have no per-cell row context). Its ForeColor/Font/alignment style the value cells.
+        var bodyStyle = body is null ? Style.Default : StyleResolver.WithNamedBase(body.Style, namedStyles);
+        string? format = bodyStyle.Format;
         string cornerText = (corner as LabelElement)?.Text ?? string.Empty;
 
         // One pass over the data: grow the ordered row/column group trees and accumulate the SUM per
@@ -364,7 +368,9 @@ internal static class TablixRenderer
             {
                 bool sub = vcols[vIdx].IsSubtotal;
                 list.Add(CellText(FormatNumber(CellValue(i, i, vcols[vIdx]), format, baseCtx.Culture),
-                    x0 + (nRowLevels + vIdx) * colW, y, colW, bold: sub, sub ? HeaderText : BodyText, tablix.Id));
+                    x0 + (nRowLevels + vIdx) * colW, y, colW, bold: sub, sub ? HeaderText : BodyText, tablix.Id,
+                    cellStyle: sub ? null : bodyStyle)); // value cells honour the body template's style; subtotals stay default
+
             }
             y += RowHeightMm;
             bodyRows++;
@@ -708,10 +714,14 @@ internal static class TablixRenderer
             SourceElementId = id,
         };
 
-    private static DrawTextPrimitive CellText(string text, double xMm, double yMm, double wMm, bool bold, Color color, string? id)
+    private static DrawTextPrimitive CellText(string text, double xMm, double yMm, double wMm, bool bold, Color color,
+        string? id, Style? cellStyle = null)
     {
-        var font = new Font("Arial", 8.5, bold ? FontStyle.Bold : FontStyle.Regular);
-        var style = new TextStyle(font, color, HorizontalAlignment.Left, VerticalAlignment.Middle, WordWrap: false);
+        // cellStyle (the resolved body template) overrides the matrix defaults per property when present.
+        var font = cellStyle?.Font ?? new Font("Arial", 8.5, bold ? FontStyle.Bold : FontStyle.Regular);
+        var fg = cellStyle?.ForeColor ?? color;
+        var align = cellStyle?.HorizontalAlignment ?? HorizontalAlignment.Left;
+        var style = new TextStyle(font, fg, align, VerticalAlignment.Middle, WordWrap: false);
         return new DrawTextPrimitive
         {
             Text = text ?? string.Empty,

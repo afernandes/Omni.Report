@@ -20,11 +20,7 @@ internal static class StyleResolver
     public static Style Resolve(ReportElement element, ExpressionEvaluator evaluator, IReportExpressionContext ctx,
         IReadOnlyDictionary<string, Style>? namedStyles = null)
     {
-        var style = element.Style;
-        if (style.BasedOn is { } name && namedStyles is not null && namedStyles.TryGetValue(name, out var baseStyle))
-        {
-            style = MergeNamedBase(baseStyle, style); // named base ← inline overlay (layout fields inheritable)
-        }
+        var style = WithNamedBase(element.Style, namedStyles);
         foreach (var cf in element.ConditionalFormats)
         {
             if (evaluator.Evaluate<bool>(cf.Condition, ctx))
@@ -34,6 +30,14 @@ internal static class StyleResolver
         }
         return style;
     }
+
+    /// <summary>A style with its named base (<see cref="Style.BasedOn"/>) applied — but WITHOUT conditional formats.
+    /// For contexts that have no per-row data context, e.g. matrix aggregate cells, where evaluating a CF would be
+    /// against the wrong scope. <paramref name="namedStyles"/> is the flattened table (see <see cref="FlattenNamedStyles"/>).</summary>
+    public static Style WithNamedBase(Style style, IReadOnlyDictionary<string, Style>? namedStyles)
+        => style.BasedOn is { } name && namedStyles is not null && namedStyles.TryGetValue(name, out var baseStyle)
+            ? MergeNamedBase(baseStyle, style) // named base ← inline overlay (layout fields inheritable)
+            : style;
 
     /// <summary>Pre-resolves every named style's <see cref="Style.BasedOn"/> chain ONCE (cycle-guarded) so the
     /// per-element/per-row lookup in <see cref="Resolve"/> is a single O(1) merge. The named base is independent of
