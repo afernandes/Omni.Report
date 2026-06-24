@@ -32,6 +32,9 @@ public sealed class ReportDefinitionViewModel : Notifying
     private EquatableDictionary<string, string> _metadata = EquatableDictionary<string, string>.Empty;
     private EquatableDictionary<string, Style> _namedStyles = EquatableDictionary<string, Style>.Empty;
 
+    /// <summary>Names of the report's named styles (sorted), for the PropertyGrid's <c>BasedOn</c> picker.</summary>
+    public IReadOnlyList<string> NamedStyleNames => _namedStyles.Keys.OrderBy(k => k, StringComparer.Ordinal).ToList();
+
     public ObservableCollection<BandViewModel> Bands { get; }
 
     public BandViewModel AddBand(BandViewModel band)
