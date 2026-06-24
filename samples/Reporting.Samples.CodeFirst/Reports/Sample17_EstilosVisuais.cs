@@ -16,7 +16,10 @@ public static class Sample17_EstilosVisuais
         ReportBuilder
             .Create("Estilos Visuais")
             .Page(p => p.A4().Portrait().Margins(20))
-            .DataSource("Vendas", rows ?? SampleData.Vendas())
+            // A small, DENSE dataset (every client buys every product) so the crosstab is a clean, readable
+            // 3×4 grid that showcases the styling — the shared SampleData.Vendas() is sparse (each client buys
+            // different products) and has 10 products, which crams 11 columns into 170 mm and overlaps.
+            .DataSource("Vendas", rows ?? ShowcaseVendas())
             // Reusable named style — define once, apply by name (BasedOn). Inheritable layout (centred) + colour.
             .NamedStyle("titulo", s => s with
             {
@@ -60,4 +63,22 @@ public static class Sample17_EstilosVisuais
                     .At(0, 1).Size(170, 6).AlignRight()
                     .Color(Color.Gray))
             .Build();
+
+    // Dense 3-client × 4-product matrix data with short product names: every intersection has a value, so the
+    // crosstab reads as a tidy grid (no sea of "R$ 0,00") and each column has room for its header and currency.
+    private static IReadOnlyList<Venda> ShowcaseVendas() =>
+    [
+        new("Ana Beatriz",  "Caneta",  10, 2.50m,   new DateTime(2026, 5, 1)),
+        new("Ana Beatriz",  "Caderno",  1, 27.40m,  new DateTime(2026, 5, 1)),
+        new("Ana Beatriz",  "Mochila",  1, 148.90m, new DateTime(2026, 5, 1)),
+        new("Ana Beatriz",  "Estojo",   3, 19.50m,  new DateTime(2026, 5, 1)),
+        new("Beto Silva",   "Caneta",   6, 2.50m,   new DateTime(2026, 5, 2)),
+        new("Beto Silva",   "Caderno",  2, 27.40m,  new DateTime(2026, 5, 2)),
+        new("Beto Silva",   "Mochila",  1, 148.90m, new DateTime(2026, 5, 2)),
+        new("Beto Silva",   "Estojo",   2, 19.50m,  new DateTime(2026, 5, 2)),
+        new("Carla Dias",   "Caneta",   8, 2.50m,   new DateTime(2026, 5, 3)),
+        new("Carla Dias",   "Caderno",  1, 27.40m,  new DateTime(2026, 5, 3)),
+        new("Carla Dias",   "Mochila",  2, 148.90m, new DateTime(2026, 5, 3)),
+        new("Carla Dias",   "Estojo",   4, 19.50m,  new DateTime(2026, 5, 3)),
+    ];
 }
