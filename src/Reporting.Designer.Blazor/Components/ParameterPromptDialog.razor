@@ -23,17 +23,26 @@
                         @if (captured.Required) { <span class="pp-req" title="Obrigatório">*</span> }
                         <span class="pp-type">@captured.Type</span>
                     </label>
-                    @{ var allowed = ParseAvailable(captured.AvailableValuesText); }
-                    @if (allowed.Count > 0)
+                    @{ var allowed = OptionsFor(captured); }
+                    @{ var isQueryDriven = !string.IsNullOrWhiteSpace(captured.AvailableValuesDataSet) && ResolveOptions is not null; }
+                    @if (allowed.Count > 0 || isQueryDriven)
                     {
-                        @* Static Available Values → validated dropdown (SSRS-style). Query-driven values
-                           are resolved by the host at run time via ParameterValueResolver. *@
+                        @* Available Values → validated dropdown (SSRS-style). Static lines and query-driven /
+                           cascading domains are unified by OptionsFor; changing a value re-resolves dependents.
+                           A query-driven param ALWAYS renders the dropdown (never a free-text fallback), even
+                           while its domain is empty (still loading, or its cascade parent isn't chosen yet). *@
                         <select id="@($"pp-{captured.Name}")"
                                 value="@_values.GetValueOrDefault(captured.Name)"
-                                @onchange="@(e => _values[captured.Name] = e.Value?.ToString() ?? string.Empty)">
+                                @onchange="@(e => OnParamValueChanged(captured.Name, e.Value?.ToString() ?? string.Empty))">
                             @if (!captured.Required)
                             {
                                 <option value="">(nenhum)</option>
+                            }
+                            @if (allowed.Count == 0)
+                            {
+                                <option value="" disabled>@(string.IsNullOrWhiteSpace(captured.AvailableValuesDependsOn)
+                                    ? "(sem opções)"
+                                    : $"(defina \"{captured.AvailableValuesDependsOn}\" primeiro)")</option>
                             }
                             @foreach (var (val, label) in allowed)
                             {
@@ -49,17 +58,19 @@
                         case DesignerFieldType.Money:
                             <input id="@($"pp-{captured.Name}")" type="number" step="any"
                                    value="@_values.GetValueOrDefault(captured.Name)"
-                                   @oninput="@(e => _values[captured.Name] = e.Value?.ToString() ?? string.Empty)" />
+                                   @oninput="@(e => _values[captured.Name] = e.Value?.ToString() ?? string.Empty)"
+                                   @onchange="@(e => OnParamValueChanged(captured.Name, e.Value?.ToString() ?? string.Empty))" />
                             break;
                         case DesignerFieldType.Date:
                             <input id="@($"pp-{captured.Name}")" type="date"
                                    value="@_values.GetValueOrDefault(captured.Name)"
-                                   @oninput="@(e => _values[captured.Name] = e.Value?.ToString() ?? string.Empty)" />
+                                   @oninput="@(e => _values[captured.Name] = e.Value?.ToString() ?? string.Empty)"
+                                   @onchange="@(e => OnParamValueChanged(captured.Name, e.Value?.ToString() ?? string.Empty))" />
                             break;
                         case DesignerFieldType.Bool:
                             <select id="@($"pp-{captured.Name}")"
                                     value="@_values.GetValueOrDefault(captured.Name)"
-                                    @onchange="@(e => _values[captured.Name] = e.Value?.ToString() ?? string.Empty)">
+                                    @onchange="@(e => OnParamValueChanged(captured.Name, e.Value?.ToString() ?? string.Empty))">
                                 <option value="true">true</option>
                                 <option value="false">false</option>
                             </select>
@@ -67,7 +78,8 @@
                         default:
                             <input id="@($"pp-{captured.Name}")" type="text"
                                    value="@_values.GetValueOrDefault(captured.Name)"
-                                   @oninput="@(e => _values[captured.Name] = e.Value?.ToString() ?? string.Empty)" />
+                                   @oninput="@(e => _values[captured.Name] = e.Value?.ToString() ?? string.Empty)"
+                                   @onchange="@(e => OnParamValueChanged(captured.Name, e.Value?.ToString() ?? string.Empty))" />
                             break;
                     }
                     }
@@ -100,6 +112,11 @@
     [Parameter] public EventCallback<(IReadOnlyDictionary<string, string?> Values, bool Remember)> OnConfirmed { get; set; }
     [Parameter] public EventCallback OnCancelled { get; set; }
 
+    /// <summary>Host hook that resolves a parameter's query-driven / cascading domain. Given the parameter and
+    /// the values entered so far, returns the available (Value, Label) options. Null = static options only
+    /// (e.g. no data connection). Powers SSRS-style dependent parameters (Estado→Cidade) in the preview prompt.</summary>
+    [Parameter] public Func<DesignerParameter, IReadOnlyDictionary<string, string?>, Task<IReadOnlyList<Reporting.Parameters.ParameterValue>>>? ResolveOptions { get; set; }
+
     // RDL Hidden parameters are driven by default/query, not prompted to the user.
     private IReadOnlyList<DesignerParameter> Prompted => Parameters.Where(p => !p.Hidden).ToList();
 
@@ -111,6 +128,11 @@
     private readonly Dictionary<string, string?> _values = new(StringComparer.Ordinal);
     private bool _remember = true;
     private bool _initialized;
+
+    // Query-driven / cascading options resolved via the host (ResolveOptions), keyed by parameter name. A
+    // per-parameter generation counter drops stale async results when a parent value changes in quick succession.
+    private readonly Dictionary<string, IReadOnlyList<(string Value, string Label)>> _resolvedOptions = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, int> _resolveGeneration = new(StringComparer.Ordinal);
 
     // Parses the editor's static "value" / "value|label" lines into dropdown options (blanks skipped).
     private static IReadOnlyList<(string Value, string Label)> ParseAvailable(string? text)
@@ -133,11 +155,18 @@
         return list;
     }
 
-    protected override void OnParametersSet()
+    // The dropdown options for a parameter: the resolved query-driven / cascading domain when the parameter
+    // draws from a dataset (ResolveAsync already folds in any static values), else the static "value|label" lines.
+    private IReadOnlyList<(string Value, string Label)> OptionsFor(DesignerParameter p)
+        => !string.IsNullOrWhiteSpace(p.AvailableValuesDataSet) && ResolveOptions is not null
+            ? _resolvedOptions.GetValueOrDefault(p.Name) ?? Array.Empty<(string, string)>()
+            : ParseAvailable(p.AvailableValuesText);
+
+    protected override async Task OnParametersSetAsync()
     {
         if (Visible && !_initialized)
         {
-            _initialized = true;
+            _initialized = true; // set BEFORE any await so a Blazor re-entry during resolution doesn't re-seed
             // Seed each field with the previous value (if cached) or the parameter's default.
             foreach (var p in Parameters)
             {
@@ -150,10 +179,78 @@
                     _values[p.Name] = p.DefaultValue;
                 }
             }
+            // Now that every value is seeded, resolve query-driven / cascading domains (a child cascades off
+            // the parent's seeded value). Failures degrade silently to static/empty options.
+            foreach (var p in Prompted)
+            {
+                await ResolveFor(p);
+            }
+            StateHasChanged();
         }
         else if (!Visible)
         {
             _initialized = false;
+            _resolvedOptions.Clear();
+            _resolveGeneration.Clear();
+        }
+    }
+
+    // Resolves (or re-resolves) a parameter's query-driven options through the host. Returns true only when
+    // THIS resolution won (its result was applied) — a stale/superseded or no-op resolution returns false so
+    // the caller doesn't validate the dependent's value against an out-of-date domain.
+    private async Task<bool> ResolveFor(DesignerParameter p)
+    {
+        if (ResolveOptions is null || string.IsNullOrWhiteSpace(p.AvailableValuesDataSet))
+        {
+            return false;
+        }
+        var gen = _resolveGeneration.GetValueOrDefault(p.Name) + 1;
+        _resolveGeneration[p.Name] = gen;
+        try
+        {
+            var options = await ResolveOptions(p, new Dictionary<string, string?>(_values, StringComparer.Ordinal));
+            if (_resolveGeneration.GetValueOrDefault(p.Name) != gen)
+            {
+                return false; // a newer resolution superseded this one (parent changed again) — it owns validation
+            }
+            _resolvedOptions[p.Name] = options.Select(o => (o.Value, o.Label ?? o.Value)).ToList();
+            return true;
+        }
+        catch
+        {
+            // No data connection / dataset error → keep existing options; the dropdown degrades gracefully.
+            return false;
+        }
+    }
+
+    // A value changed: store it and cascade to dependents.
+    private async Task OnParamValueChanged(string name, string? value)
+    {
+        _values[name] = value;
+        await CascadeFrom(name);
+        StateHasChanged();
+    }
+
+    // Re-resolve every parameter that cascades off `parentName`; if a dependent's chosen value falls outside its
+    // freshly-resolved domain, clear it and recurse (a cleared value is itself a change ITS dependents follow,
+    // so multi-level chains Estado→Cidade→Bairro stay consistent). Only the winning resolution validates, so a
+    // superseded out-of-order async result can't null the value a newer resolution already settled.
+    private async Task CascadeFrom(string parentName)
+    {
+        foreach (var child in Prompted.Where(c => string.Equals(c.AvailableValuesDependsOn, parentName, StringComparison.Ordinal)))
+        {
+            if (!await ResolveFor(child))
+            {
+                continue; // nothing resolved, or superseded — don't validate against a stale/absent domain
+            }
+            var options = _resolvedOptions.GetValueOrDefault(child.Name);
+            if (options is not null
+                && _values.TryGetValue(child.Name, out var current) && !string.IsNullOrEmpty(current)
+                && !options.Any(o => string.Equals(o.Value, current, StringComparison.Ordinal)))
+            {
+                _values[child.Name] = null;        // the dependent's old pick is no longer valid under the new parent
+                await CascadeFrom(child.Name);      // and the now-cleared child cascades to its own dependents
+            }
         }
     }
 
