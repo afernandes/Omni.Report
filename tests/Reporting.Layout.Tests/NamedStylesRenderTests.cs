@@ -24,7 +24,7 @@ public class NamedStylesRenderTests
     private static readonly Color Blue = Color.FromRgb(0, 0, 255);
     private static readonly Color Green = Color.FromRgb(0, 128, 0);
 
-    private static async Task<(BrushStyle Fill, TextStyle Text)> RenderOne(TextBoxElement el, params (string Name, Style Style)[] named)
+    private static async Task<(BrushStyle? Fill, TextStyle Text)> RenderOne(TextBoxElement el, params (string Name, Style Style)[] named)
     {
         var detail = new DetailBand(Unit.FromMm(20), EquatableArray.Create<ReportElement>(el));
         var def = new ReportDefinition("c", PageSetup.A4Portrait, detail)
@@ -33,7 +33,7 @@ public class NamedStylesRenderTests
         };
         var report = await new ReportPaginator().PaginateAsync(TestData.BuildRequest(def, [new Venda("c", "p", 1m)]));
         var prims = report.Pages[0].Primitives;
-        var fill = prims.OfType<DrawRectanglePrimitive>().Select(p => p.Fill).First(f => f is { IsVisible: true })!;
+        var fill = prims.OfType<DrawRectanglePrimitive>().Select(p => p.Fill).FirstOrDefault(f => f is { IsVisible: true });
         var text = prims.OfType<DrawTextPrimitive>().First().Style;
         return (fill, text);
     }
@@ -52,7 +52,7 @@ public class NamedStylesRenderTests
         var (fill, text) = await RenderOne(
             Box(new Style(BasedOn: "titulo")),
             ("titulo", new Style(ForeColor: Red, BackColor: Blue)));
-        fill.Color.Should().Be(Blue, "the background comes from the named style");
+        fill!.Color.Should().Be(Blue, "the background comes from the named style");
         text.ForeColor.Should().Be(Red, "the text colour comes from the named style");
     }
 
@@ -63,7 +63,27 @@ public class NamedStylesRenderTests
             Box(new Style(ForeColor: Green, BasedOn: "titulo")),
             ("titulo", new Style(ForeColor: Red, BackColor: Blue)));
         text.ForeColor.Should().Be(Green, "the element's own ForeColor wins over the named base");
-        fill.Color.Should().Be(Blue, "the un-overridden BackColor still comes from the base");
+        fill!.Color.Should().Be(Blue, "the un-overridden BackColor still comes from the base");
+    }
+
+    [Fact]
+    public async Task A_named_style_alignment_is_inherited()
+    {
+        // Alignment is non-nullable, so MergeNamedBase must special-case it — else a "centered" named style never
+        // passes its alignment to an element that doesn't re-state it.
+        var (_, text) = await RenderOne(
+            Box(new Style(BasedOn: "centered")),
+            ("centered", new Style(HorizontalAlignment: HorizontalAlignment.Center)));
+        text.HorizontalAlignment.Should().Be(HorizontalAlignment.Center, "the named style's alignment is inherited");
+    }
+
+    [Fact]
+    public async Task Inline_alignment_overrides_the_named_base()
+    {
+        var (_, text) = await RenderOne(
+            Box(new Style(HorizontalAlignment: HorizontalAlignment.Right, BasedOn: "centered")),
+            ("centered", new Style(HorizontalAlignment: HorizontalAlignment.Center)));
+        text.HorizontalAlignment.Should().Be(HorizontalAlignment.Right, "the element's explicit alignment wins");
     }
 
     [Fact]
@@ -74,7 +94,7 @@ public class NamedStylesRenderTests
             Box(new Style(BasedOn: "filho")),
             ("pai", new Style(BackColor: Blue)),
             ("filho", new Style(ForeColor: Red, BasedOn: "pai")));
-        fill.Color.Should().Be(Blue, "inherited through the chain from 'pai'");
+        fill!.Color.Should().Be(Blue, "inherited through the chain from 'pai'");
         text.ForeColor.Should().Be(Red, "from 'filho'");
     }
 }

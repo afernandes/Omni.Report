@@ -23,7 +23,7 @@ internal static class StyleResolver
         var style = element.Style;
         if (style.BasedOn is { } name && namedStyles is not null && namedStyles.TryGetValue(name, out var baseStyle))
         {
-            style = Merge(baseStyle, style); // named base ← inline overlay
+            style = MergeNamedBase(baseStyle, style); // named base ← inline overlay (layout fields inheritable)
         }
         foreach (var cf in element.ConditionalFormats)
         {
@@ -61,7 +61,26 @@ internal static class StyleResolver
         }
         var baseStyle = ResolveChain(baseName, table, visiting);
         visiting.Remove(name);
-        return Merge(baseStyle, style);
+        return MergeNamedBase(baseStyle, style);
+    }
+
+    /// <summary>Merge for NAMED-STYLE inheritance: like <see cref="Merge"/> for the nullable members, but the
+    /// non-nullable layout fields (alignment / word-wrap) are INHERITED from the base unless the overlay diverges
+    /// from the type default. Without this, a "centered heading" named style would never pass its alignment on,
+    /// because an element that doesn't re-state alignment carries the default (Left/Top/wrap), which the plain
+    /// <see cref="Merge"/> takes unconditionally. The rare cost is that explicitly re-stating the default over a
+    /// non-default base inherits the base instead — acceptable for reuse, and conditional formats keep plain Merge.</summary>
+    private static Style MergeNamedBase(Style baseStyle, Style overlay)
+    {
+        var merged = Merge(baseStyle, overlay);
+        return merged with
+        {
+            HorizontalAlignment = overlay.HorizontalAlignment != HorizontalAlignment.Left
+                ? overlay.HorizontalAlignment : baseStyle.HorizontalAlignment,
+            VerticalAlignment = overlay.VerticalAlignment != VerticalAlignment.Top
+                ? overlay.VerticalAlignment : baseStyle.VerticalAlignment,
+            WordWrap = overlay.WordWrap ? baseStyle.WordWrap : false, // false = explicit no-wrap; true = default → inherit
+        };
     }
 
     /// <summary>
