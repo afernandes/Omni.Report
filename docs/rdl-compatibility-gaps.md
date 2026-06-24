@@ -1,52 +1,65 @@
 # Compatibilidade com SSRS/RDL — análise de gaps
 
-**Status:** análise (jun/2026) · **Método:** 11 analisadores paralelos comparando cada área do RDL ao OmniReport, com a lente de paridade **code-first / low-level / Designer**.
+**Status:** reconciliado (jun/2026) · **Método original:** 11 analisadores paralelos comparando cada área do RDL ao OmniReport, com a lente de paridade **code-first / low-level / Designer**.
+**Reconciliação (jun/2026):** os 19 itens rastreados abaixo foram **re-verificados contra o código** (arquivo:linha + teste). Vários que a análise inicial marcava como "ausente/parcial" já estavam implementados — as datas entre a análise e hoje cobriram boa parte do roadmap.
 **Relacionado:** [rdl-coverage.md](rdl-coverage.md) (cobertura render × round-trip).
 
 ## Panorama
 
-Das features RDL avaliadas: **96 completas · 18 parciais · 32 ausentes** (~66% completo). O engine já cobre os 17 report items com render nativo (8 tipos de chart, matrix/pivô, KPIs), expressões com funções SSRS (condicional/texto/data/agregação), e os 3 modos de autoria existem para o que está implementado. Os gaps concentram-se em **interop de formato (.rdl)**, **parâmetros**, **funções de lookup**, **profundidade do Tablix**, e **interatividade em runtime**.
+> ⚠️ **O headline original "96 completas · 18 parciais · 32 ausentes (~66%)" está defasado.** Dos **19 gaps rastreados** nas tabelas abaixo, **~13 estão DONE, ~4 PARTIAL e ~3 MISSING** (1 deles **vedado por decisão de produto**, não por falta de implementação). A taxa de fechamento dos gaps rastreados é ~85–90%, não 66%. Um re-audit completo dos 146 itens daria um número global novo; aqui reconciliamos só os rastreados (verificados um a um).
 
-> **Princípio de paridade:** todo item abaixo deve, ao ser implementado, funcionar nos 3 modos — code-first (`ReportBuilder`), low-level (records imutáveis) e Designer — não só num.
+O engine cobre os 17 report items com render nativo (8 tipos de chart, matrix/pivô com sort+subtotais, KPIs), expressões com vocabulário SSRS (condicional/texto/data/agregação + Lookup/LookupSet/MultiLookup + Previous/RunningValue/ReportItems), **import e export `.rdl`** (XML SSRS ↔ ReportDefinition, lossless via CustomProperties), e 9 exporters (PDF/XLSX/DOCX/HTML/SVG/CSV/Markdown/PNG/JSON). Os 3 modos de autoria existem para o que está implementado.
 
-## Tier 1 — núcleo de compatibilidade RDL (maior valor)
+> **Princípio de paridade:** todo item ao ser implementado deve funcionar nos 3 modos — code-first (`ReportBuilder`), low-level (records imutáveis) e Designer.
 
-| # | Gap | Status | Impacto | Esforço | Paridade a garantir |
-|---|---|---|---|---|---|
-| 1 | **Import `.rdl` (SSRS XML → ReportDefinition)** | ausente | Desbloqueia migração SSRS→OmniReport. É a "compatibilidade RDL" literal (hoje só `.repx`/`.repjson`). | M | Importador produz o mesmo `ReportDefinition` que code-first/low-level criariam; abre no Designer |
-| 2 | **Parameters: Available Values** (lista estática + query-driven) | ✅ (#87) | `ParameterAvailableValues` (estático + query) + `ParameterValueResolver`; 3 modos + 4 serializers + dropdown no prompt (estático). Follow-up: dropdown query no prompt (host chama o resolver), cascading. | M | Modelar no record + API code-first + editor no Designer |
-| 3 | **`Lookup`/`LookupSet`**/`MultiLookup` | ✅ Lookup+LookupSet (#85) · MultiLookup pendente | Buscar valor em outro dataset (tax por código, nome por id) sem join prévio. ~30% dos casos avançados. | M | Função no avaliador (vale p/ os 3 modos automaticamente) |
-| 4 | **Parameters: Cascading / dependentes** + default-como-expressão + validação | ausente | Parâmetros dependentes (Estado→Cidade) e defaults dinâmicos. Cluster que falta inteiro. | M | record + code-first + Designer |
+> **Constraint de produto:** o **output é SEMPRE estático** (raster Skia / layout determinístico). Itens que exigem interatividade em runtime (drill-down clicável, toggle expandir/colapsar) ficam **fora de escopo por decisão de produto** — a visibilidade *estática* (`Visible`/`VisibleExpression`) é suportada; o *toggle interativo* não.
 
-## Tier 2 — relatórios ricos (alto valor)
+## Tier 1 — núcleo de compatibilidade RDL
 
-| # | Gap | Status | Notas |
-|---|---|---|---|
-| 5 | **Tablix: SortExpression não renderiza** | parcial | `TablixGroup.SortExpression` existe no model e round-trippa (AdvancedElements.cs:62), mas `TablixRenderer` ignora; code-first/Designer não expõem. Um `.repx` SSRS com matrix ordenado renderiza fora de ordem. **Quick win** (model já existe). |
-| 6 | **Tablix: subtotais / group footer rows** | ✅ linha (#86) | `RowSubtotals`: footer por grupo de linha externo + total geral, 3 modos. Follow-up: ColumnSubtotals, labels configuráveis. |
-| 7 | **Tablix: células com merge/span** (colSpan/rowSpan) | parcial (#86) | ✅ span verdadeiro nos headers de coluna (largura = nº folhas). Falta span por-célula arbitrário (rowSpan / merge no corpo). |
-| 8 | **Tablix: membros estático vs. dinâmico** | ausente | RDL StaticMember/DynamicMember — crosstabs assimétricos (coluna fixa "Total" + colunas dinâmicas). |
-| 9 | **Drill-down / ToggleItem runtime** | parcial | Model + round-trip + autoria completos (`ToggleItemId`/`InitiallyHidden`); falta o chevron expandir/colapsar no viewer/HTML/PDF. Exige pipeline interativo (DOM) além do raster Skia. Esforço **grande**. |
-| 10 | **Multi-coluna (newspaper)** | ausente | `Columns`/`ColumnSpacing` round-trippam mas o paginador ignora — renderiza coluna única. |
-| 11 | **Repeat headers on new page** (tablix/group) | ausente | Cabeçalhos não repetem ao quebrar página. |
+| # | Gap | Status verificado | Evidência | Teste |
+|---|---|---|---|---|
+| 1 | **Import `.rdl`** (SSRS XML → ReportDefinition) | ✅ **DONE** | `RdlImporter.cs:424-479` importa Textbox/Line/Rectangle(aninhado)/Image/Tablix/Chart/Gauge/Subreport + CustomReportItem (DataBar/Sparkline/Indicator); Map é skip-com-warning. CustomProperties lossless. | Sim (`RdlImporterTests`, 62) |
+| 2 | **Parameters: Available Values** (estático + query) | ✅ **DONE** | `ReportParameter.cs:29-54`, import `RdlImporter.cs:1361-1381`, resolver `ParameterValueResolver.cs`, dropdown no prompt | Sim |
+| 3 | **`Lookup`/`LookupSet`/`MultiLookup`** | ✅ **DONE (as 3)** | `ExpressionEvaluator.cs:230-267` | Sim (`LookupTests`, 12) |
+| 4 | **Parameters: Cascading/dependentes** | ⚠️ **PARTIAL** | `DefaultValueExpression` ✅ (`ReportParameter.cs:22`) + validação Required ✅ (prompt). **Falta** cascata real (Estado→Cidade): nenhum `DependsOn`/AvailableValues ligado a outro parâmetro. | DefaultValueExpr/validação: sim · cascata: não |
+
+## Tier 2 — relatórios ricos (Tablix + paginação)
+
+| # | Gap | Status verificado | Evidência | Teste |
+|---|---|---|---|---|
+| 5 | **Tablix SortExpression renderiza** | ✅ **DONE** | `TablixRenderer.cs:227-485` (`GroupNode.Sort`, asc/desc, type-aware) | Sim (`TablixMatrixTests:293-310`) |
+| 6 | **Tablix subtotais / group footer** | ✅ **DONE** | `RowSubtotals` + `ColumnSubtotals` (`AdvancedElements.cs:55,63`); render `TablixRenderer.cs:244-400`; labels customizáveis | Sim (`TablixMatrixTests:98-273`) |
+| 7 | **Tablix merge/span** (colSpan/rowSpan) | ⚠️ **PARTIAL** | colSpan em headers de coluna ✅ (`TablixRenderer.cs:101-108`); modelo tem `RowSpan` (`AdvancedElements.cs:89-90`) mas **rowSpan no corpo não renderiza** | headers: sim · rowSpan: não |
+| 8 | **Tablix StaticMember/DynamicMember** | ❌ **MISSING** | crosstabs assimétricos (coluna fixa "Total" + dinâmicas). Grep zero. | Não |
+| 9 | **Drill-down / ToggleItem runtime** | 🔒 **VEDADO** (model ✅) | model+round-trip+autoria ✅ (`ToggleItemId`/`InitiallyHidden`, `ReportElement.cs:56-65`); chevron interativo **fora de escopo** (constraint de output estático) | round-trip: sim |
+| 10 | **Multi-coluna (newspaper)** | ✅ **DONE** (doc antigo errado) | `PageSetup.Columns/ColumnSpacing` + paginador snake `PageAccumulator.cs:27-79`, `ReportPaginator.cs:925` | Sim (`PaginationEdgeCaseTests:254-290`) |
+| 11 | **Repeat headers on new page** | ✅ **DONE** | `_repeatHeaders` no `ReportPaginator.cs:30,782-950` (reimprime na quebra, outer→inner) | Sim (`LargeReportPaginationTests`) |
 
 ## Tier 3 — expressões, estilo, dados, export
 
-| # | Gap | Status | Notas |
-|---|---|---|---|
-| 12 | **`Previous()`** (valor anterior na sequência/grupo) | ausente | Comum em variação período-a-período. |
-| 13 | **`ReportItems.X`** (ler valor de outro elemento) | ausente | Referência cruzada entre textboxes. |
-| 14 | **Globals / Variables** (Globals.RenderFormat; Report/Group Variables) | parcial | Alguns globais existem; faltam outros + variáveis de grupo/relatório. |
-| 15 | **Named/reusable styles** (Style[@Name]) | ausente | Hoje todo Style é inline; perde manutenibilidade em relatórios grandes. |
-| 16 | **Gradients** (linear/radial) + background image | ausente | Preenchimentos avançados. |
-| 17 | **Shared data sources / datasets** | parcial | Hoje tudo embedded (escolha arquitetural — arquivo único); RDL separa. |
-| 18 | **Export Word (.docx)** | ✅ tabular (#127) | `Reporting.Output.Docx` (DocumentFormat.OpenXml): o grid paginado vira uma tabela Word editável (RowKind→negrito/sombreado/cor), reusando `LayoutPrimitiveGrid` como o XLSX. Diferido: imagens/charts via `w:drawing` e modo posicionado absoluto (camadas 2–3). |
-| 19 | **Export imagem (PNG/TIFF público) + XML** | parcial | PNG interno existe (`SkiaRenderingContext.GetPagePng`) sem `IReportExporter` público; TIFF/XML ausentes. **Quick win** (PNG = wrapper). |
+| # | Gap | Status verificado | Evidência | Teste |
+|---|---|---|---|---|
+| 12 | **`Previous()`** | ✅ **DONE** | `ExpressionEvaluator.cs:302-312`, `ReportExpressionContext.cs:291-315` | Sim (`PositionalFunctionsTests`) |
+| 13 | **`ReportItems.X`** | ✅ **DONE** | `ExpressionEvaluator.cs:104`, `ReportExpressionContext.cs:234-242` (Get/SetReportItem) | Integrado no render |
+| 14 | **Globals / Variables** | ⚠️ **PARTIAL** | PageNumber/TotalPages/Now/Today/UserName/ReportName/Language ✅; ReportVariable (Row/Report/Group) ✅. **Falta** `Globals.RenderFormat` (awkward: o layout é format-agnóstico, paginado uma vez p/ todos os formatos) | parcial |
+| 15 | **Named/reusable styles** (`Style[@Name]`) | ❌ **MISSING** | todo `Style` é inline (`Style.cs:12`, sem `Name`/registry) | Não |
+| 16 | **Gradients** (linear/radial) | ❌ **MISSING** (background image ✅) | `BackgroundImage.cs` ✅; nenhum gradient fill no modelo de Style | bg image: sim |
+| 17 | **Shared data sources / datasets** | ⚠️ **PARTIAL (por design)** | tudo embedded (`ReportDefinition.cs:25`) — escolha arquitetural (arquivo único); RDL separa | — |
+| 18 | **Export Word `.docx`** | ✅ **DONE** | `DocxExporter.cs` (grid tabular + rasterização de charts/gauges via `RegionRasterizer`) | Sim (`DocxExporterTests`, 13) |
+| 19 | **Export imagem público (PNG) + TIFF/XML** | ⚠️ **PARTIAL** | PNG público ✅ (`Reporting.Output.Image/PngImageExporter.cs`); **TIFF/XML ausentes** (Skia não encoda TIFF nativamente; XML não existe — há JSON) | PNG: sim |
 
-## Recomendação de sequência
+## Trabalho genuinamente restante (verificado)
 
-1. **Quick wins primeiro** (model já existe, só falta wirar): **#5 Tablix SortExpression** e **#19 exporter PNG público** — baixo risco, fecham gaps reais rápido.
-2. **Núcleo RDL**: ✅ **#3 Lookup** (#85) · ✅ **#2 Available Values** (#87). Resta **#1 Import .rdl** (XML → ReportDefinition), que se apoia no modelo já enriquecido (Lookup, Available Values, subtotais).
-3. **Riqueza visual**: **#7 cell span** + **#6 subtotais** (Tablix de verdade) e **#9 drill-down runtime** (o maior salto de interatividade, mas exige o pipeline DOM).
+Em ordem de valor/tração para quem for continuar:
+
+1. **#16 Gradients (linear/radial fill)** — modelo de fill no `Style` + shader Skia (`SKShader.CreateLinearGradient`, bem-suportado) + serializer (4 switches ou auto-wiring) + 3 modos + render Skia (verificar visualmente). Feature multi-PR, alto valor visual, caminho claro.
+2. **#15 Named/reusable styles** — tabela de estilos + referência por nome + resolução no render; toca serialização. Médio-grande.
+3. **#4 Cascading parameters** — `DependsOn` no modelo + AvailableValues ligado a outro parâmetro + resolver + UI no prompt. Médio.
+4. **#7 rowSpan no corpo do Tablix** — estender o colSpan existente p/ rowSpan na grade do corpo (modelo já tem `RowSpan`). Geometria de grade fiddly, testável.
+5. **#8 StaticMember/DynamicMember** — crosstabs assimétricos. Mudança de modelo maior.
+6. **#19 TIFF/XML exporters** — TIFF precisa de lib externa (Skia não encoda); XML é formato novo. Baixa prioridade.
+7. **#14 `Globals.RenderFormat`** — exige passar o formato-alvo no `PaginationRequest`, acoplando layout a formato (hoje paginado uma vez p/ todos os formatos). Decisão arquitetural antes de implementar.
+
+**Fora de escopo (decisão de produto):** #9 drill-down/toggle interativo em runtime — o output é sempre estático.
 
 Cada item entra com o ciclo padrão: implementar nos 3 modos de autoria → testes → revisão adversarial → PR.
