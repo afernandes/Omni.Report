@@ -321,8 +321,16 @@ public sealed class ElementViewModel : Notifying
     public Color? FillColor { get => _fillColor; set => Set(ref _fillColor, value); }
 
     private Color? _backColor;
-    /// <summary>Background colour of the text/data element (<see cref="Style.BackColor"/>).</summary>
+    /// <summary>Background colour of the text/data element (<see cref="Style.BackColor"/>) — the gradient start.</summary>
     public Color? BackColor { get => _backColor; set => Set(ref _backColor, value); }
+
+    private Color? _backColorEnd;
+    /// <summary>Gradient end colour (<see cref="Style.BackColorEnd"/>); blends from <see cref="BackColor"/>.</summary>
+    public Color? BackColorEnd { get => _backColorEnd; set => Set(ref _backColorEnd, value); }
+
+    private BackgroundGradientType _backgroundGradient = BackgroundGradientType.None;
+    /// <summary>Background gradient direction (<see cref="Style.BackgroundGradient"/>); None = solid fill.</summary>
+    public BackgroundGradientType BackgroundGradient { get => _backgroundGradient; set => Set(ref _backgroundGradient, value); }
 
     private HorizontalAlignment _horizontalAlignment = HorizontalAlignment.Left;
     public HorizontalAlignment HorizontalAlignment { get => _horizontalAlignment; set => Set(ref _horizontalAlignment, value); }
@@ -997,7 +1005,9 @@ public sealed class ElementViewModel : Notifying
             VerticalAlignment: VerticalAlignment,
             WordWrap: WordWrap,
             Format: Format,
-            BackgroundImage: _backgroundImage);
+            BackgroundImage: _backgroundImage,
+            BackColorEnd: BackColorEnd,
+            BackgroundGradient: BackgroundGradient);
 
         ReportElement element = Kind switch
         {
@@ -1139,6 +1149,7 @@ public sealed class ElementViewModel : Notifying
             IsBold = IsBold, IsItalic = IsItalic, IsUnderline = IsUnderline, IsStrikethrough = IsStrikethrough,
             FontFamily = FontFamily, FontSize = FontSize,
             ForeColor = ForeColor, FillColor = FillColor, BackColor = BackColor,
+            BackColorEnd = BackColorEnd, BackgroundGradient = BackgroundGradient,
             HorizontalAlignment = HorizontalAlignment, VerticalAlignment = VerticalAlignment,
             WordWrap = WordWrap, Padding = Padding, Border = Border, Format = Format,
             IsVisible = IsVisible, VisibleExpr = VisibleExpr, CanGrow = CanGrow, CanShrink = CanShrink, KeepTogether = KeepTogether,
@@ -1263,6 +1274,8 @@ public sealed class ElementViewModel : Notifying
         Height = element.Bounds.Height;
         ForeColor = element.Style.ForeColor ?? Color.Black;
         BackColor = element.Style.BackColor;
+        BackColorEnd = element.Style.BackColorEnd;
+        BackgroundGradient = element.Style.BackgroundGradient;
         _backgroundImage = element.Style.BackgroundImage; // preserved (no editor yet) so edits don't drop it
         Padding = element.Style.Padding;
         FontFamily = element.Style.Font?.Family ?? "Arial";
