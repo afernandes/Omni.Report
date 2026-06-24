@@ -168,6 +168,7 @@
         <ParameterPromptDialog Visible="_paramPromptOpen"
                                Parameters="State.Parameters.ToList()"
                                InitialValues="_paramValues"
+                               ResolveOptions="ResolveParameterOptionsAsync"
                                OnConfirmed="OnParameterPromptConfirmed"
                                OnCancelled="OnParameterPromptCancelled" />
 
@@ -1050,6 +1051,7 @@
     {
         _paramPromptTcs = new TaskCompletionSource<IReadOnlyDictionary<string, string?>?>(TaskCreationOptions.RunContinuationsAsynchronously);
         _paramPromptOpen = true;
+        _promptRegistry = null; // build a fresh registry on first resolution this prompt session
         StateHasChanged();
         return _paramPromptTcs.Task;
     }
@@ -1057,6 +1059,7 @@
     private void OnParameterPromptConfirmed((IReadOnlyDictionary<string, string?> Values, bool Remember) result)
     {
         _paramPromptOpen = false;
+        _promptRegistry = null;
         if (result.Remember)
         {
             foreach (var kv in result.Values) _paramValues[kv.Key] = kv.Value;
@@ -1067,7 +1070,30 @@
     private void OnParameterPromptCancelled()
     {
         _paramPromptOpen = false;
+        _promptRegistry = null;
         _paramPromptTcs?.TrySetResult(null);
+    }
+
+    // Cached per prompt session so the parent→child cascade doesn't rebuild the (DB-backed) registry on every
+    // dropdown change. Cleared when the prompt opens/closes so data-source edits between previews take effect.
+    private Reporting.DataSources.DataSourceRegistry? _promptRegistry;
+
+    /// <summary>Resolves a parameter's available-values domain for the preview prompt — query-driven and
+    /// SSRS-style cascading (the values entered so far filter a dependent parameter). Returns the static list
+    /// when the parameter isn't query-driven; an empty list when nothing is configured.</summary>
+    private async Task<IReadOnlyList<Reporting.Parameters.ParameterValue>> ResolveParameterOptionsAsync(
+        DesignerParameter parameter, IReadOnlyDictionary<string, string?> enteredValues)
+    {
+        var available = parameter.ToReportParameter().AvailableValues;
+        if (available is null)
+        {
+            return Array.Empty<Reporting.Parameters.ParameterValue>();
+        }
+        _promptRegistry ??= BuildRuntimeRegistry();
+        // Pass the raw entered strings as the parameter context; the resolver matches a cascade's FilterField
+        // against the parent value via Convert.ToString, so string-keyed domains (Estado→Cidade) line up.
+        var context = enteredValues.ToDictionary(kv => kv.Key, kv => (object?)kv.Value, StringComparer.Ordinal);
+        return await Reporting.DataSources.ParameterValueResolver.ResolveAsync(available, _promptRegistry, context);
     }
 
     /// <summary>Builds the report definition, materializes runtime data sources (DB-backed
