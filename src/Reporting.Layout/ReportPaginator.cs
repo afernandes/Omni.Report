@@ -515,14 +515,28 @@ public sealed partial class ReportPaginator : IReportPaginator
             ? new Unit(int.MaxValue / 2)
             : def.PageSetup.PageHeight - def.PageSetup.Margins.Bottom - pageFooterHeight;
 
-        // Page 1 starts with the Report Header (banner that appears only once),
-        // followed by the Page Header (which repeats on every subsequent page break too).
-        if (def.ReportHeader is { } reportHeader)
+        // Page 1 starts with the Report Header (banner that appears only once), followed by the Page Header
+        // (which repeats on every subsequent page break too). A Report Header taller than a column — e.g. a
+        // large crosstab placed here to render ONCE — is split element-by-element across pages (its matrix
+        // paginates by row) instead of overflowing.
+        var splitReportHeader = def.ReportHeader is { } rh && bandRenderer.Measure(rh, ctx) > page.FullColumnHeight;
+        if (splitReportHeader)
         {
-            var layout = bandRenderer.Render(reportHeader, page.Origin, ctx);
-            page.Emit(layout.Primitives, layout.Height);
+            // The Report Header will span pages, so the Page Header belongs at the TOP of page 1 (and BreakPage
+            // reprints it on each continuation page). Emit it BEFORE the split — emitting it after, on the last
+            // page, would leave page 1 without one.
+            EmitPageHeader(def, page, bandRenderer, ctx);
+            EmitBandSplit(def.ReportHeader!, page, bandRenderer, ctx, def, bandTarget: bandRenderer.Measure(def.ReportHeader!, ctx));
         }
-        EmitPageHeader(def, page, bandRenderer, ctx);
+        else
+        {
+            if (def.ReportHeader is { } reportHeader)
+            {
+                var layout = bandRenderer.Render(reportHeader, page.Origin, ctx);
+                page.Emit(layout.Primitives, layout.Height);
+            }
+            EmitPageHeader(def, page, bandRenderer, ctx); // report header (if any) on page 1, then the page header
+        }
         page.MarkColumnTop(); // snake columns begin below the report/page header
 
         // Iterate rows with group detection
@@ -845,25 +859,40 @@ public sealed partial class ReportPaginator : IReportPaginator
 
             if (slice.Count == 0)
             {
-                // Nothing fits in the room left. If the column is already empty this element is taller than a
-                // whole column: emit it alone (it overflows — text isn't line-split) so we make progress.
-                if (page.AtColumnTop)
+                // Nothing fits whole in the room left. A crosstab too tall to place whole paginates BY ROW —
+                // filling the remaining space and reprinting its column header on each continuation page (SSRS /
+                // XtraReports) — instead of overflowing. Any OTHER lone element that can't fit overflows alone only
+                // at the column top (text isn't line-split here); otherwise we break to a fresh column and retry.
+                var lone = remaining[0];
+                var emitted = false;
+                if (BandRenderer.CanPaginateMatrix(lone))
                 {
-                    var lone = remaining[0];
-                    var loneBottom = renderer.EffectiveElementBottom(lone, ctx);
+                    EmitTablixSliced((Elements.TablixElement)lone, page, renderer, ctx, def);
+                    emitted = true;
+                }
+                else if (page.AtColumnTop)
+                {
                     var loneOrigin = new Point(page.Origin.X, page.CurrentY - sliceTop);
-                    page.Emit(renderer.RenderElements([lone], loneOrigin, ctx), loneBottom - sliceTop);
-                    reached = loneBottom;
+                    page.Emit(renderer.RenderElements([lone], loneOrigin, ctx), renderer.EffectiveElementBottom(lone, ctx) - sliceTop);
+                    emitted = true;
+                }
+
+                if (emitted)
+                {
+                    reached = renderer.EffectiveElementBottom(lone, ctx);
                     remaining.RemoveAt(0);
                     if (remaining.Count > 0)
                     {
                         sliceTop = remaining[0].Bounds.Y;
-                        BreakOrAdvance(page, def, renderer, ctx);
+                        if (!BandRenderer.CanPaginateMatrix(remaining[0]))
+                        {
+                            BreakOrAdvance(page, def, renderer, ctx);
+                        }
                     }
                 }
                 else
                 {
-                    BreakOrAdvance(page, def, renderer, ctx); // just out of room → fresh column/page, full height
+                    BreakOrAdvance(page, def, renderer, ctx); // out of room → fresh column/page, full height
                 }
                 continue;
             }
@@ -880,7 +909,12 @@ public sealed partial class ReportPaginator : IReportPaginator
             if (remaining.Count > 0)
             {
                 sliceTop = remaining[0].Bounds.Y; // next slice starts at the first un-emitted element's top
-                BreakOrAdvance(page, def, renderer, ctx);
+                // A paginating matrix continues in the REMAINING space of this column (EmitTablixSliced fills it,
+                // then breaks itself), so it doesn't waste the rest of the page; everything else breaks now.
+                if (!BandRenderer.CanPaginateMatrix(remaining[0]))
+                {
+                    BreakOrAdvance(page, def, renderer, ctx);
+                }
             }
         }
 
@@ -905,6 +939,40 @@ public sealed partial class ReportPaginator : IReportPaginator
             page.Emit([], available);
             trailing -= available;
             BreakOrAdvance(page, def, renderer, ctx);
+        }
+    }
+
+    /// <summary>Paginates a matrix Tablix taller than a column by emitting it one page-slice at a time: each
+    /// slice fills the current column with as many rows as fit (with the column header reprinted on top when
+    /// <see cref="Elements.TablixElement.RepeatColumnHeaders"/> is set), then a fresh column/page is started
+    /// until every row is drawn. Always emits ≥1 row per slice, so it terminates.</summary>
+    private void EmitTablixSliced(Elements.TablixElement tablix, PageAccumulator page, BandRenderer renderer,
+        ReportExpressionContext ctx, ReportDefinition def)
+    {
+        // Smallest worthwhile slice: the column header band + one data row. If less than that is left (and we're
+        // not already at the column top, where we must emit anyway to make progress), break to a fresh column
+        // first so a slice never overflows by a stray header+row.
+        int colLevels = tablix.ColumnGroups.Count(g => !string.IsNullOrWhiteSpace(g.GroupExpression));
+        var minSlice = Unit.FromMm((colLevels + 1) * Internal.TablixRenderer.RowHeightMm);
+
+        int startRow = 0;
+        while (true)
+        {
+            var available = page.RemainingInColumn;
+            if (!page.AtColumnTop && available < minSlice)
+            {
+                BreakOrAdvance(page, def, renderer, ctx);
+                continue;
+            }
+            var origin = new Point(page.Origin.X, page.CurrentY - tablix.Bounds.Y);
+            var (prims, height, nextRow) = renderer.RenderTablixSlice(tablix, origin, ctx, startRow, available);
+            page.Emit(prims, height);
+            if (nextRow < 0)
+            {
+                break; // matrix fully drawn
+            }
+            startRow = nextRow;
+            BreakOrAdvance(page, def, renderer, ctx); // continue the matrix on a fresh column/page
         }
     }
 

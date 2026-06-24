@@ -546,6 +546,8 @@ internal static class RepxReader
             SubtotalLabel = el.Element("SubtotalLabel")?.Value,
             GrandTotalLabel = el.Element("GrandTotalLabel")?.Value,
             NoRowsMessage = el.Element("NoRowsMessage")?.Value,
+            RepeatColumnHeaders = !string.Equals(el.Element("RepeatColumnHeaders")?.Value, "false", StringComparison.OrdinalIgnoreCase),
+            KeepTogether = string.Equals(el.Element("KeepTogether")?.Value, "true", StringComparison.OrdinalIgnoreCase),
         };
     }
 

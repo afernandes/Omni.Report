@@ -568,6 +568,8 @@ internal static class RepJsonReader
             SubtotalLabel = (string?)o["subtotalLabel"],
             GrandTotalLabel = (string?)o["grandTotalLabel"],
             NoRowsMessage = (string?)o["noRowsMessage"],
+            RepeatColumnHeaders = (bool?)o["repeatColumnHeaders"] ?? true,
+            KeepTogether = (bool?)o["keepTogether"] ?? false,
         };
     }
 

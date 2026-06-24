@@ -90,6 +90,30 @@ internal sealed class BandRenderer
         return primitives;
     }
 
+    /// <summary>True when a matrix Tablix should paginate by row across pages (it is a crosstab and has not
+    /// opted out via <see cref="TablixElement.KeepTogether"/>). Flat-table Tablixes stay atomic.</summary>
+    internal static bool CanPaginateMatrix(ReportElement element)
+        => element is TablixElement t && !t.KeepTogether
+           && t.RowGroups.Any(g => !string.IsNullOrWhiteSpace(g.GroupExpression))
+           && t.ColumnGroups.Any(g => !string.IsNullOrWhiteSpace(g.GroupExpression));
+
+    /// <summary>Renders one vertical slice of a matrix Tablix at <paramref name="origin"/>, fitting within
+    /// <paramref name="maxHeight"/>, beginning at body-row <paramref name="startRow"/>. Returns the slice
+    /// primitives, the slice's rendered height, and the next un-emitted body row (-1 when complete) so the
+    /// paginator can continue a too-tall matrix on the following page.</summary>
+    internal (IReadOnlyList<LayoutPrimitive> Primitives, Unit Height, int NextRow) RenderTablixSlice(
+        TablixElement tablix, Point origin, IReportExpressionContext ctx, int startRow, Unit maxHeight)
+    {
+        var bounds = new Rectangle(
+            origin.X + tablix.Bounds.X,
+            origin.Y + tablix.Bounds.Y,
+            tablix.Bounds.Width,
+            maxHeight);
+        var prims = TablixRenderer.RenderMatrixSlice(tablix, bounds, ResolveRows(tablix.DataSetName),
+            _evaluator, _templates, ctx, _namedStyles, startRow, maxHeight, out _, out int nextRow, out var height);
+        return (prims, height, nextRow);
+    }
+
     /// <summary>The effective bottom of a single element in band-space (its <c>Bounds.Y</c> + the height it
     /// will actually render at, honouring CanGrow/CanShrink on a TextBox and the same effective style the
     /// renderer uses). Shared by <see cref="Measure"/> and the paginator's split cut so both agree.
@@ -119,6 +143,16 @@ internal sealed class BandRenderer
                 h = size.Height;
             }
             return element.Bounds.Y + h;
+        }
+        // A paginating matrix grows to its grid height; measure that true extent (not the declared bounds) so the
+        // band's split decision fires and the matrix paginates by row. Flat / KeepTogether Tablixes keep their
+        // declared bounds (unchanged behaviour). Mirrors the height RenderElement grows the band to.
+        if (CanPaginateMatrix(element))
+        {
+            var tx = (TablixElement)element;
+            var probe = new Rectangle(element.Bounds.X, element.Bounds.Y, element.Bounds.Width, element.Bounds.Height);
+            _ = TablixRenderer.Render(tx, probe, ResolveRows(tx.DataSetName), _evaluator, _templates, ctx, _namedStyles, out var gridHeight);
+            return element.Bounds.Y + (gridHeight > element.Bounds.Height ? gridHeight : element.Bounds.Height);
         }
         return element.Bounds.Bottom;
     }

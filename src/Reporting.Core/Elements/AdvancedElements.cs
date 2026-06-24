@@ -74,6 +74,16 @@ public sealed record TablixElement : ReportElement
     /// <summary>Message rendered (centred, in place of the grid) when the bound dataset yields no rows —
     /// RDL <c>&lt;NoRowsMessage&gt;</c>. When null, an empty dataset renders nothing.</summary>
     public string? NoRowsMessage { get; init; }
+
+    /// <summary>When the matrix is taller than the page, it splits across pages by row (SSRS/XtraReports style)
+    /// and reprints the column header at the top of each continuation page. Default <c>true</c>. Set
+    /// <c>false</c> to print the column header only on the first page. Has no effect unless the matrix paginates.</summary>
+    public bool RepeatColumnHeaders { get; init; } = true;
+
+    /// <summary>Keeps the whole matrix together on one page instead of splitting it across pages — the opt-out of
+    /// row-level pagination (DevExpress <c>ContentSplitting</c> / SSRS <c>KeepTogether</c>). Default <c>false</c>
+    /// (a tall matrix paginates). When <c>true</c>, a matrix taller than the page overflows rather than splitting.</summary>
+    public bool KeepTogether { get; init; }
 }
 
 /// <summary>One axis of a Tablix grouping — name + group-key expression + sort.</summary>
