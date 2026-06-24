@@ -17,9 +17,10 @@
             @foreach (var p in Prompted)
             {
                 var captured = p;
-                <div class="pp-row">
+                <div class="pp-row @(IsMissing(captured) ? "pp-missing" : null)">
                     <label class="pp-label" for="@($"pp-{captured.Name}")">
-                        @captured.Name
+                        @(string.IsNullOrWhiteSpace(captured.Prompt) ? captured.Name : captured.Prompt)
+                        @if (captured.Required) { <span class="pp-req" title="Obrigatório">*</span> }
                         <span class="pp-type">@captured.Type</span>
                     </label>
                     @{ var allowed = ParseAvailable(captured.AvailableValuesText); }
@@ -80,9 +81,13 @@
         </label>
     </ChildContent>
     <Footer>
+        @if (HasMissingRequired)
+        {
+            <span class="pp-hint">Preencha os parâmetros obrigatórios (*)</span>
+        }
         <span style="flex:1"></span>
         <button class="btn" type="button" @onclick="OnCancel">Cancelar</button>
-        <button class="btn primary" type="button" @onclick="OnConfirm">Executar</button>
+        <button class="btn primary" type="button" disabled="@HasMissingRequired" @onclick="OnConfirm">Executar</button>
     </Footer>
 </DesignerModal>
 
@@ -97,6 +102,11 @@
 
     // RDL Hidden parameters are driven by default/query, not prompted to the user.
     private IReadOnlyList<DesignerParameter> Prompted => Parameters.Where(p => !p.Hidden).ToList();
+
+    // SSRS blocks a run until every required (non-nullable) prompted parameter has a value. We mirror that:
+    // a required field that is blank disables "Executar" and is flagged.
+    private bool IsMissing(DesignerParameter p) => p.Required && string.IsNullOrWhiteSpace(_values.GetValueOrDefault(p.Name));
+    private bool HasMissingRequired => Prompted.Any(IsMissing);
 
     private readonly Dictionary<string, string?> _values = new(StringComparer.Ordinal);
     private bool _remember = true;
@@ -149,6 +159,7 @@
 
     private async Task OnConfirm()
     {
+        if (HasMissingRequired) { return; } // guard: the button is disabled, but never confirm a missing-required state
         await OnConfirmed.InvokeAsync((new Dictionary<string, string?>(_values), _remember));
     }
 
