@@ -14,6 +14,7 @@
     <ProjectReference Include="..\..\src\Reporting.Output.Html\Reporting.Output.Html.csproj" />
     <ProjectReference Include="..\..\src\Reporting.Output.Csv\Reporting.Output.Csv.csproj" />
     <ProjectReference Include="..\..\src\Reporting.Output.Json\Reporting.Output.Json.csproj" />
+    <ProjectReference Include="..\..\src\Reporting.Output.Xml\Reporting.Output.Xml.csproj" />
     <ProjectReference Include="..\..\src\Reporting.Output.Markdown\Reporting.Output.Markdown.csproj" />
   </ItemGroup>
 

@@ -65,6 +65,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IReportExporter>(_ => new Reporting.Output.Svg.SvgExporter());
         services.AddSingleton<IReportExporter>(_ => new Reporting.Output.Csv.CsvExporter());
         services.AddSingleton<IReportExporter>(_ => new Reporting.Output.Json.JsonExporter());
+        services.AddSingleton<IReportExporter>(_ => new Reporting.Output.Xml.XmlExporter());
         services.AddSingleton<IReportExporter>(_ => new Reporting.Output.Markdown.MarkdownExporter());
         return services;
     }

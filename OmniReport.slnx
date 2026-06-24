@@ -37,6 +37,7 @@
     <Project Path="src/Reporting.Output.Markdown/Reporting.Output.Markdown.csproj" />
     <Project Path="src/Reporting.Output.Pdf/Reporting.Output.Pdf.csproj" />
     <Project Path="src/Reporting.Output.Svg/Reporting.Output.Svg.csproj" />
+    <Project Path="src/Reporting.Output.Xml/Reporting.Output.Xml.csproj" />
     <Project Path="src/Reporting.Printing.Android/Reporting.Printing.Android.csproj" />
     <Project Path="src/Reporting.Printing.EscPos/Reporting.Printing.EscPos.csproj" />
     <Project Path="src/Reporting.Printing.WindowsSpooler/Reporting.Printing.WindowsSpooler.csproj" />

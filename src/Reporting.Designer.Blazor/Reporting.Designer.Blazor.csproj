@@ -37,6 +37,7 @@
     <ProjectReference Include="..\Reporting.Output.Svg\Reporting.Output.Svg.csproj" />
     <ProjectReference Include="..\Reporting.Output.Csv\Reporting.Output.Csv.csproj" />
     <ProjectReference Include="..\Reporting.Output.Json\Reporting.Output.Json.csproj" />
+    <ProjectReference Include="..\Reporting.Output.Xml\Reporting.Output.Xml.csproj" />
     <ProjectReference Include="..\Reporting.Output.Markdown\Reporting.Output.Markdown.csproj" />
   </ItemGroup>
 
