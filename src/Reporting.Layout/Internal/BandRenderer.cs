@@ -31,6 +31,10 @@ internal sealed class BandRenderer
     /// <summary>Resolves a Web-Mercator basemap tile to image bytes. Null = vector-only maps.</summary>
     private readonly Func<MapTileRequest, byte[]?>? _mapTileResolver;
 
+    /// <summary>Flattened named-style table (BasedOn chains pre-resolved) for <see cref="Style.BasedOn"/> lookup.
+    /// Null/empty = no named styles.</summary>
+    private readonly IReadOnlyDictionary<string, Style>? _namedStyles;
+
     public BandRenderer(
         ExpressionEvaluator evaluator,
         TemplateRenderer templates,
@@ -38,7 +42,8 @@ internal sealed class BandRenderer
         IReadOnlyDictionary<string, List<IReadOnlyList<KeyValuePair<string, object?>>>>? dataSources = null,
         string? primarySource = null,
         Func<SubreportElement, Rectangle, IReportExpressionContext, IReadOnlyList<LayoutPrimitive>>? renderSubreport = null,
-        Func<MapTileRequest, byte[]?>? mapTileResolver = null)
+        Func<MapTileRequest, byte[]?>? mapTileResolver = null,
+        IReadOnlyDictionary<string, Style>? namedStyles = null)
     {
         _evaluator = evaluator;
         _templates = templates;
@@ -47,6 +52,7 @@ internal sealed class BandRenderer
         _primarySource = primarySource;
         _renderSubreport = renderSubreport;
         _mapTileResolver = mapTileResolver;
+        _namedStyles = namedStyles;
     }
 
     /// <summary>Renders <paramref name="band"/> at the given origin and returns the resulting
@@ -353,7 +359,7 @@ internal sealed class BandRenderer
 
                 case TablixElement tablix:
                     var tablixPrims = TablixRenderer.Render(tablix, elementBounds, ResolveRows(tablix.DataSetName),
-                                                            _evaluator, _templates, ctx, out var tablixHeight);
+                                                            _evaluator, _templates, ctx, _namedStyles, out var tablixHeight);
                     foreach (var p in tablixPrims)
                     {
                         primitives.Add(p);
@@ -640,7 +646,7 @@ internal sealed class BandRenderer
     // The effective Core style after applying any matching conditional formats. Carries Format (the
     // value-format spec), which the drawing-only TextStyle drops — so the textbox value can honour it.
     private Style ResolveEffectiveStyle(ReportElement element, IReportExpressionContext ctx)
-        => StyleResolver.Resolve(element, _evaluator, ctx);
+        => StyleResolver.Resolve(element, _evaluator, ctx, _namedStyles);
 
     private static TextStyle BuildTextStyle(Style style)
         => new(

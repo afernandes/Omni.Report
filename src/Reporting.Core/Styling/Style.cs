@@ -36,7 +36,11 @@ public sealed record Style(
     [property: PropertyGrid(Category = "Aparência", Order = 3, Label = "Cor de fundo (fim)", Bindable = true)]
     Color? BackColorEnd = null,
     [property: PropertyGrid(Category = "Aparência", Order = 4, Label = "Gradiente")]
-    BackgroundGradientType BackgroundGradient = BackgroundGradientType.None)
+    BackgroundGradientType BackgroundGradient = BackgroundGradientType.None,
+    // Name of a report-level named style this one inherits from (SSRS Style[@Name] reuse). The named style is the
+    // base; this Style's own set members overlay it. Resolved at render via the report's NamedStyles table. Not a
+    // visual prop, so not flattened into the metadata grid. Last positional param to preserve ctor compat.
+    string? BasedOn = null)
 {
     public static readonly Style Default = new();
 }

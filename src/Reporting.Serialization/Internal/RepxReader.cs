@@ -55,6 +55,10 @@ internal static class RepxReader
             .ToDictionary(e => Attr(e, "Key") ?? string.Empty, e => Attr(e, "Value") ?? string.Empty)
             ?? new Dictionary<string, string>();
 
+        var namedStyles = root.Element("NamedStyles")?.Elements("NamedStyle")
+            .ToDictionary(e => Attr(e, "Name") ?? string.Empty, e => ReadStyle(e.Element("Style")))
+            ?? new Dictionary<string, Style>();
+
         return new ReportDefinition(name, pageSetup, detail)
         {
             SchemaVersion = version.ToString(),
@@ -67,6 +71,7 @@ internal static class RepxReader
             PageFooter = pageFooter,
             ReportFooter = reportFooter,
             Metadata = new EquatableDictionary<string, string>(metadata),
+            NamedStyles = new EquatableDictionary<string, Style>(namedStyles),
         };
     }
 
@@ -643,7 +648,8 @@ internal static class RepxReader
             : null;
         var backgroundGradient = Enum.TryParse<BackgroundGradientType>(Attr(el, "BackgroundGradient"), out var bg) ? bg : BackgroundGradientType.None;
         var backColorEnd = ReadOptionalColor(el.Element("BackColorEnd"));
-        return new Style(font, foreColor, backColor, border, padding, horizontal, vertical, wordWrap, format, backgroundImage, backColorEnd, backgroundGradient);
+        var basedOn = Attr(el, "BasedOn");
+        return new Style(font, foreColor, backColor, border, padding, horizontal, vertical, wordWrap, format, backgroundImage, backColorEnd, backgroundGradient, basedOn);
     }
 
     private static Font ReadFont(XElement el)

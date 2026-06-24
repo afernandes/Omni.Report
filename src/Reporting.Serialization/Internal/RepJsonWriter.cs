@@ -63,6 +63,15 @@ internal static class RepJsonWriter
             }
             obj["metadata"] = meta;
         }
+        if (def.NamedStyles.Count > 0)
+        {
+            var ns = new JsonObject();
+            foreach (var kv in def.NamedStyles)
+            {
+                ns[kv.Key] = WriteStyle(kv.Value);
+            }
+            obj["namedStyles"] = ns;
+        }
         return obj;
     }
 
@@ -821,6 +830,10 @@ internal static class RepJsonWriter
         if (style.BackColorEnd is not null)
         {
             o["backColorEnd"] = Formats.FormatColor(style.BackColorEnd.Value);
+        }
+        if (style.BasedOn is not null)
+        {
+            o["basedOn"] = style.BasedOn;
         }
         return o;
     }
