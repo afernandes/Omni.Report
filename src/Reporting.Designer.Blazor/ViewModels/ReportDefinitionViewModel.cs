@@ -49,6 +49,83 @@ public sealed class ReportDefinitionViewModel : Notifying
         RaiseChanged();
     }
 
+    /// <summary>Deletes a named style and clears every reference to it (element <c>BasedOn</c> and any other
+    /// named style based on it), so no element is left pointing at a style that no longer exists.</summary>
+    public void RemoveNamedStyle(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name) || !_namedStyles.ContainsKey(name))
+        {
+            return;
+        }
+        var dict = _namedStyles
+            .Where(kv => !string.Equals(kv.Key, name, StringComparison.Ordinal))
+            .ToDictionary(
+                kv => kv.Key,
+                kv => string.Equals(kv.Value.BasedOn, name, StringComparison.Ordinal) ? kv.Value with { BasedOn = null } : kv.Value,
+                StringComparer.Ordinal);
+        _namedStyles = new EquatableDictionary<string, Style>(dict);
+        foreach (var el in AllElements())
+        {
+            if (string.Equals(el.BasedOn, name, StringComparison.Ordinal))
+            {
+                el.BasedOn = null;
+            }
+        }
+        RaiseChanged();
+    }
+
+    /// <summary>Renames a named style, re-pointing every reference (element <c>BasedOn</c> and named-style chains)
+    /// from the old name to the new. No-op when the name is blank, unchanged, missing, or already taken.</summary>
+    public void RenameNamedStyle(string oldName, string newName)
+    {
+        if (string.IsNullOrWhiteSpace(oldName) || string.IsNullOrWhiteSpace(newName)
+            || string.Equals(oldName, newName, StringComparison.Ordinal)
+            || !_namedStyles.ContainsKey(oldName) || _namedStyles.ContainsKey(newName))
+        {
+            return;
+        }
+        var dict = _namedStyles.ToDictionary(
+            kv => string.Equals(kv.Key, oldName, StringComparison.Ordinal) ? newName : kv.Key,
+            kv => string.Equals(kv.Value.BasedOn, oldName, StringComparison.Ordinal) ? kv.Value with { BasedOn = newName } : kv.Value,
+            StringComparer.Ordinal);
+        _namedStyles = new EquatableDictionary<string, Style>(dict);
+        foreach (var el in AllElements())
+        {
+            if (string.Equals(el.BasedOn, oldName, StringComparison.Ordinal))
+            {
+                el.BasedOn = newName;
+            }
+        }
+        RaiseChanged();
+    }
+
+    // Every element in the report, walking into nested Rectangle children.
+    private IEnumerable<ElementViewModel> AllElements()
+    {
+        foreach (var band in Bands)
+        {
+            foreach (var el in band.Elements)
+            {
+                foreach (var e in Walk(el))
+                {
+                    yield return e;
+                }
+            }
+        }
+
+        static IEnumerable<ElementViewModel> Walk(ElementViewModel el)
+        {
+            yield return el;
+            foreach (var child in el.Children)
+            {
+                foreach (var e in Walk(child))
+                {
+                    yield return e;
+                }
+            }
+        }
+    }
+
     public ObservableCollection<BandViewModel> Bands { get; }
 
     public BandViewModel AddBand(BandViewModel band)

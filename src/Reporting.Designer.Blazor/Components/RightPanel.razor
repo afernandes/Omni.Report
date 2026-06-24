@@ -21,7 +21,10 @@
                 else
                 {
                     <PropertyGrid Element="Selected" BandLabel="@BandLabel" NamedStyleNames="Report.NamedStyleNames"
-                                  OnCreateNamedStyle="HandleCreateNamedStyle" OnOpenExpressionEditor="OnOpenExpressionEditor" />
+                                  OnCreateNamedStyle="HandleCreateNamedStyle"
+                                  OnRenameNamedStyle="@(t => Report.RenameNamedStyle(t.OldName, t.NewName))"
+                                  OnDeleteNamedStyle="@(n => Report.RemoveNamedStyle(n))"
+                                  OnOpenExpressionEditor="OnOpenExpressionEditor" />
                 }
                 break;
             case 1:
