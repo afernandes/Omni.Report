@@ -66,3 +66,22 @@
     padding-top: 8px;
     border-top: 1px solid var(--border);
 }
+
+/* Required marker + missing-value validation (mirrors SSRS: can't run until required params are filled). */
+.pp-req {
+    color: var(--danger);
+    font-weight: 700;
+    margin-left: 2px;
+}
+
+.pp-row.pp-missing input,
+.pp-row.pp-missing select {
+    border-color: var(--danger);
+    background: rgba(220, 38, 38, 0.06);
+}
+
+.pp-hint {
+    font-size: 11.5px;
+    color: var(--danger);
+    align-self: center;
+}
