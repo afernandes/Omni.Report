@@ -46,6 +46,7 @@ else
             "sqlite"     => Sample11_AdoNetSqlite.Build(),
             "grande"     => Sample16_RelatorioGrandePaginado.Build(),
             "estilos"    => Sample17_EstilosVisuais.Build(),
+            "matriz"     => Sample18_MatrizGrande.Build(),
             _            => Sample01_VendasPorCliente.Build(),
         };
         _rendered = await report.PaginateAsync();
@@ -63,6 +64,7 @@ else
         "filesystem" => "Auditoria de Arquivos (FileSystem)",
         "sqlite"     => "Vendas SQLite (ADO.NET)",
         "grande"     => "Relatório Grande Paginado (26 páginas)",
+        "matriz"     => "Matriz Paginada (crosstab · 50 clientes × 4 produtos)",
         _            => "Relatório",
     };
 }
