@@ -23,7 +23,7 @@
         <Toolbar CanUndo="State.History.CanUndo"
                  CanRedo="State.History.CanRedo"
                  HasSelection="@(State.SelectedElement is not null)"
-                 HasClipboard="@(State.Clipboard is not null)"
+                 HasClipboard="@(State.Clipboard.Count > 0)"
                  MultiSelected="@(State.SelectedElements.Count > 1)"
                  CanDistribute="@(State.SelectedElements.Count >= 3)"
                  GridVisible="State.GridVisible"
@@ -430,7 +430,7 @@
         {
             new() { Label = "Inserir Label aqui",    OnClick = EventCallback.Factory.Create(this, () => OnInsert(DesignerElementKind.Label)) },
             new() { Label = "Inserir TextBox aqui",  OnClick = EventCallback.Factory.Create(this, () => OnInsert(DesignerElementKind.TextBox)) },
-            new() { Label = "Colar aqui", Shortcut = "Ctrl+V", IsDisabled = State.Clipboard is null, OnClick = EventCallback.Factory.Create(this, OnPaste) },
+            new() { Label = "Colar aqui", Shortcut = "Ctrl+V", IsDisabled = State.Clipboard.Count == 0, OnClick = EventCallback.Factory.Create(this, OnPaste) },
             ContextMenu.ContextMenuItem.Separator(),
             new() { Label = "Selecionar todos da banda", Shortcut = "Ctrl+A", IsDisabled = band.Elements.Count == 0, OnClick = EventCallback.Factory.Create(this, () => State.SelectMany(band.Elements)) },
         };
@@ -471,7 +471,7 @@
     {
         _ctxItems = new[]
         {
-            new ContextMenu.ContextMenuItem { Label = "Colar", Shortcut = "Ctrl+V", IsDisabled = State.Clipboard is null, OnClick = EventCallback.Factory.Create(this, OnPaste) },
+            new ContextMenu.ContextMenuItem { Label = "Colar", Shortcut = "Ctrl+V", IsDisabled = State.Clipboard.Count == 0, OnClick = EventCallback.Factory.Create(this, OnPaste) },
             ContextMenu.ContextMenuItem.Separator(),
             new ContextMenu.ContextMenuItem { Label = State.GridVisible ? "Ocultar grade" : "Mostrar grade", OnClick = EventCallback.Factory.Create(this, () => State.GridVisible = !State.GridVisible) },
             new ContextMenu.ContextMenuItem { Label = State.SnapToGrid  ? "Desabilitar snap" : "Habilitar snap", OnClick = EventCallback.Factory.Create(this, () => State.SnapToGrid = !State.SnapToGrid) },
@@ -922,20 +922,20 @@
 
     private void OnCopy()
     {
-        if (State.SelectedElement is null) return;
-        State.Clipboard = State.SelectedElement.Clone();
+        if (State.SelectedElements.Count == 0) return;
+        State.Clipboard = State.SelectedElements.Select(e => e.Clone()).ToList();
     }
 
     private void OnCut()
     {
-        if (State.SelectedElement is null) return;
-        State.Clipboard = State.SelectedElement.Clone();
-        OnDeleteSelected();
+        if (State.SelectedElements.Count == 0) return;
+        State.Clipboard = State.SelectedElements.Select(e => e.Clone()).ToList();
+        OnDeleteSelected(); // deletes the whole multi-selection
     }
 
     private void OnPaste()
     {
-        if (State.Clipboard is null) return;
+        if (State.Clipboard.Count == 0) return;
         // Resolution order: explicit ActiveBand → band of selected element → Detail → first.
         // ActiveBand is set whenever the user clicks a band-strip or empty band area, so the
         // user can cut/copy from one band and explicitly paste into another.
@@ -945,12 +945,26 @@
                         : State.Report.Bands.FirstOrDefault(b => b.Elements.Contains(State.SelectedElement!)))
                 ?? State.Report.FindBand(DesignerBandKind.Detail)
                 ?? State.Report.Bands.First();
-        var pasted = State.Clipboard.Clone();
-        pasted.X = pasted.X + Unit.FromMm(2);
-        pasted.Y = pasted.Y + Unit.FromMm(2);
-        FitElementInBand(band, pasted);
-        State.History.Push(new AddElementCommand(band, pasted));
-        State.SelectedElement = pasted;
+        // Paste every clipboard element, each nudged by the same (2,2) offset so a multi-element group keeps its
+        // relative layout, then select the pasted set.
+        var pastedSet = new List<ElementViewModel>(State.Clipboard.Count);
+        foreach (var source in State.Clipboard)
+        {
+            var pasted = source.Clone();
+            pasted.X = pasted.X + Unit.FromMm(2);
+            pasted.Y = pasted.Y + Unit.FromMm(2);
+            FitElementInBand(band, pasted);
+            State.History.Push(new AddElementCommand(band, pasted));
+            pastedSet.Add(pasted);
+        }
+        if (pastedSet.Count == 1)
+        {
+            State.SelectedElement = pastedSet[0];
+        }
+        else if (pastedSet.Count > 1)
+        {
+            State.SelectMany(pastedSet);
+        }
     }
     private async Task OnToggleTheme()
     {
