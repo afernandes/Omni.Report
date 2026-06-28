@@ -47,6 +47,10 @@ public sealed class JsonDataSource : IReportDataSource
 {
     private readonly JsonDataSourceOptions _opts;
     private readonly HttpClient? _httpClient;
+
+    // Process-wide fallback when the caller doesn't supply an HttpClient — reused across calls to avoid socket
+    // exhaustion (a fresh `new HttpClient()` per request leaks sockets in TIME_WAIT).
+    private static readonly HttpClient SharedHttp = new();
     private IReportRecordSchema _schema;
 
     public JsonDataSource(string name, JsonDataSourceOptions options, HttpClient? httpClient = null)
@@ -120,13 +124,10 @@ public sealed class JsonDataSource : IReportDataSource
         {
             return await File.ReadAllTextAsync(_opts.FilePath!, ct).ConfigureAwait(false);
         }
-        // URL — use the supplied HttpClient when present (lets the caller configure
-        // auth headers, proxies, etc.), or fall back to a per-call default client.
-        if (_httpClient is not null)
-        {
-            return await _httpClient.GetStringAsync(_opts.Url!, ct).ConfigureAwait(false);
-        }
-        using var client = new HttpClient();
+        // URL — use the supplied HttpClient when present (lets the caller configure auth headers, proxies, etc.),
+        // otherwise the process-wide shared client. A static shared instance avoids the socket exhaustion that a
+        // per-call `new HttpClient()` causes under load (each one holds its connections open after disposal).
+        var client = _httpClient ?? SharedHttp;
         return await client.GetStringAsync(_opts.Url!, ct).ConfigureAwait(false);
     }
 
