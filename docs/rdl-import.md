@@ -116,4 +116,4 @@ sucesso**, nunca lança nem descarta em silêncio):
 - **`ReportItems!X.Value`** é importado e resolve em bandas renderizadas **depois** da referenciada (ex.:
   rodapé ecoando o corpo); `ReportItems!X.Value` num **cabeçalho de página** referenciando o corpo retorna
   vazio (a header renderiza antes — 2º passe é follow-up).
-- Botão "Importar .rdl" no Designer (a API pública já existe; falta o wiring de UI).
+- ~~Botão "Importar .rdl" no Designer~~ — **FEITO**: menu "Importar RDL…" no TopBar (`<InputFile accept=".rdl">` → `OnLoadRdlFile` → `DesignerState.LoadRdl`).
