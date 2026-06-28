@@ -95,17 +95,22 @@ internal sealed class BandRenderer
         return primitives;
     }
 
-    /// <summary>True when a matrix Tablix should paginate by row across pages (it is a crosstab and has not
-    /// opted out via <see cref="TablixElement.KeepTogether"/>). Flat-table Tablixes stay atomic.</summary>
-    internal static bool CanPaginateMatrix(ReportElement element)
-        => element is TablixElement t && !t.KeepTogether
-           && t.RowGroups.Any(g => !string.IsNullOrWhiteSpace(g.GroupExpression))
+    /// <summary>True when a Tablix should paginate by row across pages — i.e. it has not opted out via
+    /// <see cref="TablixElement.KeepTogether"/>. Applies to BOTH crosstab (matrix) and flat tables; the actual
+    /// split only fires when the grid overflows the page (a table that fits renders whole, unchanged).</summary>
+    internal static bool CanPaginateTablix(ReportElement element)
+        => element is TablixElement t && !t.KeepTogether;
+
+    /// <summary>True when the Tablix is a crosstab/matrix (a grouped row axis AND a grouped column axis), as
+    /// opposed to a flat table — selects the slice renderer.</summary>
+    private static bool IsMatrix(TablixElement t)
+        => t.RowGroups.Any(g => !string.IsNullOrWhiteSpace(g.GroupExpression))
            && t.ColumnGroups.Any(g => !string.IsNullOrWhiteSpace(g.GroupExpression));
 
-    /// <summary>Renders one vertical slice of a matrix Tablix at <paramref name="origin"/>, fitting within
-    /// <paramref name="maxHeight"/>, beginning at body-row <paramref name="startRow"/>. Returns the slice
-    /// primitives, the slice's rendered height, and the next un-emitted body row (-1 when complete) so the
-    /// paginator can continue a too-tall matrix on the following page.</summary>
+    /// <summary>Renders one vertical slice of a Tablix at <paramref name="origin"/>, fitting within
+    /// <paramref name="maxHeight"/>, beginning at row <paramref name="startRow"/>. Routes to the matrix or flat
+    /// slice renderer. Returns the slice primitives, the slice's rendered height, and the next un-emitted row
+    /// (-1 when complete) so the paginator can continue a too-tall Tablix on the following page.</summary>
     internal (IReadOnlyList<LayoutPrimitive> Primitives, Unit Height, int NextRow) RenderTablixSlice(
         TablixElement tablix, Point origin, IReportExpressionContext ctx, int startRow, Unit maxHeight)
     {
@@ -114,8 +119,14 @@ internal sealed class BandRenderer
             origin.Y + tablix.Bounds.Y,
             tablix.Bounds.Width,
             maxHeight);
-        var prims = TablixRenderer.RenderMatrixSlice(tablix, bounds, ResolveRows(tablix.DataSetName),
-            _evaluator, _templates, ctx, _namedStyles, startRow, maxHeight, out _, out int nextRow, out var height);
+        var rows = ResolveRows(tablix.DataSetName);
+        int nextRow;
+        Unit height;
+        var prims = IsMatrix(tablix)
+            ? TablixRenderer.RenderMatrixSlice(tablix, bounds, rows, _evaluator, _templates, ctx, _namedStyles,
+                startRow, maxHeight, out _, out nextRow, out height)
+            : TablixRenderer.RenderFlatSlice(tablix, bounds, rows, _evaluator, _templates, ctx, _namedStyles,
+                startRow, maxHeight, out _, out nextRow, out height);
         return (prims, height, nextRow);
     }
 
@@ -149,10 +160,11 @@ internal sealed class BandRenderer
             }
             return element.Bounds.Y + h;
         }
-        // A paginating matrix grows to its grid height; measure that true extent (not the declared bounds) so the
-        // band's split decision fires and the matrix paginates by row. Flat / KeepTogether Tablixes keep their
-        // declared bounds (unchanged behaviour). Mirrors the height RenderElement grows the band to.
-        if (CanPaginateMatrix(element))
+        // A paginating Tablix (matrix OR flat) grows to its grid height; measure that true extent (not the
+        // declared bounds) so the band's split decision fires and the table paginates by row. A table that fits
+        // its declared bounds is unchanged (max below keeps the declared floor); KeepTogether Tablixes stay
+        // atomic. Mirrors the height RenderElement grows the band to.
+        if (CanPaginateTablix(element))
         {
             // Cache the grid height per element reference — it's stable within the pass, and this method is
             // called several times per matrix (band Measure + the split decision), each re-aggregating the data.

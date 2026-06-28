@@ -8,6 +8,8 @@ namespace Reporting.CodeFirst.Tests;
 
 public sealed record MatrixCell(string Cli, string Prod, decimal Val);
 
+public sealed record ProdutoRow(string Cod, string Nome, decimal Preco);
+
 /// <summary>
 /// Row-level pagination of a matrix Tablix: a crosstab taller than the page splits across pages, reprinting the
 /// column header (SSRS / DevExpress XtraReports behaviour), instead of overflowing. Verified end-to-end through
@@ -139,5 +141,92 @@ public class TablixPaginationTests
             pg.Primitives.OfType<DrawTextPrimitive>().Select(t => t.Text)
                 .Should().Contain("CABECALHO DE PAGINA", "the page header must print on every page, including page 1");
         }
+    }
+
+    // ---- Flat (non-matrix) table pagination — same row-level splitting as the matrix path ----
+
+    // A flat table of `n` rows in the ReportHeader (renders once). With many rows it is taller than one A4 page,
+    // forcing the flat table to paginate by row, reprinting the header (like the matrix).
+    private static Report FlatTable(int n, bool repeatHeaders = true, bool keepTogether = false)
+    {
+        var rows = Enumerable.Range(1, n).Select(i => new ProdutoRow($"P{i:000}", $"Produto {i}", i * 1.5m)).ToArray();
+
+        return ReportBuilder.Create("BigFlat")
+            .Page(p => p.A4().Portrait().Margins(15))
+            .DataSource("D", rows)
+            .ReportHeader(h => h.Height(20)
+                .Tablix(t =>
+                {
+                    t.Column("CODIGO", "Fields.Cod").Column("NOME", "Fields.Nome").Column("PRECO", "{Fields.Preco:C}");
+                    if (!repeatHeaders) { t.RepeatColumnHeaders(false); }
+                    if (keepTogether) { t.KeepTogether(); }
+                })
+                .At(0, 0).Size(180, 260))
+            .Detail(d => d.Height(0))
+            .Build();
+    }
+
+    [Fact]
+    public async Task A_tall_flat_table_paginates_across_pages_without_overflow()
+    {
+        var rendered = await FlatTable(60).PaginateAsync();
+
+        rendered.Pages.Count.Should().BeGreaterThan(1, "60 rows are taller than one A4 page");
+        foreach (var pg in rendered.Pages)
+        {
+            BottomMm(pg).Should().BeLessThanOrEqualTo(PageMm(pg) + 0.5, "no content overflows the physical page");
+        }
+    }
+
+    [Fact]
+    public async Task The_flat_header_reprints_on_every_page_by_default()
+    {
+        var rendered = await FlatTable(60).PaginateAsync();
+
+        foreach (var pg in rendered.Pages)
+        {
+            pg.Primitives.OfType<DrawTextPrimitive>().Select(t => t.Text)
+                .Should().Contain("CODIGO", "the flat table's header row reprints at the top of each continuation page");
+        }
+    }
+
+    [Fact]
+    public async Task Every_flat_row_survives_pagination()
+    {
+        var rendered = await FlatTable(60).PaginateAsync();
+
+        var texts = rendered.Pages.SelectMany(p => p.Primitives).OfType<DrawTextPrimitive>().Select(t => t.Text).ToHashSet();
+        for (int i = 1; i <= 60; i++)
+        {
+            texts.Should().Contain($"P{i:000}", "no data row may be dropped when the flat table splits");
+        }
+    }
+
+    [Fact]
+    public async Task Flat_RepeatColumnHeaders_false_prints_the_header_only_on_the_first_page()
+    {
+        var rendered = await FlatTable(60, repeatHeaders: false).PaginateAsync();
+
+        rendered.Pages.Count.Should().BeGreaterThan(1);
+        rendered.Pages[0].Primitives.OfType<DrawTextPrimitive>().Select(t => t.Text).Should().Contain("CODIGO");
+        rendered.Pages[1].Primitives.OfType<DrawTextPrimitive>().Select(t => t.Text)
+            .Should().NotContain("CODIGO", "continuation pages omit the header when RepeatColumnHeaders is off");
+    }
+
+    [Fact]
+    public async Task Flat_KeepTogether_opts_out_of_pagination_keeping_the_table_on_one_page()
+    {
+        var rendered = await FlatTable(60, keepTogether: true).PaginateAsync();
+
+        rendered.Pages.Count.Should().Be(1, "KeepTogether keeps the flat table atomic (it overflows rather than splitting)");
+    }
+
+    [Fact]
+    public async Task A_flat_table_that_fits_stays_on_one_page()
+    {
+        var rendered = await FlatTable(3).PaginateAsync();
+
+        rendered.Pages.Count.Should().Be(1, "a small flat table is not paginated (no behaviour change)");
+        BottomMm(rendered.Pages[0]).Should().BeLessThanOrEqualTo(PageMm(rendered.Pages[0]) + 0.5);
     }
 }

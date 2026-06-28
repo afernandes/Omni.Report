@@ -859,13 +859,13 @@ public sealed partial class ReportPaginator : IReportPaginator
 
             if (slice.Count == 0)
             {
-                // Nothing fits whole in the room left. A crosstab too tall to place whole paginates BY ROW —
-                // filling the remaining space and reprinting its column header on each continuation page (SSRS /
+                // Nothing fits whole in the room left. A Tablix (matrix or flat) too tall to place whole paginates
+                // BY ROW — filling the remaining space and reprinting its header on each continuation page (SSRS /
                 // XtraReports) — instead of overflowing. Any OTHER lone element that can't fit overflows alone only
                 // at the column top (text isn't line-split here); otherwise we break to a fresh column and retry.
                 var lone = remaining[0];
                 var emitted = false;
-                if (BandRenderer.CanPaginateMatrix(lone))
+                if (BandRenderer.CanPaginateTablix(lone))
                 {
                     EmitTablixSliced((Elements.TablixElement)lone, page, renderer, ctx, def);
                     emitted = true;
@@ -884,7 +884,7 @@ public sealed partial class ReportPaginator : IReportPaginator
                     if (remaining.Count > 0)
                     {
                         sliceTop = remaining[0].Bounds.Y;
-                        if (!BandRenderer.CanPaginateMatrix(remaining[0]))
+                        if (!BandRenderer.CanPaginateTablix(remaining[0]))
                         {
                             BreakOrAdvance(page, def, renderer, ctx);
                         }
@@ -911,7 +911,7 @@ public sealed partial class ReportPaginator : IReportPaginator
                 sliceTop = remaining[0].Bounds.Y; // next slice starts at the first un-emitted element's top
                 // A paginating matrix continues in the REMAINING space of this column (EmitTablixSliced fills it,
                 // then breaks itself), so it doesn't waste the rest of the page; everything else breaks now.
-                if (!BandRenderer.CanPaginateMatrix(remaining[0]))
+                if (!BandRenderer.CanPaginateTablix(remaining[0]))
                 {
                     BreakOrAdvance(page, def, renderer, ctx);
                 }
@@ -942,18 +942,20 @@ public sealed partial class ReportPaginator : IReportPaginator
         }
     }
 
-    /// <summary>Paginates a matrix Tablix taller than a column by emitting it one page-slice at a time: each
-    /// slice fills the current column with as many rows as fit (with the column header reprinted on top when
+    /// <summary>Paginates a Tablix (matrix OR flat) taller than a column by emitting it one page-slice at a time:
+    /// each slice fills the current column with as many rows as fit (with the header reprinted on top when
     /// <see cref="Elements.TablixElement.RepeatColumnHeaders"/> is set), then a fresh column/page is started
     /// until every row is drawn. Always emits ≥1 row per slice, so it terminates.</summary>
     private void EmitTablixSliced(Elements.TablixElement tablix, PageAccumulator page, BandRenderer renderer,
         ReportExpressionContext ctx, ReportDefinition def)
     {
-        // Smallest worthwhile slice: the column header band + one data row. If less than that is left (and we're
-        // not already at the column top, where we must emit anyway to make progress), break to a fresh column
-        // first so a slice never overflows by a stray header+row.
+        // Smallest worthwhile slice: the header band + one data row. If less than that is left (and we're not
+        // already at the column top, where we must emit anyway to make progress), break to a fresh column first so
+        // a slice never overflows by a stray header+row. A matrix's header is its column-group levels; a flat
+        // table's is a single header row (colLevels == 0 → treat as 1).
         int colLevels = tablix.ColumnGroups.Count(g => !string.IsNullOrWhiteSpace(g.GroupExpression));
-        var minSlice = Unit.FromMm((colLevels + 1) * Internal.TablixRenderer.RowHeightMm);
+        int headerRows = colLevels > 0 ? colLevels : 1;
+        var minSlice = Unit.FromMm((headerRows + 1) * Internal.TablixRenderer.RowHeightMm);
 
         int startRow = 0;
         while (true)

@@ -182,6 +182,8 @@ public sealed class TablixBuilder
             Cells = new EquatableArray<TablixCell>(cells),
             ColumnWidths = widths,
             NoRowsMessage = _noRowsMessage,
+            RepeatColumnHeaders = _repeatColumnHeaders,
+            KeepTogether = _keepTogether,
         };
     }
 }
