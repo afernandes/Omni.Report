@@ -21,6 +21,7 @@ namespace Reporting.Data;
 /// <param name="Direction">Ascending (default) or Descending.</param>
 public sealed record SortDescriptor(string Expression, SortDirection Direction = SortDirection.Ascending);
 
+/// <summary>The direction in which a sort descriptor orders rows.</summary>
 public enum SortDirection
 {
     Ascending,

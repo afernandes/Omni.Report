@@ -1,5 +1,6 @@
 namespace Reporting.Styling;
 
+/// <summary>Font style attributes (bold, italic, underline, strikeout) that can be combined as flags.</summary>
 [Flags]
 public enum FontStyle
 {

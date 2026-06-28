@@ -122,6 +122,7 @@ public sealed record CodeElement : ReportElement
     public CodeLanguage Language { get; init; } = CodeLanguage.CSharp;
 }
 
+/// <summary>Source language of a <see cref="CodeElement"/> block — C# (default) or legacy VB.NET for SSRS interop.</summary>
 public enum CodeLanguage { CSharp, VisualBasic }
 
 // ─────────────────────────────────────────────────────────────────────────────────
@@ -200,8 +201,10 @@ public sealed record GaugeElement : ReportElement
     public EquatableArray<GaugeRange> Ranges { get; init; } = EquatableArray<GaugeRange>.Empty;
 }
 
+/// <summary>Visual form of a <see cref="GaugeElement"/> — a radial dial arc or a linear track.</summary>
 public enum GaugeKind { Radial, Linear }
 
+/// <summary>A coloured band of a <see cref="GaugeElement"/> — a value range (start/end expressions) painted in a given colour.</summary>
 public sealed record GaugeRange(
     [property: PropertyGrid(Order = 1, Label = "Início")] string StartExpression,
     [property: PropertyGrid(Order = 2, Label = "Fim")] string EndExpression,
@@ -245,6 +248,7 @@ public sealed record SparklineElement : ReportElement
     public string? CategoryExpression { get; init; }
 }
 
+/// <summary>Visual form of a <see cref="SparklineElement"/> — a line, column, or filled-area mini-chart.</summary>
 public enum SparklineKind { Line, Column, Area }
 
 // ─────────────────────────────────────────────────────────────────────────────────
@@ -264,8 +268,10 @@ public sealed record IndicatorElement : ReportElement
     public EquatableArray<IndicatorState> States { get; init; } = EquatableArray<IndicatorState>.Empty;
 }
 
+/// <summary>Icon family of an <see cref="IndicatorElement"/> — directional arrow, traffic-light shape, rating bar, or symbol.</summary>
 public enum IndicatorKind { DirectionalArrow, Shape, RatingBar, Symbol }
 
+/// <summary>One state of an <see cref="IndicatorElement"/> — the value range (start/end expressions) that selects a given icon.</summary>
 public sealed record IndicatorState(
     [property: PropertyGrid(Order = 1, Label = "Início")] string StartExpression,
     [property: PropertyGrid(Order = 2, Label = "Fim")] string EndExpression,

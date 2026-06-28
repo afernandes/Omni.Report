@@ -1,5 +1,6 @@
 namespace Reporting.Styling;
 
+/// <summary>Horizontal placement of content within its box (left, center, right, or justified).</summary>
 public enum HorizontalAlignment
 {
     Left,
@@ -8,6 +9,7 @@ public enum HorizontalAlignment
     Justify,
 }
 
+/// <summary>Vertical placement of content within its box (top, middle, or bottom).</summary>
 public enum VerticalAlignment
 {
     Top,
@@ -15,6 +17,7 @@ public enum VerticalAlignment
     Bottom,
 }
 
+/// <summary>Line style for a border edge (none, solid, dashed, dotted, dash-dot, or double).</summary>
 public enum BorderLineStyle
 {
     None,

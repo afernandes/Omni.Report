@@ -15,6 +15,7 @@ public sealed record LineElement : ReportElement
     public BorderSide Pen { get; init; } = new(BorderLineStyle.Solid, Unit.FromPoint(0.5), Color.Black);
 }
 
+/// <summary>Which corners (or center axis) of a <see cref="LineElement"/>'s bounds the line is drawn between.</summary>
 public enum LineDirection
 {
     /// <summary>Horizontal line at the vertical center of <see cref="ReportElement.Bounds"/>.</summary>
@@ -27,6 +28,8 @@ public enum LineDirection
     BottomLeftToTopRight,
 }
 
+/// <summary>A filled rectangle that doubles as a container — draws its optional fill (with corner radius) and then
+/// lays out nested <see cref="Children"/> positioned relative to its top-left.</summary>
 public sealed record RectangleElement : ReportElement
 {
     [PropertyGrid(Category = "Forma", Order = 1, Label = "Preenchimento", Bindable = true)]
@@ -42,6 +45,7 @@ public sealed record RectangleElement : ReportElement
     public EquatableArray<ReportElement> Children { get; init; } = EquatableArray<ReportElement>.Empty;
 }
 
+/// <summary>An ellipse (or circle) drawn to fill <see cref="ReportElement.Bounds"/>, with an optional fill colour.</summary>
 public sealed record EllipseElement : ReportElement
 {
     [PropertyGrid(Category = "Forma", Order = 1, Label = "Preenchimento", Bindable = true)]

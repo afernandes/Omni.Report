@@ -83,6 +83,7 @@ public sealed record ReportVariable(
     VariableScope Scope = VariableScope.Row,
     object? InitialValue = null);
 
+/// <summary>How often a <see cref="ReportVariable"/> is re-evaluated — per detail row, once per report, or once per group instance.</summary>
 public enum VariableScope
 {
     /// <summary>Re-evaluated for every row of the detail band.</summary>
