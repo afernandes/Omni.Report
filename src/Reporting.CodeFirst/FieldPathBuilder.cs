@@ -8,6 +8,13 @@ namespace Reporting.CodeFirst;
 /// </summary>
 public static class FieldPathBuilder
 {
+    /// <summary>Converts a member-access lambda over <typeparamref name="T"/> into its report
+    /// expression string, prefixing the property path with <c>Fields.</c>.</summary>
+    /// <param name="selector">A simple member-access chain rooted at the lambda parameter, e.g.
+    /// <c>v =&gt; v.Cliente.Nome</c>.</param>
+    /// <returns>The report expression, e.g. <c>Fields.Cliente.Nome</c>.</returns>
+    /// <exception cref="ArgumentException">The selector is not a member-access chain rooted at the
+    /// parameter, or accesses no property.</exception>
     public static string From<T>(Expression<Func<T, object>> selector)
     {
         ArgumentNullException.ThrowIfNull(selector);

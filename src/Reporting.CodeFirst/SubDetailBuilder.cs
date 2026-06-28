@@ -25,7 +25,10 @@ public sealed class SubDetailBuilder
         _name = name;
     }
 
+    /// <summary>The unique name of this sub-detail band.</summary>
     public string Name => _name;
+    /// <summary>The bound data member — a relation name or a registered data source — whose child
+    /// rows drive the band.</summary>
     public string DataMember => _dataMember;
 
     /// <summary>Header band — rendered once before the first child row.</summary>

@@ -13,6 +13,8 @@ namespace Reporting.CodeFirst;
 /// produces a <see cref="Report"/> bound to an internal data source registry.</summary>
 public static class ReportBuilder
 {
+    /// <summary>Starts a new fluent report definition with the given report name and returns the
+    /// builder root to chain page setup, data sources, and bands.</summary>
     public static ReportBuilderRoot Create(string name) => new(name);
 }
 
@@ -46,6 +48,8 @@ public sealed class ReportBuilderRoot
         _name = name;
     }
 
+    /// <summary>Configures page setup (size, orientation, margins, columns) via the supplied
+    /// builder action and returns this builder for chaining.</summary>
     public ReportBuilderRoot Page(Action<PageSetupBuilder> configure)
     {
         ArgumentNullException.ThrowIfNull(configure);
@@ -53,6 +57,8 @@ public sealed class ReportBuilderRoot
         return this;
     }
 
+    /// <summary>Declares report parameters (RDL <c>&lt;ReportParameters&gt;</c>) via the supplied builder
+    /// action; referenced in expressions as <c>Parameters.&lt;Name&gt;</c>. Returns this builder for chaining.</summary>
     public ReportBuilderRoot Parameters(Action<ParameterListBuilder> configure)
     {
         ArgumentNullException.ThrowIfNull(configure);
@@ -105,6 +111,8 @@ public sealed class ReportBuilderRoot
         return this;
     }
 
+    /// <summary>Stores an arbitrary key/value pair on the report's metadata bag (round-trips through
+    /// serialization). Overwrites any existing value for the same key. Returns this builder for chaining.</summary>
     public ReportBuilderRoot Metadata(string key, string value)
     {
         _metadata[key] = value;
@@ -140,12 +148,18 @@ public sealed class ReportBuilderRoot
         return Language(culture.Name);
     }
 
+    /// <summary>Defines the report-header band — content rendered once at the very start of the report,
+    /// before the first detail row. Returns this builder for chaining.</summary>
     public ReportBuilderRoot ReportHeader(Action<BandContent> configure)
         => Configure(ref _reportHeader, configure);
 
+    /// <summary>Defines the page-header band — content repeated at the top of every page. Returns this
+    /// builder for chaining.</summary>
     public ReportBuilderRoot PageHeader(Action<BandContent> configure)
         => Configure(ref _pageHeader, configure);
 
+    /// <summary>Defines the detail band — content rendered once per row of the bound data source.
+    /// Returns this builder for chaining.</summary>
     public ReportBuilderRoot Detail(Action<BandContent> configure)
         => Configure(ref _detail, configure);
 
@@ -288,9 +302,13 @@ public sealed class ReportBuilderRoot
             "Call .DataSource(...) for both parent and child before declaring the relation.");
     }
 
+    /// <summary>Defines the page-footer band — content repeated at the bottom of every page. Returns
+    /// this builder for chaining.</summary>
     public ReportBuilderRoot PageFooter(Action<BandContent> configure)
         => Configure(ref _pageFooter, configure);
 
+    /// <summary>Defines the report-footer band — content rendered once at the very end of the report,
+    /// after the last detail row. Returns this builder for chaining.</summary>
     public ReportBuilderRoot ReportFooter(Action<BandContent> configure)
         => Configure(ref _reportFooter, configure);
 
@@ -311,6 +329,9 @@ public sealed class ReportBuilderRoot
     public ReportBuilderRoot Group<T>(string name, Expression<Func<T, object>> selector, Action<GroupBuilder> configure)
         => Group(name, FieldPathBuilder.From(selector), configure);
 
+    /// <summary>Finalizes the fluent description and materializes a <see cref="Report"/> — assembling the
+    /// page setup, parameters, data sources, bands, groups, named styles, and variables into an immutable
+    /// definition bound to the registered data sources, ready to paginate.</summary>
     public Report Build()
     {
         // The Detail at the report level may also have been described inside a group.

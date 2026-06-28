@@ -15,21 +15,35 @@ public sealed class GroupBuilder
     private BandContent? _footer;
     private BandContent? _detail;
 
+    /// <summary>Creates a builder for a group identified by <paramref name="name"/> and broken
+    /// by <paramref name="groupExpression"/> (a new group instance starts whenever the
+    /// expression's value changes).</summary>
+    /// <param name="name">Unique name of the group.</param>
+    /// <param name="groupExpression">Expression whose value defines the group boundaries.</param>
     public GroupBuilder(string name, string groupExpression)
     {
         _name = name;
         _groupExpression = groupExpression;
     }
 
+    /// <summary>Whether the whole group instance is kept on a single page when possible.</summary>
     public bool KeepTogether { get; private set; }
+    /// <summary>Whether each group instance starts on a new page.</summary>
     public bool NewPageBefore { get; private set; }
+    /// <summary>Whether a page break is forced after each group instance.</summary>
     public bool NewPageAfter { get; private set; }
+    /// <summary>Whether the group header is reprinted at the top of every page the group spans.</summary>
     public bool RepeatHeaderOnNewPage { get; private set; }
+    /// <summary>Unified RDL page-break rule for the group; overrides the legacy
+    /// <see cref="NewPageBefore"/>/<see cref="NewPageAfter"/> bools when non-None.</summary>
     public PageBreak GroupPageBreak { get; private set; }
+    /// <summary>Filter expression that restricts which group instances are emitted, or null.</summary>
     public string? FilterExpression { get; private set; }
     private readonly List<Reporting.Data.SortDescriptor> _sorts = [];
     private readonly List<Reporting.Parameters.ReportVariable> _variables = [];
 
+    /// <summary>Configures the group header band, rendered once before the group's rows.</summary>
+    /// <returns>The same builder, for chaining.</returns>
     public GroupBuilder Header(Action<BandContent> configure)
     {
         ArgumentNullException.ThrowIfNull(configure);
@@ -39,6 +53,9 @@ public sealed class GroupBuilder
         return this;
     }
 
+    /// <summary>Configures the report-level detail band described inside this group (OmniReport
+    /// models a single shared detail per report).</summary>
+    /// <returns>The same builder, for chaining.</returns>
     public GroupBuilder Detail(Action<BandContent> configure)
     {
         ArgumentNullException.ThrowIfNull(configure);
@@ -48,6 +65,8 @@ public sealed class GroupBuilder
         return this;
     }
 
+    /// <summary>Configures the group footer band, rendered once after the group's rows.</summary>
+    /// <returns>The same builder, for chaining.</returns>
     public GroupBuilder Footer(Action<BandContent> configure)
     {
         ArgumentNullException.ThrowIfNull(configure);
@@ -57,9 +76,17 @@ public sealed class GroupBuilder
         return this;
     }
 
+    /// <summary>Keeps the whole group instance on a single page when it fits.</summary>
+    /// <returns>The same builder, for chaining.</returns>
     public GroupBuilder KeepGroupTogether(bool value = true) { KeepTogether = value; return this; }
+    /// <summary>Forces each group instance to begin on a new page.</summary>
+    /// <returns>The same builder, for chaining.</returns>
     public GroupBuilder StartOnNewPage(bool value = true) { NewPageBefore = value; return this; }
+    /// <summary>Forces a page break after each group instance.</summary>
+    /// <returns>The same builder, for chaining.</returns>
     public GroupBuilder EndOnNewPage(bool value = true) { NewPageAfter = value; return this; }
+    /// <summary>Reprints the group header at the top of every page the group spans.</summary>
+    /// <returns>The same builder, for chaining.</returns>
     public GroupBuilder RepeatHeader(bool value = true) { RepeatHeaderOnNewPage = value; return this; }
 
     /// <summary>RDL <c>&lt;PageBreak BreakLocation="..."&gt;</c> — unified break control for
