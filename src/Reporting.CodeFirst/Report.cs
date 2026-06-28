@@ -8,6 +8,9 @@ namespace Reporting.CodeFirst;
 /// containing every data source registered via the fluent <c>DataSource</c> calls.</summary>
 public sealed class Report
 {
+    /// <summary>Creates a report from an already-built <paramref name="definition"/> and its
+    /// <paramref name="dataSources"/> registry. Normally produced by <see cref="ReportBuilderRoot.Build"/>;
+    /// use this directly only when constructing the definition by hand.</summary>
     public Report(ReportDefinition definition, DataSourceRegistry dataSources)
     {
         ArgumentNullException.ThrowIfNull(definition);
@@ -16,7 +19,10 @@ public sealed class Report
         DataSources = dataSources;
     }
 
+    /// <summary>The immutable report definition AST (page setup, bands, parameters, data source metadata).</summary>
     public ReportDefinition Definition { get; }
+
+    /// <summary>The registry of live data sources backing the report's <c>Fields.*</c> resolution at render time.</summary>
     public DataSourceRegistry DataSources { get; }
 
     /// <summary>Paginates the report with the given parameters (optional).</summary>

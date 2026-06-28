@@ -5,6 +5,11 @@
     <RootNamespace>Reporting.CodeFirst</RootNamespace>
     <AssemblyName>Reporting.CodeFirst</AssemblyName>
     <Description>OmniReport — fluent code-first builder for ReportDefinition + automatic data source registration.</Description>
+    <!-- This is the user-facing fluent API: every public member must carry an XML doc comment. The Replace lifts
+         the global CS1591 suppression (added in Directory.Build.props) for THIS project only, so — together with
+         TreatWarningsAsErrors on the packable libraries — the build fails until the whole public surface is
+         documented, and stays documented (regression lock). -->
+    <NoWarn>$(NoWarn.Replace(';CS1591','').Replace('CS1591',''))</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

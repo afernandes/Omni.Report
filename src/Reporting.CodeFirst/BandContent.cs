@@ -28,10 +28,14 @@ public sealed class BandContent
 
     /// <summary>Whether the detail band can grow / shrink with its content. Ignored for non-detail bands.</summary>
     public bool DetailCanGrow { get; private set; }
+
+    /// <summary>Whether the detail band shrinks below its nominal height when its content is shorter. Ignored for non-detail bands.</summary>
     public bool DetailCanShrink { get; private set; }
 
     /// <summary>Whether report/page header/footer is printed on the first/last page (default true).</summary>
     public bool PrintOnFirstPage { get; private set; } = true;
+
+    /// <summary>Whether report/page header/footer is printed on the last page (default true).</summary>
     public bool PrintOnLastPage { get; private set; } = true;
 
     /// <summary>Optional visibility expression for the entire band.</summary>
@@ -42,12 +46,25 @@ public sealed class BandContent
 
     // ── Band-level configuration ────────────────────────────────────────────────
 
+    /// <summary>Fixes the band's height to the given <see cref="Unit"/>, overriding the auto-fit default. Returns the builder for chaining.</summary>
     public BandContent Height(Unit height) { Flush(); BandHeight = height; return this; }
+
+    /// <summary>Fixes the band's height to <paramref name="mm"/> millimeters, overriding the auto-fit default. Returns the builder for chaining.</summary>
     public BandContent Height(double mm) => Height(Unit.FromMm(mm));
+
+    /// <summary>Lets the detail band grow taller than its nominal height when content overflows. Returns the builder for chaining.</summary>
     public BandContent CanGrow(bool value = true) { Flush(); DetailCanGrow = value; return this; }
+
+    /// <summary>Lets the detail band shrink below its nominal height when content is shorter. Returns the builder for chaining.</summary>
     public BandContent CanShrink(bool value = true) { Flush(); DetailCanShrink = value; return this; }
+
+    /// <summary>Suppresses this header/footer band on the first page. Returns the builder for chaining.</summary>
     public BandContent NotOnFirstPage() { Flush(); PrintOnFirstPage = false; return this; }
+
+    /// <summary>Suppresses this header/footer band on the last page. Returns the builder for chaining.</summary>
     public BandContent NotOnLastPage() { Flush(); PrintOnLastPage = false; return this; }
+
+    /// <summary>Makes the whole band conditional on <paramref name="expression"/> — the band renders only when it evaluates truthy. Returns the builder for chaining.</summary>
     public BandContent VisibleWhen(string expression) { Flush(); VisibleExpression = expression; return this; }
 
     /// <summary>Sets the band's RDL PageBreak rule. Defaults to None — set to
@@ -57,6 +74,8 @@ public sealed class BandContent
 
     // ── Element starters ─────────────────────────────────────────────────────────
 
+    /// <summary>Adds a data-bound text box whose value is the NCalc <paramref name="expression"/>
+    /// (e.g. <c>"Fields.Name"</c>), evaluated per band instance. Subsequent config calls target it.</summary>
     public BandContent Text(string expression)
     {
         Flush();
@@ -64,6 +83,8 @@ public sealed class BandContent
         return this;
     }
 
+    /// <summary>Adds a static label showing the literal <paramref name="text"/>, evaluated once.
+    /// Subsequent config calls target it.</summary>
     public BandContent Label(string text)
     {
         Flush();
@@ -71,6 +92,8 @@ public sealed class BandContent
         return this;
     }
 
+    /// <summary>Adds a horizontal line. Set its endpoints with <see cref="From"/>/<see cref="To"/>
+    /// (or <see cref="At"/>/<see cref="Size"/>) and its weight with <see cref="Thickness"/>.</summary>
     public BandContent Line()
     {
         Flush();
@@ -78,6 +101,9 @@ public sealed class BandContent
         return this;
     }
 
+    /// <summary>Adds an empty rectangle shape. Set its position/size, <see cref="Fill"/>,
+    /// <see cref="CornerRadius"/>, and border. Use the <see cref="Rectangle(Action{BandContent})"/>
+    /// overload to nest child elements inside it.</summary>
     public BandContent Rectangle()
     {
         Flush();
@@ -102,6 +128,8 @@ public sealed class BandContent
         return this;
     }
 
+    /// <summary>Adds an empty ellipse shape inscribed in its bounds. Set its position/size,
+    /// <see cref="Fill"/>, and border.</summary>
     public BandContent Ellipse()
     {
         Flush();
@@ -109,6 +137,10 @@ public sealed class BandContent
         return this;
     }
 
+    /// <summary>Adds an image. The source is chosen by which argument is supplied:
+    /// <paramref name="bytes"/> for inline data, <paramref name="expression"/> for a per-row
+    /// expression, otherwise <paramref name="path"/> for a file/URL path. Control scaling with
+    /// <see cref="ImageSizing(ImageSizing)"/>.</summary>
     public BandContent Image(string? path = null, byte[]? bytes = null, string? expression = null)
     {
         Flush();
@@ -126,6 +158,8 @@ public sealed class BandContent
         return this;
     }
 
+    /// <summary>Adds a barcode encoding the value of <paramref name="expression"/> using
+    /// <paramref name="symbology"/> (Code128 by default).</summary>
     public BandContent Barcode(string expression, BarcodeSymbology symbology = BarcodeSymbology.Code128)
     {
         Flush();
@@ -148,30 +182,44 @@ public sealed class BandContent
     public BandContent Size(double widthMm, double heightMm)
         => MutatePending(e => e with { Bounds = new Reporting.Geometry.Rectangle(e.Bounds.X, e.Bounds.Y, Unit.FromMm(widthMm), Unit.FromMm(heightMm)) });
 
+    /// <summary>Sets position and size of the pending element in one call (millimeters). Combines <see cref="At"/> and <see cref="Size"/>.</summary>
     public BandContent Bounds(double xMm, double yMm, double widthMm, double heightMm)
         => MutatePending(e => e with { Bounds = new Reporting.Geometry.Rectangle(Unit.FromMm(xMm), Unit.FromMm(yMm), Unit.FromMm(widthMm), Unit.FromMm(heightMm)) });
 
+    /// <summary>Names the pending element so it can be referenced (e.g. by expressions or the document map).</summary>
     public BandContent Name(string name)
         => MutatePending(e => e with { Name = name });
 
+    /// <summary>Hides the pending element unconditionally (it is not rendered).</summary>
     public BandContent Hidden()
         => MutatePending(e => e with { Visible = false });
 
+    /// <summary>Makes the pending element conditional on <paramref name="expression"/> — it renders only when the expression evaluates truthy.</summary>
     public BandContent VisibleIf(string expression)
         => MutatePending(e => e with { VisibleExpression = expression });
 
     // ── Text / typography helpers (mutate Style on Pending) ──────────────────────
 
+    /// <summary>Sets the pending element's font family, point size, and style in one call, replacing any existing font.</summary>
     public BandContent Font(string family, double size, FontStyle style = FontStyle.Regular)
         => MutateStyle(s => s with { Font = new Font(family, size, style) });
 
+    /// <summary>Adds bold to the pending element's font, preserving its other style flags.</summary>
     public BandContent Bold() => MutateStyle(s => s with { Font = (s.Font ?? Reporting.Styling.Font.Default).AddStyle(FontStyle.Bold) });
+
+    /// <summary>Adds italic to the pending element's font, preserving its other style flags.</summary>
     public BandContent Italic() => MutateStyle(s => s with { Font = (s.Font ?? Reporting.Styling.Font.Default).AddStyle(FontStyle.Italic) });
+
+    /// <summary>Adds underline to the pending element's font, preserving its other style flags.</summary>
     public BandContent Underline() => MutateStyle(s => s with { Font = (s.Font ?? Reporting.Styling.Font.Default).AddStyle(FontStyle.Underline) });
 
+    /// <summary>Sets the pending element's font point size, keeping its family and style flags.</summary>
     public BandContent FontSize(double size) => MutateStyle(s => s with { Font = (s.Font ?? Reporting.Styling.Font.Default).WithSize(size) });
 
+    /// <summary>Sets the pending element's foreground (text/line) colour.</summary>
     public BandContent Color(Color color) => MutateStyle(s => s with { ForeColor = color });
+
+    /// <summary>Sets the pending element's solid background colour.</summary>
     public BandContent Background(Color color) => MutateStyle(s => s with { BackColor = color });
 
     /// <summary>Two-colour gradient background: <paramref name="start"/> blends to <paramref name="end"/>
@@ -183,28 +231,49 @@ public sealed class BandContent
     /// base, and any inline style set here overlays it. See <see cref="Style.BasedOn"/>.</summary>
     public BandContent BasedOn(string namedStyle) => MutateStyle(s => s with { BasedOn = namedStyle });
 
+    /// <summary>Horizontally centers the pending element's content.</summary>
     public BandContent Center() => MutateStyle(s => s with { HorizontalAlignment = HorizontalAlignment.Center });
+
+    /// <summary>Left-aligns the pending element's content horizontally.</summary>
     public BandContent AlignLeft() => MutateStyle(s => s with { HorizontalAlignment = HorizontalAlignment.Left });
+
+    /// <summary>Right-aligns the pending element's content horizontally.</summary>
     public BandContent AlignRight() => MutateStyle(s => s with { HorizontalAlignment = HorizontalAlignment.Right });
+
+    /// <summary>Top-aligns the pending element's content vertically.</summary>
     public BandContent AlignTop() => MutateStyle(s => s with { VerticalAlignment = VerticalAlignment.Top });
+
+    /// <summary>Vertically centers the pending element's content.</summary>
     public BandContent AlignMiddle() => MutateStyle(s => s with { VerticalAlignment = VerticalAlignment.Middle });
+
+    /// <summary>Bottom-aligns the pending element's content vertically.</summary>
     public BandContent AlignBottom() => MutateStyle(s => s with { VerticalAlignment = VerticalAlignment.Bottom });
 
+    /// <summary>Disables word wrap on the pending element so text is kept on a single line.</summary>
     public BandContent NoWrap() => MutateStyle(s => s with { WordWrap = false });
+
+    /// <summary>Sets the .NET/SSRS format string applied to the pending element's value (e.g. <c>"C2"</c>, <c>"yyyy-MM-dd"</c>).</summary>
     public BandContent Format(string format) => MutateStyle(s => s with { Format = format });
 
+    /// <summary>Applies a fully-specified <see cref="Reporting.Styling.Border"/> to the pending element.</summary>
     public BandContent Border(Border border) => MutateStyle(s => s with { Border = border });
+
+    /// <summary>Applies a uniform border to all four sides of the pending element with the given line style, thickness (points), and colour.</summary>
     public BandContent Border(BorderLineStyle style, double thicknessPt, Color color)
         => MutateStyle(s => s with { Border = Reporting.Styling.Border.Uniform(style, Unit.FromPoint(thicknessPt), color) });
 
     // ── TextBox-specific ────────────────────────────────────────────────────────
 
+    /// <summary>Lets the pending text box grow taller to fit overflowing text. No-op unless the pending element is a <see cref="TextBoxElement"/>.</summary>
     public BandContent ElementCanGrow(bool value = true)
         => MutatePending(e => e is TextBoxElement tb ? tb with { CanGrow = value } : e);
 
+    /// <summary>Lets the pending text box shrink below its nominal height when its text is shorter. No-op unless the pending element is a <see cref="TextBoxElement"/>.</summary>
     public BandContent ElementCanShrink(bool value = true)
         => MutatePending(e => e is TextBoxElement tb ? tb with { CanShrink = value } : e);
 
+    /// <summary>Adds a conditional format to the pending element: when <paramref name="condition"/>
+    /// evaluates truthy, <paramref name="style"/> overrides the element's style. Multiple calls accumulate.</summary>
     public BandContent ConditionalFormat(string condition, Style style)
         => MutatePending(e => e with { ConditionalFormats = new EquatableArray<ConditionalFormat>(
             e.ConditionalFormats.Concat(new[] { new ConditionalFormat(condition, style) })) });
@@ -249,11 +318,13 @@ public sealed class BandContent
 
     // ── Line-specific ───────────────────────────────────────────────────────────
 
+    /// <summary>Sets the pending line's start point (millimeters from band origin), keeping its current extent. No-op unless the pending element is a <see cref="LineElement"/>.</summary>
     public BandContent From(double xMm, double yMm)
         => MutatePending(e => e is LineElement
             ? e with { Bounds = new Reporting.Geometry.Rectangle(Unit.FromMm(xMm), Unit.FromMm(yMm), e.Bounds.Width, e.Bounds.Height) }
             : e);
 
+    /// <summary>Sets the pending line's end point (millimeters from band origin), deriving its extent from <see cref="From"/>. No-op unless the pending element is a <see cref="LineElement"/>.</summary>
     public BandContent To(double xMm, double yMm)
         => MutatePending(e =>
         {
@@ -266,9 +337,11 @@ public sealed class BandContent
             return e with { Bounds = new Reporting.Geometry.Rectangle(e.Bounds.X, e.Bounds.Y, width, height) };
         });
 
+    /// <summary>Sets the pending line's orientation (horizontal, vertical, or diagonal). No-op unless the pending element is a <see cref="LineElement"/>.</summary>
     public BandContent Direction(LineDirection direction)
         => MutatePending(e => e is LineElement line ? line with { Direction = direction } : e);
 
+    /// <summary>Sets the pending line's pen weight in <paramref name="pt"/> points. No-op unless the pending element is a <see cref="LineElement"/>.</summary>
     public BandContent Thickness(double pt)
         => MutatePending(e => e is LineElement line
             ? line with { Pen = line.Pen with { Thickness = Unit.FromPoint(pt) } }
@@ -276,6 +349,7 @@ public sealed class BandContent
 
     // ── Rectangle/Ellipse-specific ──────────────────────────────────────────────
 
+    /// <summary>Sets the interior fill colour of the pending rectangle or ellipse. No-op for other element types.</summary>
     public BandContent Fill(Color color)
         => MutatePending(e => e switch
         {
@@ -284,11 +358,13 @@ public sealed class BandContent
             _ => e,
         });
 
+    /// <summary>Rounds the pending rectangle's corners by <paramref name="mm"/> millimeters. No-op unless the pending element is a <see cref="RectangleElement"/>.</summary>
     public BandContent CornerRadius(double mm)
         => MutatePending(e => e is RectangleElement r ? r with { CornerRadius = Unit.FromMm(mm) } : e);
 
     // ── Image-specific ──────────────────────────────────────────────────────────
 
+    /// <summary>Sets how the pending image scales within its bounds (e.g. fit, fill, clip). No-op unless the pending element is an <see cref="ImageElement"/>.</summary>
     public BandContent ImageSizing(ImageSizing sizing)
         => MutatePending(e => e is ImageElement i ? i with { Sizing = sizing } : e);
 
