@@ -26,6 +26,10 @@ public sealed class WebServiceDataSource : IReportDataSource
 {
     private readonly WebServiceDataSourceOptions _opts;
     private readonly HttpClient? _httpClient;
+
+    // Process-wide fallback when no client is supplied and no per-call timeout is set — reused across calls to
+    // avoid socket exhaustion (a fresh `new HttpClient()` per request leaks sockets in TIME_WAIT under load).
+    private static readonly HttpClient SharedHttp = new();
     private IReportRecordSchema _schema;
 
     public WebServiceDataSource(string name, WebServiceDataSourceOptions options, HttpClient? httpClient = null)
@@ -85,9 +89,11 @@ public sealed class WebServiceDataSource : IReportDataSource
     /// string up-front because both inner parsers want the whole document anyway.</summary>
     private async Task<(string Body, string? ContentType)> SendAsync(CancellationToken ct)
     {
-        var ownClient = _httpClient is null;
-        var client = _httpClient ?? new HttpClient();
-        if (_opts.Timeout is { } t && ownClient) client.Timeout = t;
+        // Common path (no per-call timeout) reuses the shared client to avoid socket exhaustion; only when an
+        // explicit Timeout is set do we spin up — and dispose — an own client, since a shared/injected client's
+        // global Timeout must not be mutated per call.
+        var ownClient = _httpClient is null && _opts.Timeout is not null;
+        var client = _httpClient ?? (ownClient ? new HttpClient { Timeout = _opts.Timeout!.Value } : SharedHttp);
         try
         {
             using var req = new HttpRequestMessage(new HttpMethod(_opts.Method), _opts.Url);

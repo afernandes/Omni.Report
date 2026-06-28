@@ -32,6 +32,10 @@ public sealed class XmlDataSource : IReportDataSource
 {
     private readonly XmlDataSourceOptions _opts;
     private readonly HttpClient? _httpClient;
+
+    // Process-wide fallback when the caller doesn't supply an HttpClient — reused across calls to avoid socket
+    // exhaustion (a fresh `new HttpClient()` per request leaks sockets in TIME_WAIT).
+    private static readonly HttpClient SharedHttp = new();
     private IReportRecordSchema _schema;
 
     public XmlDataSource(string name, XmlDataSourceOptions options, HttpClient? httpClient = null)
@@ -121,11 +125,9 @@ public sealed class XmlDataSource : IReportDataSource
         {
             return await File.ReadAllTextAsync(_opts.FilePath!, ct).ConfigureAwait(false);
         }
-        if (_httpClient is not null)
-        {
-            return await _httpClient.GetStringAsync(_opts.Url!, ct).ConfigureAwait(false);
-        }
-        using var client = new HttpClient();
+        // Use the supplied client when present, otherwise the process-wide shared client (a per-call
+        // `new HttpClient()` causes socket exhaustion under load).
+        var client = _httpClient ?? SharedHttp;
         return await client.GetStringAsync(_opts.Url!, ct).ConfigureAwait(false);
     }
 
