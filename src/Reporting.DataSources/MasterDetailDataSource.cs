@@ -74,7 +74,7 @@ public sealed class MasterDetailDataSource : IReportDataSource
             (IsNumber(a) && IsNumber(b)))
         {
             try { return Convert.ToDecimal(a) == Convert.ToDecimal(b); }
-            catch { /* fall through */ }
+            catch (Exception ex) when (ex is FormatException or OverflowException or InvalidCastException) { /* not decimal-comparable → fall through to string compare */ }
         }
         // Try string compare (handles e.g. Guid → string).
         return string.Equals(a.ToString(), b.ToString(), StringComparison.Ordinal);
