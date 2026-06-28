@@ -42,7 +42,7 @@ exóticos (TablixHeader/Body nativos, RowSpan, repeat headers de matrix). O roun
 | Indicador | Antes (#88) | Agora (#157) | Comentário |
 |---|:--:|:--:|---|
 | **Round-trip interno (`.repx`/`.repjson`)** | ~98% | **~98%** | Praticamente lossless; auto-wiring por convenção |
-| **Render** | ~90% | **~95%** | BackColor, TextDecoration, Image Sizing, multi-coluna snake, ColSpan, Rectangle-container + clip; paginação completa (PrintOnLastPage, CanShrink encolhe banda, split de banda por elemento); faltam ticks de gauge, RowSpan |
+| **Render** | ~90% | **~96%** | BackColor, BackgroundGradient, TextDecoration, Image Sizing, multi-coluna snake, ColSpan, Rectangle-container + clip; paginação completa (PrintOnLastPage, CanShrink encolhe banda, split de banda por elemento, **paginação row-level do Tablix/matrix + header repetido**); faltam ticks de gauge, RowSpan explícito |
 | **Code-first** | ~88% | **~91%** | API cobre quase tudo; faltam spans no Tablix builder fluente, edição aninhada |
 | **Designer** | ~82% | **~85%** | Toolbox completo + edição aninhada de Rectangle; faltam editores ricos (TextRuns, Tablix inline, spans) e canvas WYSIWYG real |
 | **Model** | ~80% | **~85%** | Hidden/Nullable/AllowBlank, DataSetName, ColSpan/RowSpan, Sizing, IsVisual; faltam TablixHeader/Body nativos, N-DetailBands, ReportSections |
@@ -213,7 +213,7 @@ Legenda: ✅ pleno · 🟡 parcial · 🔴 ausente/crítico. (% e dimensões atu
 | TablixRow (Height) | 🔴 | 🔴 | 🔴 | 🔴 | ✅ | 🔴 | 🔴 | Altura inferida; sem metadado por linha | M | 2 |
 | TablixCell / CellContents | 🟡 | 🟡 | 🟡 | 🔴 | 🟡 | 🟡 | 🟡 | Sem ColSpan/RowSpan; conteúdo só primitivo em matrix | M | 2 |
 | TablixCorner | 🔴 | 🔴 | 🔴 | 🔴 | 🟡 | ✅ | 🟡 | Canto em `Cells[(0,0)]`; sem geometria/spanning real | M | 2 |
-| Repeat Column/Row Headers | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | Paginador não repete cabeçalho entre páginas | M | 2 |
+| Repeat Column/Row Headers | ✅ | ✅ | ✅ | 🔴 | ✅ | ✅ | 🔴 | Matrix > página pagina por linha e reimprime o cabeçalho de coluna no topo de cada página (#197); `RepeatColumnHeaders`/`KeepTogether`. RDL import da flag + editor Designer = follow-up | M | 2 |
 | Fixed Column/Row Headers | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | N/A em saída estática/PDF | M | 3 |
 | GroupsBeforeRowHeaders | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | Layout outline fixo | L | 3 |
 | LayoutDirection (LTR/RTL) | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | Sempre LTR | S | 3 |
@@ -257,7 +257,7 @@ Legenda: ✅ pleno · 🟡 parcial · 🔴 ausente/crítico. (% e dimensões atu
 | Alignment H/V | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — | S | 1 |
 | WordWrap | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — | S | 1 |
 | BackgroundImage | 🟡 | ✅ | ✅ | 🟡 | ✅ | ✅ | ✅ | Fase B: External (path/expr) esticado, render+4-serial+import+Designer-preserve (#134); Embedded/tiling/MaxSize = fase C | L | 2 |
-| BackgroundGradient | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | Ausência total | L | 3 |
+| BackgroundGradient | ✅ | ✅ | ✅ | 🟡 | ✅ | ✅ | ✅ | Fill linear/radial 2 cores + direção, RDL-aligned (#16/#179/#180); 3 modos + render Skia + CF; RDL import do `<BackgroundGradient>` = follow-up | L | 2 |
 | TextDecoration (Overline) | 🟡 | 🟡 | ✅ | n/a | 🟡 | ✅ | 🟡 | Underline/Strikeout ok; falta Overline | S | 3 |
 | Visibility.Hidden (expr) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Importa `<Hidden>` constante e expressão (#89) | S | 1 |
 | Visibility.ToggleItem (drill) | 🟡 | ✅ | ✅ | 🔴 | 🔴 | ✅ | ✅ | Modelo ok; render não tem UI interativa (limite arquitetural Skia) | L | 2 |
@@ -294,7 +294,7 @@ Legenda: ✅ pleno · 🟡 parcial · 🔴 ausente/crítico. (% e dimensões atu
 | First/Last/CountDistinct | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Reduções por escopo (#93) | M | 2 |
 | Lookup | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — | S | 1 |
 | LookupSet | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — | S | 2 |
-| Multilookup | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | Ausente (array param) | M | 3 |
+| Multilookup | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | `MultiLookup(src, dest, result, dataset)` — array de chaves (#146); par com Lookup/LookupSet | M | 2 |
 | Aggregate (provider) | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | Sem extension point de provider | L | 3 |
 | CountRows | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Posicional com escopo (#93) | S | 2 |
 | CountDistinct | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Redução por escopo (#93) | S | 2 |
