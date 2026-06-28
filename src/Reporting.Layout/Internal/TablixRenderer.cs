@@ -61,107 +61,11 @@ internal static class TablixRenderer
             return RenderMatrix(tablix, bounds, rows, ev, templates, baseCtx, namedStyles, out actualHeight);
         }
 
-        // Split cells into the header template (row 0) and the detail template (row 1),
-        // indexed by column. Column count is the widest column index seen.
-        var headerCells = new Dictionary<int, TablixCell>();
-        var detailCells = new Dictionary<int, TablixCell>();
-        int colCount = 0;
-        foreach (var cell in tablix.Cells)
-        {
-            // A cell occupies ColumnSpan columns, so the grid is as wide as the furthest span reaches.
-            colCount = Math.Max(colCount, cell.ColumnIndex + Math.Max(1, cell.ColumnSpan));
-            if (cell.RowIndex == 0)
-            {
-                headerCells[cell.ColumnIndex] = cell;
-            }
-            else if (cell.RowIndex == 1)
-            {
-                detailCells[cell.ColumnIndex] = cell;
-            }
-        }
-
-        double x0 = bounds.X.ToMm(), y0 = bounds.Y.ToMm(), w = bounds.Width.ToMm();
-        if (colCount == 0 || w <= 1)
-        {
-            return list;
-        }
-
-        // Column left edges: proportional to ColumnWidths weights when supplied, else equal.
-        double[] colLeft = ComputeColumnEdges(tablix.ColumnWidths, colCount, x0, w);
-        bool hasHeader = headerCells.Count > 0;
-        double y = y0;
-
-        // Emits one template row honouring ColSpan, returning the set of column edges interior to a merged
-        // cell (so the grid omits the vertical line that would cut through it).
-        HashSet<int> EmitRow(Dictionary<int, TablixCell> cells, double rowY, bool bold, Color color, IReportExpressionContext ctx)
-        {
-            var interior = new HashSet<int>();
-            for (int c = 0; c < colCount;)
-            {
-                cells.TryGetValue(c, out var cell);
-                int span = cell is null ? 1 : Math.Clamp(cell.ColumnSpan, 1, colCount - c);
-                EmitStyledCell(list, cell?.Content, Text(cell?.Content, ev, templates, ctx),
-                    colLeft[c], rowY, colLeft[c + span] - colLeft[c], bold, color, ev, ctx, tablix.Id, namedStyles);
-                for (int k = c + 1; k < c + span; k++)
-                {
-                    interior.Add(k);
-                }
-                c += span;
-            }
-            return interior;
-        }
-
-        var headerInterior = new HashSet<int>();
-        if (hasHeader)
-        {
-            list.Add(Fill(x0, y, w, RowHeightMm, HeaderBg, tablix.Id));
-            headerInterior = EmitRow(headerCells, y, bold: true, HeaderText, baseCtx);
-            y += RowHeightMm;
-        }
-
-        var detailInterior = new HashSet<int>();
-        foreach (var row in rows)
-        {
-            var rowCtx = new RowScopedContext(baseCtx, row);
-            detailInterior = EmitRow(detailCells, y, bold: false, BodyText, rowCtx);
-            y += RowHeightMm;
-        }
-
-        double totalH = y - y0;
-        var pen = new PenStyle(GridColor, Unit.FromPoint(0.5));
-        int rowLines = (hasHeader ? 1 : 0) + rows.Count;
-        for (int r = 0; r <= rowLines; r++)
-        {
-            double ly = y0 + r * RowHeightMm;
-            list.Add(Line(x0, ly, x0 + w, ly, pen, tablix.Id));
-        }
-        // Outer vertical edges run full height; interior edges are split per band and skipped where they'd
-        // cut through a horizontally-merged (ColSpan) cell.
-        list.Add(Line(x0, y0, x0, y0 + totalH, pen, tablix.Id));
-        list.Add(Line(colLeft[colCount], y0, colLeft[colCount], y0 + totalH, pen, tablix.Id));
-        double detailTop = hasHeader ? y0 + RowHeightMm : y0;
-        for (int c = 1; c < colCount; c++)
-        {
-            double lx = colLeft[c];
-            bool hIn = hasHeader && headerInterior.Contains(c);
-            bool dIn = detailInterior.Contains(c);
-            if (!hIn && !dIn)
-            {
-                list.Add(Line(lx, y0, lx, y0 + totalH, pen, tablix.Id)); // common case: full-height line
-                continue;
-            }
-            if (hasHeader && !hIn)
-            {
-                list.Add(Line(lx, y0, lx, y0 + RowHeightMm, pen, tablix.Id));
-            }
-            if (!dIn)
-            {
-                list.Add(Line(lx, detailTop, lx, y0 + totalH, pen, tablix.Id));
-            }
-        }
-
-        actualHeight = Unit.FromMm(totalH);
-        return list;
+        // Flat table mode: a header template row (row 0) plus one detail row (row 1) per record. The full render
+        // delegates to the windowing core with sliceStart < 0 (draw every row) — RenderFlatSlice reuses the same
+        // core to paginate a table taller than a page by row (mirrors the matrix path).
+        return RenderFlatCore(tablix, bounds, rows, ev, templates, baseCtx, namedStyles,
+            sliceStart: -1, sliceMaxHeightMm: 0, out _, out _, out actualHeight);
     }
 
     /// <summary>Renders a crosstab with <b>nested</b> row and column groups. Each row-group level is a
@@ -202,6 +106,170 @@ internal static class TablixRenderer
         out Unit sliceHeight)
         => RenderMatrixCore(tablix, bounds, rows, ev, templates, baseCtx, namedStyles,
             Math.Max(0, startRow), maxHeight.ToMm(), out consumedRows, out nextRow, out sliceHeight);
+
+    /// <summary>Renders a vertical SLICE of a FLAT table beginning at detail-row <paramref name="startRow"/> that
+    /// fits within <paramref name="maxHeight"/>. The header row reprints atop each slice when
+    /// <see cref="TablixElement.RepeatColumnHeaders"/> is true (default), so a flat table taller than a page
+    /// continues across pages with its column headers intact. <paramref name="nextRow"/> is the first un-emitted
+    /// detail row, or <c>-1</c> when the table is fully drawn.</summary>
+    internal static List<LayoutPrimitive> RenderFlatSlice(
+        TablixElement tablix,
+        Rectangle bounds,
+        IReadOnlyList<IReadOnlyList<KeyValuePair<string, object?>>> rows,
+        ExpressionEvaluator ev,
+        TemplateRenderer templates,
+        IReportExpressionContext baseCtx,
+        IReadOnlyDictionary<string, Style>? namedStyles,
+        int startRow,
+        Unit maxHeight,
+        out int consumedRows,
+        out int nextRow,
+        out Unit sliceHeight)
+        => RenderFlatCore(tablix, bounds, rows, ev, templates, baseCtx, namedStyles,
+            Math.Max(0, startRow), maxHeight.ToMm(), out consumedRows, out nextRow, out sliceHeight);
+
+    /// <summary>Flat-table renderer with row windowing. <paramref name="sliceStart"/> &lt; 0 draws every row (the
+    /// classic full render); otherwise it draws <c>rows[windowStart..windowEnd]</c> — the rows that fit
+    /// <paramref name="sliceMaxHeightMm"/> after the (optionally reprinted) header — and reports
+    /// <paramref name="consumedRows"/>/<paramref name="nextRow"/> so the paginator can continue on the next page.
+    /// <paramref name="actualHeight"/> is the emitted slice's height.</summary>
+    private static List<LayoutPrimitive> RenderFlatCore(
+        TablixElement tablix,
+        Rectangle bounds,
+        IReadOnlyList<IReadOnlyList<KeyValuePair<string, object?>>> rows,
+        ExpressionEvaluator ev,
+        TemplateRenderer templates,
+        IReportExpressionContext baseCtx,
+        IReadOnlyDictionary<string, Style>? namedStyles,
+        int sliceStart,
+        double sliceMaxHeightMm,
+        out int consumedRows,
+        out int nextRow,
+        out Unit actualHeight)
+    {
+        var list = new List<LayoutPrimitive>();
+        consumedRows = 0;
+        nextRow = -1;
+        actualHeight = Unit.Zero;
+
+        // Split cells into the header template (row 0) and the detail template (row 1), indexed by column.
+        // Column count is the widest column index seen.
+        var headerCells = new Dictionary<int, TablixCell>();
+        var detailCells = new Dictionary<int, TablixCell>();
+        int colCount = 0;
+        foreach (var cell in tablix.Cells)
+        {
+            // A cell occupies ColumnSpan columns, so the grid is as wide as the furthest span reaches.
+            colCount = Math.Max(colCount, cell.ColumnIndex + Math.Max(1, cell.ColumnSpan));
+            if (cell.RowIndex == 0)
+            {
+                headerCells[cell.ColumnIndex] = cell;
+            }
+            else if (cell.RowIndex == 1)
+            {
+                detailCells[cell.ColumnIndex] = cell;
+            }
+        }
+
+        double x0 = bounds.X.ToMm(), y0 = bounds.Y.ToMm(), w = bounds.Width.ToMm();
+        if (colCount == 0 || w <= 1)
+        {
+            return list;
+        }
+
+        // Column left edges: proportional to ColumnWidths weights when supplied, else equal.
+        double[] colLeft = ComputeColumnEdges(tablix.ColumnWidths, colCount, x0, w);
+
+        // Row windowing: a full render (sliceStart < 0) draws every row; a slice draws rows[windowStart..windowEnd]
+        // that fit maxHeight after the header. The header reprints atop each slice when RepeatColumnHeaders (the
+        // default), so a flat table taller than a page continues with its column headers intact. Always emit ≥1
+        // row per slice so pagination terminates even when a single row is taller than the remaining space.
+        bool isSlice = sliceStart >= 0;
+        bool hasHeader = headerCells.Count > 0;
+        int windowStart = Math.Max(0, sliceStart);
+        bool renderHeader = hasHeader && (!isSlice || windowStart == 0 || tablix.RepeatColumnHeaders);
+        double effHeaderH = renderHeader ? RowHeightMm : 0;
+        int windowCount = isSlice
+            ? Math.Max(1, (int)Math.Floor((sliceMaxHeightMm - effHeaderH) / RowHeightMm))
+            : rows.Count;
+        int windowEnd = Math.Min(windowStart + windowCount, rows.Count);
+        consumedRows = Math.Max(0, windowEnd - windowStart);
+        nextRow = windowEnd < rows.Count ? windowEnd : -1;
+
+        double y = y0;
+
+        // Emits one template row honouring ColSpan, returning the set of column edges interior to a merged
+        // cell (so the grid omits the vertical line that would cut through it).
+        HashSet<int> EmitRow(Dictionary<int, TablixCell> cells, double rowY, bool bold, Color color, IReportExpressionContext ctx)
+        {
+            var interior = new HashSet<int>();
+            for (int c = 0; c < colCount;)
+            {
+                cells.TryGetValue(c, out var cell);
+                int span = cell is null ? 1 : Math.Clamp(cell.ColumnSpan, 1, colCount - c);
+                EmitStyledCell(list, cell?.Content, Text(cell?.Content, ev, templates, ctx),
+                    colLeft[c], rowY, colLeft[c + span] - colLeft[c], bold, color, ev, ctx, tablix.Id, namedStyles);
+                for (int k = c + 1; k < c + span; k++)
+                {
+                    interior.Add(k);
+                }
+                c += span;
+            }
+            return interior;
+        }
+
+        var headerInterior = new HashSet<int>();
+        if (renderHeader)
+        {
+            list.Add(Fill(x0, y, w, RowHeightMm, HeaderBg, tablix.Id));
+            headerInterior = EmitRow(headerCells, y, bold: true, HeaderText, baseCtx);
+            y += RowHeightMm;
+        }
+
+        var detailInterior = new HashSet<int>();
+        for (int i = windowStart; i < windowEnd; i++)
+        {
+            var rowCtx = new RowScopedContext(baseCtx, rows[i]);
+            detailInterior = EmitRow(detailCells, y, bold: false, BodyText, rowCtx);
+            y += RowHeightMm;
+        }
+
+        double totalH = y - y0;
+        var pen = new PenStyle(GridColor, Unit.FromPoint(0.5));
+        int rowLines = (renderHeader ? 1 : 0) + consumedRows;
+        for (int r = 0; r <= rowLines; r++)
+        {
+            double ly = y0 + r * RowHeightMm;
+            list.Add(Line(x0, ly, x0 + w, ly, pen, tablix.Id));
+        }
+        // Outer vertical edges run full height; interior edges are split per band and skipped where they'd
+        // cut through a horizontally-merged (ColSpan) cell.
+        list.Add(Line(x0, y0, x0, y0 + totalH, pen, tablix.Id));
+        list.Add(Line(colLeft[colCount], y0, colLeft[colCount], y0 + totalH, pen, tablix.Id));
+        double detailTop = renderHeader ? y0 + RowHeightMm : y0;
+        for (int c = 1; c < colCount; c++)
+        {
+            double lx = colLeft[c];
+            bool hIn = renderHeader && headerInterior.Contains(c);
+            bool dIn = detailInterior.Contains(c);
+            if (!hIn && !dIn)
+            {
+                list.Add(Line(lx, y0, lx, y0 + totalH, pen, tablix.Id)); // common case: full-height line
+                continue;
+            }
+            if (renderHeader && !hIn)
+            {
+                list.Add(Line(lx, y0, lx, y0 + RowHeightMm, pen, tablix.Id));
+            }
+            if (!dIn)
+            {
+                list.Add(Line(lx, detailTop, lx, y0 + totalH, pen, tablix.Id));
+            }
+        }
+
+        actualHeight = Unit.FromMm(totalH);
+        return list;
+    }
 
     private static List<LayoutPrimitive> RenderMatrixCore(
         TablixElement tablix,
