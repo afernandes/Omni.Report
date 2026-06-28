@@ -35,6 +35,11 @@ internal sealed class BandRenderer
     /// Null/empty = no named styles.</summary>
     private readonly IReadOnlyDictionary<string, Style>? _namedStyles;
 
+    /// <summary>Per-pass cache of a paginating matrix's grid height — keyed by element reference. The height is
+    /// stable within a pagination pass (the dataset is fixed; height depends only on the row count), so measuring
+    /// it once avoids re-rendering/re-aggregating the matrix on every <see cref="EffectiveElementBottom"/> call.</summary>
+    private readonly Dictionary<ReportElement, Unit> _matrixGridHeight = new(ReferenceEqualityComparer.Instance);
+
     public BandRenderer(
         ExpressionEvaluator evaluator,
         TemplateRenderer templates,
@@ -149,9 +154,15 @@ internal sealed class BandRenderer
         // declared bounds (unchanged behaviour). Mirrors the height RenderElement grows the band to.
         if (CanPaginateMatrix(element))
         {
-            var tx = (TablixElement)element;
-            var probe = new Rectangle(element.Bounds.X, element.Bounds.Y, element.Bounds.Width, element.Bounds.Height);
-            _ = TablixRenderer.Render(tx, probe, ResolveRows(tx.DataSetName), _evaluator, _templates, ctx, _namedStyles, out var gridHeight);
+            // Cache the grid height per element reference — it's stable within the pass, and this method is
+            // called several times per matrix (band Measure + the split decision), each re-aggregating the data.
+            if (!_matrixGridHeight.TryGetValue(rawElement, out var gridHeight))
+            {
+                var tx = (TablixElement)element;
+                var probe = new Rectangle(element.Bounds.X, element.Bounds.Y, element.Bounds.Width, element.Bounds.Height);
+                _ = TablixRenderer.Render(tx, probe, ResolveRows(tx.DataSetName), _evaluator, _templates, ctx, _namedStyles, out gridHeight);
+                _matrixGridHeight[rawElement] = gridHeight;
+            }
             return element.Bounds.Y + (gridHeight > element.Bounds.Height ? gridHeight : element.Bounds.Height);
         }
         return element.Bounds.Bottom;
