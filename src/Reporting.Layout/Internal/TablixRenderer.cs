@@ -241,8 +241,10 @@ internal static class TablixRenderer
         }
         string valueExpr = body?.Expression ?? string.Empty;
         // Resolve the body cell template's style (named base ← inline; conditional formats are out of scope here —
-        // matrix aggregate cells have no per-cell row context). Its ForeColor/Font/alignment style the value cells.
+        // matrix aggregate cells have no per-cell row context). Its ForeColor/Font/alignment style the value cells,
+        // and its BackColor/gradient fills them (bodyBrush; null = no fill).
         var bodyStyle = body is null ? Style.Default : StyleResolver.WithNamedBase(body.Style, namedStyles);
+        var bodyBrush = StyleResolver.BackgroundBrush(bodyStyle);
         string? format = bodyStyle.Format;
         string cornerText = (corner as LabelElement)?.Text ?? string.Empty;
 
@@ -456,8 +458,15 @@ internal static class TablixRenderer
                 for (int vIdx = 0; vIdx < vcols.Count; vIdx++)
                 {
                     bool sub = vcols[vIdx].IsSubtotal;
+                    double cellX = x0 + (nRowLevels + vIdx) * colW;
+                    // Value cells honour the body template's BackColor/gradient FILL (solid or 2-colour) behind
+                    // the text — drawn first so the value sits on top. Subtotals keep the default header fill.
+                    if (!sub && bodyBrush is not null)
+                    {
+                        list.Add(FillBrush(cellX, y, colW, RowHeightMm, bodyBrush, tablix.Id));
+                    }
                     list.Add(CellText(FormatNumber(CellValue(i, i, vcols[vIdx]), format, baseCtx.Culture),
-                        x0 + (nRowLevels + vIdx) * colW, y, colW, bold: sub, sub ? HeaderText : BodyText, tablix.Id,
+                        cellX, y, colW, bold: sub, sub ? HeaderText : BodyText, tablix.Id,
                         cellStyle: sub ? null : bodyStyle)); // value cells honour the body template's style; subtotals stay default
                 }
             }
@@ -765,6 +774,16 @@ internal static class TablixRenderer
         {
             Bounds = Rect(xMm, yMm, wMm, hMm),
             Fill = new BrushStyle(color),
+            Pen = null,
+            SourceElementId = id,
+        };
+
+    // Fill with an arbitrary brush (solid or gradient) — used for value-cell backgrounds from the body template.
+    private static DrawRectanglePrimitive FillBrush(double xMm, double yMm, double wMm, double hMm, BrushStyle brush, string? id)
+        => new()
+        {
+            Bounds = Rect(xMm, yMm, wMm, hMm),
+            Fill = brush,
             Pen = null,
             SourceElementId = id,
         };

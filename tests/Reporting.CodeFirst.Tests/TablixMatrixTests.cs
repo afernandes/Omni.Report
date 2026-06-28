@@ -85,6 +85,28 @@ public class TablixMatrixTests
     }
 
     [Fact]
+    public async Task Matrix_value_cells_render_the_template_background_fill()
+    {
+        // The cell template's BackColor used to be ignored on value cells (only ForeColor/Font/alignment applied).
+        var fill = Color.FromRgb(254, 243, 199); // amber-100 background
+        var report = ReportBuilder.Create("Crosstab")
+            .DataSource("Vendas", Rows)
+            .ReportHeader(h => h.Height(60)
+                .Tablix(t => t
+                    .RowGroup("Fields.Regiao")
+                    .ColumnGroup("Fields.Mes")
+                    .Corner("Região")
+                    .Cell("Fields.Total", s => s with { BackColor = fill }))
+                .At(0, 0).Size(150, 40))
+            .Build();
+
+        var prims = (await report.PaginateAsync()).Pages.SelectMany(p => p.Primitives).ToList();
+        prims.OfType<DrawRectanglePrimitive>()
+            .Where(r => r.Fill is { } b && b.Color == fill)
+            .Should().NotBeEmpty("each value cell fills with the body template's BackColor");
+    }
+
+    [Fact]
     public async Task Nested_row_groups_render_both_levels_and_sum_each_leaf()
     {
         VendaDetalhada[] rows =
