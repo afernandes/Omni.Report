@@ -240,11 +240,13 @@ internal static class TablixRenderer
             if (cell.RowIndex >= 1 && cell.ColumnIndex >= 1 && cell.Content is TextBoxElement tb) body ??= tb;
         }
         string valueExpr = body?.Expression ?? string.Empty;
-        // Resolve the body cell template's style (named base ← inline; conditional formats are out of scope here —
-        // matrix aggregate cells have no per-cell row context). Its ForeColor/Font/alignment style the value cells,
-        // and its BackColor/gradient fills them (bodyBrush; null = no fill).
+        // Resolve the body cell template's style (named base ← inline). Its ForeColor/Font/alignment style the value
+        // cells and its BackColor/gradient fills them (bodyBrush; null = no fill). When the template carries
+        // CONDITIONAL FORMATS, those are evaluated PER CELL against the cell's aggregate (exposed as `Value`) — see
+        // the value-cell loop — so e.g. negative cells turn red; bodyHasCF gates that (cheap) path.
         var bodyStyle = body is null ? Style.Default : StyleResolver.WithNamedBase(body.Style, namedStyles);
         var bodyBrush = StyleResolver.BackgroundBrush(bodyStyle);
+        bool bodyHasCF = body is not null && body.ConditionalFormats.Count > 0;
         string? format = bodyStyle.Format;
         string cornerText = (corner as LabelElement)?.Text ?? string.Empty;
 
@@ -459,15 +461,25 @@ internal static class TablixRenderer
                 {
                     bool sub = vcols[vIdx].IsSubtotal;
                     double cellX = x0 + (nRowLevels + vIdx) * colW;
-                    // Value cells honour the body template's BackColor/gradient FILL (solid or 2-colour) behind
-                    // the text — drawn first so the value sits on top. Subtotals keep the default header fill.
-                    if (!sub && bodyBrush is not null)
+                    var cellVal = CellValue(i, i, vcols[vIdx]);
+                    // Per-cell style: when the template carries conditional formats, evaluate them against THIS cell's
+                    // aggregate (exposed as `Value` / `Fields.Value`) so e.g. negative cells turn red or high cells
+                    // fill amber. No CF → the static template style/fill (cheap path). Subtotals keep the header look.
+                    var cellStyle = bodyStyle;
+                    var cellBrush = bodyBrush;
+                    if (!sub && bodyHasCF)
                     {
-                        list.Add(FillBrush(cellX, y, colW, RowHeightMm, bodyBrush, tablix.Id));
+                        cellStyle = StyleResolver.Resolve(body!, ev, new ValueScopedContext(baseCtx, cellVal), namedStyles);
+                        cellBrush = StyleResolver.BackgroundBrush(cellStyle);
                     }
-                    list.Add(CellText(FormatNumber(CellValue(i, i, vcols[vIdx]), format, baseCtx.Culture),
+                    // FILL (solid or 2-colour gradient) drawn first so the value sits on top.
+                    if (!sub && cellBrush is not null)
+                    {
+                        list.Add(FillBrush(cellX, y, colW, RowHeightMm, cellBrush, tablix.Id));
+                    }
+                    list.Add(CellText(FormatNumber(cellVal, sub ? format : cellStyle.Format, baseCtx.Culture),
                         cellX, y, colW, bold: sub, sub ? HeaderText : BodyText, tablix.Id,
-                        cellStyle: sub ? null : bodyStyle)); // value cells honour the body template's style; subtotals stay default
+                        cellStyle: sub ? null : cellStyle)); // value cells honour the body template's style; subtotals stay default
                 }
             }
             y += RowHeightMm;

@@ -38,6 +38,7 @@ public sealed class TablixBuilder
     private string? _corner;
     private string? _cellExpression;
     private Func<Style, Style>? _cellStyle;
+    private readonly List<ConditionalFormat> _cellConditionalFormats = [];
     private bool _rowSubtotals;
     private bool _columnSubtotals;
     private string? _subtotalLabel;
@@ -75,6 +76,18 @@ public sealed class TablixBuilder
     {
         _cellExpression = valueExpression;
         _cellStyle = style;
+        return this;
+    }
+
+    /// <summary>Adds a CONDITIONAL FORMAT to the matrix body cell: when <paramref name="condition"/> holds for a
+    /// given intersection, <paramref name="style"/> overlays the base cell style. The condition sees that cell's
+    /// aggregate as <c>Value</c> (or <c>Fields.Value</c>) — e.g.
+    /// <c>.CellConditionalFormat("Value &lt; 0", Style.Default with { ForeColor = Color.Red })</c> paints the
+    /// negative cells red, or a <c>BackColor</c> overlay makes a heat-map. Call more than once; formats apply in
+    /// declaration order. Matrix mode only.</summary>
+    public TablixBuilder CellConditionalFormat(string condition, Style style)
+    {
+        _cellConditionalFormats.Add(new ConditionalFormat(condition, style));
         return this;
     }
 
@@ -138,7 +151,7 @@ public sealed class TablixBuilder
                 Cells = new EquatableArray<TablixCell>(
                 [
                     new TablixCell(0, 0, new LabelElement { Text = _corner ?? string.Empty, Bounds = Rectangle.Empty }),
-                    new TablixCell(1, 1, new TextBoxElement { Expression = _cellExpression ?? "0", Bounds = Rectangle.Empty, Style = _cellStyle?.Invoke(Style.Default) ?? Style.Default }),
+                    new TablixCell(1, 1, new TextBoxElement { Expression = _cellExpression ?? "0", Bounds = Rectangle.Empty, Style = _cellStyle?.Invoke(Style.Default) ?? Style.Default, ConditionalFormats = new EquatableArray<ConditionalFormat>(_cellConditionalFormats) }),
                 ]),
             };
         }

@@ -107,6 +107,60 @@ public class TablixMatrixTests
     }
 
     [Fact]
+    public async Task Matrix_cell_conditional_format_colours_by_the_cell_aggregate()
+    {
+        // CF on the body cell evaluates PER intersection against its aggregate, exposed as `Value`.
+        VendaRegional[] rows =
+        [
+            new("Sul",   "Jan", 100m),
+            new("Norte", "Jan", -40m), // negative intersection → matches Value < 0
+        ];
+        var red = Color.FromRgb(220, 38, 38);
+        var report = ReportBuilder.Create("Crosstab CF")
+            .DataSource("Vendas", rows)
+            .ReportHeader(h => h.Height(60)
+                .Tablix(t => t
+                    .RowGroup("Fields.Regiao")
+                    .ColumnGroup("Fields.Mes")
+                    .Corner("Região")
+                    .Cell("Fields.Total")
+                    .CellConditionalFormat("Value < 0", Style.Default with { ForeColor = red }))
+                .At(0, 0).Size(150, 40))
+            .Build();
+
+        var texts = (await report.PaginateAsync()).Pages.SelectMany(p => p.Primitives).OfType<DrawTextPrimitive>().ToList();
+        texts.First(t => t.Text.Contains("40")).Style.ForeColor.Should().Be(red, "the -40 cell matches Value < 0");
+        texts.First(t => t.Text.Contains("100")).Style.ForeColor.Should().NotBe(red, "the +100 cell does not");
+    }
+
+    [Fact]
+    public async Task Matrix_cell_conditional_format_fills_only_matching_cells_as_a_heat_map()
+    {
+        VendaRegional[] rows =
+        [
+            new("Sul",   "Jan", 500m), // >= 100 → amber
+            new("Norte", "Jan",  10m), // < 100 → no fill
+        ];
+        var amber = Color.FromRgb(254, 243, 199);
+        var report = ReportBuilder.Create("Heatmap")
+            .DataSource("Vendas", rows)
+            .ReportHeader(h => h.Height(60)
+                .Tablix(t => t
+                    .RowGroup("Fields.Regiao")
+                    .ColumnGroup("Fields.Mes")
+                    .Corner("R")
+                    .Cell("Fields.Total")
+                    .CellConditionalFormat("Value >= 100", Style.Default with { BackColor = amber }))
+                .At(0, 0).Size(150, 40))
+            .Build();
+
+        var prims = (await report.PaginateAsync()).Pages.SelectMany(p => p.Primitives).ToList();
+        prims.OfType<DrawRectanglePrimitive>()
+            .Where(r => r.Fill is { } b && b.Color == amber)
+            .Should().HaveCount(1, "only the >=100 cell (Sul/Jan=500) fills amber — the 10 cell does not");
+    }
+
+    [Fact]
     public async Task Nested_row_groups_render_both_levels_and_sum_each_leaf()
     {
         VendaDetalhada[] rows =
