@@ -101,10 +101,10 @@ public class DesignerStateAdvancedTests
         detail.AddElement(el);
         state.SelectedElement = el;
 
-        // Simulate Copy.
-        state.Clipboard = state.SelectedElement!.Clone();
+        // Simulate Copy (clipboard holds the whole selection — one element here).
+        state.Clipboard = state.SelectedElements.Select(e => e.Clone()).ToList();
         var copied = state.Clipboard;
-        copied.Should().NotBeNull();
+        copied.Should().ContainSingle();
 
         // Switch to a new tab.
         var newTab = state.OpenNewDocument("Outro");
@@ -114,7 +114,26 @@ public class DesignerStateAdvancedTests
         // Clipboard MUST survive — paste on a different document is a common pro-user flow
         // (same as Crystal Reports / SSRS report designer copy across reports).
         state.Clipboard.Should().BeSameAs(copied);
-        state.Clipboard!.Text.Should().Be("Copia");
+        state.Clipboard[0].Text.Should().Be("Copia");
+    }
+
+    [Fact]
+    public void Clipboard_holds_a_multi_element_selection()
+    {
+        var state = new DesignerState();
+        var detail = state.Report.FindBand(DesignerBandKind.Detail)!;
+        var a = new ElementViewModel(DesignerElementKind.Label, "a") { Text = "A" };
+        var b = new ElementViewModel(DesignerElementKind.Label, "b") { Text = "B" };
+        detail.AddElement(a);
+        detail.AddElement(b);
+        state.SelectMany([a, b]);
+        state.SelectedElements.Should().HaveCount(2);
+
+        // Copy captures the WHOLE selection (the regression: clipboard used to hold only the anchor).
+        state.Clipboard = state.SelectedElements.Select(e => e.Clone()).ToList();
+
+        state.Clipboard.Should().HaveCount(2);
+        state.Clipboard.Select(e => e.Text).Should().BeEquivalentTo(new[] { "A", "B" });
     }
 
     [Fact]

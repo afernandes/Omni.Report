@@ -178,8 +178,9 @@ public sealed class DesignerState : Notifying
         set => Set(ref _activeBand, value);
     }
 
-    /// <summary>Internal clipboard for cut/copy/paste — single-element scope for now.</summary>
-    public ElementViewModel? Clipboard { get; set; }
+    /// <summary>Internal clipboard for cut/copy/paste. Holds the whole copied selection (one or many elements),
+    /// so a multi-selection cut/copy round-trips. Empty = nothing to paste.</summary>
+    public IReadOnlyList<ElementViewModel> Clipboard { get; set; } = [];
 
     /// <summary>Optional in-memory data the host supplies so the Designer's <b>preview</b> can
     /// render data-bound elements (charts, map, tablix, …) without a live database — e.g. the
