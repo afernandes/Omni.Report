@@ -4,6 +4,7 @@ using Reporting.Styling;
 
 namespace Reporting.Elements;
 
+/// <summary>The plot type of a <see cref="ChartElement"/> — bar, line, pie, area, scatter, radar, bubble, or stock.</summary>
 public enum ChartKind
 {
     Bar,
@@ -33,6 +34,8 @@ public sealed record ChartSeries(
     [property: PropertyGrid(Order = 6, Label = "Alta (stock)")] string? HighExpression = null,
     [property: PropertyGrid(Order = 7, Label = "Baixa (stock)")] string? LowExpression = null);
 
+/// <summary>RDL <c>Chart</c> — a data visualisation of one or more <see cref="ChartSeries"/> rendered by
+/// <c>ChartRenderer</c>, with a configurable <see cref="Kind"/>, optional title, and legend.</summary>
 public sealed record ChartElement : ReportElement
 {
     [PropertyGrid(Category = "Gráfico", Order = 1, Label = "Tipo")]

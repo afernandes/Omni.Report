@@ -45,12 +45,14 @@ public abstract record LayoutPrimitive
     public bool IsVisual { get; init; }
 }
 
+/// <summary>Draws a run of text within <see cref="LayoutPrimitive.Bounds"/> using the given style.</summary>
 public sealed record DrawTextPrimitive : LayoutPrimitive
 {
     public required string Text { get; init; }
     public required TextStyle Style { get; init; }
 }
 
+/// <summary>Draws a straight line from <c>From</c> to <c>To</c> with the given pen.</summary>
 public sealed record DrawLinePrimitive : LayoutPrimitive
 {
     public required Point From { get; init; }
@@ -58,18 +60,21 @@ public sealed record DrawLinePrimitive : LayoutPrimitive
     public required PenStyle Pen { get; init; }
 }
 
+/// <summary>Draws a rectangle filling <see cref="LayoutPrimitive.Bounds"/>, optionally stroked and/or filled.</summary>
 public sealed record DrawRectanglePrimitive : LayoutPrimitive
 {
     public PenStyle? Pen { get; init; }
     public BrushStyle? Fill { get; init; }
 }
 
+/// <summary>Draws an ellipse inscribed in <see cref="LayoutPrimitive.Bounds"/>, optionally stroked and/or filled.</summary>
 public sealed record DrawEllipsePrimitive : LayoutPrimitive
 {
     public PenStyle? Pen { get; init; }
     public BrushStyle? Fill { get; init; }
 }
 
+/// <summary>Draws a raster image into <see cref="LayoutPrimitive.Bounds"/> using the configured sizing mode.</summary>
 public sealed record DrawImagePrimitive : LayoutPrimitive
 {
     public required EquatableArray<byte> Data { get; init; }

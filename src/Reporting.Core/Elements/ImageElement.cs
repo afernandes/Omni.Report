@@ -2,6 +2,7 @@ using Reporting.Common;
 
 namespace Reporting.Elements;
 
+/// <summary>How an <see cref="ImageElement"/> is scaled to fit its bounds — stretch, fit (letterbox), fill (crop), or native size.</summary>
 public enum ImageSizing
 {
     /// <summary>Stretch the image to fit the bounds (may distort aspect ratio).</summary>
@@ -17,6 +18,7 @@ public enum ImageSizing
     Native,
 }
 
+/// <summary>Where an <see cref="ImageElement"/> gets its bytes from — embedded inline, a file path, or a runtime expression.</summary>
 public enum ImageSourceKind
 {
     /// <summary>Image bytes are embedded inline (<see cref="ImageElement.InlineData"/>).</summary>
@@ -30,6 +32,8 @@ public enum ImageSourceKind
     Expression,
 }
 
+/// <summary>RDL <c>Image</c> — a raster picture sourced inline, from a path, or from an expression (<see cref="Source"/>),
+/// scaled to its bounds per <see cref="Sizing"/>.</summary>
 public sealed record ImageElement : ReportElement
 {
     public ImageSourceKind Source { get; init; } = ImageSourceKind.Path;

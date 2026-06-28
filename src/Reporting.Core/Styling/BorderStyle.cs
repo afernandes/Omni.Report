@@ -2,6 +2,7 @@ using Reporting.Geometry;
 
 namespace Reporting.Styling;
 
+/// <summary>One edge of a border: its line style, thickness, and color.</summary>
 public sealed record BorderSide(BorderLineStyle Style, Unit Thickness, Color Color)
 {
     public static readonly BorderSide None = new(BorderLineStyle.None, Unit.Zero, Color.Transparent);
@@ -9,6 +10,7 @@ public sealed record BorderSide(BorderLineStyle Style, Unit Thickness, Color Col
     public bool IsVisible => Style != BorderLineStyle.None && Thickness > Unit.Zero;
 }
 
+/// <summary>The four edges of an element's border (left, top, right, bottom), each independently styled.</summary>
 public sealed record Border(BorderSide Left, BorderSide Top, BorderSide Right, BorderSide Bottom)
 {
     public static readonly Border None = new(BorderSide.None, BorderSide.None, BorderSide.None, BorderSide.None);

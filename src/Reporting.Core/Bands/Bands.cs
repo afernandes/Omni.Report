@@ -5,6 +5,7 @@ using Reporting.Geometry;
 
 namespace Reporting.Bands;
 
+/// <summary>Identifies the role a band plays in the report layout (header, footer, group, or detail).</summary>
 public enum BandKind
 {
     ReportHeader,

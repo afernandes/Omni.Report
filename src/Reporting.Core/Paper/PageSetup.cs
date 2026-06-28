@@ -2,6 +2,7 @@ using Reporting.Geometry;
 
 namespace Reporting.Paper;
 
+/// <summary>Page orientation — whether the paper is taller than wide (portrait) or wider than tall (landscape).</summary>
 public enum Orientation
 {
     Portrait,
@@ -25,6 +26,7 @@ public sealed record PaperSize(string Name, Unit Width, Unit Height)
     public PaperSize Rotated() => new(Name, Height, Width);
 }
 
+/// <summary>Page layout for a report: paper size, orientation, margins, and multi-column flow.</summary>
 public sealed record PageSetup(
     PaperSize Paper,
     Orientation Orientation = Orientation.Portrait,

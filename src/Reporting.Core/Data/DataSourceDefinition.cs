@@ -29,6 +29,7 @@ public sealed record DataSourceDefinition(
     string? FilterExpression = null,
     EquatableArray<SortDescriptor> SortExpressions = default);
 
+/// <summary>Describes a single field exposed by a data source, with an optional CLR type and display name.</summary>
 public sealed record DataField(string Name, Type? FieldType = null, string? DisplayName = null);
 
 /// <summary>Master-detail relationship between two data sources.</summary>
