@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Reporting.Common;
 
@@ -28,7 +29,7 @@ public readonly struct EquatableDictionary<TKey, TValue>
     public IEnumerable<TKey> Keys => Items.Keys;
     public IEnumerable<TValue> Values => Items.Values;
     public bool ContainsKey(TKey key) => Items.ContainsKey(key);
-    public bool TryGetValue(TKey key, out TValue value) => Items.TryGetValue(key, out value!);
+    public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value) => Items.TryGetValue(key, out value);
 
     public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator() => Items.GetEnumerator();
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();

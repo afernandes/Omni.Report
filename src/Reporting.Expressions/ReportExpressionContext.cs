@@ -350,14 +350,14 @@ public sealed class ReportExpressionContext : IReportExpressionContext
                 SetCurrentRowNoSnapshot(row);
                 object? dest;
                 try { dest = _evaluator.Evaluate(destExpression, this); }
-                catch { continue; }
+                catch { continue; } // resilient: a row whose lookup-key expression fails is skipped, not fatal
                 if (!LookupKeyEquals(source, dest))
                 {
                     continue;
                 }
                 object? result;
                 try { result = _evaluator.Evaluate(resultExpression, this); }
-                catch { result = null; }
+                catch { result = null; } // resilient: a failed result expression yields null rather than aborting the lookup
                 if (!all)
                 {
                     return result;

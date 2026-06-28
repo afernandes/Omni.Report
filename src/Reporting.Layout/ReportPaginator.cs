@@ -225,7 +225,7 @@ public sealed partial class ReportPaginator : IReportPaginator
         if (IsNumeric(a) && IsNumeric(b))
         {
             try { return Convert.ToDecimal(a) == Convert.ToDecimal(b); }
-            catch { /* fall through */ }
+            catch (Exception ex) when (ex is FormatException or OverflowException or InvalidCastException) { /* not decimal-comparable → fall through to string compare */ }
         }
         return string.Equals(a.ToString(), b.ToString(), StringComparison.Ordinal);
     }
@@ -443,7 +443,7 @@ public sealed partial class ReportPaginator : IReportPaginator
         if (IsNumeric(a) && IsNumeric(b))
         {
             try { return Convert.ToDecimal(a).CompareTo(Convert.ToDecimal(b)); }
-            catch { /* fall through */ }
+            catch (Exception ex) when (ex is FormatException or OverflowException or InvalidCastException) { /* not decimal-comparable → fall through to string compare */ }
         }
         return string.CompareOrdinal(a.ToString(), b.ToString());
     }
@@ -658,7 +658,7 @@ public sealed partial class ReportPaginator : IReportPaginator
                 {
                     object? value;
                     try { value = _evaluator.Evaluate(calc.Expression, ctx); }
-                    catch { value = null; }
+                    catch { value = null; } // resilient by design: a bad calculated-field expression nulls the field, never aborts the render
                     ctx.SetCalculatedField(calc.Name, value);
                 }
             }
