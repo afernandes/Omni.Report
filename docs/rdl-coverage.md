@@ -31,7 +31,7 @@ Legenda:
 | DataBar | ✅ | ✅ | barra proporcional |
 | Sparkline | ✅ | ✅ | line / column / area |
 | Indicator | ✅ | ✅ | seta direcional / forma / rating por faixa |
-| Tablix | ✅ | ✅ | tabela plana e **matrix/pivô com grupos aninhados** (N níveis de linha × N de coluna; soma por interseção-folha; níveis externos com visual "outline") — **construível e editável no Designer** (toggle Crosstab + editores de grupo multi-linha) + code-first `.Tablix(t => t.RowGroup().RowGroup().ColumnGroup().Cell())` |
+| Tablix | ✅ | ✅ | tabela plana e **matrix/pivô com grupos aninhados** (N níveis de linha × N de coluna; soma por interseção-folha; níveis externos com visual "outline") — **construível e editável no Designer** (toggle Crosstab + editores de grupo multi-linha) + code-first `.Tablix(t => t.RowGroup().RowGroup().ColumnGroup().Cell())`. **Pagina por linha**: matrix > página quebra entre páginas reimprimindo o cabeçalho de coluna (`RepeatColumnHeaders`/`KeepTogether`, #197; Sample18) |
 | Map | ✅ | ✅ | **vetorial** 100% (Web Mercator + graticule + shapes GeoJSON + marcadores) **e tiles raster** — o engine calcula a grade de tiles Web Mercator e emite as imagens via `PaginationRequest.MapTileResolver` (plugável); `Basemap`/URL-template editável nas 3 superfícies (`.Basemap()` no code-first). O fetch HTTP em si fica num provider opt-in (rede), igual a imagem-por-URL |
 | Subreport | ✅ | ✅ | renderiza o filho (inline ou via resolver de id) na largura do subreport, com bindings de parâmetro avaliados no contexto pai; code-first `.Subreport()`/`.SubreportInline()` + editor no Designer |
 | Code (bloco C#) | — | ✅ | não é "render": **avalia** via pacote opt-in `Reporting.Expressions.Roslyn` (`Code.Metodo(...)`). ⚠ executa C#: use só com fontes confiáveis |
