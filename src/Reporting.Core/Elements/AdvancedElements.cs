@@ -79,17 +79,20 @@ public sealed record TablixElement : ReportElement
     /// <summary>When the matrix is taller than the page, it splits across pages by row (SSRS/XtraReports style)
     /// and reprints the column header at the top of each continuation page. Default <c>true</c>. Set
     /// <c>false</c> to print the column header only on the first page. Has no effect unless the matrix paginates.</summary>
+    [PropertyGrid(Category = "Paginação", Order = 1, Label = "Repetir cabeçalho de coluna")]
     public bool RepeatColumnHeaders { get; init; } = true;
 
     /// <summary>Keeps the whole matrix together on one page instead of splitting it across pages — the opt-out of
     /// row-level pagination (DevExpress <c>ContentSplitting</c> / SSRS <c>KeepTogether</c>). Default <c>false</c>
     /// (a tall matrix paginates). When <c>true</c>, a matrix taller than the page overflows rather than splitting.</summary>
+    [PropertyGrid(Category = "Paginação", Order = 2, Label = "Manter junto (não paginar)")]
     public bool KeepTogether { get; init; }
 
     /// <summary>Minimum width per column. Default <see cref="Unit.Zero"/> keeps the classic behaviour: every column
     /// shares the declared width equally (a wide matrix squeezes its columns thinner). When set, each column is at
     /// least this wide and, if the columns no longer fit the declared width, the matrix paginates HORIZONTALLY —
     /// splitting its columns across page tiles (SSRS "Across then Down"), repeating the row headers on each tile.</summary>
+    [PropertyGrid(Category = "Paginação", Order = 3, Label = "Largura mín. de coluna")]
     public Unit MinColumnWidth { get; init; } = Unit.Zero;
 }
 
