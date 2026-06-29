@@ -45,6 +45,9 @@
     <button type="button" class="sandbox-btn" data-testid="load-sample-matriz"
             @onclick='() => LoadSample("matriz")'
             title="Matriz/crosstab de 50 clientes × 4 produtos — pagina por linha em várias páginas (F5 p/ ver).">18 · Matriz (multi‑pág)</button>
+    <button type="button" class="sandbox-btn" data-testid="load-sample-crosstab-largo"
+            @onclick='() => LoadSample("crosstab-largo")'
+            title="Crosstab largo de 12 clientes × 18 produtos — pagina por COLUNA (tiling horizontal) em várias páginas (F5 p/ ver).">19 · Crosstab largo (tiling colunas)</button>
     <button type="button" class="sandbox-btn" data-testid="load-sample-mapa"
             @onclick='() => LoadSample("mapa")'
             title="Map — projeção Web Mercator, contorno do Brasil + graticule.">14 · Mapa</button>
@@ -154,6 +157,7 @@
                 "tablix"    => Sample13_TabelaProdutos.Build(),
                 "mapa"      => Sample14_MapaFiliais.Build(),
                 "matriz"    => Sample18_MatrizGrande.Build(),
+                "crosstab-largo" => Sample19_CrosstabLargo.Build(),
                 _           => Sample01_VendasPorCliente.Build(),
             };
             var vm = ReportDefinitionViewModel.FromDefinition(report.Definition);
