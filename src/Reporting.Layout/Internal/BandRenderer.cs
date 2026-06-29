@@ -107,27 +107,33 @@ internal sealed class BandRenderer
         => t.RowGroups.Any(g => !string.IsNullOrWhiteSpace(g.GroupExpression))
            && t.ColumnGroups.Any(g => !string.IsNullOrWhiteSpace(g.GroupExpression));
 
-    /// <summary>Renders one vertical slice of a Tablix at <paramref name="origin"/>, fitting within
-    /// <paramref name="maxHeight"/>, beginning at row <paramref name="startRow"/>. Routes to the matrix or flat
-    /// slice renderer. Returns the slice primitives, the slice's rendered height, and the next un-emitted row
-    /// (-1 when complete) so the paginator can continue a too-tall Tablix on the following page.</summary>
-    internal (IReadOnlyList<LayoutPrimitive> Primitives, Unit Height, int NextRow) RenderTablixSlice(
-        TablixElement tablix, Point origin, IReportExpressionContext ctx, int startRow, Unit maxHeight)
+    /// <summary>Renders one TILE of a Tablix at <paramref name="origin"/>, fitting within <paramref name="maxHeight"/>
+    /// (vertically) and the column window from <paramref name="startCol"/>, beginning at row
+    /// <paramref name="startRow"/>. Routes to the matrix or flat renderer. Returns the tile primitives, its height,
+    /// the next un-emitted row, and the next un-emitted value column (each <c>-1</c> when that axis is complete) so
+    /// the paginator can continue a too-tall / too-wide Tablix on the following page tiles.</summary>
+    internal (IReadOnlyList<LayoutPrimitive> Primitives, Unit Height, int NextRow, int NextCol) RenderTablixTile(
+        TablixElement tablix, Point origin, IReportExpressionContext ctx, int startRow, int startCol, Unit maxHeight, Unit maxWidth)
     {
+        // A matrix that opts into horizontal tiling (MinColumnWidth set) uses the page's available width as its
+        // budget so the columns tile across pages; any other Tablix renders at its declared width (unchanged).
+        var widthBudget = IsMatrix(tablix) && tablix.MinColumnWidth > Unit.Zero
+            ? maxWidth - tablix.Bounds.X
+            : tablix.Bounds.Width;
         var bounds = new Rectangle(
             origin.X + tablix.Bounds.X,
             origin.Y + tablix.Bounds.Y,
-            tablix.Bounds.Width,
+            widthBudget,
             maxHeight);
         var rows = ResolveRows(tablix.DataSetName);
-        int nextRow;
+        int nextRow, nextCol = -1;
         Unit height;
         var prims = IsMatrix(tablix)
-            ? TablixRenderer.RenderMatrixSlice(tablix, bounds, rows, _evaluator, _templates, ctx, _namedStyles,
-                startRow, maxHeight, out _, out nextRow, out height)
+            ? TablixRenderer.RenderMatrixTile(tablix, bounds, rows, _evaluator, _templates, ctx, _namedStyles,
+                startRow, maxHeight, startCol, out _, out nextRow, out _, out nextCol, out height)
             : TablixRenderer.RenderFlatSlice(tablix, bounds, rows, _evaluator, _templates, ctx, _namedStyles,
                 startRow, maxHeight, out _, out nextRow, out height);
-        return (prims, height, nextRow);
+        return (prims, height, nextRow, nextCol);
     }
 
     /// <summary>The effective bottom of a single element in band-space (its <c>Bounds.Y</c> + the height it

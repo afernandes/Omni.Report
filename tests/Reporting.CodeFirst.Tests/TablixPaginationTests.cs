@@ -48,6 +48,108 @@ public class TablixPaginationTests
 
     private static double PageMm(RenderedPage page) => page.PageSetup.PageHeight.ToPoints() / 72.0 * 25.4;
 
+    private static double RightMm(RenderedPage page) =>
+        page.Primitives.Count == 0 ? 0 : page.Primitives.Max(p => p.Bounds.Right.ToPoints()) / 72.0 * 25.4;
+
+    private static double PageWidthMm(RenderedPage page) => page.PageSetup.PageWidth.ToPoints() / 72.0 * 25.4;
+
+    // A crosstab of 3 clients (rows) × `cols` product columns — wide but short. With MinColumnWidth set the
+    // columns no longer fit the page, so the matrix paginates HORIZONTALLY (column tiles), repeating the row
+    // headers; with it unset the columns just squeeze onto one page (classic behaviour).
+    private static Report WideMatrix(int cols, double minColMm)
+    {
+        var rows = Enumerable.Range(1, 3).SelectMany(c =>
+            Enumerable.Range(1, cols).Select(m => new MatrixCell($"C{c}", $"M{m:00}", c * m * 1m))).ToArray();
+
+        return ReportBuilder.Create("WideMatrix")
+            .Page(p => p.A4().Portrait().Margins(15))
+            .DataSource("D", rows)
+            .ReportHeader(h => h.Height(20)
+                .Tablix(t =>
+                {
+                    t.RowGroup("Fields.Cli").ColumnGroup("Fields.Prod").Corner("Cliente").Cell("Fields.Val");
+                    if (minColMm > 0) { t.MinColumnWidth(minColMm); }
+                })
+                .At(0, 0).Size(180, 40))
+            .Detail(d => d.Height(0))
+            .Build();
+    }
+
+    [Fact]
+    public async Task A_wide_matrix_with_MinColumnWidth_paginates_across_columns()
+    {
+        var rendered = await WideMatrix(cols: 20, minColMm: 25).PaginateAsync();
+
+        rendered.Pages.Count.Should().BeGreaterThan(1, "20 columns at 25mm are far wider than one A4 page");
+        foreach (var pg in rendered.Pages)
+        {
+            RightMm(pg).Should().BeLessThanOrEqualTo(PageWidthMm(pg) + 0.5, "no column tile overflows the page width");
+        }
+    }
+
+    [Fact]
+    public async Task Each_column_tile_repeats_the_row_headers()
+    {
+        var rendered = await WideMatrix(cols: 20, minColMm: 25).PaginateAsync();
+
+        foreach (var pg in rendered.Pages)
+        {
+            var texts = pg.Primitives.OfType<DrawTextPrimitive>().Select(t => t.Text).ToList();
+            texts.Should().Contain("Cliente", "the corner/row-header reprints on every column tile");
+            texts.Should().Contain("C1").And.Contain("C2").And.Contain("C3", "every column tile shows all row headers");
+        }
+    }
+
+    [Fact]
+    public async Task Every_column_value_survives_horizontal_tiling()
+    {
+        var rendered = await WideMatrix(cols: 20, minColMm: 25).PaginateAsync();
+
+        var texts = rendered.Pages.SelectMany(p => p.Primitives).OfType<DrawTextPrimitive>().Select(t => t.Text).ToHashSet();
+        for (int m = 1; m <= 20; m++)
+        {
+            texts.Should().Contain($"M{m:00}", "no column header may be dropped when the matrix tiles across pages");
+        }
+    }
+
+    [Fact]
+    public async Task A_wide_matrix_without_MinColumnWidth_squeezes_onto_one_page()
+    {
+        var rendered = await WideMatrix(cols: 20, minColMm: 0).PaginateAsync();
+
+        rendered.Pages.Count.Should().Be(1, "without MinColumnWidth the columns squeeze to fit (no horizontal tiling)");
+    }
+
+    [Fact]
+    public async Task A_matrix_big_in_both_dimensions_tiles_rows_and_columns()
+    {
+        // 50 clients (rows) × 20 products (columns) with MinColumnWidth: too TALL and too WIDE — it must tile on
+        // BOTH axes (the nested row-band × column-tile loop, "Across then Down"). Regression guard for the 2D path.
+        var rows = Enumerable.Range(1, 50).SelectMany(c =>
+            Enumerable.Range(1, 20).Select(m => new MatrixCell($"C{c:000}", $"M{m:00}", c * m * 1m))).ToArray();
+
+        var report = ReportBuilder.Create("BigMatrix2D")
+            .Page(p => p.A4().Portrait().Margins(15))
+            .DataSource("D", rows)
+            .ReportHeader(h => h.Height(20)
+                .Tablix(t => t.RowGroup("Fields.Cli").ColumnGroup("Fields.Prod").Corner("Cliente").Cell("Fields.Val").MinColumnWidth(25))
+                .At(0, 0).Size(180, 260))
+            .Detail(d => d.Height(0))
+            .Build();
+
+        var rendered = await report.PaginateAsync();
+
+        rendered.Pages.Count.Should().BeGreaterThan(1, "a 50×20 matrix tiles on both axes");
+        foreach (var pg in rendered.Pages)
+        {
+            BottomMm(pg).Should().BeLessThanOrEqualTo(PageMm(pg) + 0.5, "no tile overflows the page height");
+            RightMm(pg).Should().BeLessThanOrEqualTo(PageWidthMm(pg) + 0.5, "no tile overflows the page width");
+        }
+        var texts = rendered.Pages.SelectMany(p => p.Primitives).OfType<DrawTextPrimitive>().Select(t => t.Text).ToHashSet();
+        for (int c = 1; c <= 50; c++) { texts.Should().Contain($"C{c:000}", "every row header survives 2D tiling"); }
+        for (int m = 1; m <= 20; m++) { texts.Should().Contain($"M{m:00}", "every column header survives 2D tiling"); }
+    }
+
     [Fact]
     public async Task A_tall_matrix_paginates_across_pages_without_overflow()
     {

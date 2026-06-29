@@ -14,7 +14,7 @@ namespace Reporting.Serialization.Tests;
 /// and <c>KeepTogether</c> (default false) — across .repx and .repjson, including the non-default opt-outs.</summary>
 public class TablixPaginationRoundTripTests
 {
-    private static ReportDefinition WithTablix(bool repeat, bool keep)
+    private static ReportDefinition WithTablix(bool repeat, bool keep, Unit minCol = default)
     {
         var tablix = new TablixElement
         {
@@ -28,6 +28,7 @@ public class TablixPaginationRoundTripTests
                 new TablixCell(1, 1, new TextBoxElement { Expression = "Fields.V", Bounds = Rectangle.Empty })),
             RepeatColumnHeaders = repeat,
             KeepTogether = keep,
+            MinColumnWidth = minCol,
         };
         var detail = new DetailBand(Unit.FromMm(6), EquatableArray.Create<ReportElement>(tablix));
         return new ReportDefinition("T", PageSetup.A4Portrait, detail);
@@ -53,6 +54,14 @@ public class TablixPaginationRoundTripTests
     public void Defaults_round_trip_unchanged()
     {
         var def = WithTablix(repeat: true, keep: false); // the defaults
+        new RepxSerializer().LoadFromBytes(new RepxSerializer().SaveToBytes(def)).Should().Be(def);
+        new RepJsonSerializer().LoadFromBytes(new RepJsonSerializer().SaveToBytes(def)).Should().Be(def);
+    }
+
+    [Fact]
+    public void MinColumnWidth_round_trips_through_both_formats()
+    {
+        var def = WithTablix(repeat: true, keep: false, minCol: Unit.FromMm(25)); // opt-in to horizontal column tiling
         new RepxSerializer().LoadFromBytes(new RepxSerializer().SaveToBytes(def)).Should().Be(def);
         new RepJsonSerializer().LoadFromBytes(new RepJsonSerializer().SaveToBytes(def)).Should().Be(def);
     }

@@ -548,6 +548,7 @@ internal static class RepxReader
             NoRowsMessage = el.Element("NoRowsMessage")?.Value,
             RepeatColumnHeaders = !string.Equals(el.Element("RepeatColumnHeaders")?.Value, "false", StringComparison.OrdinalIgnoreCase),
             KeepTogether = string.Equals(el.Element("KeepTogether")?.Value, "true", StringComparison.OrdinalIgnoreCase),
+            MinColumnWidth = el.Element("MinColumnWidth") is { } mcw ? Formats.ParseUnit(mcw.Value) : Unit.Zero,
         };
     }
 

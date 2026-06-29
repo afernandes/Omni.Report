@@ -84,14 +84,14 @@ internal static class TablixRenderer
         IReadOnlyDictionary<string, Style>? namedStyles,
         out Unit actualHeight)
         => RenderMatrixCore(tablix, bounds, rows, ev, templates, baseCtx, namedStyles,
-            sliceStart: -1, sliceMaxHeightMm: 0, out _, out _, out actualHeight);
+            sliceStart: -1, sliceMaxHeightMm: 0, sliceColStart: -1, out _, out _, out _, out _, out actualHeight);
 
-    /// <summary>Renders a vertical SLICE of the matrix beginning at body-row <paramref name="startRow"/> that
-    /// fits within <paramref name="maxHeight"/>. The column header is reprinted at the top of every slice when
-    /// <see cref="TablixElement.RepeatColumnHeaders"/> is true (default), so a matrix taller than a page
-    /// continues across pages with its headers intact. <paramref name="nextRow"/> is the first un-emitted body
-    /// row, or <c>-1</c> when the matrix is fully drawn.</summary>
-    internal static List<LayoutPrimitive> RenderMatrixSlice(
+    /// <summary>Renders a TILE of the matrix: the body rows from <paramref name="startRow"/> that fit
+    /// <paramref name="maxHeight"/> and — when <see cref="TablixElement.MinColumnWidth"/> engages horizontal
+    /// tiling — the value columns from <paramref name="startCol"/> that fit the bounds width. Headers (column +
+    /// row) reprint per tile (SSRS "Across then Down"). <paramref name="nextRow"/> / <paramref name="nextCol"/>
+    /// are the first un-emitted body row / value column, or <c>-1</c> when that axis is fully drawn.</summary>
+    internal static List<LayoutPrimitive> RenderMatrixTile(
         TablixElement tablix,
         Rectangle bounds,
         IReadOnlyList<IReadOnlyList<KeyValuePair<string, object?>>> rows,
@@ -101,11 +101,15 @@ internal static class TablixRenderer
         IReadOnlyDictionary<string, Style>? namedStyles,
         int startRow,
         Unit maxHeight,
+        int startCol,
         out int consumedRows,
         out int nextRow,
+        out int consumedCols,
+        out int nextCol,
         out Unit sliceHeight)
         => RenderMatrixCore(tablix, bounds, rows, ev, templates, baseCtx, namedStyles,
-            Math.Max(0, startRow), maxHeight.ToMm(), out consumedRows, out nextRow, out sliceHeight);
+            Math.Max(0, startRow), maxHeight.ToMm(), Math.Max(0, startCol),
+            out consumedRows, out nextRow, out consumedCols, out nextCol, out sliceHeight);
 
     /// <summary>Renders a vertical SLICE of a FLAT table beginning at detail-row <paramref name="startRow"/> that
     /// fits within <paramref name="maxHeight"/>. The header row reprints atop each slice when
@@ -281,14 +285,19 @@ internal static class TablixRenderer
         IReadOnlyDictionary<string, Style>? namedStyles,
         int sliceStart,
         double sliceMaxHeightMm,
+        int sliceColStart,
         out int consumedRows,
         out int nextRow,
+        out int consumedCols,
+        out int nextCol,
         out Unit actualHeight)
     {
         var list = new List<LayoutPrimitive>();
         actualHeight = bounds.Height;
         consumedRows = 0;
         nextRow = -1;
+        consumedCols = 0;
+        nextCol = -1;
 
         var rowGroups = tablix.RowGroups.Where(g => !string.IsNullOrWhiteSpace(g.GroupExpression)).ToList();
         var colGroups = tablix.ColumnGroups.Where(g => !string.IsNullOrWhiteSpace(g.GroupExpression)).ToList();
@@ -388,8 +397,25 @@ internal static class TablixRenderer
         }
 
         int totalCols = nRowLevels + vcols.Count;
-        double colW = w / totalCols;
+        // Column tiling (horizontal pagination): when MinColumnWidth is set and the columns no longer fit the
+        // available width at that minimum, render only a WINDOW of value columns (those that fit beside the row
+        // headers) and report nextCol so the paginator can continue the rest on a horizontal tile (SSRS "Across
+        // then Down"). Otherwise every column shares the width equally (classic squeeze-to-fit). Tiling is opt-in
+        // and only engaged when the paginator asks for a column window (sliceColStart >= 0); the full one-shot
+        // render keeps all columns.
+        double minColMm = tablix.MinColumnWidth.ToMm();
+        bool tiling = sliceColStart >= 0 && minColMm > 0 && totalCols * minColMm > w + 0.01;
+        double colW = tiling ? minColMm : w / totalCols;
+        int colsPerTile = tiling ? Math.Max(1, (int)Math.Floor(w / colW) - nRowLevels) : vcols.Count;
+        int colStart = tiling ? Math.Min(Math.Max(0, sliceColStart), vcols.Count) : 0;
+        int colEnd = Math.Min(colStart + colsPerTile, vcols.Count);
+        consumedCols = colEnd - colStart;
+        nextCol = tiling && colEnd < vcols.Count ? colEnd : -1;
+        int tileCols = nRowLevels + consumedCols;     // row-header columns + the windowed value columns
+        double tileW = tileCols * colW;                // actual rendered width of this tile (== w when not tiling)
         double headerH = nColLevels * RowHeightMm;
+        // On-page x of value column `vIdx` (shifted so the window starts right after the row headers).
+        double Vx(int vIdx) => x0 + (nRowLevels + (vIdx - colStart)) * colW;
 
         // Value of one visual column over a block of row leaves [rStart..rEnd] — a single leaf×leaf cell, a
         // row block × column block (subtotal), or the whole grid (grand total), all via the same sum.
@@ -455,25 +481,26 @@ internal static class TablixRenderer
         int windowEnd = Math.Min(windowStart + windowCount, plan.Count);
         int visibleRows = windowEnd - windowStart;
 
-        // Header band (corner + column-header rows). Reprinted at the top of each slice when enabled.
+        // Header band (corner + column-header rows). Reprinted at the top of each slice when enabled. Only the
+        // windowed value columns [colStart, colEnd) are drawn, shifted to sit right after the row headers (Vx).
         if (renderHeader)
         {
-            list.Add(Fill(x0, y0, w, headerH, HeaderBg, tablix.Id));
+            list.Add(Fill(x0, y0, tileW, headerH, HeaderBg, tablix.Id));
             list.Add(CellText(cornerText, x0, y0, colW, bold: true, HeaderText, tablix.Id));
 
-            // Column headers: leaf columns get each level's value spanning the columns it covers (true span);
-            // a subtotal/grand column gets one label across the whole header band.
-            int vh = 0;
-            while (vh < vcols.Count)
+            // Column headers: leaf columns get each level's value spanning the columns it covers (true span,
+            // clamped to the window); a subtotal/grand column gets one label.
+            int vh = colStart;
+            while (vh < colEnd)
             {
                 if (vcols[vh].IsSubtotal)
                 {
-                    list.Add(CellText(vcols[vh].Label, x0 + (nRowLevels + vh) * colW, y0, colW, bold: true, HeaderText, tablix.Id));
+                    list.Add(CellText(vcols[vh].Label, Vx(vh), y0, colW, bold: true, HeaderText, tablix.Id));
                     vh++;
                     continue;
                 }
-                int runEnd = vh; // a maximal run of consecutive leaf columns, spanned per level
-                while (runEnd + 1 < vcols.Count && !vcols[runEnd + 1].IsSubtotal) runEnd++;
+                int runEnd = vh; // a maximal run of consecutive leaf columns within the window, spanned per level
+                while (runEnd + 1 < colEnd && !vcols[runEnd + 1].IsSubtotal) runEnd++;
                 for (int cl = 0; cl < nColLevels; cl++)
                 {
                     int k = vh;
@@ -485,7 +512,7 @@ internal static class TablixRenderer
                         {
                             span++;
                         }
-                        list.Add(CellText(colLeaves[vcols[k].Leaf][cl], x0 + (nRowLevels + k) * colW, y0 + cl * RowHeightMm,
+                        list.Add(CellText(colLeaves[vcols[k].Leaf][cl], Vx(k), y0 + cl * RowHeightMm,
                             span * colW, bold: true, HeaderText, tablix.Id));
                         k += span;
                     }
@@ -503,12 +530,12 @@ internal static class TablixRenderer
             var rowPlan = plan[k];
             if (rowPlan.IsTotal)
             {
-                list.Add(Fill(x0, y, w, RowHeightMm, HeaderBg, tablix.Id));
+                list.Add(Fill(x0, y, tileW, RowHeightMm, HeaderBg, tablix.Id));
                 list.Add(CellText(rowPlan.Label, x0, y, nRowLevels * colW, bold: true, HeaderText, tablix.Id));
-                for (int vIdx = 0; vIdx < vcols.Count; vIdx++)
+                for (int vIdx = colStart; vIdx < colEnd; vIdx++)
                 {
                     list.Add(CellText(FormatNumber(CellValue(rowPlan.Start, rowPlan.End, vcols[vIdx]), format, baseCtx.Culture),
-                        x0 + (nRowLevels + vIdx) * colW, y, colW, bold: true, HeaderText, tablix.Id));
+                        Vx(vIdx), y, colW, bold: true, HeaderText, tablix.Id));
                 }
                 for (int d = rowPlan.ResetLevel; d < nRowLevels; d++) prevRowPrefix[d] = null; // next block redraws headers
             }
@@ -525,10 +552,10 @@ internal static class TablixRenderer
                         for (int d = rl + 1; d < nRowLevels; d++) prevRowPrefix[d] = null; // deeper levels restart
                     }
                 }
-                for (int vIdx = 0; vIdx < vcols.Count; vIdx++)
+                for (int vIdx = colStart; vIdx < colEnd; vIdx++)
                 {
                     bool sub = vcols[vIdx].IsSubtotal;
-                    double cellX = x0 + (nRowLevels + vIdx) * colW;
+                    double cellX = Vx(vIdx);
                     var cellVal = CellValue(i, i, vcols[vIdx]);
                     // Per-cell style: when the template carries conditional formats, evaluate them against THIS cell's
                     // aggregate (exposed as `Value` / `Fields.Value`) so e.g. negative cells turn red or high cells
@@ -559,9 +586,9 @@ internal static class TablixRenderer
         for (int r = 0; r <= gridRows; r++)
         {
             double ly = y0 + r * RowHeightMm;
-            list.Add(Line(x0, ly, x0 + w, ly, pen, tablix.Id));
+            list.Add(Line(x0, ly, x0 + tileW, ly, pen, tablix.Id));
         }
-        for (int c = 0; c <= totalCols; c++)
+        for (int c = 0; c <= tileCols; c++)
         {
             double lx = x0 + c * colW;
             list.Add(Line(lx, y0, lx, y0 + sliceH, pen, tablix.Id));

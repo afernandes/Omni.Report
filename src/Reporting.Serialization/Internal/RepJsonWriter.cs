@@ -3,6 +3,7 @@ using System.Text.Json.Nodes;
 using Reporting.Bands;
 using Reporting.Data;
 using Reporting.Elements;
+using Reporting.Geometry;
 using Reporting.Parameters;
 using Reporting.Styling;
 
@@ -579,6 +580,10 @@ internal static class RepJsonWriter
                 if (tablix.KeepTogether)
                 {
                     o["keepTogether"] = true; // default false
+                }
+                if (tablix.MinColumnWidth > Unit.Zero)
+                {
+                    o["minColumnWidth"] = Formats.FormatUnit(tablix.MinColumnWidth); // default 0 (no column tiling)
                 }
                 if (tablix.ColumnWidths.Count > 0)
                 {
