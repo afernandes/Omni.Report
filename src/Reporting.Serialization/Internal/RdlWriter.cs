@@ -1161,6 +1161,20 @@ internal static class RdlWriter
                 {
                     props.Add(("omni:GrandTotalLabel", tx.GrandTotalLabel));
                 }
+                // Pagination flags (#197 row-level / #209 column tiling) — native-only, preserved losslessly so a
+                // round-trip through .rdl keeps them (defaults omitted to keep the file clean).
+                if (!tx.RepeatColumnHeaders)
+                {
+                    props.Add(("omni:RepeatColumnHeaders", "false")); // default true
+                }
+                if (tx.KeepTogether)
+                {
+                    props.Add(("omni:KeepTogether", "true")); // default false
+                }
+                if (tx.MinColumnWidth > Unit.Zero)
+                {
+                    props.Add(("omni:MinColumnWidth", Formats.FormatUnit(tx.MinColumnWidth))); // default 0
+                }
                 break;
         }
         if (props.Count == 0)
