@@ -29,7 +29,7 @@ O engine cobre os 17 report items com render nativo (8 tipos de chart, matrix/pi
 |---|---|---|---|---|
 | 5 | **Tablix SortExpression renderiza** | ✅ **DONE** | `TablixRenderer.cs:227-485` (`GroupNode.Sort`, asc/desc, type-aware) | Sim (`TablixMatrixTests:293-310`) |
 | 6 | **Tablix subtotais / group footer** | ✅ **DONE** | `RowSubtotals` + `ColumnSubtotals` (`AdvancedElements.cs:55,63`); render `TablixRenderer.cs:244-400`; labels customizáveis | Sim (`TablixMatrixTests:98-273`) |
-| — | **Tablix paginação row-level** (matrix > página quebra entre páginas) | ✅ **DONE** | a matrix pagina POR LINHA repetindo o cabeçalho de coluna no topo de cada página (SSRS/XtraReports); `RepeatColumnHeaders` (default true) / `KeepTogether` nos 3 modos; `EmitTablixSliced`+`RenderMatrixSlice` (PR #197); Sample18 demonstra (#198). Horizontal (colunas largas) = follow-up | Sim (`TablixPaginationTests`, 7) |
+| — | **Tablix paginação 2D** (matrix/flat > página por linha E coluna) | ✅ **DONE** | pagina POR LINHA repetindo o cabeçalho de coluna (SSRS/XtraReports); `RepeatColumnHeaders`/`KeepTogether` nos 3 modos; `EmitTablixSliced` (matrix #197 / **flat #207**). **Horizontal** (colunas largas) FEITO: tiling 2D "Across then Down" opt-in via `MinColumnWidth` (**#209**), editável no Designer (#211). Sample18 (vertical) + Sample19 (horizontal) | Sim (`TablixPaginationTests`, 18) |
 | 7 | **Tablix merge/span** (colSpan/rowSpan) | ⚠️ **PARTIAL** | colSpan em headers de coluna ✅ (`TablixRenderer.cs:101-108`); modelo tem `RowSpan` (`AdvancedElements.cs:89-90`) mas **rowSpan no corpo não renderiza** | headers: sim · rowSpan: não |
 | 8 | **Tablix StaticMember/DynamicMember** | ❌ **MISSING** | crosstabs assimétricos (coluna fixa "Total" + dinâmicas). Grep zero. | Não |
 | 9 | **Drill-down / ToggleItem runtime** | 🔒 **VEDADO** (model ✅) | model+round-trip+autoria ✅ (`ToggleItemId`/`InitiallyHidden`, `ReportElement.cs:56-65`); chevron interativo **fora de escopo** (constraint de output estático) | round-trip: sim |
@@ -48,7 +48,7 @@ O engine cobre os 17 report items com render nativo (8 tipos de chart, matrix/pi
 | 17 | **Shared data sources / datasets** | ⚠️ **PARTIAL (por design)** | tudo embedded (`ReportDefinition.cs:25`) — escolha arquitetural (arquivo único); RDL separa | — |
 | 18 | **Export Word `.docx`** | ✅ **DONE** | `DocxExporter.cs` (grid tabular + rasterização de charts/gauges via `RegionRasterizer`) | Sim (`DocxExporterTests`, 13) |
 | 19 | **Export imagem público (PNG + TIFF) + XML** | ✅ **DONE** | PNG + **TIFF multi-página** (`Reporting.Output.Image`, encoder baseline manual sem dep, decode verificado via GDI+) + **XML** (`Reporting.Output.Xml`, PR #185), todos públicos | Sim (estrutural cross-plat + decode Windows) |
-| — | **Tablix matrix style-aware** | ✅ **DONE** | células de valor da matrix honram ForeColor/Font/alinhamento do template (antes só `Format`); `.Cell(expr, style)` no code-first (PR #184). Fill/CF por-célula na matrix = follow-up | Sim |
+| — | **Tablix matrix style-aware** | ✅ **DONE** | células de valor da matrix honram ForeColor/Font/alinhamento do template (antes só `Format`); `.Cell(expr, style)` no code-first (PR #184). **Fill** (BackColor/gradiente, #204) e **conditional format por-célula** via `Value`/`Fields.Value` (`.CellConditionalFormat`, #206) FEITOS | Sim (`TablixMatrixTests`) |
 
 ## Trabalho genuinamente restante (verificado)
 

@@ -33,7 +33,7 @@ declarada, não o estado atual.
 | Dimensão | Conformidade | Comentário |
 |---|:--:|---|
 | Round-trip interno (`.repx`/`.repjson`) | **~98%** | Praticamente lossless; auto-wiring por convenção |
-| Render | **~96%** | Estilo + gradiente, multi-coluna, Rectangle-container + clip, paginação completa (incl. **row-level do Tablix/matrix com header repetido**); faltam ticks de gauge e RowSpan explícito |
+| Render | **~96%** | Estilo + gradiente, multi-coluna, Rectangle-container + clip, paginação completa (incl. **paginação 2D do Tablix/matrix: por linha com header repetido + por coluna em tiles via `MinColumnWidth`**); faltam ticks de gauge e RowSpan explícito |
 | Code-first | **~91%** | API cobre quase tudo; faltam spans no Tablix builder fluente |
 | Model | **~85%** | Hidden/Nullable, DataSetName, ColSpan/RowSpan, Sizing; faltam TablixHeader/Body nativos, N-DetailBands |
 | Designer | **~85%** | Toolbox + edição aninhada; faltam editores ricos e canvas WYSIWYG real |
