@@ -742,6 +742,7 @@ internal static class RepxWriter
         if (t.NoRowsMessage is not null) content.Add(new XElement("NoRowsMessage", t.NoRowsMessage));
         if (!t.RepeatColumnHeaders) content.Add(new XElement("RepeatColumnHeaders", "false")); // default true
         if (t.KeepTogether) content.Add(new XElement("KeepTogether", "true")); // default false
+        if (t.MinColumnWidth > Unit.Zero) content.Add(new XElement("MinColumnWidth", Formats.FormatUnit(t.MinColumnWidth))); // default 0 (no column tiling)
         if (t.ColumnWidths.Count > 0)
         {
             content.Add(new XElement("ColumnWidths",

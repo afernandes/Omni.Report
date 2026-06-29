@@ -570,6 +570,7 @@ internal static class RepJsonReader
             NoRowsMessage = (string?)o["noRowsMessage"],
             RepeatColumnHeaders = (bool?)o["repeatColumnHeaders"] ?? true,
             KeepTogether = (bool?)o["keepTogether"] ?? false,
+            MinColumnWidth = o["minColumnWidth"] is { } mcw ? Formats.ParseUnit((string?)mcw) : Unit.Zero,
         };
     }
 

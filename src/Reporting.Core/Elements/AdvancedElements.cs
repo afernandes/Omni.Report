@@ -1,4 +1,5 @@
 using Reporting.Common;
+using Reporting.Geometry;
 using Reporting.Metadata;
 
 namespace Reporting.Elements;
@@ -84,6 +85,12 @@ public sealed record TablixElement : ReportElement
     /// row-level pagination (DevExpress <c>ContentSplitting</c> / SSRS <c>KeepTogether</c>). Default <c>false</c>
     /// (a tall matrix paginates). When <c>true</c>, a matrix taller than the page overflows rather than splitting.</summary>
     public bool KeepTogether { get; init; }
+
+    /// <summary>Minimum width per column. Default <see cref="Unit.Zero"/> keeps the classic behaviour: every column
+    /// shares the declared width equally (a wide matrix squeezes its columns thinner). When set, each column is at
+    /// least this wide and, if the columns no longer fit the declared width, the matrix paginates HORIZONTALLY —
+    /// splitting its columns across page tiles (SSRS "Across then Down"), repeating the row headers on each tile.</summary>
+    public Unit MinColumnWidth { get; init; } = Unit.Zero;
 }
 
 /// <summary>One axis of a Tablix grouping — name + group-key expression + sort.</summary>

@@ -519,7 +519,8 @@ public sealed partial class ReportPaginator : IReportPaginator
         // (which repeats on every subsequent page break too). A Report Header taller than a column — e.g. a
         // large crosstab placed here to render ONCE — is split element-by-element across pages (its matrix
         // paginates by row) instead of overflowing.
-        var splitReportHeader = def.ReportHeader is { } rh && bandRenderer.Measure(rh, ctx) > page.FullColumnHeight;
+        var splitReportHeader = def.ReportHeader is { } rh
+            && (bandRenderer.Measure(rh, ctx) > page.FullColumnHeight || rh.Elements.Any(IsColumnTilingMatrix));
         if (splitReportHeader)
         {
             // The Report Header will span pages, so the Page Header belongs at the TOP of page 1 (and BreakPage
@@ -689,7 +690,7 @@ public sealed partial class ReportPaginator : IReportPaginator
             // not cut mid-line in this static engine); otherwise it's placed as one unit on the page it fits.
             var detail = def.Detail;
             var detailHeight = bandRenderer.Measure(detail, ctx);
-            if (detailHeight > page.FullColumnHeight)
+            if (detailHeight > page.FullColumnHeight || detail.Elements.Any(IsColumnTilingMatrix))
             {
                 EmitBandSplit(detail, page, bandRenderer, ctx, def, bandTarget: detailHeight);
             }
@@ -828,6 +829,13 @@ public sealed partial class ReportPaginator : IReportPaginator
     /// this static engine, which keeps VerticalAlignment well-defined). Elements are cut on a clean horizontal
     /// line (top-to-bottom order). A single element taller than a whole column is emitted alone on its own page
     /// so pagination always makes progress and terminates.</summary>
+    /// <summary>A matrix that opts into horizontal column tiling (<see cref="Elements.TablixElement.MinColumnWidth"/>
+    /// set, and not KeepTogether). Such a matrix is always routed through the splitting path so
+    /// <see cref="EmitTablixSliced"/> can tile its columns — even when it fits the page vertically — since a
+    /// wide-but-short matrix would otherwise just squeeze its columns thinner instead of tiling.</summary>
+    private static bool IsColumnTilingMatrix(Elements.ReportElement el)
+        => el is Elements.TablixElement t && t.MinColumnWidth > Unit.Zero && BandRenderer.CanPaginateTablix(t);
+
     private void EmitBandSplit(IBand band, PageAccumulator page, BandRenderer renderer,
         ReportExpressionContext ctx, ReportDefinition def, Unit bandTarget)
     {
@@ -843,7 +851,9 @@ public sealed partial class ReportPaginator : IReportPaginator
             foreach (var el in remaining)
             {
                 var elemBottom = renderer.EffectiveElementBottom(el, ctx);
-                if (elemBottom - sliceTop <= available)
+                // A column-tiling matrix is never placed "whole" — it must go to the lone EmitTablixSliced path so
+                // its columns can tile, even when it fits the page vertically.
+                if (elemBottom - sliceTop <= available && !IsColumnTilingMatrix(el))
                 {
                     slice.Add(el);
                     if (elemBottom > sliceBottom)
@@ -942,10 +952,11 @@ public sealed partial class ReportPaginator : IReportPaginator
         }
     }
 
-    /// <summary>Paginates a Tablix (matrix OR flat) taller than a column by emitting it one page-slice at a time:
-    /// each slice fills the current column with as many rows as fit (with the header reprinted on top when
-    /// <see cref="Elements.TablixElement.RepeatColumnHeaders"/> is set), then a fresh column/page is started
-    /// until every row is drawn. Always emits ≥1 row per slice, so it terminates.</summary>
+    /// <summary>Paginates a Tablix (matrix OR flat) too big for one page, emitting it one page-tile at a time. A
+    /// tall Tablix splits by ROW; a matrix with <see cref="Elements.TablixElement.MinColumnWidth"/> set that is also
+    /// too WIDE splits by COLUMN as well — the column tiles of a row-band are emitted first, then the next row-band
+    /// (SSRS "Across then Down"), with the headers reprinted on every tile. Always emits ≥1 row (and ≥1 column) per
+    /// tile, so it terminates.</summary>
     private void EmitTablixSliced(Elements.TablixElement tablix, PageAccumulator page, BandRenderer renderer,
         ReportExpressionContext ctx, ReportDefinition def)
     {
@@ -958,23 +969,37 @@ public sealed partial class ReportPaginator : IReportPaginator
         var minSlice = Unit.FromMm((headerRows + 1) * Internal.TablixRenderer.RowHeightMm);
 
         int startRow = 0;
-        while (true)
+        while (true) // row-bands (down the rows)
         {
-            var available = page.RemainingInColumn;
-            if (!page.AtColumnTop && available < minSlice)
+            if (!page.AtColumnTop && page.RemainingInColumn < minSlice)
             {
                 BreakOrAdvance(page, def, renderer, ctx);
-                continue;
             }
-            var origin = new Point(page.Origin.X, page.CurrentY - tablix.Bounds.Y);
-            var (prims, height, nextRow) = renderer.RenderTablixSlice(tablix, origin, ctx, startRow, available);
-            page.Emit(prims, height);
-            if (nextRow < 0)
+            // One height for the whole row-band so every column tile of the band spans the SAME rows (they must
+            // line up). Captured once, here, then reused for each column tile on its fresh page.
+            var bandHeight = page.RemainingInColumn;
+            int startCol = 0;
+            int nextRowOfBand = -1;
+            while (true) // column tiles of this row-band (across the columns)
             {
-                break; // matrix fully drawn
+                var origin = new Point(page.Origin.X, page.CurrentY - tablix.Bounds.Y);
+                var (prims, height, nextRow, nextCol) =
+                    renderer.RenderTablixTile(tablix, origin, ctx, startRow, startCol, bandHeight, page.ColumnWidth);
+                page.Emit(prims, height);
+                nextRowOfBand = nextRow;
+                if (nextCol < 0)
+                {
+                    break; // every column of this row-band is drawn
+                }
+                startCol = nextCol;
+                BreakOrAdvance(page, def, renderer, ctx); // next column tile on a fresh column/page
             }
-            startRow = nextRow;
-            BreakOrAdvance(page, def, renderer, ctx); // continue the matrix on a fresh column/page
+            if (nextRowOfBand < 0)
+            {
+                break; // matrix fully drawn (all rows, all columns)
+            }
+            startRow = nextRowOfBand;
+            BreakOrAdvance(page, def, renderer, ctx); // next row-band on a fresh column/page
         }
     }
 

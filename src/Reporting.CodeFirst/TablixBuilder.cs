@@ -46,6 +46,7 @@ public sealed class TablixBuilder
     private string? _noRowsMessage;
     private bool _repeatColumnHeaders = true;
     private bool _keepTogether;
+    private Unit _minColumnWidth = Unit.Zero;
 
     /// <summary>Turns the Tablix into a matrix/crosstab: groups data rows by this expression down
     /// the left axis. Call more than once to <b>nest</b> row groups (outer→inner). Pair with
@@ -126,6 +127,15 @@ public sealed class TablixBuilder
     /// doesn't fit). The opt-out of row-level pagination — default is to paginate. Matrix mode.</summary>
     public TablixBuilder KeepTogether(bool enabled = true) { _keepTogether = enabled; return this; }
 
+    /// <summary>Sets a minimum width per column (in millimetres). A matrix whose columns no longer fit its declared
+    /// width then paginates HORIZONTALLY — splitting the columns across page tiles (SSRS "Across then Down"), with
+    /// the row headers repeated on each tile — instead of squeezing every column thinner. Default 0 keeps the
+    /// classic squeeze-to-fit. Matrix mode.</summary>
+    public TablixBuilder MinColumnWidth(double millimetres) { _minColumnWidth = Unit.FromMm(millimetres); return this; }
+
+    /// <summary>Sets a minimum width per column as a <see cref="Unit"/>; see <see cref="MinColumnWidth(double)"/>.</summary>
+    public TablixBuilder MinColumnWidth(Unit width) { _minColumnWidth = width; return this; }
+
     internal TablixElement Build()
     {
         // Matrix mode: one or more row groups + column groups (nested outer→inner) + a body value
@@ -148,6 +158,7 @@ public sealed class TablixBuilder
                 NoRowsMessage = _noRowsMessage,
                 RepeatColumnHeaders = _repeatColumnHeaders,
                 KeepTogether = _keepTogether,
+                MinColumnWidth = _minColumnWidth,
                 Cells = new EquatableArray<TablixCell>(
                 [
                     new TablixCell(0, 0, new LabelElement { Text = _corner ?? string.Empty, Bounds = Rectangle.Empty }),
@@ -184,6 +195,7 @@ public sealed class TablixBuilder
             NoRowsMessage = _noRowsMessage,
             RepeatColumnHeaders = _repeatColumnHeaders,
             KeepTogether = _keepTogether,
+            MinColumnWidth = _minColumnWidth,
         };
     }
 }
