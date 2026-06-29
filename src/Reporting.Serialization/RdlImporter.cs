@@ -1066,6 +1066,18 @@ public sealed class RdlImporter
                 {
                     tx = tx with { GrandTotalLabel = gl };
                 }
+                if (props.TryGetValue("omni:RepeatColumnHeaders", out var rch))
+                {
+                    tx = tx with { RepeatColumnHeaders = !string.Equals(rch, "false", StringComparison.OrdinalIgnoreCase) };
+                }
+                if (props.TryGetValue("omni:KeepTogether", out var kt))
+                {
+                    tx = tx with { KeepTogether = string.Equals(kt, "true", StringComparison.OrdinalIgnoreCase) };
+                }
+                if (props.TryGetValue("omni:MinColumnWidth", out var mcw))
+                {
+                    tx = tx with { MinColumnWidth = Formats.ParseUnit(mcw) };
+                }
                 return tx;
             default:
                 return el;

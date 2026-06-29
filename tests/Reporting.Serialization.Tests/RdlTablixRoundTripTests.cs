@@ -234,6 +234,31 @@ public class RdlTablixRoundTripTests
     }
 
     [Fact]
+    public void Pagination_flags_survive_the_rdl_round_trip()
+    {
+        // RepeatColumnHeaders/KeepTogether/MinColumnWidth (#197 row-level, #209 column tiling) are native-only —
+        // preserved losslessly via omni: CustomProperties so a .rdl round-trip keeps the pagination behaviour.
+        var rdl = new RdlExporter();
+        var imported = rdl.LoadFromBytes(Encoding.UTF8.GetBytes(MatrixRdl));
+        var tx = imported.ReportHeader!.Elements.OfType<TablixElement>().Single();
+        var def = imported with
+        {
+            ReportHeader = imported.ReportHeader with
+            {
+                Elements = new EquatableArray<ReportElement>(new ReportElement[]
+                {
+                    tx with { RepeatColumnHeaders = false, KeepTogether = true, MinColumnWidth = Unit.FromMm(25) },
+                }),
+            },
+        };
+
+        var back = rdl.LoadFromBytes(rdl.SaveToBytes(def)).ReportHeader!.Elements.OfType<TablixElement>().Single();
+        back.RepeatColumnHeaders.Should().BeFalse("RepeatColumnHeaders survives the .rdl round-trip");
+        back.KeepTogether.Should().BeTrue("KeepTogether survives the .rdl round-trip");
+        back.MinColumnWidth.Should().Be(Unit.FromMm(25), "MinColumnWidth survives the .rdl round-trip");
+    }
+
+    [Fact]
     public void A_keyless_tablix_group_warns_instead_of_corrupting_the_shape()
     {
         var rdl = new RdlExporter();
