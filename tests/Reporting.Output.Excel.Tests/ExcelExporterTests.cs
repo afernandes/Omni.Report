@@ -49,6 +49,26 @@ public class ExcelExporterTests
     }
 
     [Fact]
+    public async Task Sample19_wide_crosstab_tiles_columns_without_dropping_any_in_excel()
+    {
+        // Regression guard for horizontal column tiling (#209): a wide crosstab paginated by COLUMN must keep
+        // every column when exported to Excel (the exporter walks the tiled pages' primitives into the grid).
+        var rendered = await Sample19_CrosstabLargo.Build().PaginateAsync();
+        rendered.Pages.Count.Should().BeGreaterThan(1, "the wide crosstab tiles its columns across pages");
+
+        var bytes = new ExcelExporter().ExportToBytes(rendered);
+        using var ms = new MemoryStream(bytes);
+        using var wb = new XLWorkbook(ms);
+
+        var allText = wb.Worksheets.SelectMany(ws => ws.CellsUsed().Select(c => c.GetString())).ToList();
+        for (int p = 1; p <= 18; p++)
+        {
+            allText.Should().Contain(s => s.Contains($"P{p:00}"), $"column header P{p:00} must survive the tiling into Excel");
+        }
+        allText.Should().Contain(s => s.Contains("Cliente 01"), "the row headers survive the tiling too");
+    }
+
+    [Fact]
     public async Task Workbook_properties_are_set()
     {
         var rendered = await Sample02_EspelhoProdutos.Build().PaginateAsync();
