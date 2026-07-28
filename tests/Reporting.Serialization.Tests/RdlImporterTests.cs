@@ -170,6 +170,60 @@ public class RdlImporterTests
         leaf.Bounds.X.Should().Be(Unit.FromCm(0.25), "leaf bounds are RELATIVE to the inner rect");
     }
 
+    [Fact]
+    public void Visibility_toggle_item_imports_as_drilldown_instead_of_being_dropped()
+    {
+        // RDL <Visibility><ToggleItem> is the drill-down control: the named Textbox's chevron expands/collapses
+        // THIS element. A constant-true sibling <Hidden> then means "starts collapsed" (InitiallyHidden), NOT
+        // "permanently hidden" — so Visible must stay true. The model, .repx and .repjson already carried these
+        // fields; only the RDL importer dropped them, silently turning a drill-down report into a static one.
+        const string rdl = """
+            <Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition">
+              <Body><Height>6cm</Height><ReportItems>
+                <Textbox Name="Controle">
+                  <Top>0cm</Top><Left>0cm</Left><Width>4cm</Width><Height>0.6cm</Height>
+                  <Paragraphs><Paragraph><TextRuns><TextRun><Value>Grupo</Value></TextRun></TextRuns></Paragraph></Paragraphs>
+                </Textbox>
+                <Textbox Name="Detalhe">
+                  <Top>1cm</Top><Left>0cm</Left><Width>4cm</Width><Height>0.6cm</Height>
+                  <Visibility><Hidden>true</Hidden><ToggleItem>Controle</ToggleItem></Visibility>
+                  <Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!Total.Value</Value></TextRun></TextRuns></Paragraph></Paragraphs>
+                </Textbox>
+              </ReportItems></Body>
+            </Report>
+            """;
+
+        var def = new RdlImporter().ImportXml(rdl);
+        var detalhe = def.ReportHeader!.Elements.OfType<TextBoxElement>().Single(e => e.Expression == "Fields.Total");
+
+        detalhe.ToggleItemId.Should().Be("Controle", "the ToggleItem names the element that drives the drill-down");
+        detalhe.InitiallyHidden.Should().BeTrue("Hidden=true alongside a ToggleItem means 'starts collapsed'");
+        detalhe.Visible.Should().BeTrue("a collapsible element is not permanently hidden — the chevron expands it");
+    }
+
+    [Fact]
+    public void Hidden_without_a_toggle_item_stays_permanently_hidden()
+    {
+        // Guard for the other side of the rule: no ToggleItem → <Hidden>true</Hidden> keeps its plain meaning.
+        const string rdl = """
+            <Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition">
+              <Body><Height>6cm</Height><ReportItems>
+                <Textbox Name="Oculto">
+                  <Top>0cm</Top><Left>0cm</Left><Width>4cm</Width><Height>0.6cm</Height>
+                  <Visibility><Hidden>true</Hidden></Visibility>
+                  <Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!Total.Value</Value></TextRun></TextRuns></Paragraph></Paragraphs>
+                </Textbox>
+              </ReportItems></Body>
+            </Report>
+            """;
+
+        var oculto = new RdlImporter().ImportXml(rdl).ReportHeader!.Elements.OfType<TextBoxElement>().Single();
+
+        oculto.ToggleItemId.Should().BeNull();
+        oculto.InitiallyHidden.Should().BeFalse();
+        oculto.Visible.Should().BeFalse("without a ToggleItem, Hidden=true means permanently hidden");
+    }
+
     [Theory]
     [InlineData("2.5in")]
     [InlineData("21cm")]

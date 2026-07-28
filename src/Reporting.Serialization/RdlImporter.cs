@@ -980,6 +980,14 @@ public sealed class RdlImporter
     {
         var style = ReadStyle(item);
         var (visible, visExpr) = ReadVisibility(item);
+        var (toggleItemId, initiallyHidden) = ReadToggle(item);
+        // When a ToggleItem governs this element, a constant-true <Hidden> means "start collapsed"
+        // (InitiallyHidden), NOT permanently hidden — so override ReadVisibility's Visible=false back to
+        // true and let the drill-down chevron expand it. (Hidden=false or an expression is left untouched.)
+        if (toggleItemId is not null && initiallyHidden)
+        {
+            visible = true;
+        }
         var bookmark = ConvertOpt(Val(item, "Bookmark"));
         var docMap = ConvertOpt(Val(item, "DocumentMapLabel"));
         var action = ReadAction(El(item, "Action"));
@@ -992,18 +1000,18 @@ public sealed class RdlImporter
         }
         var withCommon = el switch
         {
-            TextBoxElement t => t with { Style = style ?? t.Style, Visible = visible, VisibleExpression = visExpr, Bookmark = bookmark, DocumentMapLabel = docMap, Action = action },
-            LabelElement l => l with { Style = style ?? l.Style, Visible = visible, VisibleExpression = visExpr, Bookmark = bookmark, DocumentMapLabel = docMap, Action = action },
-            RectangleElement r => r with { Style = style ?? r.Style, Visible = visible, VisibleExpression = visExpr, Bookmark = bookmark, DocumentMapLabel = docMap, Action = action },
-            ImageElement im => im with { Style = style ?? im.Style, Visible = visible, VisibleExpression = visExpr, Bookmark = bookmark, DocumentMapLabel = docMap, Action = action },
+            TextBoxElement t => t with { Style = style ?? t.Style, Visible = visible, VisibleExpression = visExpr, Bookmark = bookmark, DocumentMapLabel = docMap, Action = action, ToggleItemId = toggleItemId, InitiallyHidden = initiallyHidden },
+            LabelElement l => l with { Style = style ?? l.Style, Visible = visible, VisibleExpression = visExpr, Bookmark = bookmark, DocumentMapLabel = docMap, Action = action, ToggleItemId = toggleItemId, InitiallyHidden = initiallyHidden },
+            RectangleElement r => r with { Style = style ?? r.Style, Visible = visible, VisibleExpression = visExpr, Bookmark = bookmark, DocumentMapLabel = docMap, Action = action, ToggleItemId = toggleItemId, InitiallyHidden = initiallyHidden },
+            ImageElement im => im with { Style = style ?? im.Style, Visible = visible, VisibleExpression = visExpr, Bookmark = bookmark, DocumentMapLabel = docMap, Action = action, ToggleItemId = toggleItemId, InitiallyHidden = initiallyHidden },
             // A line's color/width come from its style border; map the first visible side to the Pen.
-            LineElement ln => ln with { Pen = StyleBorderToPen(style) ?? ln.Pen, Visible = visible, VisibleExpression = visExpr, Bookmark = bookmark, DocumentMapLabel = docMap, Action = action },
-            TablixElement tx => tx with { Style = style ?? tx.Style, Visible = visible, VisibleExpression = visExpr, Bookmark = bookmark, DocumentMapLabel = docMap, Action = action },
-            ChartElement ch => ch with { Style = style ?? ch.Style, Visible = visible, VisibleExpression = visExpr, Bookmark = bookmark, DocumentMapLabel = docMap, Action = action },
-            GaugeElement g => g with { Style = style ?? g.Style, Visible = visible, VisibleExpression = visExpr, Bookmark = bookmark, DocumentMapLabel = docMap, Action = action },
-            SubreportElement sr => sr with { Style = style ?? sr.Style, Visible = visible, VisibleExpression = visExpr, Bookmark = bookmark, DocumentMapLabel = docMap, Action = action },
+            LineElement ln => ln with { Pen = StyleBorderToPen(style) ?? ln.Pen, Visible = visible, VisibleExpression = visExpr, Bookmark = bookmark, DocumentMapLabel = docMap, Action = action, ToggleItemId = toggleItemId, InitiallyHidden = initiallyHidden },
+            TablixElement tx => tx with { Style = style ?? tx.Style, Visible = visible, VisibleExpression = visExpr, Bookmark = bookmark, DocumentMapLabel = docMap, Action = action, ToggleItemId = toggleItemId, InitiallyHidden = initiallyHidden },
+            ChartElement ch => ch with { Style = style ?? ch.Style, Visible = visible, VisibleExpression = visExpr, Bookmark = bookmark, DocumentMapLabel = docMap, Action = action, ToggleItemId = toggleItemId, InitiallyHidden = initiallyHidden },
+            GaugeElement g => g with { Style = style ?? g.Style, Visible = visible, VisibleExpression = visExpr, Bookmark = bookmark, DocumentMapLabel = docMap, Action = action, ToggleItemId = toggleItemId, InitiallyHidden = initiallyHidden },
+            SubreportElement sr => sr with { Style = style ?? sr.Style, Visible = visible, VisibleExpression = visExpr, Bookmark = bookmark, DocumentMapLabel = docMap, Action = action, ToggleItemId = toggleItemId, InitiallyHidden = initiallyHidden },
             // INVARIANT: every element type AddItem can produce must have an arm above — otherwise its
-            // Style/Visibility/Bookmark/Action would be silently dropped. Keep this in sync with AddItem.
+            // Style/Visibility/Bookmark/Action/Toggle would be silently dropped. Keep this in sync with AddItem.
             _ => el,
         };
         // Style properties whose RDL value is an EXPRESSION (conditional formatting: negative-in-red, zebra,
@@ -1165,6 +1173,22 @@ public sealed class RdlImporter
             return (!h, null);
         }
         return (true, $"!({RdlExpression.Convert(hidden)})");
+    }
+
+    // RDL <Visibility><ToggleItem> names the TextBox whose expand/collapse chevron drives THIS element's
+    // visibility (drill-down). The value is a plain RDL Name reference (not an expression), so it maps to
+    // ToggleItemId verbatim. With a ToggleItem present, a constant-true sibling <Hidden> means the element
+    // starts collapsed → InitiallyHidden=true; otherwise (no ToggleItem, or non-constant Hidden) → false.
+    private static (string? ToggleItemId, bool InitiallyHidden) ReadToggle(XElement item)
+    {
+        var visibility = El(item, "Visibility");
+        var toggleItemId = Val(visibility, "ToggleItem");
+        if (string.IsNullOrEmpty(toggleItemId))
+        {
+            return (null, false);
+        }
+        var initiallyHidden = bool.TryParse(Val(visibility, "Hidden"), out var h) && h;
+        return (toggleItemId, initiallyHidden);
     }
 
     private static string? ConvertOpt(string? raw)
