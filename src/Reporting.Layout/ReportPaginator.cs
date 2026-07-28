@@ -21,7 +21,13 @@ namespace Reporting.Layout;
 /// </remarks>
 public sealed partial class ReportPaginator : IReportPaginator
 {
+    // SHARED across runs and safe to be: the compiler's cache is a ConcurrentDictionary, so reusing
+    // one instance is both thread-safe AND the point — parsed expressions stay cached between reports.
     private readonly ExpressionCompiler _compiler;
+
+    // PER-RUN working state. These belong to a single PaginateAsync execution, never to the instance
+    // callers hold: the evaluator carries the request's Code resolver, and _repeatHeaders tracks the
+    // groups currently open. See PaginateAsync for how a run gets its own instance.
     private readonly ExpressionEvaluator _evaluator;
     private readonly TemplateRenderer _templates;
 
@@ -36,9 +42,21 @@ public sealed partial class ReportPaginator : IReportPaginator
         _templates = new TemplateRenderer(_evaluator);
     }
 
-    public async Task<RenderedReport> PaginateAsync(PaginationRequest request, CancellationToken ct = default)
+    /// <inheritdoc />
+    /// <remarks>Safe to call concurrently on a shared instance — see the threading note on the class.</remarks>
+    public Task<RenderedReport> PaginateAsync(PaginationRequest request, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(request);
+        // THREAD-SAFETY: run on a private instance instead of mutating this one. AddReporting registers
+        // the paginator as a SINGLETON, so without this every concurrent HTTP request would share the
+        // evaluator (whose CodeFunctionResolver is per-request) and the repeat-header list — letting one
+        // report execute another's code and corrupting group headers. The compiler, and therefore its
+        // expression cache, is still shared: the run only allocates a couple of tiny wrapper objects.
+        return new ReportPaginator(_compiler).ExecuteAsync(request, ct);
+    }
+
+    private async Task<RenderedReport> ExecuteAsync(PaginationRequest request, CancellationToken ct)
+    {
         // Opt-in: wire the report's Code.X(...) resolver (null unless the host enabled it).
         _evaluator.CodeFunctionResolver = request.CodeFunctionResolver;
         var measurer = request.Measurer ?? new AverageWidthTextMeasurer();
@@ -541,7 +559,10 @@ public sealed partial class ReportPaginator : IReportPaginator
         page.MarkColumnTop(); // snake columns begin below the report/page header
 
         // Iterate rows with group detection
-        _repeatHeaders.Clear(); // defensive: no group is open at the start of a run (instance may be reused)
+        // No group is open at the start of a pass. Still required after the per-run isolation of
+        // PaginateAsync: a two-pass run (Page.Total / PrintOnLastPage) calls ExecutePass TWICE on the
+        // same instance, so the second pass must not inherit the first pass's open groups.
+        _repeatHeaders.Clear();
         var openGroupKeys = new object?[def.Groups.Count];
         var groupOpen = new bool[def.Groups.Count];
         var newKeys = new object?[def.Groups.Count];

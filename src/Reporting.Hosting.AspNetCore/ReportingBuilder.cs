@@ -24,6 +24,8 @@ public sealed class ReportingBuilder
         Services = services;
         DataSources = new DataSourceRegistry();
         Services.AddSingleton(DataSources);
+        // Singleton is safe: PaginateAsync isolates each run on its own instance, so concurrent
+        // requests share only the (thread-safe) expression cache. Guarded by PaginatorConcurrencyTests.
         Services.AddSingleton<IReportPaginator, ReportPaginator>();
         Services.AddSingleton<RepxSerializer>();
         Services.AddSingleton<RepJsonSerializer>();
