@@ -18,6 +18,13 @@ namespace Reporting.Layout;
 /// emit Report header → Page headers → Group headers (open) → Detail (per row) →
 /// Group footers (close) → Page footers → Report footer. Page break occurs when the
 /// next band wouldn't fit between the page header bottom and the page footer top.</para>
+/// <para><b>Thread-safety:</b> one instance may serve any number of concurrent
+/// <see cref="PaginateAsync"/> calls — which it must, since the ASP.NET Core host registers it as a
+/// singleton. Each call runs on its own private instance, so the per-run mutable state (the
+/// evaluator holding the request's <c>Code</c> resolver, and the open-group list used to reprint
+/// group headers) is never shared. Only the <see cref="ExpressionCompiler"/> is shared between
+/// runs, and its parse cache is a concurrent dictionary — so the cache still pays off across
+/// reports. Sharing an instance is therefore the intended usage, not merely a tolerated one.</para>
 /// </remarks>
 public sealed partial class ReportPaginator : IReportPaginator
 {
@@ -43,7 +50,8 @@ public sealed partial class ReportPaginator : IReportPaginator
     }
 
     /// <inheritdoc />
-    /// <remarks>Safe to call concurrently on a shared instance — see the threading note on the class.</remarks>
+    /// <remarks>Safe to call concurrently on a shared instance — see the thread-safety note in the
+    /// <see cref="ReportPaginator"/> remarks.</remarks>
     public Task<RenderedReport> PaginateAsync(PaginationRequest request, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(request);
