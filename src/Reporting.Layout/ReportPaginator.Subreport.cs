@@ -55,8 +55,10 @@ public sealed partial class ReportPaginator
 
         // The child's data is already materialised in-memory (shared registry), so the async
         // paginate completes synchronously — blocking here is safe and keeps BandRenderer sync.
+        // ExecuteAsync (not PaginateAsync) because this IS already a fresh per-run instance: the child
+        // gets its own evaluator/repeat-headers, and only the expression cache is shared with us.
         var child = new ReportPaginator(_compiler)
-            .PaginateAsync(childRequest).GetAwaiter().GetResult();
+            .ExecuteAsync(childRequest, CancellationToken.None).GetAwaiter().GetResult();
         if (child.Pages.Count == 0)
         {
             return [];
