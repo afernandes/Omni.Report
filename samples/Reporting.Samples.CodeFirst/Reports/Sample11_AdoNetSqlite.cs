@@ -8,7 +8,7 @@ namespace Reporting.Samples.CodeFirst.Reports;
 /// <summary>
 /// Demonstrates the canonical database-backed report path: open a real SQLite database,
 /// seed it with sample data, run a parameterised query, and bind the streaming result
-/// to a code-first report. Mirrors how <see cref="Reporting.Samples.DatabaseReport"/>
+/// to a code-first report. Mirrors how the <c>Reporting.Samples.DatabaseReport</c> sample
 /// works, but lives inside <c>Reporting.Samples.CodeFirst</c> so the generator loop
 /// can produce its full set of outputs (PDF / XLSX / HTML / SVG / CSV / JSON / Markdown
 /// / .repx / .repjson) for parity with every other sample.
@@ -18,7 +18,7 @@ namespace Reporting.Samples.CodeFirst.Reports;
 /// <c>Data Source=file:Sample11?mode=memory&amp;cache=shared</c> lets independent
 /// connections see the same database during the lifetime of the process. That's the only
 /// configuration that works with the streaming "open connection per <c>ReadAsync</c>"
-/// pattern used by <see cref="AdoNetDataSource"/>.</para>
+/// pattern used by <see cref="Reporting.DataSources.AdoNet.AdoNetDataSource"/>.</para>
 ///
 /// <para>SQL parameters use the canonical <c>$name</c> prefix; the same source code works
 /// against PostgreSQL / SQL Server / MySQL by swapping the connection factory.</para>
