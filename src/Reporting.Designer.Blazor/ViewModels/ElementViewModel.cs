@@ -228,6 +228,15 @@ public sealed class ElementViewModel : Notifying
     /// with multi-run text would silently lose its runs on any edit. There's no run editor yet — this only
     /// guarantees the runs round-trip; authoring them is a follow-up.</summary>
     private Reporting.Common.EquatableArray<TextRun> _textRuns = Reporting.Common.EquatableArray<TextRun>.Empty;
+
+    /// <summary>Backing access to <see cref="_textRuns"/> for <see cref="TextBoxFacet"/>. Deliberately not a
+    /// bindable editor property — it exists so the facet owns the whole TextBox mapping.</summary>
+    internal Reporting.Common.EquatableArray<TextRun> TextRuns
+    {
+        get => _textRuns;
+        set => _textRuns = value;
+    }
+
     /// <summary>Children of a container <see cref="DesignerElementKind.Rectangle"/>, materialised as real
     /// child view models (recursively) so the Designer can show, select and edit them — not merely round-trip
     /// them. <see cref="ToElement"/> rebuilds <c>RectangleElement.Children</c> from these. Opaque/advanced
@@ -1039,69 +1048,13 @@ public sealed class ElementViewModel : Notifying
             BackgroundGradient: BackgroundGradient,
             BasedOn: BasedOn);
 
-        ReportElement element = Kind switch
-        {
-            DesignerElementKind.Label => new LabelElement { Text = Text, Bounds = Bounds },
-            DesignerElementKind.TextBox => new TextBoxElement { Expression = Expression, Bounds = Bounds, CanGrow = CanGrow, CanShrink = CanShrink, TextRuns = _textRuns },
-            DesignerElementKind.Line => new LineElement { Bounds = Bounds, Direction = LineDir },
-            DesignerElementKind.Rectangle => new RectangleElement
-            {
-                Bounds = Bounds,
-                FillColor = FillColor,
-                CornerRadius = Unit.FromMm(CornerRadiusMm),
-                Children = Children.Count == 0
-                    ? Reporting.Common.EquatableArray<ReportElement>.Empty
-                    : new Reporting.Common.EquatableArray<ReportElement>(Children.Select(c => c.ToElement()).ToArray()),
-            },
-            DesignerElementKind.Ellipse => new EllipseElement { Bounds = Bounds, FillColor = FillColor },
-            DesignerElementKind.Image => new ImageElement
-            {
-                Bounds = Bounds,
-                // Source kind is inferred from which field the user filled: embedded bytes win,
-                // then a per-row expression, otherwise a static path/URL.
-                Source = InlineImageData is { Length: > 0 } ? ImageSourceKind.Inline
-                    : !string.IsNullOrWhiteSpace(ImageExpression) ? ImageSourceKind.Expression
-                    : ImageSourceKind.Path,
-                InlineData = InlineImageData is { Length: > 0 }
-                    ? new EquatableArray<byte>(InlineImageData)
-                    : EquatableArray<byte>.Empty,
-                Path = string.IsNullOrWhiteSpace(ImagePath) ? null : ImagePath,
-                Expression = string.IsNullOrWhiteSpace(ImageExpression) ? null : ImageExpression,
-                Sizing = ImageSizing,
-            },
-            DesignerElementKind.Barcode => new BarcodeElement
-            {
-                Bounds = Bounds,
-                Expression = Expression,
-                // Honour the picked 1D symbology; if the user accidentally set QrCode on a
-                // Barcode-kind element via direct property binding, force back to Code128 —
-                // the QrCode kind is the canonical place for QR.
-                Symbology = Symbology == BarcodeSymbology.QrCode ? BarcodeSymbology.Code128 : Symbology,
-                ShowText = BarcodeShowText,
-            },
-            DesignerElementKind.QrCode => new BarcodeElement
-            {
-                Bounds = Bounds,
-                Expression = Expression,
-                Symbology = BarcodeSymbology.QrCode,
-                QrEcc = QrEcc,
-                ShowText = false, // QR has no human-readable text strip
-            },
-            DesignerElementKind.Chart => new ChartElement
-            {
-                Bounds = Bounds,
-                Kind = ChartKind,
-                Title = string.IsNullOrWhiteSpace(ChartTitle) ? null : ChartTitle,
-                ShowLegend = ShowLegend,
-                Series = ChartSeries.Count == 0
-                    ? Reporting.Common.EquatableArray<ChartSeries>.Empty
-                    : new Reporting.Common.EquatableArray<ChartSeries>(ChartSeries.Select(s => s.ToSeries())),
-            },
-            // Advanced elements without a dedicated editor: re-emit the original domain element
-            // (preserving all its config) with the designer's current bounds.
-            _ when IsOpaqueAdvanced(Kind) => (_sourceElement ?? CreateDefaultAdvanced(Kind)) with { Bounds = Bounds },
-            _ => throw new InvalidOperationException($"Unknown kind: {Kind}"),
-        };
+        // Each element family builds itself — see ElementFacet. Advanced elements without a dedicated editor
+        // have no facet: they re-emit the original domain element (preserving all its config) with the
+        // designer's current bounds.
+        ReportElement element =
+            ElementFacetRegistry.ForKind(Kind) is { } facet ? facet.Build(this)
+            : IsOpaqueAdvanced(Kind) ? (_sourceElement ?? CreateDefaultAdvanced(Kind)) with { Bounds = Bounds }
+            : throw new InvalidOperationException($"Unknown kind: {Kind}");
 
         var conditionalFormats = ConditionalFormats.Count == 0
             ? Reporting.Common.EquatableArray<ConditionalFormat>.Empty
@@ -1329,49 +1282,10 @@ public sealed class ElementViewModel : Notifying
         _foreColorInherited = element.Style.ForeColor is null;
         _fontInherited = element.Style.Font is null;
 
-        switch (element)
-        {
-            case LabelElement lbl: Text = lbl.Text; break;
-            case TextBoxElement tb:
-                Expression = tb.Expression;
-                CanGrow = tb.CanGrow;
-                CanShrink = tb.CanShrink;
-                _textRuns = tb.TextRuns; // preserve mixed-style runs across edit→save (no editor yet)
-                break;
-            case BarcodeElement bc:
-                Expression = bc.Expression;
-                Symbology = bc.Symbology;
-                QrEcc = bc.QrEcc;
-                BarcodeShowText = bc.ShowText;
-                break;
-            case LineElement ln: LineDir = ln.Direction; break;
-            case RectangleElement r:
-                FillColor = r.FillColor;
-                CornerRadiusMm = r.CornerRadius.ToMm();
-                // Materialise children into editable child VMs (recursive — a child Rectangle materialises its
-                // own children in turn). The same FromElement path preserves opaque kinds, so depth is unbounded.
-                foreach (var child in r.Children)
-                {
-                    AttachChild(FromElement(child));
-                }
-                break;
-            case EllipseElement e: FillColor = e.FillColor; break;
-            case ImageElement img:
-                InlineImageData = img.InlineData.Count > 0 ? img.InlineData.ToArray() : null;
-                ImagePath = img.Path;
-                ImageExpression = img.Expression;
-                ImageSizing = img.Sizing;
-                break;
-            case ChartElement ch:
-                ChartKind = ch.Kind;
-                ChartTitle = ch.Title ?? string.Empty;
-                ShowLegend = ch.ShowLegend;
-                foreach (var s in ch.Series)
-                {
-                    ChartSeries.Add(ChartSeriesRule.From(s));
-                }
-                break;
-        }
+        // The facet that owns this element's TYPE pulls its own fields in. No facet (an opaque/advanced
+        // element, or one whose kind fell through to the TextBox catch-all) means only the shared fields
+        // below are read — exactly what the previous per-type switch did when no case matched.
+        ElementFacetRegistry.ForElement(element)?.Read(this, element);
         foreach (var cf in element.ConditionalFormats)
         {
             ConditionalFormats.Add(ConditionalFormatRule.From(cf));
