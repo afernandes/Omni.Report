@@ -83,7 +83,11 @@ public sealed partial class ReportPaginator : IReportPaginator
     }
 
     /// <summary>Pre-materializes every registered data source's rows (so sub-detail bands can
-    /// iterate them in-memory) and builds the iteration list for the main Detail band.</summary>
+    /// iterate them in-memory) and builds the iteration list for the main Detail band.
+    /// <para>Every source is read EXACTLY ONCE here; <see cref="BuildIterationRows"/> then works off that
+    /// snapshot. It used to re-read the primary (and, in master-detail, the child) on its own, which meant a
+    /// SQL-backed report issued the same query twice — four times for master-detail — and held two copies of
+    /// the same rows in memory.</para></summary>
     private static async Task<(List<IterationRow> iter,
         Dictionary<string, List<IReadOnlyList<KeyValuePair<string, object?>>>> allSources)>
         MaterializeAsync(PaginationRequest request, CancellationToken ct)
@@ -100,8 +104,7 @@ public sealed partial class ReportPaginator : IReportPaginator
             }
             allSources[name] = rows;
         }
-        var iter = await MaterializeRowsAsync(request, ct).ConfigureAwait(false);
-        return (iter, allSources);
+        return (BuildIterationRows(request, allSources), allSources);
     }
 
     /// <summary>One row of the Detail iteration. <see cref="Fields"/> is the "live" row (sets
@@ -112,21 +115,17 @@ public sealed partial class ReportPaginator : IReportPaginator
         IReadOnlyList<KeyValuePair<string, object?>> Fields,
         IReadOnlyDictionary<string, IReadOnlyList<KeyValuePair<string, object?>>>? SourceRows = null);
 
-    private static async Task<List<IterationRow>> MaterializeRowsAsync(
-        PaginationRequest request, CancellationToken ct)
+    /// <summary>Builds the Detail band's iteration list from the already-read <paramref name="allSources"/>
+    /// snapshot — no I/O of its own, so each source is read exactly once per pagination.</summary>
+    private static List<IterationRow> BuildIterationRows(
+        PaginationRequest request,
+        Dictionary<string, List<IReadOnlyList<KeyValuePair<string, object?>>>> allSources)
     {
         // Resolve the primary source name once. It drives the unqualified Fields.X scope.
         var primaryName = ResolvePrimaryName(request);
         var iteration = new List<IterationRow>();
         if (primaryName is null) return iteration;
-        if (!request.DataSources.TryGet(primaryName, out var primaryDs)) return iteration;
-
-        // Materialize the primary source's rows.
-        var primaryRows = new List<IReadOnlyList<KeyValuePair<string, object?>>>();
-        await foreach (var record in primaryDs.ReadAsync(ct).ConfigureAwait(false))
-        {
-            primaryRows.Add(record.ToKeyValuePairs().ToList());
-        }
+        if (!allSources.TryGetValue(primaryName, out var primaryRows)) return iteration;
 
         // Pick up master-detail relations declared on the primary source. When at least one
         // is present, the iteration becomes nested (per parent row → per child row of the
@@ -161,7 +160,7 @@ public sealed partial class ReportPaginator : IReportPaginator
         // Reports with multiple parallel child relations should use sub-bands or split into
         // separate reports — true cartesian explosion is rarely useful.
         var rel = relations[0];
-        if (!request.DataSources.TryGet(rel.ChildSource, out var childDs))
+        if (!allSources.TryGetValue(rel.ChildSource, out var childRows))
         {
             // Child source not registered — fall back to parent-only iteration.
             foreach (var row in primaryRows)
@@ -173,13 +172,7 @@ public sealed partial class ReportPaginator : IReportPaginator
             return iteration;
         }
 
-        // Materialize child rows once, then for each parent emit one IterationRow per matching child.
-        var childRows = new List<IReadOnlyList<KeyValuePair<string, object?>>>();
-        await foreach (var record in childDs.ReadAsync(ct).ConfigureAwait(false))
-        {
-            childRows.Add(record.ToKeyValuePairs().ToList());
-        }
-
+        // Child rows come from the same snapshot — for each parent, emit one IterationRow per matching child.
         foreach (var parentRow in primaryRows)
         {
             var parentKey = ValueOf(parentRow, rel.ParentField);
