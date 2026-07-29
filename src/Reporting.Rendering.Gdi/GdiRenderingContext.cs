@@ -135,7 +135,7 @@ public sealed class GdiRenderingContext : IRenderingContext, ITextMeasurer
         var rect = bounds.ToRectF(_dpi);
         if (fill is not null && fill.IsVisible)
         {
-            using var brush = new GdiBrush(fill.Color.ToGdiColor());
+            using var brush = CreateFillBrush(fill, rect);
             _graphics!.FillRectangle(brush, rect);
         }
         if (pen is not null && pen.IsVisible)
@@ -151,7 +151,7 @@ public sealed class GdiRenderingContext : IRenderingContext, ITextMeasurer
         var rect = bounds.ToRectF(_dpi);
         if (fill is not null && fill.IsVisible)
         {
-            using var brush = new GdiBrush(fill.Color.ToGdiColor());
+            using var brush = CreateFillBrush(fill, rect);
             _graphics!.FillEllipse(brush, rect);
         }
         if (pen is not null && pen.IsVisible)
@@ -160,6 +160,49 @@ public sealed class GdiRenderingContext : IRenderingContext, ITextMeasurer
             _graphics!.DrawEllipse(gdiPen, rect);
         }
     }
+
+    /// <summary>Builds the fill brush for a primitive: a solid colour, or a two-colour gradient when the brush
+    /// carries one. Mirrors <c>SkiaPrimitiveRenderer.CreateFillPaint</c> point-for-point so the spooler prints
+    /// what the PDF/PNG/SVG exporters render — before this, GDI silently flattened every gradient to its start
+    /// colour. <see cref="BackgroundGradientType.Center"/> is a radial blend (start colour at the centre); the
+    /// rest are linear along the same axes Skia uses.</summary>
+    private static Brush CreateFillBrush(BrushStyle fill, RectangleF rect)
+    {
+        // No gradient, or a degenerate rect with no axis to blend along (GDI+ throws on a zero-length axis).
+        if (!fill.HasGradient || fill.GradientEndColor is not { } end || rect.Width <= 0 || rect.Height <= 0)
+        {
+            return new GdiBrush(fill.Color.ToGdiColor());
+        }
+
+        if (fill.Gradient == BackgroundGradientType.Center)
+        {
+            using var path = new GraphicsPath();
+            path.AddEllipse(rect);
+            return new PathGradientBrush(path)
+            {
+                CenterColor = fill.Color.ToGdiColor(),   // Skia puts colors[0] at the centre
+                SurroundColors = [end.ToGdiColor()],
+            };
+        }
+
+        var (from, to) = GradientAxis(fill.Gradient, rect);
+        return new LinearGradientBrush(from, to, fill.Color.ToGdiColor(), end.ToGdiColor())
+        {
+            // GDI+ tiles past the axis by default and is known to fringe the first pixel column; flipping the
+            // tile keeps that edge clean. The fill never exceeds the rect that defines the axis anyway.
+            WrapMode = WrapMode.TileFlipXY,
+        };
+    }
+
+    /// <summary>Start/end points of a linear gradient — the same axes as
+    /// <c>SkiaPrimitiveRenderer.GradientStart/GradientEnd</c>, so both backends blend identically.</summary>
+    private static (PointF From, PointF To) GradientAxis(BackgroundGradientType kind, RectangleF r) => kind switch
+    {
+        BackgroundGradientType.LeftRight     => (new PointF(r.Left, r.Top + (r.Height / 2f)), new PointF(r.Right, r.Top + (r.Height / 2f))),
+        BackgroundGradientType.DiagonalLeft  => (new PointF(r.Left, r.Top), new PointF(r.Right, r.Bottom)),
+        BackgroundGradientType.DiagonalRight => (new PointF(r.Right, r.Top), new PointF(r.Left, r.Bottom)),
+        _                                    => (new PointF(r.Left + (r.Width / 2f), r.Top), new PointF(r.Left + (r.Width / 2f), r.Bottom)), // TopBottom + fallback
+    };
 
     public void DrawImage(ReadOnlySpan<byte> imageData, ReportingRectangle bounds,
         Reporting.Elements.ImageSizing sizing = Reporting.Elements.ImageSizing.Fit)
@@ -199,7 +242,8 @@ public sealed class GdiRenderingContext : IRenderingContext, ITextMeasurer
         using var path = builder.Path;
         if (fill is not null && fill.IsVisible)
         {
-            using var brush = new GdiBrush(fill.Color.ToGdiColor());
+            // The path's own bounding box anchors the gradient axis (Skia does the same for shape fills).
+            using var brush = CreateFillBrush(fill, path.GetBounds());
             _graphics!.FillPath(brush, path);
         }
         if (pen is not null && pen.IsVisible)

@@ -144,6 +144,61 @@ public class GdiRenderingContextTests
         act.Should().Throw<InvalidOperationException>();
     }
 
+    [Fact]
+    public void Linear_gradient_fill_blends_across_the_axis_instead_of_flattening_to_a_solid()
+    {
+        // Before this was implemented, GDI ignored BackgroundGradient entirely and filled with the START
+        // colour — so a report that gradients correctly in PDF/SVG/PNG printed flat via the Windows spooler.
+        using var ctx = new GdiRenderingContext(dpi: 96);
+        ctx.BeginPage(PageSetup.A4Portrait);
+        ctx.DrawRectangle(
+            new Rectangle(10.Mm(), 10.Mm(), 100.Mm(), 20.Mm()), null,
+            new BrushStyle(Color.Red, Color.Blue, BackgroundGradientType.LeftRight));
+        ctx.EndPage();
+
+        var bmp = ctx.Pages[0];
+        int y = MmToPx(20), x0 = MmToPx(12), x1 = MmToPx(108);
+        var left = bmp.GetPixel(x0, y);
+        var right = bmp.GetPixel(x1, y);
+
+        left.R.Should().BeGreaterThan(right.R, "the left edge is nearer the start colour (red)");
+        right.B.Should().BeGreaterThan(left.B, "the right edge is nearer the end colour (blue)");
+    }
+
+    [Fact]
+    public void Radial_gradient_fill_blends_from_the_centre_outwards()
+    {
+        using var ctx = new GdiRenderingContext(dpi: 96);
+        ctx.BeginPage(PageSetup.A4Portrait);
+        ctx.DrawEllipse(
+            new Rectangle(10.Mm(), 10.Mm(), 60.Mm(), 60.Mm()), null,
+            new BrushStyle(Color.Red, Color.Blue, BackgroundGradientType.Center));
+        ctx.EndPage();
+
+        var bmp = ctx.Pages[0];
+        var centre = bmp.GetPixel(MmToPx(40), MmToPx(40)); // centre of the ellipse → start colour (red)
+        var edge = bmp.GetPixel(MmToPx(12), MmToPx(40));   // near the left edge → end colour (blue)
+
+        centre.R.Should().BeGreaterThan(centre.B, "the centre carries the start colour");
+        edge.B.Should().BeGreaterThan(edge.R, "the rim carries the end colour");
+    }
+
+    [Fact]
+    public void A_solid_brush_still_fills_uniformly()
+    {
+        // Guard the non-gradient path the new brush factory also serves.
+        using var ctx = new GdiRenderingContext(dpi: 96);
+        ctx.BeginPage(PageSetup.A4Portrait);
+        ctx.DrawRectangle(new Rectangle(10.Mm(), 10.Mm(), 100.Mm(), 20.Mm()), null, new BrushStyle(Color.Red));
+        ctx.EndPage();
+
+        var bmp = ctx.Pages[0];
+        int y = MmToPx(20);
+        bmp.GetPixel(MmToPx(12), y).Should().Be(bmp.GetPixel(MmToPx(108), y), "a solid fill is uniform");
+    }
+
+    private static int MmToPx(double mm) => (int)Math.Round(mm / 25.4 * 96);
+
     private static bool HasNonWhitePixel(GdiBitmap bmp)
     {
         int step = Math.Max(1, Math.Min(bmp.Width, bmp.Height) / 50);
