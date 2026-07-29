@@ -687,8 +687,10 @@ public sealed partial class ReportPaginator : IReportPaginator
                 foreach (var calc in primaryDef.CalculatedFields)
                 {
                     object? value;
+                    // Resilient by design: a bad calculated-field expression nulls the field, never aborts the
+                    // render. Filtered by type so a genuine defect surfaces instead of silently nulling.
                     try { value = _evaluator.Evaluate(calc.Expression, ctx); }
-                    catch { value = null; } // resilient by design: a bad calculated-field expression nulls the field, never aborts the render
+                    catch (Exception ex) when (ex is ExpressionParseException or ExpressionEvaluationException) { value = null; }
                     ctx.SetCalculatedField(calc.Name, value);
                 }
             }
@@ -1149,7 +1151,7 @@ public sealed partial class ReportPaginator : IReportPaginator
                 // declaration order, so a default referencing an earlier parameter sees its seeded value. A
                 // failing expression falls back to null rather than aborting the run.
                 try { value = _evaluator.Evaluate(p.DefaultValueExpression, ctx); }
-                catch { value = null; }
+                catch (Exception ex) when (ex is ExpressionParseException or ExpressionEvaluationException) { value = null; }
             }
             else
             {

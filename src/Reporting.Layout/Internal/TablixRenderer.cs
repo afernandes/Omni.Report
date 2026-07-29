@@ -705,7 +705,11 @@ internal static class TablixRenderer
             var v = ev.Evaluate(expr, ctx);
             return v is null ? 0 : Convert.ToDouble(v, ctx.Culture);
         }
-        catch
+        // A bad expression, or a value that isn't numeric, contributes 0 to the aggregate instead of aborting
+        // the render. Filtered by type so a genuine defect (NullReference, InvalidOperation…) still surfaces
+        // rather than hiding behind a cell that shows 0 — indistinguishable from real zero data.
+        catch (Exception ex) when (ex is ExpressionParseException or ExpressionEvaluationException
+                                      or FormatException or InvalidCastException or OverflowException)
         {
             return 0;
         }
@@ -721,9 +725,10 @@ internal static class TablixRenderer
         {
             return ev.Evaluate(expr, ctx);
         }
-        catch
+        // A bad SortExpression must not break the render — fall back to data order for that pair.
+        catch (Exception ex) when (ex is ExpressionParseException or ExpressionEvaluationException)
         {
-            return null; // a bad SortExpression must not break the render — fall back to data order for that pair
+            return null;
         }
     }
 
@@ -762,7 +767,9 @@ internal static class TablixRenderer
         {
             return string.Format(culture, "{0:" + (string.IsNullOrEmpty(format) ? "N2" : format) + "}", v);
         }
-        catch
+        // A malformed format string ("{0:", "Q9") falls back to the plain number instead of aborting the
+        // render — same guard, and same exception, as SafeLabel below.
+        catch (FormatException)
         {
             return v.ToString(culture);
         }

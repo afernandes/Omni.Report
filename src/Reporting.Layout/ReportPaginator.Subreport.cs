@@ -88,9 +88,10 @@ public sealed partial class ReportPaginator
         {
             return _evaluator.Evaluate(expression, ctx);
         }
-        catch
+        // A bad binding expression shouldn't blow up the whole report — the child just sees null. Filtered by
+        // type so a genuine defect still surfaces instead of silently passing null down to the subreport.
+        catch (Exception ex) when (ex is ExpressionParseException or ExpressionEvaluationException)
         {
-            // A bad binding expression shouldn't blow up the whole report — the child just sees null.
             return null;
         }
     }
