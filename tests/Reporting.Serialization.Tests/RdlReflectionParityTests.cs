@@ -105,9 +105,13 @@ public class RdlReflectionParityTests
 
         if (NotRepresentable.Contains(elementType.Name))
         {
-            back.Should().BeNull(
-                $"{elementType.Name} is documented as not representable in RDL — if the exporter now emits it, " +
-                "remove it from NotRepresentable and add its real lossy set to ExtraLossy");
+            // Assert the report came back EMPTY, not merely "no element of this CLR type". The input carries
+            // exactly one element, so any survivor — including a degraded stand-in of a different type — means
+            // the export no longer drops it, and the contract below must be updated.
+            AllElements(loaded).Should().BeEmpty(
+                $"{elementType.Name} is documented as not representable in RDL, and it is the report's only " +
+                "element. If the exporter now emits it (or a substitute), remove it from NotRepresentable and " +
+                "add its real lossy set to ExtraLossy");
             return;
         }
 
