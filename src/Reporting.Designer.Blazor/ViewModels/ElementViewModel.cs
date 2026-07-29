@@ -308,26 +308,35 @@ public sealed class ElementViewModel : Notifying
     private Unit _height = Unit.FromMm(6);
     public Unit Height { get => _height; set => Set(ref _height, value); }
 
+    // ── "inherit" tracking ──────────────────────────────────────────────────────────────────────────────
+    // A null Style.Font / Style.ForeColor in the model means "inherit from the named style or theme". The
+    // editors need a CONCRETE value to display, so LoadFrom materialises a placeholder (Arial 10 / Black).
+    // These flags remember that the author never set one, so ToElement writes null back instead of freezing
+    // the placeholder as a literal — which would silently opt the element out of named-style inheritance
+    // (#181-183/#188-189) just by opening and saving it. Editing the matching editor clears the flag.
+    private bool _foreColorInherited;
+    private bool _fontInherited;
+
     private bool _isBold;
-    public bool IsBold { get => _isBold; set => Set(ref _isBold, value); }
+    public bool IsBold { get => _isBold; set { if (Set(ref _isBold, value)) { _fontInherited = false; } } }
 
     private bool _isItalic;
-    public bool IsItalic { get => _isItalic; set => Set(ref _isItalic, value); }
+    public bool IsItalic { get => _isItalic; set { if (Set(ref _isItalic, value)) { _fontInherited = false; } } }
 
     private bool _isUnderline;
-    public bool IsUnderline { get => _isUnderline; set => Set(ref _isUnderline, value); }
+    public bool IsUnderline { get => _isUnderline; set { if (Set(ref _isUnderline, value)) { _fontInherited = false; } } }
 
     private bool _isStrikethrough;
-    public bool IsStrikethrough { get => _isStrikethrough; set => Set(ref _isStrikethrough, value); }
+    public bool IsStrikethrough { get => _isStrikethrough; set { if (Set(ref _isStrikethrough, value)) { _fontInherited = false; } } }
 
     private string _fontFamily = "Arial";
-    public string FontFamily { get => _fontFamily; set => Set(ref _fontFamily, value); }
+    public string FontFamily { get => _fontFamily; set { if (Set(ref _fontFamily, value)) { _fontInherited = false; } } }
 
     private double _fontSize = 10;
-    public double FontSize { get => _fontSize; set => Set(ref _fontSize, value); }
+    public double FontSize { get => _fontSize; set { if (Set(ref _fontSize, value)) { _fontInherited = false; } } }
 
     private Color _foreColor = Color.Black;
-    public Color ForeColor { get => _foreColor; set => Set(ref _foreColor, value); }
+    public Color ForeColor { get => _foreColor; set { if (Set(ref _foreColor, value)) { _foreColorInherited = false; } } }
 
     private Color? _fillColor;
     public Color? FillColor { get => _fillColor; set => Set(ref _fillColor, value); }
@@ -1013,8 +1022,11 @@ public sealed class ElementViewModel : Notifying
         if (IsUnderline)     fontStyle |= FontStyle.Underline;
         if (IsStrikethrough) fontStyle |= FontStyle.Strikeout;
         var style = new Style(
-            Font: new Font(FontFamily, FontSize, fontStyle),
-            ForeColor: ForeColor,
+            // null = "inherit from the named style / theme". Only write a literal when the author actually set
+            // one; otherwise round-tripping through the Designer would freeze the display placeholder and
+            // silently detach the element from its named style.
+            Font: _fontInherited ? null : new Font(FontFamily, FontSize, fontStyle),
+            ForeColor: _foreColorInherited ? null : ForeColor,
             BackColor: BackColor,
             Border: Border,
             Padding: Padding,
@@ -1290,6 +1302,9 @@ public sealed class ElementViewModel : Notifying
         Y = element.Bounds.Y;
         Width = element.Bounds.Width;
         Height = element.Bounds.Height;
+        // Materialise a display placeholder for the editors, but REMEMBER that the model said "inherit" so
+        // ToElement can write null back (see the _foreColorInherited/_fontInherited fields). Assigning through
+        // the properties clears the flags, so they are set AFTER every assignment below.
         ForeColor = element.Style.ForeColor ?? Color.Black;
         BackColor = element.Style.BackColor;
         BackColorEnd = element.Style.BackColorEnd;
@@ -1310,6 +1325,9 @@ public sealed class ElementViewModel : Notifying
         Border = element.Style.Border;
         IsVisible = element.Visible;
         VisibleExpr = element.VisibleExpression;
+        // Set LAST: the assignments above go through the property setters, which clear these flags.
+        _foreColorInherited = element.Style.ForeColor is null;
+        _fontInherited = element.Style.Font is null;
 
         switch (element)
         {
