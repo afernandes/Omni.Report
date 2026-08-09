@@ -21,6 +21,12 @@
          CI agents that lack the workload. -->
     <TargetFramework>net10.0</TargetFramework>
     <DefineConstants>$(DefineConstants);OMNIREPORT_ANDROID_STUB</DefineConstants>
+    <!-- …and NEVER publish that stub. Without this the project is packable by SDK default (it matches the
+         `Reporting.*` group in Directory.Build.props, which grants a PackageId), so `dotnet pack` shipped
+         AndersonN.Omni.Report.Printing.Android containing a DLL whose only behaviour is to throw
+         PlatformNotSupportedException. A real Android package must be built with the workload installed
+         (OMNIREPORT_BUILD_ANDROID=true), from a job that has it. -->
+    <IsPackable>false</IsPackable>
   </PropertyGroup>
 
   <PropertyGroup>

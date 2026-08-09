@@ -152,8 +152,10 @@ jobs:
       - name: Build
         run: dotnet build OmniReport.slnx -c Release --no-restore
 
-      # Empacota TODOS os projetos com IsPackable=true (os de src/). Samples, testes e
-      # o stub real do Android ficam de fora via <IsPackable>false</IsPackable>.
+      # Empacota TODOS os projetos com IsPackable=true (os de src/). Ficam de fora via
+      # <IsPackable>false</IsPackable>: samples, testes e benchmarks (Directory.Build.props)
+      # e o stub do Android (no próprio csproj, na PropertyGroup do caminho sem workload —
+      # até este PR a propriedade NÃO existia e o stub era publicado de fato).
       # Inclui símbolos (.snupkg) por causa do IncludeSymbols no Directory.Build.props.
       - name: Pack
         run: dotnet pack OmniReport.slnx -c Release --no-build -o ./artifacts
