@@ -32,6 +32,9 @@
     <!-- Blazor component testing -->
     <PackageVersion Include="bunit" Version="2.7.2" />
 
+    <!-- Benchmark harness (Reporting.Benchmarks; never packed — see Directory.Build.props) -->
+    <PackageVersion Include="BenchmarkDotNet" Version="0.14.0" />
+
     <!-- Test stack -->
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
     <PackageVersion Include="xunit" Version="2.9.3" />

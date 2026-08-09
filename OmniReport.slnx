@@ -48,6 +48,9 @@
     <Project Path="src/Reporting.Serialization/Reporting.Serialization.csproj" />
     <Project Path="src/Reporting.Viewer.Blazor/Reporting.Viewer.Blazor.csproj" />
   </Folder>
+  <Folder Name="/benchmarks/">
+    <Project Path="benchmarks/Reporting.Benchmarks/Reporting.Benchmarks.csproj" />
+  </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Reporting.Barcode.Tests/Reporting.Barcode.Tests.csproj" />
     <Project Path="tests/Reporting.CodeFirst.Tests/Reporting.CodeFirst.Tests.csproj" />

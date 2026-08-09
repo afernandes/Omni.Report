@@ -40,15 +40,18 @@
        prefixo de marca no nuget.org. Restrito aqui (não global) para o prefixo NUNCA
        vazar para apps de sample / testes — um PackageId errado no sample BlazorServer
        renomeia o bundle de CSS scoped ({PackageId}.styles.css) e dá 404 nos estilos. -->
-  <PropertyGroup Condition="$(MSBuildProjectName.StartsWith('Reporting.')) and !$(MSBuildProjectName.EndsWith('.Tests')) and !$(MSBuildProjectName.Contains('.Samples'))">
+  <PropertyGroup Condition="$(MSBuildProjectName.StartsWith('Reporting.')) and !$(MSBuildProjectName.EndsWith('.Tests')) and !$(MSBuildProjectName.EndsWith('.Benchmarks')) and !$(MSBuildProjectName.Contains('.Samples'))">
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <WarningsAsErrors />
     <!-- AssemblyName/RootNamespace/_content seguem Reporting.*; só o ID do pacote muda. -->
     <PackageId>AndersonN.Omni.Report.$(MSBuildProjectName.Replace('Reporting.', ''))</PackageId>
   </PropertyGroup>
 
-  <!-- Test projects: more permissive -->
-  <PropertyGroup Condition="$(MSBuildProjectName.EndsWith('.Tests'))">
+  <!-- Test and benchmark projects: more permissive, and NEVER packable.
+       `.Benchmarks` is excluded here AND from the PackageId group above deliberately: a project named
+       Reporting.* is packable by SDK default, so without this `dotnet pack OmniReport.slnx` would publish the
+       benchmark harness to NuGet.org — the same class of defect that shipped Printing.Android as a stub. -->
+  <PropertyGroup Condition="$(MSBuildProjectName.EndsWith('.Tests')) or $(MSBuildProjectName.EndsWith('.Benchmarks'))">
     <IsPackable>false</IsPackable>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <NoWarn>$(NoWarn);CS1591;CA1707;CA2007</NoWarn>
