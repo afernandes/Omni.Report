@@ -31,6 +31,19 @@ public sealed class TiffImageExporter : IReportExporter
     public string ContentType => "image/tiff";
 
     public void Export(RenderedReport report, Stream output)
+        => ExportCore(report, output, CancellationToken.None);
+
+    /// <summary>Rasterising every page is the slow part and the encoder writes synchronously, so what this
+    /// override adds is <b>cancellation</b> between pages — which matters most here: a 200-page TIFF is the
+    /// export a user is most likely to abandon halfway.</summary>
+    public Task ExportAsync(RenderedReport report, Stream output, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        ExportCore(report, output, cancellationToken);
+        return Task.CompletedTask;
+    }
+
+    private void ExportCore(RenderedReport report, Stream output, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(report);
         ArgumentNullException.ThrowIfNull(output);
@@ -38,6 +51,7 @@ public sealed class TiffImageExporter : IReportExporter
         var pages = new List<(int W, int H, byte[] Rgb)>(report.Pages.Count);
         foreach (var page in report.Pages)
         {
+            cancellationToken.ThrowIfCancellationRequested(); // abort between pages, not mid-raster
             int w = Math.Max(1, Px(page.PageSetup.PageWidth));
             int h = Math.Max(1, PageHeightPx(page));
             using var bitmap = new SKBitmap(new SKImageInfo(w, h, SKColorType.Rgba8888, SKAlphaType.Premul));
