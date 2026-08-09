@@ -396,8 +396,18 @@ Há tensão com a documentação: `docs/data-sources.md:104-109` promete streami
 materializar tudo. O streaming existe na *leitura*; o paginador o desfaz.
 
 **Ação.** Detectar o caso simples (sem sub-detail, sem `Page.Total`, sem agregado global) e paginar em streaming
-real. Nos demais, manter a materialização e **documentar honestamente** a característica de memória. O item 20
-(benchmarks) deveria vir antes, para medir o ganho.
+real. Nos demais, manter a materialização e **documentar honestamente** a característica de memória.
+
+> **MEDIDO — o escopo deste item mudou.** Com o item 20 concluído, os benchmarks mostram alocação
+> **perfeitamente linear**: ~9,6 KB por linha (9,6 MB @ 1k · 96,7 MB @ 10k · 963 MB @ 100k), sem O(n²)
+> escondido. Mas o grosso **não é a entrada materializada** e sim a **saída** — cada linha vira primitivos que
+> o `RenderedReport` retém até o export. Streamar só a leitura reduz o pico e **não** derruba os 9,6 KB/linha.
+> Um ganho real exigiria streamar também a saída (emitir páginas conforme fecham, em vez de acumular o
+> `RenderedReport` inteiro), o que é escopo maior do que este item descrevia — provavelmente um item próprio.
+> Ver [docs/benchmarks.md](docs/benchmarks.md).
+>
+> **Já entregue (PR #225):** cada fonte passou a ser lida **uma vez** por paginação. Antes o primário era lido
+> duas vezes (quatro em master-detail), ou seja, a mesma query SQL executada em dobro.
 
 ---
 

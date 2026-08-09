@@ -76,3 +76,6 @@ design-package-staging/
 ## Claude Code (local; o .claude/settings.json compartilhado PODE ser versionado)
 .claude/settings.local.json
 .claude/*.lock
+
+# BenchmarkDotNet output (relatórios gerados por execução; não versionar)
+BenchmarkDotNet.Artifacts/
