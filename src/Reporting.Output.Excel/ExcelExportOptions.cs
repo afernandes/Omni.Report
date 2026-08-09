@@ -1,3 +1,5 @@
+using Reporting.Output.Pdf;
+
 namespace Reporting.Output.Excel;
 
 public sealed record ExcelExportOptions
@@ -20,6 +22,13 @@ public sealed record ExcelExportOptions
 
     /// <summary>If true, applies a light banded style (alternating row colors) to detail rows.</summary>
     public bool AlternateRowColors { get; init; } = true;
+
+    /// <summary>Called for each fidelity loss taken while writing — charts, images, barcodes, gauges and maps
+    /// have no cell to live in, so a data-oriented workbook cannot carry them. Null (the default) keeps the
+    /// historical behaviour of dropping them quietly; wire it to your logger to find out what a user's
+    /// spreadsheet is missing. See <see cref="ExportWarning"/> for why this is a callback and not a mutable
+    /// property on the exporter.</summary>
+    public ExportWarningHandler? OnWarning { get; init; }
 
     public static readonly ExcelExportOptions Default = new();
 }

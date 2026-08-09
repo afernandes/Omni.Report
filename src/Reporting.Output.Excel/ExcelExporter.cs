@@ -50,6 +50,7 @@ public sealed class ExcelExporter : IReportExporter
         var ws = wb.AddWorksheet(sheetName);
 
         var grid = LayoutPrimitiveGrid.Build(report);
+        ReportDroppedContent(grid);
         WriteGrid(ws, grid);
 
         if (_options.FreezeHeader && grid.Rows.Count > 0)
@@ -63,6 +64,35 @@ public sealed class ExcelExporter : IReportExporter
         ws.Columns().AdjustToContents();
         wb.SaveAs(output);
     }
+
+    /// <summary>Reports what the text grid could not carry. A workbook is a data surface — charts, images,
+    /// barcodes, gauges and maps have no cell to live in — so the loss is by design; what this removes is the
+    /// SILENCE. Does nothing unless the caller wired <see cref="ExcelExportOptions.OnWarning"/>.</summary>
+    private void ReportDroppedContent(LayoutPrimitiveGrid grid)
+    {
+        if (_options.OnWarning is not { } onWarning || grid.DroppedPrimitives.Count == 0)
+        {
+            return;
+        }
+        foreach (var (primitive, count) in grid.DroppedPrimitives.OrderBy(kv => kv.Key, StringComparer.Ordinal))
+        {
+            onWarning(new ExportWarning(
+                ExportWarning.PrimitiveNotRepresentable,
+                $"{count} × {FriendlyName(primitive)} não cabe numa planilha (o .xlsx é orientado a dados, só texto vira célula) — exporte em PDF/PNG/SVG para manter o visual.",
+                count));
+        }
+    }
+
+    /// <summary>Primitive type name → the word the report author actually used.</summary>
+    private static string FriendlyName(string primitiveTypeName) => primitiveTypeName switch
+    {
+        "DrawImagePrimitive" => "imagem (foto, logo, gráfico rasterizado, barcode ou QR)",
+        "DrawLinePrimitive" => "linha/régua",
+        "DrawRectanglePrimitive" => "retângulo/preenchimento",
+        "DrawEllipsePrimitive" => "elipse",
+        "DrawPolygonPrimitive" => "polígono (mapa, medidor)",
+        _ => primitiveTypeName,
+    };
 
     // ── Worksheet writer ────────────────────────────────────────────────────────
 

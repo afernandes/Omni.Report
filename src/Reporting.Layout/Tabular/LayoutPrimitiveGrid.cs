@@ -61,8 +61,18 @@ public sealed partial class LayoutPrimitiveGrid
     /// <summary>Total number of columns.</summary>
     public int ColumnCount => ColumnXs.Count;
 
+    /// <summary>How many primitives of each kind this grid could NOT represent, keyed by primitive type name
+    /// (e.g. <c>"DrawImagePrimitive"</c>). The grid is text-only by design — it is what the data-oriented
+    /// exporters (Excel, CSV, Markdown) build on — so charts, images, barcodes, gauges and maps have no cell
+    /// to live in. Exposing the tally lets those exporters WARN instead of dropping content silently.
+    /// Empty for a pure-text report.</summary>
+    public IReadOnlyDictionary<string, int> DroppedPrimitives => _dropped;
+
+    private readonly Dictionary<string, int> _dropped = new(StringComparer.Ordinal);
+
     /// <summary>Builds a grid from every text primitive in <paramref name="report"/>, clustering
-    /// across all pages with cumulative Y offsets so rows don't collide.</summary>
+    /// across all pages with cumulative Y offsets so rows don't collide. Non-text primitives are tallied in
+    /// <see cref="DroppedPrimitives"/> instead of vanishing unnoticed.</summary>
     public static LayoutPrimitiveGrid Build(RenderedReport report)
     {
         ArgumentNullException.ThrowIfNull(report);
@@ -73,13 +83,20 @@ public sealed partial class LayoutPrimitiveGrid
         Unit pageOffset = Unit.Zero;
         foreach (var page in report.Pages)
         {
-            foreach (var p in page.Primitives.OfType<DrawTextPrimitive>())
+            foreach (var p in page.Primitives)
             {
-                if (string.IsNullOrWhiteSpace(p.Text))
+                if (p is not DrawTextPrimitive text)
+                {
+                    // Not representable in a text grid — tally it so the exporter can report the loss.
+                    var name = p.GetType().Name;
+                    grid._dropped[name] = grid._dropped.TryGetValue(name, out var n) ? n + 1 : 1;
+                    continue;
+                }
+                if (string.IsNullOrWhiteSpace(text.Text))
                 {
                     continue;
                 }
-                entries.Add((p.Bounds.Y + pageOffset, p.Bounds.X, p.Text));
+                entries.Add((text.Bounds.Y + pageOffset, text.Bounds.X, text.Text));
             }
             pageOffset += page.PageSetup.PageHeight;
         }

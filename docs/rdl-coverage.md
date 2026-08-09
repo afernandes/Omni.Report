@@ -55,6 +55,33 @@ Legenda:
 | ESC/POS (térmica) | ✅ | raster 203 dpi, corte automático |
 | Word/DOCX | ❌ | **limite conhecido** — Word é layout de fluxo; o engine é canvas posicionado. Exige um motor de fluxo dedicado (ver [Limites conhecidos](#limites-conhecidos-decisão-de-escopo)) |
 
+### Matriz de fidelidade — o que cada exporter preserva
+
+Nem todo formato carrega tudo, e isso é legítimo: uma planilha não tem onde colocar um gráfico. O que **não**
+é legítimo é a perda ser silenciosa — por isso os exporters orientados a dados agora **avisam**.
+
+| Exporter | Texto | Gráficos, imagens, barcodes, medidores, mapas | Como você fica sabendo |
+|---|:--:|:--:|---|
+| PDF, PNG, TIFF, SVG, HTML | ✅ | ✅ **preserva** (render visual completo) | — |
+| JSON, XML | ✅ | ✅ **preserva** (dump de todos os primitivos, incl. geometria) | — |
+| **Excel** | ✅ | ❌ **descarta** — a planilha é uma grade de células, só texto vira célula | `ExcelExportOptions.OnWarning` |
+| **CSV, Markdown** | ✅ | ❌ **descarta** — mesma grade de texto do Excel | (mesmo canal, a implementar) |
+| **DOCX** | ✅ | 🟡 **rasteriza** gráficos/medidores como imagem (`RegionRasterizer`) | — |
+
+Para receber os avisos, passe um handler nas opções:
+
+```csharp
+var exporter = new ExcelExporter(new ExcelExportOptions
+{
+    OnWarning = w => logger.LogWarning("Export: {Warning}", w), // "[primitive-not-representable] 3 × imagem…"
+});
+```
+
+O handler é **opt-in** (default `null` = comportamento histórico, silencioso) e é um **callback**, não uma
+propriedade `Warnings` mutável no exporter: `AddReporting` registra exporters como **singleton**, e estado
+mutável de instância compartilhado entre requisições concorrentes é exatamente o defeito que precisou ser
+corrigido no `ReportPaginator`.
+
 ## Limites conhecidos (decisão de escopo)
 
 Dois itens **não** são entregues como render real — por restrições arquiteturais reais, não por

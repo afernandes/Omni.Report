@@ -105,7 +105,7 @@ ou o comentário afirma e o que o MSBuild ou o runtime realmente faz*. Passam de
 |---|---|---|---|---|
 | 31 | **Watermark + rotação de texto/elemento** | Feature | M | ✅ |
 | 32 | Editor de rich text (`TextRuns`) no Designer | Feature | M | 🔍 |
-| 33 | **Excel: freeze panes, autofilter e uma aba por grupo** | Feature | P | ✅ |
+| 33 | **Excel: autofilter e uma aba por grupo** (freeze já existe — ver nota) | Feature | P | 🟡 |
 | 34 | Barcodes 2D além de QR (DataMatrix, PDF417, Aztec) | Feature | M | 🔍 |
 | 35 | Query builder visual (hoje só SQL em texto) | Feature | G | 🔍 |
 | 36 | RowSpan no corpo do Tablix + `StaticMember`/`DynamicMember` | RDL | G | 🔍 |
@@ -660,20 +660,22 @@ de fora. Todas as engines concorrentes têm editor de rich text no designer.
 
 ---
 
-### 33. Excel: freeze panes, autofilter e uma aba por grupo ✅ — **NOVO**
+### 33. Excel: autofilter e uma aba por grupo 🟡 — **PARCIALMENTE FALSO POSITIVO, corrigido**
 
-**Re-verificado: `FreezePane` e `AutoFilter` têm zero ocorrências em `src/`.** O `.xlsx` sai como uma grade
-plana: ao rolar, o cabeçalho some; não há filtro nem separação por grupo.
+> **Correção da 2ª revisão.** Este item afirmava que faltava *freeze panes*, baseado num grep por
+> `FreezePane`/`AutoFilter`. **O freeze já existe** — sob outro nome: `ExcelExportOptions.FreezeHeader`
+> (default **true**), aplicado em `ExcelExporter.cs:57` via `ws.SheetView.FreezeRows(1)`. O grep por nome de
+> API do ClosedXML não achou o nome da *opção*. Terceiro falso-positivo desta varredura — confirme sempre o
+> comportamento, não só o identificador.
 
-**Por que importa.** Quem exporta para Excel quase sempre vai *analisar* os dados. Congelar o cabeçalho e ligar
-o autofilter são dois toques de API no ClosedXML (que já é dependência) e transformam a usabilidade do arquivo
-gerado. "Uma aba por grupo" é o passo seguinte, um pouco maior.
+O que **realmente** falta: **autofilter** e **uma aba por grupo**. `AlternateRowColors` (zebra) também já existe.
 
-**Paridade:** SSRS, Crystal e Jasper fazem freeze de cabeçalho e/ou autofilter; SSRS e Jasper suportam quebra de
-aba por grupo.
+**Por que importa.** Quem exporta para Excel quase sempre vai *analisar* os dados; o autofilter é um toque de
+API no ClosedXML (já é dependência). "Uma aba por grupo" é o passo seguinte, um pouco maior.
 
-**Ação.** `ExcelExportOptions` com `FreezeHeaderRows`, `AutoFilter` e `SheetPerGroup`. Combina com o item 16
-(warnings de degradação) — mesmo arquivo, mesma revisão.
+**Paridade:** SSRS, Crystal e Jasper fazem autofilter; SSRS e Jasper suportam quebra de aba por grupo.
+
+**Ação.** `ExcelExportOptions` com `AutoFilter` e `SheetPerGroup`.
 
 ---
 
