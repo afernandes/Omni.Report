@@ -29,6 +29,19 @@ public sealed class SkiaPdfExporter : IReportExporter
     public string ContentType => "application/pdf";
 
     public void Export(RenderedReport report, Stream output)
+        => ExportCore(report, output, CancellationToken.None);
+
+    /// <summary>Skia's <c>SKDocument</c> writes to the stream synchronously — there is no async PDF writer to
+    /// await. What this override buys is <b>cancellation</b>: a long render aborts at the next page boundary
+    /// instead of running to completion after the client has gone away.</summary>
+    public Task ExportAsync(RenderedReport report, Stream output, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        ExportCore(report, output, cancellationToken);
+        return Task.CompletedTask;
+    }
+
+    private void ExportCore(RenderedReport report, Stream output, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(report);
         ArgumentNullException.ThrowIfNull(output);
@@ -53,6 +66,7 @@ public sealed class SkiaPdfExporter : IReportExporter
 
         foreach (var page in report.Pages)
         {
+            cancellationToken.ThrowIfCancellationRequested(); // abort between pages, not mid-page
             var widthPt = page.PageSetup.PageWidth.ToPoints();
             var heightPt = page.PageSetup.IsContinuous
                 ? Math.Max((double)page.PageSetup.Margins.Top.ToPoints() + 1, ComputeContinuousHeightPt(page))

@@ -55,6 +55,18 @@ public sealed class PngImageExporter : IReportExporter
 
     /// <summary>Single composite PNG: all pages stacked vertically, separated by the page gap.</summary>
     public void Export(RenderedReport report, Stream output)
+        => ExportCore(report, output, CancellationToken.None);
+
+    /// <summary>The encoder writes synchronously, so what this override adds is <b>cancellation</b> between
+    /// pages while the composite is being rasterised.</summary>
+    public Task ExportAsync(RenderedReport report, Stream output, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        ExportCore(report, output, cancellationToken);
+        return Task.CompletedTask;
+    }
+
+    private void ExportCore(RenderedReport report, Stream output, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(report);
         ArgumentNullException.ThrowIfNull(output);
@@ -63,6 +75,7 @@ public sealed class PngImageExporter : IReportExporter
         int maxWidth = 0, totalHeight = 0;
         foreach (var page in report.Pages)
         {
+            cancellationToken.ThrowIfCancellationRequested(); // abort between pages, not mid-raster
             int w = Math.Max(1, Px(page.PageSetup.PageWidth));
             int h = Math.Max(1, PageHeightPx(page));
             dims.Add((w, h));
