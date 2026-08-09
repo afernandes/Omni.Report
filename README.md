@@ -27,17 +27,17 @@ em cenários brasileiros (PDV, NFC-e, DANFE, ABNT NBR 5891). Veja a
 ### Designer visual (Blazor)
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/designer-dark.png">
-  <source media="(prefers-color-scheme: light)" srcset="assets/designer-light.png">
-  <img alt="Designer visual do OmniReport" src="assets/designer-light.png">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/afernandes/Omni.Report/main/assets/designer-dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/afernandes/Omni.Report/main/assets/designer-light.png">
+  <img alt="Designer visual do OmniReport" src="https://raw.githubusercontent.com/afernandes/Omni.Report/main/assets/designer-light.png">
 </picture>
 
 ### Saída do engine (renderização real dos samples)
 
 | | |
 |:--:|:--:|
-| <img src="assets/sample-dashboard.png" width="360" alt="Dashboard"/><br/>**Dashboard** — gráficos + Gauge + Sparkline + Indicator + DataBar | <img src="assets/sample-map.png" width="360" alt="Mapa vetorial"/><br/>**Mapa vetorial** — Web Mercator + graticule + shapes |
-| <img src="assets/sample-tablix.png" width="360" alt="Tablix"/><br/>**Tablix** — tabela bandada | <img src="assets/sample-nfce.png" width="220" alt="Cupom NFC-e"/><br/>**Cupom NFC-e** — térmico 80 mm (DANFE) |
+| <img src="https://raw.githubusercontent.com/afernandes/Omni.Report/main/assets/sample-dashboard.png" width="360" alt="Dashboard"/><br/>**Dashboard** — gráficos + Gauge + Sparkline + Indicator + DataBar | <img src="https://raw.githubusercontent.com/afernandes/Omni.Report/main/assets/sample-map.png" width="360" alt="Mapa vetorial"/><br/>**Mapa vetorial** — Web Mercator + graticule + shapes |
+| <img src="https://raw.githubusercontent.com/afernandes/Omni.Report/main/assets/sample-tablix.png" width="360" alt="Tablix"/><br/>**Tablix** — tabela bandada | <img src="https://raw.githubusercontent.com/afernandes/Omni.Report/main/assets/sample-nfce.png" width="220" alt="Cupom NFC-e"/><br/>**Cupom NFC-e** — térmico 80 mm (DANFE) |
 
 > Imagens geradas por `dotnet run --project samples/Reporting.Samples.CodeFirst -- ./out` (PNG vetorial→raster via SkiaSharp).
 

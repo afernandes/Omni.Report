@@ -64,6 +64,13 @@ jobs:
       - name: Build
         run: dotnet build OmniReport.slnx -c Release --no-restore -p:Version=${{ env.VERSION }} -p:ContinuousIntegrationBuild=true
 
+      # GATE DE RELEASE. Sem isto, um workflow_dispatch numa tag cujos testes nunca rodaram (ou rodaram
+      # vermelhos) publicava pacotes quebrados de forma IRREVERSÍVEL: o NuGet.org não aceita reupload da
+      # mesma versão, só deprecação. Confiar em "o commit já passou pelo ci.yml" é confiar em disciplina,
+      # não em mecanismo — e o stub do Android mostrou que defeito de release passa despercebido.
+      - name: Test (gate — nada é publicado com a suíte vermelha)
+        run: dotnet test OmniReport.slnx -c Release --no-build --verbosity minimal
+
       - name: Pack (todos os projetos IsPackable + símbolos .snupkg)
         run: dotnet pack OmniReport.slnx -c Release --no-build -o ./artifacts -p:Version=${{ env.VERSION }}
 
