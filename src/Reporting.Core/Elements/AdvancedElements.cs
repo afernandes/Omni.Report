@@ -133,7 +133,14 @@ public sealed record CodeElement : ReportElement
 }
 
 /// <summary>Source language of a <see cref="CodeElement"/> block — C# (default) or legacy VB.NET for SSRS interop.</summary>
-public enum CodeLanguage { CSharp, VisualBasic }
+public enum CodeLanguage
+{
+    /// <summary>C#. The default, and the only language the Roslyn evaluator compiles.</summary>
+    CSharp,
+
+    /// <summary>VB.NET, as SSRS reports declare it. Preserved on import for fidelity; not executed.</summary>
+    VisualBasic,
+}
 
 // ─────────────────────────────────────────────────────────────────────────────────
 
@@ -197,12 +204,16 @@ public sealed record MapElement : ReportElement
 /// </summary>
 public sealed record GaugeElement : ReportElement
 {
+    /// <summary>Radial dial or linear track.</summary>
     [PropertyGrid(Category = "Medidor", Order = 1, Label = "Tipo")]
     public GaugeKind Kind { get; init; } = GaugeKind.Radial;
+    /// <summary>Expression for the low end of the scale.</summary>
     [PropertyGrid(Category = "Medidor", Order = 3, Label = "Mínimo")]
     public string MinimumExpression { get; init; } = "0";
+    /// <summary>Expression for the high end of the scale.</summary>
     [PropertyGrid(Category = "Medidor", Order = 4, Label = "Máximo")]
     public string MaximumExpression { get; init; } = "100";
+    /// <summary>Expression for the value the needle points at. Clamped to the min/max range.</summary>
     [PropertyGrid(Category = "Medidor", Order = 2, Label = "Valor", Placeholder = "Fields.Velocidade")]
     public string ValueExpression { get; init; } = "0";
     /// <summary>Optional banded ranges (red/yellow/green zones). Each entry is
@@ -212,9 +223,19 @@ public sealed record GaugeElement : ReportElement
 }
 
 /// <summary>Visual form of a <see cref="GaugeElement"/> — a radial dial arc or a linear track.</summary>
-public enum GaugeKind { Radial, Linear }
+public enum GaugeKind
+{
+    /// <summary>A circular dial with a needle.</summary>
+    Radial,
+
+    /// <summary>A straight track with a marker.</summary>
+    Linear,
+}
 
 /// <summary>A coloured band of a <see cref="GaugeElement"/> — a value range (start/end expressions) painted in a given colour.</summary>
+/// <param name="StartExpression">Expression for where the band begins on the scale.</param>
+/// <param name="EndExpression">Expression for where the band ends.</param>
+/// <param name="ColorHex">Fill colour of the band, as <c>#RRGGBB</c>.</param>
 public sealed record GaugeRange(
     [property: PropertyGrid(Order = 1, Label = "Início")] string StartExpression,
     [property: PropertyGrid(Order = 2, Label = "Fim")] string EndExpression,
@@ -228,10 +249,13 @@ public sealed record GaugeRange(
 /// </summary>
 public sealed record DataBarElement : ReportElement
 {
+    /// <summary>Expression for the value that sets the fill length.</summary>
     [PropertyGrid(Category = "Barra de dados", Order = 1, Label = "Valor", Placeholder = "Fields.Total")]
     public string ValueExpression { get; init; } = "0";
+    /// <summary>Expression for the value that maps to an empty bar.</summary>
     [PropertyGrid(Category = "Barra de dados", Order = 2, Label = "Mínimo")]
     public string MinimumExpression { get; init; } = "0";
+    /// <summary>Expression for the value that maps to a full bar.</summary>
     [PropertyGrid(Category = "Barra de dados", Order = 3, Label = "Máximo")]
     public string MaximumExpression { get; init; } = "100";
     /// <summary>Fill colour expression (hex literal or expression returning hex).</summary>
@@ -247,19 +271,32 @@ public sealed record DataBarElement : ReportElement
 /// </summary>
 public sealed record SparklineElement : ReportElement
 {
+    /// <summary>Line, column or filled-area form.</summary>
     [PropertyGrid(Category = "Mini-gráfico", Order = 1, Label = "Tipo")]
     public SparklineKind Kind { get; init; } = SparklineKind.Line;
     /// <summary>Data source providing the trend series. Each row contributes one point.</summary>
     [PropertyGrid(Category = "Mini-gráfico", Order = 4, Label = "Fonte", Placeholder = "(fonte primária)")]
     public string? DataSetName { get; init; }
+    /// <summary>Expression evaluated per row to produce the value of each point.</summary>
     [PropertyGrid(Category = "Mini-gráfico", Order = 2, Label = "Valor", Placeholder = "Fields.Total")]
     public string ValueExpression { get; init; } = "Fields.Value";
+    /// <summary>Optional expression labelling each point along the axis. Null leaves points unlabelled.</summary>
     [PropertyGrid(Category = "Mini-gráfico", Order = 3, Label = "Categoria")]
     public string? CategoryExpression { get; init; }
 }
 
 /// <summary>Visual form of a <see cref="SparklineElement"/> — a line, column, or filled-area mini-chart.</summary>
-public enum SparklineKind { Line, Column, Area }
+public enum SparklineKind
+{
+    /// <summary>A polyline through the points.</summary>
+    Line,
+
+    /// <summary>One column per point.</summary>
+    Column,
+
+    /// <summary>A line with the area beneath it filled.</summary>
+    Area,
+}
 
 // ─────────────────────────────────────────────────────────────────────────────────
 
@@ -269,8 +306,10 @@ public enum SparklineKind { Line, Column, Area }
 /// </summary>
 public sealed record IndicatorElement : ReportElement
 {
+    /// <summary>Which icon family the states pick from.</summary>
     [PropertyGrid(Category = "Indicador", Order = 1, Label = "Tipo")]
     public IndicatorKind Kind { get; init; } = IndicatorKind.DirectionalArrow;
+    /// <summary>Expression whose result selects the matching state.</summary>
     [PropertyGrid(Category = "Indicador", Order = 2, Label = "Valor", Placeholder = "Fields.Meta")]
     public string ValueExpression { get; init; } = "0";
     /// <summary>State boundaries — each (start, end, iconName).</summary>
@@ -279,9 +318,25 @@ public sealed record IndicatorElement : ReportElement
 }
 
 /// <summary>Icon family of an <see cref="IndicatorElement"/> — directional arrow, traffic-light shape, rating bar, or symbol.</summary>
-public enum IndicatorKind { DirectionalArrow, Shape, RatingBar, Symbol }
+public enum IndicatorKind
+{
+    /// <summary>Arrows pointing up, sideways or down.</summary>
+    DirectionalArrow,
+
+    /// <summary>Traffic-light style shapes.</summary>
+    Shape,
+
+    /// <summary>A filled rating bar, e.g. signal strength.</summary>
+    RatingBar,
+
+    /// <summary>Assorted symbols such as check marks and crosses.</summary>
+    Symbol,
+}
 
 /// <summary>One state of an <see cref="IndicatorElement"/> — the value range (start/end expressions) that selects a given icon.</summary>
+/// <param name="StartExpression">Expression for the low bound of the range that selects this state.</param>
+/// <param name="EndExpression">Expression for the high bound.</param>
+/// <param name="IconName">Icon drawn while the value falls in the range.</param>
 public sealed record IndicatorState(
     [property: PropertyGrid(Order = 1, Label = "Início")] string StartExpression,
     [property: PropertyGrid(Order = 2, Label = "Fim")] string EndExpression,

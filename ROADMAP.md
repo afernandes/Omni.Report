@@ -261,6 +261,26 @@ doc quebrada volta a passar silenciosa.
 PRs #205 e #208 documentaram 32 tipos de Core/Layout e travaram CS1591 no CodeFirst — é continuar por
 `Reporting.Core` → `Layout` → `Rendering`.
 
+**FEITO PARCIALMENTE — `Core` e `Rendering` documentados e travados; `Layout` fica para o próximo PR.**
+
+**Correção da dimensão declarada acima.** Os "~444 em Core" contavam o warning duplicado que o MSBuild emite por
+membro. Medido por localização única, com `--no-incremental` (sem isso o build fica up-to-date e reporta **zero**,
+que foi como esse número se distorceu em primeiro lugar):
+
+| Pacote | Membros públicos sem doc | Situação |
+|---|--:|---|
+| `Reporting.Core` | 220 | documentado e travado |
+| `Reporting.Rendering` | 24 | documentado e travado |
+| `Reporting.Layout` | 128 | **pendente** |
+
+A trava é a mesma do `CodeFirst` (#208): `NoWarn.Replace(';CS1591','')` no csproj do projeto, que somado ao
+`TreatWarningsAsErrors` das bibliotecas empacotáveis faz o build **falhar** enquanto houver membro público sem
+`<summary>` — e continuar falhando se um novo chegar sem ela. É a parte que importa: sem a trava, a documentação
+volta a se degradar no próximo PR.
+
+Como efeito colateral previsto no próprio item, a trava também passa a pegar `cref` quebrado (CS1574) nesses dois
+projetos — um foi encontrado e corrigido enquanto a documentação era escrita.
+
 ---
 
 ### 8. Sem Dependabot, CodeQL nem `SECURITY.md` ✅

@@ -19,20 +19,36 @@ public sealed record ReportDefinition(
     PageSetup PageSetup,
     DetailBand Detail)
 {
+    /// <summary>Version of the report format this definition conforms to. Written to and read from the
+    /// serialized file so a future reader can migrate an older document.</summary>
     public string SchemaVersion { get; init; } = "1.0";
 
+    /// <summary>Parameters prompted for (or supplied) before the report runs.</summary>
     public EquatableArray<ReportParameter> Parameters { get; init; } = EquatableArray<ReportParameter>.Empty;
 
+    /// <summary>Declared data sources. The detail band binds to one of them.</summary>
     public EquatableArray<DataSourceDefinition> DataSources { get; init; } = EquatableArray<DataSourceDefinition>.Empty;
 
+    /// <summary>Report-level variables — expressions evaluated once and reusable anywhere.</summary>
     public EquatableArray<ReportVariable> Variables { get; init; } = EquatableArray<ReportVariable>.Empty;
 
+    /// <summary>Band rendered once at the very start. Null means none.</summary>
     public ReportBand? ReportHeader { get; init; }
+
+    /// <summary>Band rendered at the top of every page. Null means none.</summary>
     public ReportBand? PageHeader { get; init; }
+
+    /// <summary>Grouping levels wrapped around the detail band, outermost first.</summary>
     public EquatableArray<GroupBand> Groups { get; init; } = EquatableArray<GroupBand>.Empty;
+
+    /// <summary>Band rendered at the bottom of every page. Null means none.</summary>
     public ReportBand? PageFooter { get; init; }
+
+    /// <summary>Band rendered once at the very end. Null means none.</summary>
     public ReportBand? ReportFooter { get; init; }
 
+    /// <summary>Free-form key/value bag. Carries RDL report-level fields that have no first-class property
+    /// (<c>Language</c>, <c>Description</c>, <c>Author</c>, …) so they survive a round-trip.</summary>
     public EquatableDictionary<string, string> Metadata { get; init; } = EquatableDictionary<string, string>.Empty;
 
     /// <summary>Reusable named styles (SSRS <c>Style[@Name]</c>): a table of styles an element's

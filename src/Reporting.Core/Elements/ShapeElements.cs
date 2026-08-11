@@ -9,9 +9,11 @@ namespace Reporting.Elements;
 /// the line is drawn between two of its corners as indicated by <see cref="LineDirection"/>.</summary>
 public sealed record LineElement : ReportElement
 {
+    /// <summary>Which pair of corners (or centre axis) of the bounds the line connects.</summary>
     [PropertyGrid(Category = "Linha", Order = 1, Label = "Orientação", Bindable = true)]
     public LineDirection Direction { get; init; } = LineDirection.TopLeftToBottomRight;
 
+    /// <summary>Stroke used to draw the line — style, thickness and colour. Defaults to a hairline black solid.</summary>
     public BorderSide Pen { get; init; } = new(BorderLineStyle.Solid, Unit.FromPoint(0.5), Color.Black);
 }
 
@@ -24,7 +26,10 @@ public enum LineDirection
     /// <summary>Vertical line at the horizontal center of <see cref="ReportElement.Bounds"/>.</summary>
     Vertical,
 
+    /// <summary>Diagonal from the top-left corner down to the bottom-right one.</summary>
     TopLeftToBottomRight,
+
+    /// <summary>Diagonal from the bottom-left corner up to the top-right one.</summary>
     BottomLeftToTopRight,
 }
 
@@ -32,9 +37,11 @@ public enum LineDirection
 /// lays out nested <see cref="Children"/> positioned relative to its top-left.</summary>
 public sealed record RectangleElement : ReportElement
 {
+    /// <summary>Interior fill. Null leaves the rectangle unfilled, showing whatever is beneath it.</summary>
     [PropertyGrid(Category = "Forma", Order = 1, Label = "Preenchimento", Bindable = true)]
     public Color? FillColor { get; init; }
 
+    /// <summary>Corner rounding. Applies to the clip region imposed on <see cref="Children"/>.</summary>
     [PropertyGrid(Category = "Forma", Order = 2, Label = "Raio do canto", Bindable = true)]
     public Unit CornerRadius { get; init; } = Unit.Zero;
 
@@ -48,6 +55,7 @@ public sealed record RectangleElement : ReportElement
 /// <summary>An ellipse (or circle) drawn to fill <see cref="ReportElement.Bounds"/>, with an optional fill colour.</summary>
 public sealed record EllipseElement : ReportElement
 {
+    /// <summary>Interior fill. Null leaves the ellipse unfilled, showing whatever is beneath it.</summary>
     [PropertyGrid(Category = "Forma", Order = 1, Label = "Preenchimento", Bindable = true)]
     public Color? FillColor { get; init; }
 }

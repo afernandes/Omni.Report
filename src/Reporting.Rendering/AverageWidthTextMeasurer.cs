@@ -15,6 +15,9 @@ public sealed class AverageWidthTextMeasurer : ITextMeasurer
     /// <summary>Line-height multiplier applied to <c>style.Font.Size</c>.</summary>
     public double LineHeightRatio { get; init; } = 1.25;
 
+    /// <summary>Estimates the text extent arithmetically: width is the character count times the average
+    /// glyph width, height is the line height times the number of wrapped lines. No font file is consulted,
+    /// which is exactly why the result is identical on every machine.</summary>
     public Size Measure(string text, TextStyle style, Unit? maxWidth = null)
     {
         ArgumentNullException.ThrowIfNull(style);
