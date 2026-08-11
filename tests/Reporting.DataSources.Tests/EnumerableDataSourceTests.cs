@@ -72,26 +72,36 @@ public class EnumerableDataSourceTests
         first["nonexistent"].Should().BeNull();
     }
 
+    /// <summary>
+    /// 100 mil registros iteram por completo, com os campos legíveis do início ao fim.
+    /// </summary>
+    /// <remarks>
+    /// Este teste tinha uma asserção de wall-clock (&lt; 2 s) que rodava <b>apenas fora do CI</b>, para
+    /// escapar da variância dos runners compartilhados. O desenho estava invertido: dispensava o runner
+    /// e cobrava o orçamento justamente da máquina do dev, que costuma estar no meio de um build — a
+    /// suíte ficava vermelha localmente e verde no CI, o pior dos dois mundos. Um <c>Stopwatch</c> em
+    /// volta de uma execução fria também não controla JIT nem warmup, então nunca mediu o que dizia
+    /// medir. O orçamento passou para <c>DataSourceBenchmarks</c>, em <c>benchmarks/</c>, onde há
+    /// instrumentação para isso. Mesmo tratamento dado ao teste equivalente do CodeFirst no #233 —
+    /// este era o último da classe.
+    /// </remarks>
     [Fact]
-    public async Task Iterates_large_collection_quickly()
+    public async Task Iterates_a_large_collection_end_to_end()
     {
-        // Smoke benchmark — 100k synthetic records should iterate in well under a second.
         var items = System.Linq.Enumerable.Range(0, 100_000)
             .Select(i => new Venda("c" + (i % 50), "p", i % 7, 1.99m));
         var ds = new EnumerableDataSource<Venda>("V", items);
 
-        var sw = System.Diagnostics.Stopwatch.StartNew();
         int count = 0;
         await foreach (var r in ds.ReadAsync())
         {
-            _ = r["Total"];
+            // Lê um campo em toda linha: uma fonte que quebrasse a projeção no meio da sequência
+            // passaria numa simples contagem.
+            r["Total"].Should().NotBeNull();
             count++;
         }
-        sw.Stop();
+
         count.Should().Be(100_000);
-        // Wall-clock só fora do CI — runners compartilhados variam muito e flakeiam o limite fixo.
-        if (System.Environment.GetEnvironmentVariable("CI") is null)
-            sw.ElapsedMilliseconds.Should().BeLessThan(2_000);
     }
 }
 

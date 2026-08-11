@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Reporting.CodeFirst\Reporting.CodeFirst.csproj" />
+    <ProjectReference Include="..\..\src\Reporting.DataSources\Reporting.DataSources.csproj" />
     <ProjectReference Include="..\..\src\Reporting.Expressions\Reporting.Expressions.csproj" />
     <ProjectReference Include="..\..\src\Reporting.Layout\Reporting.Layout.csproj" />
     <ProjectReference Include="..\..\src\Reporting.Output.Excel\Reporting.Output.Excel.csproj" />
