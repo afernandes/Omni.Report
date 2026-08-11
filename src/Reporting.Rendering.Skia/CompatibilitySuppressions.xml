@@ -1,0 +1,25 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!-- https://learn.microsoft.com/dotnet/fundamentals/package-validation/diagnostic-ids -->
+<Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:Reporting.Rendering.Skia.SkiaPdfRenderingContext.DrawImage(System.ReadOnlySpan{System.Byte},Reporting.Geometry.Rectangle)</Target>
+    <Left>lib/net10.0/Reporting.Rendering.Skia.dll</Left>
+    <Right>lib/net10.0/Reporting.Rendering.Skia.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:Reporting.Rendering.Skia.SkiaPrimitiveRenderer.DrawImage(SkiaSharp.SKCanvas,System.ReadOnlySpan{System.Byte},Reporting.Geometry.Rectangle,System.Single)</Target>
+    <Left>lib/net10.0/Reporting.Rendering.Skia.dll</Left>
+    <Right>lib/net10.0/Reporting.Rendering.Skia.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:Reporting.Rendering.Skia.SkiaRenderingContext.DrawImage(System.ReadOnlySpan{System.Byte},Reporting.Geometry.Rectangle)</Target>
+    <Left>lib/net10.0/Reporting.Rendering.Skia.dll</Left>
+    <Right>lib/net10.0/Reporting.Rendering.Skia.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+</Suppressions>

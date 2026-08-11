@@ -17,7 +17,10 @@
     <PackageReference Include="xunit.runner.visualstudio" />
     <PackageReference Include="FluentAssertions" />
     <PackageReference Include="coverlet.collector" />
-    <PackageReference Include="Verify.Xunit" />
+    <!-- Verify.Xunit vivia aqui sem um único uso: nenhum .cs chamava a API e não havia nenhum
+         *.verified.*. O golden agora existe de fato, em tests/Reporting.Golden.Tests, onde a saída
+         é determinística por construção — este projeto conta pixels de tinta justamente para não
+         depender de glifo de plataforma, que é o oposto do que um golden precisa. -->
   </ItemGroup>
 
 </Project>

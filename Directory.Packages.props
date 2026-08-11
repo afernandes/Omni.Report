@@ -45,6 +45,13 @@
     <PackageVersion Include="coverlet.collector" Version="6.0.2" />
     <PackageVersion Include="coverlet.msbuild" Version="6.0.2" />
 
+    <!-- Testcontainers: bancos reais em Docker para os testes de integração dos conectores SQL.
+         Só Reporting.DataSources.Integration.Tests referencia. Os testes se auto-pulam quando não há
+         daemon Docker, então a suíte normal não passa a exigir Docker de ninguém. -->
+    <PackageVersion Include="Testcontainers.MsSql" Version="4.13.0" />
+    <PackageVersion Include="Testcontainers.PostgreSql" Version="4.13.0" />
+    <PackageVersion Include="Testcontainers.MySql" Version="4.13.0" />
+
     <!-- Windows GDI (System.Drawing.Common no longer included by default in net*-windows TFMs) -->
     <PackageVersion Include="System.Drawing.Common" Version="9.0.0" />
 

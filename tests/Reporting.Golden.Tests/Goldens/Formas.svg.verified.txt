@@ -1,0 +1,11 @@
+﻿svg height="100%" preserveAspectRatio="xMidYMid meet" viewBox="0 0 595.296 419.544" width="100%"
+  rect fill="white" height="419.544" width="595.296"
+  rect fill="#DEF" height="56.664" width="170.064" x="28.368" y="28.368"
+  defs
+    linearGradient gradientUnits="userSpaceOnUse" id="gradient_0" x1="113.4" x2="113.4" y1="96.408" y2="153.072"
+      stop offset="0" stop-color="#F80"
+      stop offset="1" stop-color="white"
+  rect fill="url(#gradient_0)" height="56.664" width="170.064" x="28.368" y="96.408"
+  ellipse cx="283.5" cy="56.7" fill="#EFE" rx="56.7" ry="28.332"
+  path d="M28.368 170.136L368.496 170.136" fill="none" stroke="black" stroke-miterlimit="4" stroke-width="2.016"
+  path d="M28.368 187.128L368.496 187.128" fill="none" stroke="black" stroke-miterlimit="4" stroke-width="0.504"

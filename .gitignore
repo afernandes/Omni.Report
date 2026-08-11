@@ -84,3 +84,7 @@ BenchmarkDotNet.Artifacts/
 Audit.slnx
 CrossPlat.slnx
 cross-plat.txt
+
+# Golden files: o *.received.* é o resultado da execução atual, escrito pelo Verify quando um
+# golden falha. É artefato de diagnóstico — o que se versiona é o *.verified.*.
+*.received.*

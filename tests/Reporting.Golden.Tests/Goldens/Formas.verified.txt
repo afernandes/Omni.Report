@@ -1,0 +1,9 @@
+﻿report Formas — 1 page
+
+page 1  A5 Landscape 210.01mm×148.01mm  margins 10.01mm/10.01mm/10.01mm/10.01mm  [6]
+  rect    [10.01mm,10.01mm 59.99mm×19.99mm]  fill=#DDEEFF  src=e1
+  rect    [10.01mm,34.01mm 59.99mm×19.99mm]  fill=#FF8800→#FFFFFF/TopBottom  src=e2
+  rect    [10.01mm,34.01mm 59.99mm×19.99mm]  src=e2
+  ellipse [80.01mm,10.01mm 40.01mm×19.99mm]  fill=#EEFFEE  src=e3
+  line    [10.01mm,60.02mm 119.99mm×0.00mm]  (10.01mm,60.02mm)→(130.00mm,60.02mm)  pen=#000000/2.02pt  src=e4
+  line    [10.01mm,66.01mm 119.99mm×0.00mm]  (10.01mm,66.01mm)→(130.00mm,66.01mm)  pen=#000000/0.5pt  src=e5

@@ -8,6 +8,7 @@ namespace Reporting.Elements;
 [TextStyled]
 public sealed record LabelElement : ReportElement
 {
+    /// <summary>The literal text drawn. Not an expression — it is rendered exactly as written.</summary>
     public required string Text { get; init; }
 }
 
@@ -33,6 +34,8 @@ public sealed record LabelElement : ReportElement
 [TextStyled]
 public sealed record TextBoxElement : ReportElement
 {
+    /// <summary>Either a raw expression (<c>Fields.Total</c>) or a template mixing literal text with
+    /// <c>{expr:format}</c> placeholders. Ignored when <c>TextRuns</c> is non-empty.</summary>
     public required string Expression { get; init; }
 
     /// <summary>If true, the element grows vertically to fit wrapped content.</summary>

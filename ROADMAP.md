@@ -210,6 +210,40 @@ corporativo. Comparar com `.Sqlite`, que ao menos tem 4 testes.
 mapeamento de tipos (datas, decimais, nulos, `uniqueidentifier`), streaming e cancelamento. Rodar num job de CI
 separado (marcado, não bloqueante em PR se lento).
 
+**FEITO.** `tests/Reporting.DataSources.Integration.Tests` — **um contrato só, executado contra os três motores**.
+Eles são o mesmo shim três vezes (cada um entrega uma fábrica de conexão ao `AdoNetDataSource`), então uma cópia
+de teste por motor iria divergir, e um comportamento que só um deles acerta é justamente o bug que interessa.
+
+Cobre exatamente o que um shim fino erra: nulo chegando como `DBNull` em vez de `null` (não é nulo — toda
+checagem a jusante falha calada e o valor renderiza como `System.DBNull`), `decimal` virando `double`
+(`1450.90` → `1450.8999999999999` num relatório financeiro), `DateTime` truncado para meia-noite, booleano do
+MySQL (que não tem o tipo — `TINYINT(1)` é a convenção), parâmetro por nome, leitura preguiçosa e cancelamento.
+
+Roda no workflow `db-integration.yml`: em PR que toca conector ou o `AdoNet` compartilhado, em push na `main`,
+semanalmente e sob demanda. Imagens **pinadas por tag** — com `latest` a suíte mudaria de comportamento sem
+nenhum commit.
+
+Dois detalhes que evitam falso-verde, ambos deliberados:
+
+1. **O gate vive no `DockerFactAttribute`, não no workflow.** Em CI os testes só rodam com
+   `OMNIREPORT_DB_TESTS` setada. Sem isso, o job Linux do `ci.yml` — que deriva a lista de projetos
+   automaticamente — passaria a puxar três imagens de banco em todo PR. Manter a decisão no atributo torna o
+   comportamento independente de como cada job escolhe seus projetos.
+2. **O workflow falha se algum teste for pulado.** Um job cuja única razão de existir é rodar contra banco real
+   não pode ficar verde tendo pulado tudo; perder o Docker no runner viraria um verde silencioso, que é o
+   defeito que este roadmap mais encontrou.
+
+**A primeira execução real já encontrou um defeito de produção.** `AdoNetDataSource` delegava o cancelamento
+inteiramente ao token passado para `DbDataReader.ReadAsync`. Quando o driver já tem as linhas em buffer local
+esse método retorna **de forma síncrona sem consultar o token** — ou seja, o cancelamento era honrado por
+acidente de driver: o SqlClient consulta, o Npgsql e o MySqlConnector não. Um render cancelado continuava
+drenando o resultado inteiro no PostgreSQL e no MySQL. Foi exatamente rodar o **mesmo teste nos três motores**
+que tornou isso visível — passava em um, falhava em dois. Corrigido com `ThrowIfCancellationRequested()` por
+linha (`AdoNetDataSource.cs:143`).
+
+Placar da primeira execução contra bancos reais: 25 de 27 verdes, as 2 falhas sendo esse defeito nos dois
+motores afetados.
+
 ---
 
 ### 5. CI Linux verifica só 15 de 39 projetos 🔍
@@ -241,6 +275,31 @@ disciplina humana no Conventional Commit (`CONTRIBUTING.md:49`).
 **Ação.** Adotar `PublicApiAnalyzers` ao menos em `Core`, `CodeFirst`, `Layout` e `Rendering` **antes do 1.0** —
 depois do 1.0 o custo de adoção sobe muito.
 
+**FEITO — por outro mecanismo, e mais amplo.** Adotado o **Package Validation** nativo do SDK
+(`EnablePackageValidation` + baseline `0.1.1`) em vez do `PublicApiAnalyzers`. Três razões, nesta ordem:
+
+1. **Cobre os 39 pacotes**, não os 4 propostos — a Ação original limitava o escopo exatamente porque o custo
+   por projeto do PublicApiAnalyzers é alto.
+2. **Não exige `PublicAPI.Shipped.txt` por projeto** (dezenas de milhares de linhas geradas para manter à mão,
+   que também podem ficar desatualizadas em silêncio — o defeito que este roadmap mais encontrou).
+3. **Compara contra o artefato realmente publicado no nuget.org**, não contra um arquivo no repo. A pergunta
+   que importa é "isto quebra quem já consome o pacote?", e essa é literalmente a comparação feita.
+
+Os pacotes 0.1.0/0.1.1 estão publicados, então o baseline existe. Resultado medido: **só 8 dos 39 pacotes têm
+quebra desde a 0.1.1** — Core, CodeFirst, Layout, Expressions, Rendering, Rendering.Skia, Rendering.Gdi e
+Designer.Blazor — e as supressões somam ~14 KB. Os outros 31 estão estáveis. `Output.Docx`, `Output.Image` e
+`Output.Xml` ficam sem baseline por não existirem na 0.1.1; entram quando a 0.2.0 sair.
+
+Verificado por sabotagem: remover `Unit.ToCm()` faz o `pack` falhar com
+`CP0002: O membro 'double Reporting.Geometry.Unit.ToCm()' existe em [Linha de base] ... mas não em ...`.
+
+Achado de tabela: o `<Version>` default do repo era `0.1.0-alpha` — **atrás** da 0.1.1 já publicada. Passava
+despercebido porque o `release.yml` sobrescreve com a tag, então só quem rodasse `pack` local geraria um pacote
+mais velho que o do nuget.org. O `CP0003` do Package Validation foi o que tornou isso visível. Corrigido para
+`0.2.0-alpha`.
+
+Procedimento para aceitar uma quebra intencional documentado em `CONTRIBUTING.md`.
+
 ---
 
 ### 7. XML docs obrigatórios em 1 de 39 pacotes ✅
@@ -260,6 +319,26 @@ doc quebrada volta a passar silenciosa.
 **Ação.** Estender o padrão do CodeFirst progressivamente, começando pelos pacotes core. Há trilho pronto: os
 PRs #205 e #208 documentaram 32 tipos de Core/Layout e travaram CS1591 no CodeFirst — é continuar por
 `Reporting.Core` → `Layout` → `Rendering`.
+
+**FEITO PARCIALMENTE — `Core` e `Rendering` documentados e travados; `Layout` fica para o próximo PR.**
+
+**Correção da dimensão declarada acima.** Os "~444 em Core" contavam o warning duplicado que o MSBuild emite por
+membro. Medido por localização única, com `--no-incremental` (sem isso o build fica up-to-date e reporta **zero**,
+que foi como esse número se distorceu em primeiro lugar):
+
+| Pacote | Membros públicos sem doc | Situação |
+|---|--:|---|
+| `Reporting.Core` | 220 | documentado e travado |
+| `Reporting.Rendering` | 24 | documentado e travado |
+| `Reporting.Layout` | 128 | **pendente** |
+
+A trava é a mesma do `CodeFirst` (#208): `NoWarn.Replace(';CS1591','')` no csproj do projeto, que somado ao
+`TreatWarningsAsErrors` das bibliotecas empacotáveis faz o build **falhar** enquanto houver membro público sem
+`<summary>` — e continuar falhando se um novo chegar sem ela. É a parte que importa: sem a trava, a documentação
+volta a se degradar no próximo PR.
+
+Como efeito colateral previsto no próprio item, a trava também passa a pegar `cref` quebrado (CS1574) nesses dois
+projetos — um foi encontrado e corrigido enquanto a documentação era escrita.
 
 ---
 
@@ -286,6 +365,16 @@ os docs de conformidade RDL já descrevem como entregues.
 semi-automatizável com `git-cliff`). Adicionar ao checklist de release, ou automatizar de vez — hoje há **duas**
 fontes de notas não sincronizadas (o CHANGELOG manual e o `generate_release_notes` do `release.yml:126-132`).
 
+**FEITO.** `[Unreleased]` reconstruído a partir dos 225 PRs desde a v0.1.1, curado por área em vez de uma linha
+por commit — um changelog de 225 bullets não é lido. As 136 referências de PR foram conferidas por script contra
+`git log v0.1.1..main`: nenhuma inexistente.
+
+A causa estrutural também foi fechada, senão o arquivo envelhece de novo: o `release.yml` passa a extrair a
+seção da versão publicada e usá-la como `body_path` do GitHub Release, com o `generate_release_notes`
+acrescentando a lista de PRs **abaixo** — as duas fontes somam em vez de competir. E, principalmente, **sem
+seção para a versão o release falha**. Esquecer o CHANGELOG deixa de ser omissão invisível e vira bloqueio de
+entrega. Extrator testado nos quatro casos, incluindo a colisão de prefixo (`0.1` não casa com `0.1.1`).
+
 ---
 
 ### 10. `Verify.Xunit` referenciado sem uso → zero regressão visual ✅
@@ -301,6 +390,14 @@ gradiente ligeiramente errado, deslocamento de baseline) em PDF/PNG/SVG.
 **Ação.** Ou ativar o Verify com golden files para um conjunto representativo de relatórios, ou remover a
 dependência morta. A primeira é claramente melhor para um motor de renderização — e tem sinergia com o item 13
 (o gradiente ausente no GDI seria pego por um golden file).
+
+**FEITO.** `tests/Reporting.Golden.Tests` — 4 relatórios pinados em duas camadas: o *display list* do paginador
+(geometria, fonte, cor, alinhamento, quebra de página, `Page.Total`) e a emissão SVG (preenchimento, traço,
+gradiente). A referência morta em `Reporting.Rendering.Tests` foi removida. Verificado por sabotagem: descartar
+o gradiente em `StyleResolver.BackgroundBrush` derruba os dois goldens de `Formas` — `fill=#FF8800→#FFFFFF/TopBottom`
+vira `fill=#FF8800` e o `<linearGradient>` some do SVG. Estabilidade cross-platform é por construção, não por
+sorte: mils inteiros + `AverageWidthTextMeasurer` + cultura fixa + resumo do SVG que descarta os avanços por
+glifo (que o Skia tira da fonte resolvida e mudam no Linux). Ver `tests/Reporting.Golden.Tests/README.md`.
 
 ---
 
@@ -485,6 +582,13 @@ automática contra regressão de performance. `LargeReportPaginationTests` cobre
 PDF/Excel. Rodar sob demanda; publicar tendência. Pré-requisito para atacar o item 15 com dado em vez de
 intuição.
 
+**Consequência colhida.** Com os benchmarks no lugar, a asserção de wall-clock que morava em
+`SamplesIntegrationTests.Sample01_with_10k_rows_finishes_under_2_seconds` foi removida. Ela rodava **só fora do
+CI** — dispensava o runner compartilhado e cobrava o orçamento de 2 s justamente da máquina do dev, que costuma
+estar no meio de um build; verificado que falhava na `main` limpa neste workstation enquanto o CI passava verde.
+Um `Stopwatch` em volta de uma execução fria também não controla JIT nem warmup. O teste manteve a asserção de
+correção (10k linhas ⇒ múltiplas páginas) e o orçamento de tempo passou a viver em `PaginationBenchmarks`.
+
 ---
 
 ### 21. Perda da semântica "inherit" no Designer 🔍
@@ -499,6 +603,55 @@ entregue em #181-183/#188-189. Um relatório editado no Designer deixa de respon
 
 **Ação.** Representar "inherit" como estado distinto no VM (nullable + placeholder na UI), não como valor
 materializado. Conhecido e pré-existente; a chegada dos named styles elevou sua relevância.
+
+---
+
+### 21a. `Style.Border` só é desenhada em Rectangle e Ellipse ✅
+
+Achado pela suíte de golden files (item 10) na primeira execução, e fixado em
+`tests/Reporting.Golden.Tests/RenderGapCharacterizationTests.cs`.
+
+`PenStyle.FromBorderSide` tem **um único chamador** em todo o `src/`: `ResolveBorderPen`
+(`Reporting.Layout/Internal/BandRenderer.cs:698`), invocado apenas nos casos `RectangleElement` (linha 320) e
+`EllipseElement` (linha 352). A passagem genérica de elemento emite um `DrawRectanglePrimitive` de **fundo**
+quando há preenchimento (linha 248), mas nunca um com traço.
+
+Consequência: `.Border(...)` num `Label`/`TextBox`/`Image` **não vira primitiva alguma** — nenhum backend pode
+desenhá-la. Um textbox com borda é o caso mais banal de relatório estilo SSRS. O Tablix também ignora
+`Style.Border`: desenha uma grade de cor fixa (`TablixRenderer.cs:24`, `#CBD5E1` a 0.5pt), não configurável.
+
+**Ação.** Emitir o retângulo de borda na passagem genérica (as 4 faces, não só `Top` como o fallback atual) e
+tornar a grade do Tablix dirigida por estilo. **Pronto quando** o golden `Estilos` mostrar a primitiva de borda
+e a caracterização correspondente falhar (então é apagada).
+
+---
+
+### 21b. `CornerRadius` é descartado em retângulo sem filhos ✅
+
+Mesmo achado, mesma caracterização. `DrawRectanglePrimitive` não tem campo de raio. O valor sobrevive só como
+`ClipCornerRadius`, que o `BandRenderer` carimba nos **filhos** do retângulo para recortar overflow
+(`BandRenderer.cs:342`). Um retângulo usado como forma arredondada não tem filhos, então o raio não chega a
+lugar nenhum — o SVG exportado é um `<rect>` sem `rx`, como registra `Goldens/Formas.svg.verified.txt`. Ser
+honrado para containers é justamente por que a lacuna passou despercebida.
+
+**Ação.** Campo de raio no `DrawRectanglePrimitive` + honrar em Skia, GDI, PDF, SVG e no overlay HTML.
+
+---
+
+### 21c. `ReportBuilderRoot.Culture(CultureInfo.InvariantCulture)` lança 🔍
+
+`Reporting.CodeFirst/ReportBuilder.cs:145` repassa `culture.Name` para `Language(string)`, que aplica
+`ArgumentException.ThrowIfNullOrWhiteSpace` — e o nome da cultura invariante é `""`. Uma chamada pública,
+documentada e perfeitamente razoável (é a escolha mais reprodutível para um relatório) lança
+`ArgumentException` com uma mensagem que cita um parâmetro que quem chamou nunca informou.
+
+Guardar `""` **não** resolve: `ReportPaginator.TryGetCulture` (linha 231) trata string vazia como "nenhuma
+cultura informada" e cai na cultura ambiente — silenciosamente o oposto do pedido. Suporte real exige um
+sentinela entendido pelos dois lados.
+
+**Ação.** Sentinela explícito (`Metadata["Language"] = "Invariant"`) reconhecido em `TryGetCulture`, ou —
+se a decisão for não suportar — lançar em `Culture()` com mensagem que diga isso. Contornado nos goldens
+fixando `en-US`.
 
 ---
 

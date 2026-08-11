@@ -17,14 +17,23 @@ public interface IRenderingContext : IDisposable
     /// <summary>Ends the current page. Calling <see cref="BeginPage"/> again opens the next.</summary>
     void EndPage();
 
+    /// <summary>Draws <paramref name="text"/> inside <paramref name="bounds"/>, honouring the alignment,
+    /// font and colour in <paramref name="style"/>.</summary>
     void DrawText(string text, Rectangle bounds, TextStyle style);
 
+    /// <summary>Strokes a straight line between two points.</summary>
     void DrawLine(Point from, Point to, PenStyle pen);
 
+    /// <summary>Draws a rectangle. <paramref name="fill"/> paints the interior and <paramref name="pen"/>
+    /// strokes the outline; either may be null to skip that part.</summary>
     void DrawRectangle(Rectangle bounds, PenStyle? pen, BrushStyle? fill);
 
+    /// <summary>Draws an ellipse inscribed in <paramref name="bounds"/>, with the same null-means-skip
+    /// convention as <see cref="DrawRectangle"/>.</summary>
     void DrawEllipse(Rectangle bounds, PenStyle? pen, BrushStyle? fill);
 
+    /// <summary>Decodes and draws an encoded image (PNG, JPEG, …) into <paramref name="bounds"/>, scaled
+    /// according to <paramref name="sizing"/>.</summary>
     void DrawImage(ReadOnlySpan<byte> imageData, Rectangle bounds, ImageSizing sizing = ImageSizing.Fit);
 
     /// <summary>Draws a vector path. The callback receives a builder; implementations
@@ -41,6 +50,9 @@ public interface IRenderingContext : IDisposable
     /// <summary>Restores the clip region pushed by the matching <see cref="PushClip"/>.</summary>
     void PopClip() { }
 
+    /// <summary>Measures the space <paramref name="text"/> would occupy in <paramref name="style"/>.
+    /// When <paramref name="maxWidth"/> is given and the style wraps, the result accounts for the wrapping
+    /// and the height grows by whole lines.</summary>
     Size MeasureText(string text, TextStyle style, Unit? maxWidth = null);
 }
 
@@ -48,5 +60,7 @@ public interface IRenderingContext : IDisposable
 /// without owning a full rendering context (e.g. during pagination).</summary>
 public interface ITextMeasurer
 {
+    /// <summary>Measures the space <paramref name="text"/> would occupy in <paramref name="style"/>,
+    /// wrapping within <paramref name="maxWidth"/> when one is given.</summary>
     Size Measure(string text, TextStyle style, Unit? maxWidth = null);
 }

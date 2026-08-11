@@ -4,22 +4,45 @@ using System.Globalization;
 namespace Reporting.Styling;
 
 /// <summary>An sRGB color with alpha. Channel values are 0–255.</summary>
+/// <param name="R">Red channel.</param>
+/// <param name="G">Green channel.</param>
+/// <param name="B">Blue channel.</param>
+/// <param name="A">Alpha: 0 is fully transparent, 255 fully opaque.</param>
 public readonly record struct Color(byte R, byte G, byte B, byte A)
 {
+    /// <summary>Fully transparent. Used as "no fill" — a background set to this paints nothing.</summary>
     public static readonly Color Transparent = new(0, 0, 0, 0);
+
+    /// <summary>Opaque black, <c>#000000</c>. The default text colour.</summary>
     public static readonly Color Black = new(0, 0, 0, 255);
+
+    /// <summary>Opaque white, <c>#FFFFFF</c>.</summary>
     public static readonly Color White = new(255, 255, 255, 255);
+
+    /// <summary>Opaque red, <c>#FF0000</c>.</summary>
     public static readonly Color Red = new(255, 0, 0, 255);
+
+    /// <summary>Opaque green, <c>#008000</c> — the CSS/RDL <c>green</c>, not full-intensity <c>#00FF00</c>.</summary>
     public static readonly Color Green = new(0, 128, 0, 255);
+
+    /// <summary>Opaque blue, <c>#0000FF</c>.</summary>
     public static readonly Color Blue = new(0, 0, 255, 255);
+
+    /// <summary>Opaque mid grey, <c>#808080</c>.</summary>
     public static readonly Color Gray = new(128, 128, 128, 255);
+
+    /// <summary>Opaque light grey, <c>#D3D3D3</c>.</summary>
     public static readonly Color LightGray = new(211, 211, 211, 255);
 
+    /// <summary>Builds an opaque colour from the three channels.</summary>
     public static Color FromRgb(byte r, byte g, byte b) => new(r, g, b, 255);
 
+    /// <summary>Builds a colour with an explicit alpha. Note the ARGB argument order, which matches the
+    /// <c>#AARRGGBB</c> literal, while the record's own order is RGBA.</summary>
     public static Color FromArgb(byte a, byte r, byte g, byte b) => new(r, g, b, a);
 
-    /// <summary>Parses <c>#RRGGBB</c> or <c>#AARRGGBB</c>.</summary>
+    /// <summary>Parses <c>#RRGGBB</c> or <c>#AARRGGBB</c>. The leading <c>#</c> is optional.</summary>
+    /// <exception cref="FormatException">The literal is not 6 or 8 hex digits.</exception>
     public static Color FromHex(string hex)
     {
         ArgumentNullException.ThrowIfNull(hex);
@@ -40,11 +63,14 @@ public readonly record struct Color(byte R, byte G, byte B, byte A)
         };
     }
 
+    /// <summary>Renders as <c>#RRGGBB</c>, or <c>#AARRGGBB</c> when the colour is not fully opaque —
+    /// so an opaque colour round-trips through the short form that files and CSS expect.</summary>
     public string ToHex()
         => A == 255
             ? string.Create(CultureInfo.InvariantCulture, $"#{R:X2}{G:X2}{B:X2}")
             : string.Create(CultureInfo.InvariantCulture, $"#{A:X2}{R:X2}{G:X2}{B:X2}");
 
+    /// <summary>The hex literal — same as <see cref="ToHex"/>.</summary>
     public override string ToString() => ToHex();
 
     /// <summary>Resolves a CSS/RDL named colour (case-insensitive) to a <see cref="Color"/>, or null when the
