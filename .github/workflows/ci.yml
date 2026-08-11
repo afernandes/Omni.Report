@@ -59,9 +59,14 @@ jobs:
           path: ./TestResults/**/coverage.cobertura.xml
 
   build-linux:
+    # O nome deste job é um CHECK OBRIGATÓRIO no ruleset "Proteção da main". Renomeá-lo faz o check
+    # exigido parar de reportar e o PR fica bloqueado para sempre, com todo o CI verde — foi o que
+    # aconteceu quando este PR tirou o "subset" do nome. Ele já não descreve bem o job (a cobertura
+    # subiu de 15 para 57 dos 62 projetos), mas trocar o nome exige atualizar o ruleset junto, nas
+    # configurações do repositório. Enquanto isso não for feito, o nome fica como está.
     name: Build & Test (Linux, cross-plat subset)
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 40
 
     steps:
       - name: Checkout
@@ -72,64 +77,37 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
-      # On Linux we only build the cross-platform projects.
-      # Windows-only projects (GDI, WindowsSpooler) and the MAUI sample
-      # are skipped — they pin to net10.0-windows / net10.0-windows10.* TFMs.
-      - name: Restore (cross-plat projects)
-        run: |
-          dotnet restore src/Reporting.Core/Reporting.Core.csproj
-          dotnet restore src/Reporting.Expressions/Reporting.Expressions.csproj
-          dotnet restore src/Reporting.DataSources/Reporting.DataSources.csproj
-          dotnet restore src/Reporting.Rendering/Reporting.Rendering.csproj
-          dotnet restore src/Reporting.Layout/Reporting.Layout.csproj
-          dotnet restore src/Reporting.Rendering.Skia/Reporting.Rendering.Skia.csproj
-          dotnet restore src/Reporting.CodeFirst/Reporting.CodeFirst.csproj
-          dotnet restore src/Reporting.Serialization/Reporting.Serialization.csproj
-          dotnet restore src/Reporting.Output.Pdf/Reporting.Output.Pdf.csproj
-          dotnet restore src/Reporting.Output.Excel/Reporting.Output.Excel.csproj
-          dotnet restore src/Reporting.Printing/Reporting.Printing.csproj
-          dotnet restore src/Reporting.Printing.EscPos/Reporting.Printing.EscPos.csproj
-          dotnet restore src/Reporting.Viewer.Blazor/Reporting.Viewer.Blazor.csproj
-          dotnet restore src/Reporting.Designer.Blazor/Reporting.Designer.Blazor.csproj
-          dotnet restore src/Reporting.Hosting.AspNetCore/Reporting.Hosting.AspNetCore.csproj
-
-      - name: Build (cross-plat projects)
-        run: |
-          dotnet build src/Reporting.Core/Reporting.Core.csproj -c Release --no-restore
-          dotnet build src/Reporting.Expressions/Reporting.Expressions.csproj -c Release --no-restore
-          dotnet build src/Reporting.DataSources/Reporting.DataSources.csproj -c Release --no-restore
-          dotnet build src/Reporting.Rendering/Reporting.Rendering.csproj -c Release --no-restore
-          dotnet build src/Reporting.Layout/Reporting.Layout.csproj -c Release --no-restore
-          dotnet build src/Reporting.Rendering.Skia/Reporting.Rendering.Skia.csproj -c Release --no-restore
-          dotnet build src/Reporting.CodeFirst/Reporting.CodeFirst.csproj -c Release --no-restore
-          dotnet build src/Reporting.Serialization/Reporting.Serialization.csproj -c Release --no-restore
-          dotnet build src/Reporting.Output.Pdf/Reporting.Output.Pdf.csproj -c Release --no-restore
-          dotnet build src/Reporting.Output.Excel/Reporting.Output.Excel.csproj -c Release --no-restore
-          dotnet build src/Reporting.Printing/Reporting.Printing.csproj -c Release --no-restore
-          dotnet build src/Reporting.Printing.EscPos/Reporting.Printing.EscPos.csproj -c Release --no-restore
-          dotnet build src/Reporting.Viewer.Blazor/Reporting.Viewer.Blazor.csproj -c Release --no-restore
-          dotnet build src/Reporting.Designer.Blazor/Reporting.Designer.Blazor.csproj -c Release --no-restore
-          dotnet build src/Reporting.Hosting.AspNetCore/Reporting.Hosting.AspNetCore.csproj -c Release --no-restore
-
       # SkiaSharp precisa do fontconfig nativo no Linux (medição/render de texto);
       # sem isso, Reporting.Rendering.Tests falha no runner ubuntu.
       - name: Install SkiaSharp native deps (libfontconfig)
         run: sudo apt-get update && sudo apt-get install -y libfontconfig1
 
-      - name: Test cross-plat suites
+      # A lista de projetos é DERIVADA, não mantida à mão. Antes eram 15 caminhos hardcoded de 62 projetos
+      # em src/+tests/ — ou seja, todo projeto novo nascia fora da verificação cross-platform e ninguém
+      # percebia. Agora entra tudo, menos o que fisicamente não compila no Linux: os 5 projetos de TFM
+      # net10.0-windows / android (GDI, WindowsSpooler + testes, Android). Um projeto novo é coberto no dia
+      # em que é criado; se algum dia ele NÃO puder rodar no Linux, isso vira falha visível de CI em vez de
+      # ausência silenciosa.
+      # Os projetos entram numa solução descartável em vez de serem buildados um a um em loop: assim
+      # há UM restore e UM build para os 57, em vez de um restore implícito por projeto. O mesmo
+      # mecanismo roda no security.yml, então os dois workflows cobrem exatamente o mesmo conjunto.
+      - name: Descobrir projetos cross-platform
         run: |
-          dotnet test tests/Reporting.Core.Tests/Reporting.Core.Tests.csproj -c Release
-          dotnet test tests/Reporting.Expressions.Tests/Reporting.Expressions.Tests.csproj -c Release
-          dotnet test tests/Reporting.DataSources.Tests/Reporting.DataSources.Tests.csproj -c Release
-          dotnet test tests/Reporting.Layout.Tests/Reporting.Layout.Tests.csproj -c Release
-          dotnet test tests/Reporting.Rendering.Tests/Reporting.Rendering.Tests.csproj -c Release
-          dotnet test tests/Reporting.CodeFirst.Tests/Reporting.CodeFirst.Tests.csproj -c Release
-          dotnet test tests/Reporting.Serialization.Tests/Reporting.Serialization.Tests.csproj -c Release
-          dotnet test tests/Reporting.Output.Pdf.Tests/Reporting.Output.Pdf.Tests.csproj -c Release
-          dotnet test tests/Reporting.Output.Excel.Tests/Reporting.Output.Excel.Tests.csproj -c Release
-          dotnet test tests/Reporting.Printing.EscPos.Tests/Reporting.Printing.EscPos.Tests.csproj -c Release
-          dotnet test tests/Reporting.Viewer.Blazor.Tests/Reporting.Viewer.Blazor.Tests.csproj -c Release
-          dotnet test tests/Reporting.Designer.Blazor.Tests/Reporting.Designer.Blazor.Tests.csproj -c Release
+          set -euo pipefail
+          find src tests -name '*.csproj' | grep -vE '(Rendering\.Gdi|Printing\.WindowsSpooler|Printing\.Android)' | sort > cross-plat.txt
+          echo "Projetos cobertos no Linux: $(wc -l < cross-plat.txt)"
+          cat cross-plat.txt
+          dotnet new sln -n CrossPlat -f slnx --force
+          xargs -a cross-plat.txt dotnet sln CrossPlat.slnx add
+
+      - name: Restore
+        run: dotnet restore CrossPlat.slnx
+
+      - name: Build
+        run: dotnet build CrossPlat.slnx -c Release --no-restore
+
+      - name: Test
+        run: dotnet test CrossPlat.slnx -c Release --no-build --verbosity minimal
 
   pack:
     name: Pack NuGets

@@ -1,0 +1,102 @@
+name: Security
+
+# Auditoria de cadeia de suprimentos. Separada do ci.yml de propósito: o CodeQL leva minutos e não deve
+# entrar no caminho crítico de cada PR, enquanto a auditoria de pacote é barata e roda em tudo.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Segunda 07:00 BRT — logo depois dos PRs do Dependabot, para pegar advisory novo em dep antiga.
+    - cron: "0 10 * * 1"
+  workflow_dispatch:
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  vulnerable-packages:
+    name: Pacotes vulneráveis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      # Não dá para auditar OmniReport.slnx no Linux: ele inclui o sample MauiHybrid
+      # (net10.0-windows10.0.19041, workload maui-tizen) e os projetos GDI/WindowsSpooler/Android, que nem
+      # restauram aqui (NETSDK1147). Montamos uma solução descartável com o MESMO conjunto cross-plat que o
+      # ci.yml usa, o que permite um único restore e um único `dotnet list package`.
+      - name: Montar solução cross-platform
+        run: |
+          set -euo pipefail
+          find src tests -name '*.csproj' | grep -vE '(Rendering\.Gdi|Printing\.WindowsSpooler|Printing\.Android)' | sort > cross-plat.txt
+          echo "Projetos auditados: $(wc -l < cross-plat.txt)"
+          dotnet new sln -n Audit -f slnx --force
+          xargs -a cross-plat.txt dotnet sln Audit.slnx add
+
+      - name: Restore
+        run: dotnet restore Audit.slnx
+
+      # Inclui transitivos: o histórico do repo já registra um CVE que chegou por dependência indireta
+      # (SQLitePCLRaw pinado por GHSA-2m69-gcr7-jv3q em Directory.Packages.props).
+      - name: Auditar pacotes vulneráveis
+        run: |
+          # set -e importa aqui: sem ele um `dotnet list` que falhasse (source fora do ar, restore
+          # incompleto) deixaria audit.txt vazio, os greps não achariam nada e o step passaria verde —
+          # auditoria que não auditou reportando "tudo certo" é pior que auditoria nenhuma.
+          set -euo pipefail
+          dotnet list Audit.slnx package --vulnerable --include-transitive 2>&1 | tee audit.txt
+
+          # Falha só em High/Critical. Moderate/Low são reportados no log e viram PR do Dependabot —
+          # travar o merge neles pararia o repo por vulnerabilidade de dependência de teste.
+          if grep -qiE '\b(High|Critical)\b' audit.txt; then
+            echo "::error::Pacote com vulnerabilidade de severidade alta ou crítica."
+            grep -iE '\b(High|Critical)\b' audit.txt
+            exit 1
+          fi
+
+          if grep -qiE '\b(Moderate|Low)\b' audit.txt; then
+            echo "::warning::Vulnerabilidades de severidade moderada/baixa presentes (não bloqueiam)."
+            grep -iE '\b(Moderate|Low)\b' audit.txt
+          fi
+
+  codeql:
+    name: CodeQL (C#)
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Install SkiaSharp native deps (libfontconfig)
+        run: sudo apt-get update && sudo apt-get install -y libfontconfig1
+
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: csharp
+          # build-mode manual: o .slnx inclui projetos de TFM net10.0-windows/android, que NÃO compilam no
+          # runner Linux — `dotnet build OmniReport.slnx` falharia aqui. Usamos a mesma derivação de lista do
+          # job build-linux do ci.yml, para que os dois cubram exatamente o mesmo conjunto.
+          build-mode: manual
+
+      - name: Build (mesmo conjunto cross-plat do ci.yml)
+        run: |
+          set -euo pipefail
+          find src tests -name '*.csproj' | grep -vE '(Rendering\.Gdi|Printing\.WindowsSpooler|Printing\.Android)' | sort > cross-plat.txt
+          dotnet new sln -n CrossPlat -f slnx --force
+          xargs -a cross-plat.txt dotnet sln CrossPlat.slnx add
+          dotnet build CrossPlat.slnx -c Release
+
+      - uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:csharp"

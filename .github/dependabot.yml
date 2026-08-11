@@ -1,0 +1,54 @@
+version: 2
+
+updates:
+  # NuGet. As versões são centralizadas em Directory.Packages.props (CPM), então é lá que o Dependabot
+  # abre os PRs — um por grupo, não um por pacote, para não afogar a fila de review.
+  - package-ecosystem: nuget
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: America/Sao_Paulo
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
+    labels: [dependencies]
+    groups:
+      # Microsoft.*/System.* sobem em conjunto: o CPM do repo pina EF Core e afins num "trem de versões",
+      # e subir um pacote isolado gera NU1109 por desalinhamento.
+      microsoft:
+        patterns:
+          - "Microsoft.*"
+          - "System.*"
+      # Stack de teste — churn alto, risco baixo, revisão em bloco.
+      test-stack:
+        patterns:
+          - "xunit*"
+          - "FluentAssertions"
+          - "Verify.*"
+          - "bunit*"
+          - "coverlet.*"
+      # Todo o resto, agrupado para caber num PR por semana.
+      outros:
+        patterns: ["*"]
+        exclude-patterns:
+          - "Microsoft.*"
+          - "System.*"
+          - "xunit*"
+          - "FluentAssertions"
+          - "Verify.*"
+          - "bunit*"
+          - "coverlet.*"
+
+  # Actions do próprio CI: versão pinada que envelhece em silêncio é vetor de supply chain.
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: America/Sao_Paulo
+    commit-message:
+      prefix: "chore(ci)"
+    labels: [dependencies]
