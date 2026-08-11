@@ -59,7 +59,12 @@ jobs:
           path: ./TestResults/**/coverage.cobertura.xml
 
   build-linux:
-    name: Build & Test (Linux, cross-plat)
+    # O nome deste job é um CHECK OBRIGATÓRIO no ruleset "Proteção da main". Renomeá-lo faz o check
+    # exigido parar de reportar e o PR fica bloqueado para sempre, com todo o CI verde — foi o que
+    # aconteceu quando este PR tirou o "subset" do nome. Ele já não descreve bem o job (a cobertura
+    # subiu de 15 para 57 dos 62 projetos), mas trocar o nome exige atualizar o ruleset junto, nas
+    # configurações do repositório. Enquanto isso não for feito, o nome fica como está.
+    name: Build & Test (Linux, cross-plat subset)
     runs-on: ubuntu-latest
     timeout-minutes: 40
 
