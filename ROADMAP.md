@@ -286,6 +286,16 @@ os docs de conformidade RDL já descrevem como entregues.
 semi-automatizável com `git-cliff`). Adicionar ao checklist de release, ou automatizar de vez — hoje há **duas**
 fontes de notas não sincronizadas (o CHANGELOG manual e o `generate_release_notes` do `release.yml:126-132`).
 
+**FEITO.** `[Unreleased]` reconstruído a partir dos 225 PRs desde a v0.1.1, curado por área em vez de uma linha
+por commit — um changelog de 225 bullets não é lido. As 136 referências de PR foram conferidas por script contra
+`git log v0.1.1..main`: nenhuma inexistente.
+
+A causa estrutural também foi fechada, senão o arquivo envelhece de novo: o `release.yml` passa a extrair a
+seção da versão publicada e usá-la como `body_path` do GitHub Release, com o `generate_release_notes`
+acrescentando a lista de PRs **abaixo** — as duas fontes somam em vez de competir. E, principalmente, **sem
+seção para a versão o release falha**. Esquecer o CHANGELOG deixa de ser omissão invisível e vira bloqueio de
+entrega. Extrator testado nos quatro casos, incluindo a colisão de prefixo (`0.1` não casa com `0.1.1`).
+
 ---
 
 ### 10. `Verify.Xunit` referenciado sem uso → zero regressão visual ✅

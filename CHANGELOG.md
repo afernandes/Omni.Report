@@ -7,7 +7,177 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-Nada ainda.
+225 PRs desde a 0.1.1. A linha condutora foi **interoperabilidade com SSRS/RDL** — ler, editar e
+gravar `.rdl` — e a regra de que toda feature chega igual nos **três modos de autoria** (code-first,
+API de baixo nível e Designer), com serialização e testes junto. As entradas abaixo são agrupadas por
+área em vez de uma por commit; o número entre parênteses é o PR.
+
+### Added
+
+**Interoperabilidade RDL/SSRS**
+
+- **Importador `.rdl`** (SSRS XML → `ReportDefinition`) e programa de conformidade em cima dele:
+  estilo e atributos dos itens, `EmbeddedImages`, `CustomProperties`, `Code`, metadados de parâmetro
+  (`Hidden`/`Nullable`/`AllowBlank`), variáveis de relatório, `DataSets`, matrix/crosstab, data-viz
+  (Chart/Gauge/Subreport), `TextRuns` multi-run, tabela plana (Table/List), `WrapMode`, `Sizing` de
+  imagem, `PageBreak`, `Columns`, subtotais de matrix, `Image Source=Database`, `Rectangle` como
+  container real com hierarquia, `Gauge ScaleRanges`, propriedades de `<Style>` valoradas por
+  expressão (formatação condicional), `CustomReportItem` (DataBar/Sparkline/Indicator/Gauge) e
+  metadados report-level. (#88–#126, #135, #136, #145)
+- **Exportador `.rdl`** — fecha o ciclo ler → editar → gravar: expressão reversa OmniReport→VB/SSRS,
+  itens no `Body` com estilo, `DataSets`/`ReportParameters`/`Variables`, `<Tablix>` matrix, e
+  reconstrução de tabela plana com `ColSpan` e lacunas via grade de fronteiras. (#151–#157)
+- **Round-trip sem perda**: campos sem equivalente em RDL viajam em `<CustomProperties>`, e o export
+  é **validado contra o XSD oficial 2016/01** em teste. (#162, #164, #166)
+- `<Report><Language>` dirige a cultura do render; `Globals!ReportName`, `Globals!Language` e
+  `ReportItems!Name.Value` resolvem em expressão. (#101, #105, #111)
+
+**Tablix e matrix**
+
+- **Crosstab/matrix** com grupos aninhados N×N nas três superfícies. (#15, #16, #21)
+- Subtotais por grupo, total geral, `ColumnSubtotals` e rótulos de total configuráveis. (#86, #98)
+- `ColSpan`/`RowSpan` — mescla de células. (#121, #122)
+- `SortExpression` de grupo passa a renderizar; `NoRowsMessage` para dataset vazio. (#84, #110)
+- **Formatação condicional por célula**: na matrix, `Value` expõe o agregado da interseção. (#73, #206)
+- **Paginação de Tablix grande**: row-level para matrix e para tabela plana, e **paginação
+  horizontal de colunas** (tiling 2D, "Across then Down") para crosstab largo. (#197, #207, #209)
+
+**Expressões**
+
+- Vocabulário SSRS: condicionais, texto, data (`DateAdd`/`DateDiff`/`DatePart`/`MonthName`),
+  conversões, formatação (`FormatCurrency`/`Number`/`Percent`/`DateTime`), e as funções de texto
+  restantes (`Space`, `StrDup`, `StrReverse`, `Asc`, `Chr`, `Val`, `InStrRev`, `StrComp`,
+  `StrConv`). (#80, #81, #107, #113)
+- Funções posicionais e de escopo: `RowNumber`, `Previous`, `First`, `Last`, `CountRows`,
+  `CountDistinct`, e `RunningValue` (agregado acumulado). (#93, #159)
+- Busca entre datasets: `Lookup`, `LookupSet`, `MultiLookup`. (#85, #146)
+- Agregados estatísticos `Var`/`VarP`/`StDev`/`StDevP`. (#130)
+- **Qualquer propriedade alterável por expressão** (modelo `fx` do SSRS), com coerção de cor
+  nomeada. (#35, #136, #137)
+
+**Designer**
+
+- **PropertyGrid orientado a metadados**: um atributo `[PropertyGrid]` no modelo passa a gerar o
+  editor, com flattening de tipos aninhados, agrupamento por categoria, editores de lista e de
+  dicionário genéricos, e botão `fx` por propriedade abrindo o editor Monaco. Toda propriedade
+  escalar é bindável por expressão por padrão. (#33–#52)
+- **Toolbox auto-descoberto por reflexão** — `[ToolboxElement]` vira a fonte única do elemento e
+  elimina quatro switches por tipo. (#78, #79)
+- **Canvas WYSIWYG**: imagem embutida renderiza de verdade, data-viz mostra amostra representativa,
+  Tablix aparece como grade estrutural, e Barcode/QR/Map ganham preview. (#171–#175)
+- Edição aninhada de `Rectangle` — filhos visíveis, selecionáveis e editáveis. (#141)
+- Align/distribute de multi-seleção, copy/paste sobre a seleção inteira. (#176, #202)
+- Menu Importar/Exportar RDL e Exportar DOCX. (#169)
+- Autoria completa de parâmetros — incluindo validação de `Required` no prompt, cascading e re-query
+  interativo no Preview. (#24–#27, #177, #192, #193)
+- Elementos antes só editáveis por código passam a ser construíveis no Designer: **Map** completo
+  (graticule, shapes, cores, basemap), **Code** (Source/Language), **Subreport**
+  (ReportId/Data/Parâmetros), cor de preenchimento de Rectangle/Ellipse, e os props de paginação do
+  Tablix (`MinColumnWidth`/`RepeatColumnHeaders`/`KeepTogether`). (#10, #11, #12, #32, #211)
+
+**Estilo**
+
+- **Gradiente de fundo** (duas cores + direção, alinhado ao RDL), inclusive em formatação
+  condicional. (#179, #180, #190)
+- **Named styles** (`Style.BasedOn` + `NamedStyles`): modelo, API code-first, picker no Designer,
+  criação a partir da seleção, renomear/excluir com atualização de referências. (#181–#183, #188,
+  #189, #194)
+- Paleta CSS3/RDL de cores nomeadas completa. (#144)
+- `Style.BackColor` pinta fundo de qualquer elemento; `Style.BackgroundImage` (External). (#103, #134)
+- Células de valor da matrix honram estilo e preenchimento do template. (#184, #204)
+
+**Saída**
+
+- Novos exportadores: **PNG** (#83), **Word `.docx`** tabular via OpenXML com imagens inline e
+  visuais rasterizados (#127, #129, #138), **XML estruturado** (#185) e **TIFF multi-página**
+  (encoder baseline manual, sem dependência nova) (#195).
+- `ExportAsync` com `CancellationToken` em `IReportExporter`. (#227)
+- **Avisos de degradação na exportação** — a perda de conteúdo deixa de ser silenciosa. (#228)
+
+**Layout e paginação**
+
+- Motor de **multi-coluna** (snake/jornal). (#118, #119)
+- Split de banda por elemento quando excede a página; `CanShrink` encolhe a banda;
+  `PrintOnLastPage`; `RepeatHeaderOnNewPage`. (#142, #143, #167)
+- `ImageSizing` (Fit/Fill/Native/Stretch) honrado em todos os backends. (#114, #115)
+- `TextDecoration` (underline/strikeout) no renderer Skia. (#100)
+- Clip de overflow — ciente de `CornerRadius` — nos filhos do container `Rectangle`. (#128, #133)
+- Gradiente no backend GDI+. (#221)
+
+**Parâmetros**
+
+- **Available Values** (domínio estático ou por query), **cascading/dependent parameters** e
+  `DefaultValue` por expressão (`=Today()`, `=DateAdd(...)`, `=Parameters!X`). (#87, #160, #191–#193)
+
+**Gráficos**
+
+- Tipos Area, Scatter, Radar, Bubble e Stock, com render, serialização e code-first. (#14, #18, #19)
+
+**Outros**
+
+- Subreport com render real no engine (paginação recursiva). (#13)
+- Interatividade no HTML: `Action` vira link, `Bookmark` vira âncora, `DocumentMap` vira TOC
+  navegável. (#17, #20)
+- Basemap por tiles raster (Web Mercator) com resolver plugável no Map. (#31)
+- `DetailBand.DataSetName` — vínculo explícito banda→dataset. (#112)
+
+### Changed
+
+- **Serialização por convenção**: elementos novos passam a ser serializados sem editar os quatro
+  switches, primeiro para escalares e depois recursivamente (records posicionais, coleções e
+  aninhados). Somado ao toolbox auto-descoberto, adicionar um elemento deixou de exigir alterações
+  espalhadas. (#74–#77)
+- `Style.Format` passou a ser honrado de forma consistente — célula plana de Tablix, rótulos de KPI
+  (Gauge/DataBar), eixo de valores do gráfico e valor único; a célula plana passou a honrar também o
+  `Style` do conteúdo (fonte, cor, alinhamento). (#66, #69, #70, #71, #72)
+- `RdlImporter`/`RdlWriter` divididos em partials por bloco. (#230)
+- `ElementViewModel` teve o mapeamento de domínio extraído para facetas. (#226)
+- `HttpClient` compartilhado nos três data sources HTTP, evitando esgotamento de sockets. (#201)
+- Cada fonte de dados passou a ser lida **uma vez** por paginação, em vez de duas. (#225)
+- Medição da matrix cacheada em `EffectiveElementBottom`. (#203)
+- Cinco `catch` nus em `Layout` passaram a filtrar por tipo, em vez de mascarar bugs reais. (#220)
+
+### Fixed
+
+- **`ReportPaginator` singleton vazava estado entre requisições concorrentes**, corrompendo headers
+  e código entre relatórios servidos ao mesmo tempo. (#216)
+- **Drill-down virava relatório estático**: o importador descartava `ToggleItemId`/`InitiallyHidden`.
+  (#217)
+- **Export RDL perdia `MinColumnWidth`/`RepeatColumnHeaders`/`KeepTogether`** do Tablix — perda de
+  dados no round-trip. (#212)
+- `DefaultValue` de parâmetro deixava de ser importado em silêncio; `DefaultValueExpression` se
+  perdia no round-trip do Designer. (#158, #163)
+- `.repx` não persistia `CanGrow`/`CanShrink`; `.repjson` não tinha paridade com `.repx`
+  (master-detail, sort, filter, variáveis); `BarcodeElement.QrEcc` faltava nos quatro caminhos.
+  (#29, #30, #55)
+- O Designer materializava `Font`/`ForeColor` herdados como literais no round-trip, quebrando a
+  herança de named styles. (#222)
+- "Abrir .repx…" e "Importar RDL…" não abriam o arquivo — o menu fechava antes do diálogo. (#170)
+- Chart e KPI passaram a honrar a cultura do relatório na formatação numérica. (#132)
+- Largura/altura do Tablix passaram a ser derivadas das colunas/linhas no import (RDL não traz
+  `<Width>`). (#150)
+- Uma leva de correções de binder e de editores do Designer vinda de auditorias sucessivas —
+  caminhos via struct, `Unit`, enums fora de faixa, estado local dos editores de lista e dicionário,
+  alpha no color picker, preservação de `Style` herdado. (#53–#63)
+- **Integridade de entrega**: o stub do Android era publicado como pacote de verdade, o workflow de
+  release empacotava sem rodar a suíte, e o README exibia imagens por caminho relativo — quebradas
+  na página do NuGet. (#231)
+
+### Security
+
+- NCalc 6 e SQLitePCLRaw 3.x, esta última fechando o advisory GHSA-2m69-gcr7-jv3q. (#9)
+
+### Infrastructure
+
+- **Projeto de benchmarks** (BenchmarkDotNet) cobrindo paginação, expressões e export, com linha de
+  base medida em `docs/benchmarks.md`. (#229)
+- Redes de paridade por reflexão para os serializadores e para o caminho RDL, round-trip por
+  propriedade com gerador seeded, e caracterização das limitações conhecidas de paginação. (#64,
+  #140, #165, #219)
+- **`ROADMAP.md`** — 43 itens priorizados de P0 a P4, com evidência por item. (#218)
+- Documentação: guia do usuário e do desenvolvedor, comparação com RDL e concorrentes,
+  **especificação formal do formato** (v1.0) e matriz de conformidade RDL mantida em dia. (#148,
+  #161, e as reconciliações #123, #147, #178, #187, #200, #213)
 
 ## [0.1.1] — 2026-06-18
 

@@ -128,7 +128,30 @@ jobs:
               --no-symbols
           done
 
-      # GitHub Release com notas geradas automaticamente + os pacotes anexados.
+      # O CHANGELOG passa a ser a fonte AUTORAL das notas de release. Antes havia duas fontes não
+      # sincronizadas — o CHANGELOG escrito à mão e o generate_release_notes, que só lista títulos de
+      # PR — e o resultado previsível foi o CHANGELOG parar em 0.1.1 com "Nada ainda." por 225 PRs,
+      # sem que nada quebrasse. Agora a seção da versão vira o corpo do release e, se ela não existir,
+      # o release FALHA: esquecer o CHANGELOG deixa de ser uma omissão invisível.
+      - name: Extrair notas do CHANGELOG
+        if: ${{ github.event_name == 'push' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          awk -v ver="$VERSION" '
+            index($0, "## [" ver "]") == 1 { found = 1; next }
+            found && /^## \[/ { exit }
+            found { print }
+          ' CHANGELOG.md > release-notes.md
+          # -s: existe E não é vazio. Uma seção presente mas vazia é tão inútil quanto ausente.
+          if [ ! -s release-notes.md ]; then
+            echo "::error::CHANGELOG.md não tem seção '## [$VERSION]'. Renomeie [Unreleased] para a versão publicada (com a data) antes de tagear."
+            exit 1
+          fi
+          echo "Notas extraídas: $(wc -l < release-notes.md) linhas."
+
+      # Os pacotes vão anexados. generate_release_notes acrescenta a lista automática de PRs ABAIXO
+      # do corpo autoral — as duas coisas somam em vez de competir.
       # Só em push de tag (workflow_dispatch não tem tag para associar).
       - name: GitHub Release
         if: ${{ github.event_name == 'push' }}
@@ -136,6 +159,7 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           name: OmniReport ${{ env.VERSION }}
+          body_path: release-notes.md
           generate_release_notes: true
           prerelease: ${{ contains(env.VERSION, '-') }}
           files: |
