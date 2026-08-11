@@ -81,7 +81,7 @@ jobs:
       - name: Install SkiaSharp native deps (libfontconfig)
         run: sudo apt-get update && sudo apt-get install -y libfontconfig1
 
-      - uses: github/codeql-action/init@v3
+      - uses: github/codeql-action/init@v4
         with:
           languages: csharp
           # build-mode manual: o .slnx inclui projetos de TFM net10.0-windows/android, que NÃO compilam no
@@ -97,6 +97,6 @@ jobs:
           xargs -a cross-plat.txt dotnet sln CrossPlat.slnx add
           dotnet build CrossPlat.slnx -c Release
 
-      - uses: github/codeql-action/analyze@v3
+      - uses: github/codeql-action/analyze@v4
         with:
           category: "/language:csharp"
