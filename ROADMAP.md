@@ -233,9 +233,16 @@ Dois detalhes que evitam falso-verde, ambos deliberados:
    não pode ficar verde tendo pulado tudo; perder o Docker no runner viraria um verde silencioso, que é o
    defeito que este roadmap mais encontrou.
 
-**Ressalva honesta:** não há daemon Docker nesta máquina de desenvolvimento, então o caminho verificado
-localmente foi o de *pulo* (todos os testes se pulam com a razão no log, em vez de falhar). A primeira execução
-real contra os bancos acontece no CI.
+**A primeira execução real já encontrou um defeito de produção.** `AdoNetDataSource` delegava o cancelamento
+inteiramente ao token passado para `DbDataReader.ReadAsync`. Quando o driver já tem as linhas em buffer local
+esse método retorna **de forma síncrona sem consultar o token** — ou seja, o cancelamento era honrado por
+acidente de driver: o SqlClient consulta, o Npgsql e o MySqlConnector não. Um render cancelado continuava
+drenando o resultado inteiro no PostgreSQL e no MySQL. Foi exatamente rodar o **mesmo teste nos três motores**
+que tornou isso visível — passava em um, falhava em dois. Corrigido com `ThrowIfCancellationRequested()` por
+linha (`AdoNetDataSource.cs:143`).
+
+Placar da primeira execução contra bancos reais: 25 de 27 verdes, as 2 falhas sendo esse defeito nos dois
+motores afetados.
 
 ---
 

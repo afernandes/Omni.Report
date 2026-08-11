@@ -70,12 +70,17 @@ public sealed class DockerFactAttribute : FactAttribute
                 return "Docker não encontrado — testes de banco pulados.";
             }
 
-            var os = p.StandardOutput.ReadToEnd().Trim();
+            // A leitura tem de ser assíncrona ANTES do WaitForExit com timeout. Com
+            // ReadToEnd() síncrono primeiro, um daemon travado bloquearia para sempre na leitura e o
+            // timeout de 15s nunca seria alcançado — a descoberta de testes penduraria, que é pior que
+            // qualquer falha. Assim o timeout é de fato o limite superior.
+            var stdout = p.StandardOutput.ReadToEndAsync();
             if (!p.WaitForExit(15_000))
             {
                 p.Kill(entireProcessTree: true);
                 return "O daemon Docker não respondeu em 15s — testes de banco pulados.";
             }
+            var os = stdout.GetAwaiter().GetResult().Trim();
             if (p.ExitCode != 0)
             {
                 return "O daemon Docker não está acessível — testes de banco pulados.";

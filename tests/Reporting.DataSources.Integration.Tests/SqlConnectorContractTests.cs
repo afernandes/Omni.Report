@@ -95,6 +95,18 @@ public abstract class SqlConnectorContractTests<TFixture> : IClassFixture<TFixtu
     }
 
     [DockerFact]
+    public async Task Guid_column_surfaces_as_Guid()
+    {
+        var rows = await ReadAllAsync("SELECT referencia FROM vendas WHERE id = 1");
+
+        var value = rows.Should().ContainSingle().Subject["referencia"];
+        // Each engine spells it differently — UNIQUEIDENTIFIER, UUID, CHAR(36) — and MySQL only maps it
+        // when the connection string opts in. Arriving as a string would compare and format wrongly
+        // everywhere downstream while looking plausible in the output.
+        value.Should().BeOfType<Guid>().And.Be(DbEngineFixture.KnownGuid);
+    }
+
+    [DockerFact]
     public async Task Boolean_column_surfaces_as_bool()
     {
         var rows = await ReadAllAsync("SELECT ativo FROM vendas WHERE id = 1");

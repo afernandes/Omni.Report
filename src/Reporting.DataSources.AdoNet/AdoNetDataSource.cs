@@ -142,6 +142,13 @@ public sealed class AdoNetDataSource : IReportDataSource
 
             while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
             {
+                // Checagem explícita, e não confiança no token passado ao ReadAsync: quando o driver já
+                // tem as linhas em buffer local, ReadAsync retorna de forma síncrona SEM consultar o
+                // token. Na prática o cancelamento era honrado por acidente de driver — o SqlClient
+                // consulta, o Npgsql e o MySqlConnector não —, então um render cancelado continuava
+                // drenando o resultado inteiro no PostgreSQL e no MySQL. Encontrado pelos testes de
+                // integração contra bancos reais (dois dos três motores falhavam o mesmo teste).
+                cancellationToken.ThrowIfCancellationRequested();
                 yield return SnapshotRow(reader, _schema);
             }
         }

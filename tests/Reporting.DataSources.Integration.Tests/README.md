@@ -51,10 +51,27 @@ por motor iria divergir, e um comportamento que só um deles acerta é justament
 | Nulo vira `null`, não `DBNull` | `DBNull` não é nulo: toda checagem a jusante falha calada e o valor renderiza como `System.DBNull` |
 | `decimal` preserva tipo e escala | chegando como `double`, `1450.90` vira `1450.8999999999999` num relatório financeiro |
 | `DateTime` preserva a hora | truncar para meia-noite é silencioso e só aparece no relatório |
+| GUID vira `Guid` | cada motor soletra diferente (`UNIQUEIDENTIFIER`, `UUID`, `CHAR(36)`) e o MySQL só mapeia com opt-in na connection string; como string, compara e formata errado parecendo plausível |
 | Booleano vira `bool` | MySQL não tem boolean — `TINYINT(1)` é a convenção, e o driver precisa mapear |
 | Parâmetro liga por nome | os três usam prefixo `@` |
 | Leitura preguiçosa | quem bufferiza tudo passa numa contagem de linhas e estoura a memória numa tabela real |
 | Cancelamento interrompe | `CancellationToken` ignorado só aparece em produção, sob carga |
 
-As imagens são **pinadas por tag** (`mssql/server:2022-CU16`, `postgres:17.2-alpine`, `mysql:8.4.3`):
-com `latest`, a suíte mudaria de comportamento sem nenhum commit.
+As imagens são **pinadas por tag** — com `latest`, a suíte mudaria de comportamento sem nenhum commit:
+
+| Motor | Imagem |
+|---|---|
+| SQL Server | `mcr.microsoft.com/mssql/server:2022-CU16-ubuntu-22.04` |
+| PostgreSQL | `postgres:17.2-alpine` |
+| MySQL | `mysql:8.4.3` |
+
+## Achado da primeira execução
+
+`AdoNetDataSource` delegava o cancelamento inteiramente ao token passado para
+`DbDataReader.ReadAsync`. Quando o driver já tem as linhas em buffer local, esse método retorna de
+forma **síncrona sem consultar o token** — então o cancelamento era honrado por acidente de driver: o
+SqlClient consulta, o Npgsql e o MySqlConnector não. Um render cancelado continuava drenando o
+resultado inteiro no PostgreSQL e no MySQL.
+
+Os três motores rodando o mesmo teste foi o que tornou isso visível: o mesmo código passava em um e
+falhava em dois. Corrigido com uma checagem explícita por linha.
