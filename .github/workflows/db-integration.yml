@@ -1,0 +1,102 @@
+name: DB Integration
+
+# Testes de integração dos conectores SQL contra bancos REAIS em contêiner (Testcontainers).
+#
+# Ficam num workflow à parte porque são lentos: subir SQL Server, PostgreSQL e MySQL custa minutos de
+# pull de imagem, e isso não pode entrar no caminho crítico de todo PR. Em compensação, rodam de fato
+# quando importam — quando o código de conector muda — em vez de virarem uma suíte que ninguém executa.
+on:
+  # Todo PR que toca conector, o shim ADO.NET que os três compartilham, ou os próprios testes.
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/Reporting.DataSources.SqlServer/**"
+      - "src/Reporting.DataSources.PostgreSql/**"
+      - "src/Reporting.DataSources.MySql/**"
+      - "src/Reporting.DataSources.AdoNet/**"
+      - "tests/Reporting.DataSources.Integration.Tests/**"
+      - ".github/workflows/db-integration.yml"
+  push:
+    branches: [main]
+    paths:
+      - "src/Reporting.DataSources.**"
+      - "tests/Reporting.DataSources.Integration.Tests/**"
+  schedule:
+    # Segunda 07:30 BRT — pega quebra vinda de atualização de driver (Npgsql/MySqlConnector/SqlClient)
+    # que um PR de dependência sozinho não exercitaria.
+    - cron: "30 10 * * 1"
+  workflow_dispatch:
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  # É esta variável que destrava os testes em CI. Sem ela o DockerFactAttribute os pula — de propósito,
+  # para que nenhum outro job que venha a compilar este projeto acabe puxando três imagens de banco.
+  OMNIREPORT_DB_TESTS: "1"
+
+jobs:
+  connectors:
+    name: Conectores SQL (bancos reais)
+    runs-on: ubuntu-latest
+    # O pull das três imagens domina o tempo; 30min é folga confortável sobre o observado.
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Confirmar que o Docker responde
+        # Se o runner perder o Docker, os testes se PULARIAM em silêncio e o job ficaria verde sem ter
+        # verificado nada. Falhar aqui torna essa situação visível — é o job cuja única razão de existir
+        # é rodar contra banco de verdade.
+        run: |
+          set -euo pipefail
+          os=$(docker version --format '{{.Server.Os}}')
+          echo "Docker server OS: $os"
+          test "$os" = "linux"
+
+      - name: Restore
+        run: dotnet restore tests/Reporting.DataSources.Integration.Tests/Reporting.DataSources.Integration.Tests.csproj
+
+      - name: Build
+        run: dotnet build tests/Reporting.DataSources.Integration.Tests/Reporting.DataSources.Integration.Tests.csproj -c Release --no-restore
+
+      - name: Test
+        run: |
+          dotnet test tests/Reporting.DataSources.Integration.Tests/Reporting.DataSources.Integration.Tests.csproj \
+            -c Release --no-build --verbosity normal \
+            --logger "trx;LogFileName=db-integration.trx" \
+            --results-directory ./TestResults
+
+      # Um teste PULADO aqui é falha de propósito do job: significa que ele passou sem tocar em banco
+      # nenhum. O passo acima não distingue pulado de aprovado, então a checagem é explícita.
+      - name: Nenhum teste pode ter sido pulado
+        if: always()
+        run: |
+          set -euo pipefail
+          trx=$(find ./TestResults -name '*.trx' | head -1)
+          if [ -z "$trx" ]; then
+            echo "::error::Nenhum .trx gerado — a execução de testes não chegou a rodar."
+            exit 1
+          fi
+          skipped=$(grep -o 'notExecuted="[0-9]*"' "$trx" | grep -o '[0-9]*' | head -1)
+          executed=$(grep -o 'executed="[0-9]*"' "$trx" | grep -o '[0-9]*' | head -1)
+          echo "Executados: ${executed:-0} · Pulados: ${skipped:-0}"
+          if [ "${skipped:-0}" != "0" ]; then
+            echo "::error::${skipped} teste(s) pulado(s). Neste job todos devem rodar contra banco real."
+            exit 1
+          fi
+          if [ "${executed:-0}" = "0" ]; then
+            echo "::error::Zero testes executados."
+            exit 1
+          fi
+
+      - name: Upload TRX
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: db-integration-results
+          path: ./TestResults/**/*.trx

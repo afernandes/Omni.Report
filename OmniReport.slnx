@@ -58,6 +58,7 @@
     <Project Path="tests/Reporting.DataSources.Tests/Reporting.DataSources.Tests.csproj" />
     <Project Path="tests/Reporting.DataSources.AdoNet.Tests/Reporting.DataSources.AdoNet.Tests.csproj" />
     <Project Path="tests/Reporting.DataSources.Providers.Tests/Reporting.DataSources.Providers.Tests.csproj" />
+    <Project Path="tests/Reporting.DataSources.Integration.Tests/Reporting.DataSources.Integration.Tests.csproj" />
     <Project Path="tests/Reporting.DataSources.Sqlite.Tests/Reporting.DataSources.Sqlite.Tests.csproj" />
     <Project Path="tests/Reporting.Designer.Blazor.DataConnect.Tests/Reporting.Designer.Blazor.DataConnect.Tests.csproj" />
     <Project Path="tests/Reporting.Designer.Blazor.Tests/Reporting.Designer.Blazor.Tests.csproj" />

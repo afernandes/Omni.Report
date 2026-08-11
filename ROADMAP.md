@@ -210,6 +210,40 @@ corporativo. Comparar com `.Sqlite`, que ao menos tem 4 testes.
 mapeamento de tipos (datas, decimais, nulos, `uniqueidentifier`), streaming e cancelamento. Rodar num job de CI
 separado (marcado, não bloqueante em PR se lento).
 
+**FEITO.** `tests/Reporting.DataSources.Integration.Tests` — **um contrato só, executado contra os três motores**.
+Eles são o mesmo shim três vezes (cada um entrega uma fábrica de conexão ao `AdoNetDataSource`), então uma cópia
+de teste por motor iria divergir, e um comportamento que só um deles acerta é justamente o bug que interessa.
+
+Cobre exatamente o que um shim fino erra: nulo chegando como `DBNull` em vez de `null` (não é nulo — toda
+checagem a jusante falha calada e o valor renderiza como `System.DBNull`), `decimal` virando `double`
+(`1450.90` → `1450.8999999999999` num relatório financeiro), `DateTime` truncado para meia-noite, booleano do
+MySQL (que não tem o tipo — `TINYINT(1)` é a convenção), parâmetro por nome, leitura preguiçosa e cancelamento.
+
+Roda no workflow `db-integration.yml`: em PR que toca conector ou o `AdoNet` compartilhado, em push na `main`,
+semanalmente e sob demanda. Imagens **pinadas por tag** — com `latest` a suíte mudaria de comportamento sem
+nenhum commit.
+
+Dois detalhes que evitam falso-verde, ambos deliberados:
+
+1. **O gate vive no `DockerFactAttribute`, não no workflow.** Em CI os testes só rodam com
+   `OMNIREPORT_DB_TESTS` setada. Sem isso, o job Linux do `ci.yml` — que deriva a lista de projetos
+   automaticamente — passaria a puxar três imagens de banco em todo PR. Manter a decisão no atributo torna o
+   comportamento independente de como cada job escolhe seus projetos.
+2. **O workflow falha se algum teste for pulado.** Um job cuja única razão de existir é rodar contra banco real
+   não pode ficar verde tendo pulado tudo; perder o Docker no runner viraria um verde silencioso, que é o
+   defeito que este roadmap mais encontrou.
+
+**A primeira execução real já encontrou um defeito de produção.** `AdoNetDataSource` delegava o cancelamento
+inteiramente ao token passado para `DbDataReader.ReadAsync`. Quando o driver já tem as linhas em buffer local
+esse método retorna **de forma síncrona sem consultar o token** — ou seja, o cancelamento era honrado por
+acidente de driver: o SqlClient consulta, o Npgsql e o MySqlConnector não. Um render cancelado continuava
+drenando o resultado inteiro no PostgreSQL e no MySQL. Foi exatamente rodar o **mesmo teste nos três motores**
+que tornou isso visível — passava em um, falhava em dois. Corrigido com `ThrowIfCancellationRequested()` por
+linha (`AdoNetDataSource.cs:143`).
+
+Placar da primeira execução contra bancos reais: 25 de 27 verdes, as 2 falhas sendo esse defeito nos dois
+motores afetados.
+
 ---
 
 ### 5. CI Linux verifica só 15 de 39 projetos 🔍
