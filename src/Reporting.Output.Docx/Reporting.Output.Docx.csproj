@@ -7,6 +7,11 @@
     <Description>OmniReport — Word (.docx) exporter via DocumentFormat.OpenXml. Tabular strategy: the paginated report's grid becomes an editable Word table.</Description>
     <!-- OpenXML triggers a few CA warnings; relax for this adapter project (matches the Excel adapter). -->
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+
+    <!-- Sem baseline de compatibilidade: este pacote nao existia na 0.1.1 (chegou no #127), entao
+         nao ha versao publicada com que comparar. O Package Validation continua ligado para as
+         demais checagens; o baseline entra quando a 0.2.0 for publicada. -->
+    <PackageValidationBaselineVersion></PackageValidationBaselineVersion>
   </PropertyGroup>
 
   <ItemGroup>

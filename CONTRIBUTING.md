@@ -48,6 +48,10 @@ Tipos aceitos:
 
 **Breaking change**: adicionar `!` antes dos dois pontos OU rodapé `BREAKING CHANGE: <descrição>`.
 
+Isso não depende mais só de disciplina: o **Package Validation** do SDK compara cada pacote gerado com a
+versão publicada no nuget.org e **falha o `dotnet pack`** numa quebra de API. Ver
+[Quebra de API pública](#quebra-de-api-pública).
+
 Exemplos:
 
 ```
@@ -84,6 +88,32 @@ instead of Action<ReportExportEventArgs>.
   Layout, Rendering, CodeFirst, Serialization, Output.*, Printing.EscPos,
   Rendering.Gdi). Viewer/Designer ≥ 60%.
 - Cada PR adiciona testes para o que muda. Não há "PR só de código".
+
+## Quebra de API pública
+
+São **39 pacotes interdependentes**: uma mudança em `Reporting.Core` pode quebrar consumidores dos outros
+38. O `dotnet pack` compara cada pacote gerado com a versão publicada no nuget.org
+(`EnablePackageValidation`, baseline em `Directory.Build.props`) e **falha** se um membro público sumir ou
+mudar de assinatura:
+
+```
+error CP0002: O membro 'double Reporting.Geometry.Unit.ToCm()' existe em [Linha de base] ... mas não em ...
+```
+
+Se a quebra **não** era intencional, corrija o código — é isso que o gate existe para pegar.
+
+Se **era** intencional, aceite-a explicitamente regerando o arquivo de supressão do projeto afetado:
+
+```bash
+dotnet pack src/Reporting.Core/Reporting.Core.csproj -c Release -p:ApiCompatGenerateSuppressionFile=true
+```
+
+Isso atualiza `src/<Projeto>/CompatibilitySuppressions.xml`. **Commite o arquivo e cite a quebra no PR** —
+ele é a lista auditável do que mudou desde a última versão publicada, e alimenta as notas de release. O
+commit precisa do marcador de breaking change (`!` ou rodapé `BREAKING CHANGE:`).
+
+Três pacotes não têm baseline porque nasceram depois da 0.1.1 (`Output.Docx`, `Output.Image`,
+`Output.Xml`); eles entram no gate quando a 0.2.0 for publicada.
 
 ## Processo de PR
 

@@ -241,6 +241,31 @@ disciplina humana no Conventional Commit (`CONTRIBUTING.md:49`).
 **Ação.** Adotar `PublicApiAnalyzers` ao menos em `Core`, `CodeFirst`, `Layout` e `Rendering` **antes do 1.0** —
 depois do 1.0 o custo de adoção sobe muito.
 
+**FEITO — por outro mecanismo, e mais amplo.** Adotado o **Package Validation** nativo do SDK
+(`EnablePackageValidation` + baseline `0.1.1`) em vez do `PublicApiAnalyzers`. Três razões, nesta ordem:
+
+1. **Cobre os 39 pacotes**, não os 4 propostos — a Ação original limitava o escopo exatamente porque o custo
+   por projeto do PublicApiAnalyzers é alto.
+2. **Não exige `PublicAPI.Shipped.txt` por projeto** (dezenas de milhares de linhas geradas para manter à mão,
+   que também podem ficar desatualizadas em silêncio — o defeito que este roadmap mais encontrou).
+3. **Compara contra o artefato realmente publicado no nuget.org**, não contra um arquivo no repo. A pergunta
+   que importa é "isto quebra quem já consome o pacote?", e essa é literalmente a comparação feita.
+
+Os pacotes 0.1.0/0.1.1 estão publicados, então o baseline existe. Resultado medido: **só 8 dos 39 pacotes têm
+quebra desde a 0.1.1** — Core, CodeFirst, Layout, Expressions, Rendering, Rendering.Skia, Rendering.Gdi e
+Designer.Blazor — e as supressões somam ~14 KB. Os outros 31 estão estáveis. `Output.Docx`, `Output.Image` e
+`Output.Xml` ficam sem baseline por não existirem na 0.1.1; entram quando a 0.2.0 sair.
+
+Verificado por sabotagem: remover `Unit.ToCm()` faz o `pack` falhar com
+`CP0002: O membro 'double Reporting.Geometry.Unit.ToCm()' existe em [Linha de base] ... mas não em ...`.
+
+Achado de tabela: o `<Version>` default do repo era `0.1.0-alpha` — **atrás** da 0.1.1 já publicada. Passava
+despercebido porque o `release.yml` sobrescreve com a tag, então só quem rodasse `pack` local geraria um pacote
+mais velho que o do nuget.org. O `CP0003` do Package Validation foi o que tornou isso visível. Corrigido para
+`0.2.0-alpha`.
+
+Procedimento para aceitar uma quebra intencional documentado em `CONTRIBUTING.md`.
+
 ---
 
 ### 7. XML docs obrigatórios em 1 de 39 pacotes ✅

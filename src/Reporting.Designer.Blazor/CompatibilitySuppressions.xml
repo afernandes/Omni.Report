@@ -1,0 +1,32 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!-- https://learn.microsoft.com/dotnet/fundamentals/package-validation/diagnostic-ids -->
+<Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:Reporting.Designer.Blazor.Components.PropertyGrid.get_OnOpenExpressionEditor</Target>
+    <Left>lib/net10.0/Reporting.Designer.Blazor.dll</Left>
+    <Right>lib/net10.0/Reporting.Designer.Blazor.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:Reporting.Designer.Blazor.Components.RightPanel.get_OnOpenExpressionEditor</Target>
+    <Left>lib/net10.0/Reporting.Designer.Blazor.dll</Left>
+    <Right>lib/net10.0/Reporting.Designer.Blazor.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:Reporting.Designer.Blazor.ViewModels.DesignerState.get_Clipboard</Target>
+    <Left>lib/net10.0/Reporting.Designer.Blazor.dll</Left>
+    <Right>lib/net10.0/Reporting.Designer.Blazor.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:Reporting.Designer.Blazor.ViewModels.ReportDefinitionViewModel.Build(System.Collections.Generic.IEnumerable{Reporting.Designer.Blazor.ViewModels.DesignerDataSource},System.Collections.Generic.IEnumerable{Reporting.Designer.Blazor.ViewModels.DesignerRelation})</Target>
+    <Left>lib/net10.0/Reporting.Designer.Blazor.dll</Left>
+    <Right>lib/net10.0/Reporting.Designer.Blazor.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+</Suppressions>

@@ -17,7 +17,13 @@
     <Copyright>Copyright (c) OmniReport contributors</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryType>git</RepositoryType>
-    <Version>0.1.0-alpha</Version>
+    <!-- Versão de desenvolvimento da main. Estava em 0.1.0-alpha enquanto a 0.1.0 E a 0.1.1 já
+         estavam publicadas no nuget.org — ou seja, o default do repo apontava para TRÁS do que já
+         havia sido entregue. Passava despercebido porque o release.yml sobrescreve com a tag; quem
+         rodasse `dotnet pack` local gerava um pacote mais velho que o publicado. O Package Validation
+         é o que tornou isso visível (CP0003). A main acumula breaking changes desde a 0.1.1, então o
+         próximo número é 0.2.0. -->
+    <Version>0.2.0-alpha</Version>
 
     <!-- Metadados de pacote NuGet compartilhados por todo projeto empacotável.
          OBS: o PackageId NÃO fica aqui — ele é definido só para os projetos de biblioteca
@@ -45,6 +51,23 @@
     <WarningsAsErrors />
     <!-- AssemblyName/RootNamespace/_content seguem Reporting.*; só o ID do pacote muda. -->
     <PackageId>AndersonN.Omni.Report.$(MSBuildProjectName.Replace('Reporting.', ''))</PackageId>
+
+    <!-- GATE DE BREAKING CHANGE. Com 39 pacotes interdependentes, uma mudança em Reporting.Core podia
+         quebrar consumidores dos outros 38 sem nenhum aviso — o sinal dependia só de disciplina humana
+         no Conventional Commit. O Package Validation do SDK compara o pacote sendo gerado com o que foi
+         REALMENTE publicado no nuget.org e falha o `pack` numa quebra.
+
+         Escolhido em vez do PublicApiAnalyzers porque cobre os 39 pacotes de uma vez, não exige um
+         PublicAPI.Shipped.txt por projeto (dezenas de milhares de linhas para manter à mão) e compara
+         contra o artefato entregue em vez de contra um arquivo que também pode ficar desatualizado.
+
+         As quebras que já aconteceram entre a 0.1.1 e hoje ficam registradas em
+         CompatibilitySuppressions.xml — o arquivo é a lista auditável do que quebrou, e serve de
+         insumo para as notas da 0.2.0. A partir daqui, quebra NOVA falha o build.
+
+         Requer rede no `pack` (baixa o pacote de baseline). `build` e `test` não são afetados. -->
+    <EnablePackageValidation>true</EnablePackageValidation>
+    <PackageValidationBaselineVersion Condition="'$(PackageValidationBaselineVersion)' == ''">0.1.1</PackageValidationBaselineVersion>
   </PropertyGroup>
 
   <!-- Test and benchmark projects: more permissive, and NEVER packable.
