@@ -78,6 +78,17 @@ O Excel é **3,5× mais lento e aloca 4,1×** mais que o PDF — apesar de produ
 a [matriz de fidelidade](rdl-coverage.md#matriz-de-fidelidade--o-que-cada-exporter-preserva)). O custo está em
 construir o modelo de objetos do OpenXML via ClosedXML, não no nosso lado.
 
+### Fonte de dados em memória
+
+`DataSourceBenchmarks` mede o `EnumerableDataSource<T>`, que projeta cada POCO num `IReportRecord` por
+reflexão, uma vez por linha. Esse custo multiplica pela contagem de linhas **antes** de qualquer trabalho de
+layout, então é o piso de quão rápido um relatório pode renderizar.
+
+Existe porque o orçamento vivia como asserção de `Stopwatch` num teste unitário que rodava **só fora do CI** —
+media JIT e warmup tanto quanto o código, e deixava a suíte vermelha na máquina do dev e verde no runner. Sem
+linha de base publicada ainda; rode com
+`dotnet run -c Release --project benchmarks/Reporting.Benchmarks -- --filter "*DataSource*"`.
+
 ## O que ainda não é medido
 
 - **Import/export RDL** — o `RdlImporter`/`RdlWriter` são os arquivos mais tocados do repo e não têm medição.
