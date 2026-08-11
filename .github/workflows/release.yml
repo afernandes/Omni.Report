@@ -155,7 +155,7 @@ jobs:
       # Só em push de tag (workflow_dispatch não tem tag para associar).
       - name: GitHub Release
         if: ${{ github.event_name == 'push' }}
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.ref_name }}
           name: OmniReport ${{ env.VERSION }}
