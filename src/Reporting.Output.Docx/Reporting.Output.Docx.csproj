@@ -8,8 +8,8 @@
     <!-- OpenXML triggers a few CA warnings; relax for this adapter project (matches the Excel adapter). -->
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
 
-    <!-- Sem baseline de compatibilidade: este pacote nao existia na 0.1.1 (chegou no #127), entao
-         nao ha versao publicada com que comparar. O Package Validation continua ligado para as
+    <!-- Sem baseline de compatibilidade: este pacote não existia na 0.1.1 (chegou no #127), então
+         não há versão publicada com que comparar. O Package Validation continua ligado para as
          demais checagens; o baseline entra quando a 0.2.0 for publicada. -->
     <PackageValidationBaselineVersion></PackageValidationBaselineVersion>
   </PropertyGroup>

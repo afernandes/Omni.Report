@@ -6,8 +6,8 @@
     <AssemblyName>Reporting.Output.Image</AssemblyName>
     <Description>OmniReport — raster image (PNG) exporter via SkiaSharp. Pages are rasterised with the same primitive renderer as the PDF/SVG backends; the IReportExporter output stacks all pages into one tall PNG, and RenderPages returns one PNG per page.</Description>
 
-    <!-- Sem baseline de compatibilidade: este pacote nao existia na 0.1.1 (chegou no #83), entao
-         nao ha versao publicada com que comparar. O Package Validation continua ligado para as
+    <!-- Sem baseline de compatibilidade: este pacote não existia na 0.1.1 (chegou no #83), então
+         não há versão publicada com que comparar. O Package Validation continua ligado para as
          demais checagens; o baseline entra quando a 0.2.0 for publicada. -->
     <PackageValidationBaselineVersion></PackageValidationBaselineVersion>
   </PropertyGroup>
