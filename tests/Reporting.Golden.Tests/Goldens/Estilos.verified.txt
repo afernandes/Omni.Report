@@ -1,0 +1,9 @@
+﻿report Estilos — 1 page
+
+page 1  A5 Portrait 148.01mm×210.01mm  margins 10.01mm/10.01mm/10.01mm/10.01mm  [6]
+  text    [10.01mm,10.01mm 80.01mm×8.00mm]  "Times 14 itálico"  Times New Roman/14/Italic  src=e1
+  text    [10.01mm,20.02mm 80.01mm×5.99mm]  "Vermelho"  Arial/10 fore=#CC0000  src=e2
+  text    [10.01mm,28.02mm 80.01mm×8.00mm]  "Direita/meio"  Arial/10 align=Right/Middle  src=e3
+  text    [10.01mm,38.00mm 80.01mm×8.00mm]  "Com borda"  Arial/10  src=e4
+  text    [10.01mm,48.01mm 80.01mm×5.99mm]  "$1,234.50"  Arial/10  src=e5
+  text    [10.01mm,56.01mm 40.01mm×5.99mm]  "Sem quebra de linha neste texto longo"  Arial/10 nowrap  src=e6

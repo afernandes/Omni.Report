@@ -63,6 +63,7 @@
     <Project Path="tests/Reporting.Designer.Blazor.Tests/Reporting.Designer.Blazor.Tests.csproj" />
     <Project Path="tests/Reporting.Expressions.Tests/Reporting.Expressions.Tests.csproj" />
     <Project Path="tests/Reporting.Expressions.Roslyn.Tests/Reporting.Expressions.Roslyn.Tests.csproj" />
+    <Project Path="tests/Reporting.Golden.Tests/Reporting.Golden.Tests.csproj" />
     <Project Path="tests/Reporting.Hosting.AspNetCore.Tests/Reporting.Hosting.AspNetCore.Tests.csproj" />
     <Project Path="tests/Reporting.Layout.Tests/Reporting.Layout.Tests.csproj" />
     <Project Path="tests/Reporting.Output.Docx.Tests/Reporting.Output.Docx.Tests.csproj" />

@@ -7,8 +7,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Reporting.CodeFirst\Reporting.CodeFirst.csproj" />
     <ProjectReference Include="..\..\src\Reporting.Layout\Reporting.Layout.csproj" />
-    <ProjectReference Include="..\..\src\Reporting.Rendering.Skia\Reporting.Rendering.Skia.csproj" />
+    <ProjectReference Include="..\..\src\Reporting.Output.Svg\Reporting.Output.Svg.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -17,10 +18,7 @@
     <PackageReference Include="xunit.runner.visualstudio" />
     <PackageReference Include="FluentAssertions" />
     <PackageReference Include="coverlet.collector" />
-    <!-- Verify.Xunit vivia aqui sem um único uso: nenhum .cs chamava a API e não havia nenhum
-         *.verified.*. O golden agora existe de fato, em tests/Reporting.Golden.Tests, onde a saída
-         é determinística por construção — este projeto conta pixels de tinta justamente para não
-         depender de glifo de plataforma, que é o oposto do que um golden precisa. -->
+    <PackageReference Include="Verify.Xunit" />
   </ItemGroup>
 
 </Project>
