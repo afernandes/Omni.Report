@@ -8,22 +8,45 @@ namespace Reporting.Bands;
 /// <summary>Identifies the role a band plays in the report layout (header, footer, group, or detail).</summary>
 public enum BandKind
 {
+    /// <summary>Rendered once, before everything else, at the very start of the report.</summary>
     ReportHeader,
+
+    /// <summary>Rendered at the top of every page.</summary>
     PageHeader,
+
+    /// <summary>Rendered before the first row of each group instance.</summary>
     GroupHeader,
+
+    /// <summary>Rendered once per data row — the body of the report.</summary>
     Detail,
+
+    /// <summary>Rendered after the last row of each group instance.</summary>
     GroupFooter,
+
+    /// <summary>Rendered at the bottom of every page.</summary>
     PageFooter,
+
+    /// <summary>Rendered once, after everything else, at the very end of the report.</summary>
     ReportFooter,
 }
 
 /// <summary>Common surface for any band.</summary>
 public interface IBand
 {
+    /// <summary>The role this band plays in the layout.</summary>
     BandKind Kind { get; }
+
+    /// <summary>Declared height. May grow or shrink at render when the band allows it.</summary>
     Unit Height { get; }
+
+    /// <summary>Static visibility. False hides the band without evaluating any expression.</summary>
     bool Visible { get; }
+
+    /// <summary>Optional expression evaluated per emission; when it returns false the band is skipped.
+    /// Null means "use <see cref="Visible"/> alone".</summary>
     string? VisibleExpression { get; }
+
+    /// <summary>The elements drawn inside the band, positioned relative to its top-left corner.</summary>
     EquatableArray<ReportElement> Elements { get; }
 }
 
@@ -44,6 +67,7 @@ public sealed record ReportBand(
     PageBreak PageBreak = PageBreak.None)
     : IBand
 {
+    /// <summary>A zero-height band of the given kind with no elements — a placeholder that renders nothing.</summary>
     public static ReportBand Empty(BandKind kind) => new(kind, Unit.Zero, EquatableArray<ReportElement>.Empty);
 }
 
@@ -80,8 +104,10 @@ public sealed record DetailBand(
     string? DataSetName = null)
     : IBand
 {
+    /// <summary>Always <see cref="BandKind.Detail"/>.</summary>
     public BandKind Kind => BandKind.Detail;
 
+    /// <summary>A zero-height detail band with no elements.</summary>
     public static readonly DetailBand Empty = new(Unit.Zero, EquatableArray<ReportElement>.Empty);
 }
 
@@ -117,6 +143,7 @@ public sealed record SubDetailBand(
     string? FilterExpression = null,
     EquatableArray<SortDescriptor> SortExpressions = default)
 {
+    /// <summary>A zero-height sub-detail band bound to <paramref name="dataMember"/>, with no elements.</summary>
     public static SubDetailBand Empty(string name, string dataMember)
         => new(name, dataMember, Unit.Zero, EquatableArray<ReportElement>.Empty);
 }
@@ -149,8 +176,14 @@ public sealed record GroupBand(
     EquatableArray<Parameters.ReportVariable> Variables = default)
     : IBand
 {
+    /// <summary>Always <see cref="BandKind.GroupHeader"/>; the footer travels with the same band.</summary>
     public BandKind Kind => BandKind.GroupHeader;
+
+    /// <summary>Combined height of the header and footer sections, either of which may be absent.</summary>
     public Unit Height => (Header?.Height ?? Unit.Zero) + (Footer?.Height ?? Unit.Zero);
+
+    /// <summary>Header elements followed by footer elements. Exposed to satisfy <see cref="IBand"/>;
+    /// the paginator draws the two sections separately.</summary>
     public EquatableArray<ReportElement> Elements
         => new(((Header?.Elements ?? EquatableArray<ReportElement>.Empty))
               .Concat(Footer?.Elements ?? EquatableArray<ReportElement>.Empty));

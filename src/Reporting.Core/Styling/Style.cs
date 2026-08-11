@@ -42,5 +42,7 @@ public sealed record Style(
     // visual prop, so not flattened into the metadata grid. Last positional param to preserve ctor compat.
     string? BasedOn = null)
 {
+    /// <summary>A style with every member unset, i.e. "inherit everything". This is what an element
+    /// carries until something is declared on it — the null members are meaningful, not missing.</summary>
     public static readonly Style Default = new();
 }

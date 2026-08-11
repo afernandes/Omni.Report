@@ -22,6 +22,8 @@ public abstract record ReportElement
     /// <summary>Expression that, if non-empty, must evaluate to <c>true</c> for the element to render.</summary>
     public string? VisibleExpression { get; init; }
 
+    /// <summary>Inline style. Members left null inherit — from the named style named by
+    /// <c>Style.BasedOn</c>, and ultimately from the type defaults.</summary>
     public Style Style { get; init; } = Style.Default;
 
     /// <summary>Conditional format rules evaluated in order; matching rules layer onto <see cref="Style"/>.</summary>
