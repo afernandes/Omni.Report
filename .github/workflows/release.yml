@@ -75,7 +75,7 @@ jobs:
         run: dotnet pack OmniReport.slnx -c Release --no-build -o ./artifacts -p:Version=${{ env.VERSION }}
 
       - name: Upload artifacts (.nupkg + .snupkg)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: nupkgs-${{ env.VERSION }}
           path: |
