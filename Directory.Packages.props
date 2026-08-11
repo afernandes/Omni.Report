@@ -12,7 +12,7 @@
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="4.12.0" />
 
     <!-- Rendering -->
-    <PackageVersion Include="SkiaSharp" Version="3.119.2" />
+    <PackageVersion Include="SkiaSharp" Version="4.151.1" />
     <PackageVersion Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="3.119.2" />
     <PackageVersion Include="HarfBuzzSharp" Version="8.3.1.1" />
     <PackageVersion Include="SkiaSharp.HarfBuzz" Version="3.119.2" />
@@ -24,7 +24,7 @@
     <PackageVersion Include="DocumentFormat.OpenXml" Version="3.1.1" />
 
     <!-- PDF inspection (test-side) -->
-    <PackageVersion Include="PdfPig" Version="0.1.10" />
+    <PackageVersion Include="PdfPig" Version="0.1.15" />
 
     <!-- Snapshot testing -->
     <PackageVersion Include="Verify.Xunit" Version="28.10.0" />
