@@ -27,15 +27,27 @@ jobs:
         with:
           global-json-file: global.json
 
+      # Não dá para auditar OmniReport.slnx no Linux: ele inclui o sample MauiHybrid
+      # (net10.0-windows10.0.19041, workload maui-tizen) e os projetos GDI/WindowsSpooler/Android, que nem
+      # restauram aqui (NETSDK1147). Montamos uma solução descartável com o MESMO conjunto cross-plat que o
+      # ci.yml usa, o que permite um único restore e um único `dotnet list package`.
+      - name: Montar solução cross-platform
+        run: |
+          set -euo pipefail
+          find src tests -name '*.csproj' | grep -vE '(Rendering\.Gdi|Printing\.WindowsSpooler|Printing\.Android)' | sort > cross-plat.txt
+          echo "Projetos auditados: $(wc -l < cross-plat.txt)"
+          dotnet new sln -n Audit -f slnx --force
+          xargs -a cross-plat.txt dotnet sln Audit.slnx add
+
       - name: Restore
-        run: dotnet restore OmniReport.slnx
+        run: dotnet restore Audit.slnx
 
       # Inclui transitivos: o histórico do repo já registra um CVE que chegou por dependência indireta
       # (SQLitePCLRaw pinado por GHSA-2m69-gcr7-jv3q em Directory.Packages.props).
       - name: Auditar pacotes vulneráveis
         run: |
           set -o pipefail
-          dotnet list OmniReport.slnx package --vulnerable --include-transitive 2>&1 | tee audit.txt
+          dotnet list Audit.slnx package --vulnerable --include-transitive 2>&1 | tee audit.txt
 
           # Falha só em High/Critical. Moderate/Low são reportados no log e viram PR do Dependabot —
           # travar o merge neles pararia o repo por vulnerabilidade de dependência de teste.

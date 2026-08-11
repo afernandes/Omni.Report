@@ -79,3 +79,7 @@ design-package-staging/
 
 # BenchmarkDotNet output (relatórios gerados por execução; não versionar)
 BenchmarkDotNet.Artifacts/
+
+# Solução descartável montada pelo job de auditoria (security.yml)
+Audit.slnx
+cross-plat.txt
