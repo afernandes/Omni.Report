@@ -97,7 +97,7 @@ internal static partial class DisplayList
         switch (p)
         {
             case DrawTextPrimitive t:
-                sb.Append("  \"").Append(Escape(t.Text)).Append('"').Append(TextStyleOf(t.Style));
+                sb.Append("  ").Append(GoldenText.Quote(t.Text)).Append(TextStyleOf(t.Style));
                 break;
             case DrawLinePrimitive l:
                 sb.Append(Inv($"  ({l.From.X},{l.From.Y})→({l.To.X},{l.To.Y})")).Append(PenOf(l.Pen));
@@ -140,7 +140,7 @@ internal static partial class DisplayList
         }
         if (p.DocMapLabel is { Length: > 0 } dm)
         {
-            sb.Append("  docmap=\"").Append(Escape(dm)).Append('"');
+            sb.Append("  docmap=").Append(GoldenText.Quote(dm));
         }
         if (p.ClipBounds is { } clip)
         {
@@ -218,9 +218,6 @@ internal static partial class DisplayList
             ? Inv($"  fill={fill.Color.ToHex()}→{fill.GradientEndColor!.Value.ToHex()}/{fill.Gradient}")
             : Inv($"  fill={fill.Color.ToHex()}");
     }
-
-    private static string Escape(string s) => s.Replace("\n", "\\n", StringComparison.Ordinal)
-                                               .Replace("\r", string.Empty, StringComparison.Ordinal);
 
     private static string Inv(FormattableString s) => s.ToString(CultureInfo.InvariantCulture);
 }

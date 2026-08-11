@@ -78,7 +78,11 @@ internal static class GoldenReports
             .Label("Direita/meio").At(0, 18).Size(80, 8).AlignRight().AlignMiddle()
             .Label("Com borda").At(0, 28).Size(80, 8).Border(BorderLineStyle.Solid, 1.0, Color.FromHex("#0033AA"))
             .Text("1234.5").At(0, 38).Size(80, 6).Format("C2")
-            .Label("Sem quebra de linha neste texto longo").At(0, 46).Size(40, 6).NoWrap())
+            .Label("Sem quebra de linha neste texto longo").At(0, 46).Size(40, 6).NoWrap()
+            // Texto de relatório é dado do autor, não vocabulário controlado: aspas e barra invertida
+            // quebrariam a estrutura de linha do golden se não fossem escapadas. Fica no catálogo para
+            // que o próprio golden seja a prova de que o escape acontece.
+            .Label("Aspas \"X\" e barra \\ no meio").At(0, 52).Size(80, 6))
         .Build();
 
     /// <summary>Vector shapes, including a gradient fill. A gradient that degrades to its start

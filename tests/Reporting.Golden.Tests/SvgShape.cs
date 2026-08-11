@@ -52,12 +52,15 @@ internal static class SvgShape
                             .Where(a => !(isText && GlyphMetricAttributes.Contains(a.Name.LocalName)))
                             .OrderBy(a => a.Name.LocalName, StringComparer.Ordinal))
         {
-            sb.Append(' ').Append(a.Name.LocalName).Append("=\"").Append(Normalize(a.Value)).Append('"');
+            sb.Append(' ').Append(a.Name.LocalName).Append('=')
+              .Append(GoldenText.Quote(Normalize(a.Value)));
         }
 
         if (isText)
         {
-            sb.Append(" \"").Append(el.Value.Trim()).Append('"');
+            // Skia indents the run inside the element, so Trim() first; the value itself is author
+            // text and may carry quotes or newlines, hence GoldenText rather than raw interpolation.
+            sb.Append(' ').Append(GoldenText.Quote(el.Value.Trim()));
         }
         sb.AppendLine();
 
