@@ -83,31 +83,26 @@ jobs:
       # net10.0-windows / android (GDI, WindowsSpooler + testes, Android). Um projeto novo é coberto no dia
       # em que é criado; se algum dia ele NÃO puder rodar no Linux, isso vira falha visível de CI em vez de
       # ausência silenciosa.
+      # Os projetos entram numa solução descartável em vez de serem buildados um a um em loop: assim
+      # há UM restore e UM build para os 57, em vez de um restore implícito por projeto. O mesmo
+      # mecanismo roda no security.yml, então os dois workflows cobrem exatamente o mesmo conjunto.
       - name: Descobrir projetos cross-platform
         run: |
+          set -euo pipefail
           find src tests -name '*.csproj' | grep -vE '(Rendering\.Gdi|Printing\.WindowsSpooler|Printing\.Android)' | sort > cross-plat.txt
           echo "Projetos cobertos no Linux: $(wc -l < cross-plat.txt)"
           cat cross-plat.txt
+          dotnet new sln -n CrossPlat -f slnx --force
+          xargs -a cross-plat.txt dotnet sln CrossPlat.slnx add
+
+      - name: Restore
+        run: dotnet restore CrossPlat.slnx
 
       - name: Build
-        run: |
-          set -euo pipefail
-          while read -r proj; do
-            echo "::group::build $proj"
-            dotnet build "$proj" -c Release
-            echo "::endgroup::"
-          done < cross-plat.txt
+        run: dotnet build CrossPlat.slnx -c Release --no-restore
 
       - name: Test
-        run: |
-          set -euo pipefail
-          grep -E 'Tests\.csproj$' cross-plat.txt > test-projects.txt
-          echo "Suítes: $(wc -l < test-projects.txt)"
-          while read -r proj; do
-            echo "::group::test $proj"
-            dotnet test "$proj" -c Release --no-build --verbosity minimal
-            echo "::endgroup::"
-          done < test-projects.txt
+        run: dotnet test CrossPlat.slnx -c Release --no-build --verbosity minimal
 
   pack:
     name: Pack NuGets

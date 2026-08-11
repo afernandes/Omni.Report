@@ -46,7 +46,10 @@ jobs:
       # (SQLitePCLRaw pinado por GHSA-2m69-gcr7-jv3q em Directory.Packages.props).
       - name: Auditar pacotes vulneráveis
         run: |
-          set -o pipefail
+          # set -e importa aqui: sem ele um `dotnet list` que falhasse (source fora do ar, restore
+          # incompleto) deixaria audit.txt vazio, os greps não achariam nada e o step passaria verde —
+          # auditoria que não auditou reportando "tudo certo" é pior que auditoria nenhuma.
+          set -euo pipefail
           dotnet list Audit.slnx package --vulnerable --include-transitive 2>&1 | tee audit.txt
 
           # Falha só em High/Critical. Moderate/Low são reportados no log e viram PR do Dependabot —
@@ -90,7 +93,9 @@ jobs:
         run: |
           set -euo pipefail
           find src tests -name '*.csproj' | grep -vE '(Rendering\.Gdi|Printing\.WindowsSpooler|Printing\.Android)' | sort > cross-plat.txt
-          while read -r proj; do dotnet build "$proj" -c Release; done < cross-plat.txt
+          dotnet new sln -n CrossPlat -f slnx --force
+          xargs -a cross-plat.txt dotnet sln CrossPlat.slnx add
+          dotnet build CrossPlat.slnx -c Release
 
       - uses: github/codeql-action/analyze@v3
         with:
