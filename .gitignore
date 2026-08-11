@@ -79,3 +79,7 @@ design-package-staging/
 
 # BenchmarkDotNet output (relatórios gerados por execução; não versionar)
 BenchmarkDotNet.Artifacts/
+
+# Golden files: o *.received.* é o resultado da execução atual, escrito pelo Verify quando um
+# golden falha. É artefato de diagnóstico — o que se versiona é o *.verified.*.
+*.received.*

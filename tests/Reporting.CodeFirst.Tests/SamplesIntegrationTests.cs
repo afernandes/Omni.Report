@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using FluentAssertions;
 using Reporting.CodeFirst;
 using Reporting.Layout;
@@ -48,25 +47,28 @@ public class SamplesIntegrationTests
         AssertPdfMagic(ctx.ToPdfBytes());
     }
 
+    /// <summary>
+    /// Paginação de um volume grande (10k linhas) produz múltiplas páginas.
+    /// </summary>
+    /// <remarks>
+    /// Este teste já teve uma asserção de wall-clock (&lt; 2 s) que rodava **apenas fora do CI**, para
+    /// escapar da variância dos runners compartilhados. O desenho estava invertido: dispensava o runner
+    /// e cobrava o orçamento justamente da máquina do dev, que costuma estar no meio de um build —
+    /// resultado, a suíte ficava vermelha localmente e verde no CI, que é o pior dos dois mundos.
+    /// Um <c>Stopwatch</c> em volta de uma execução fria também não controla JIT nem warmup, então
+    /// nunca mediu o que dizia medir. O orçamento de tempo vive agora onde há instrumentação para ele:
+    /// <c>PaginationBenchmarks</c>, em <c>benchmarks/Reporting.Benchmarks</c> (linha de base em
+    /// <c>docs/benchmarks.md</c>). Aqui fica a correção, que é determinística.
+    /// </remarks>
     [Fact]
-    public async Task Sample01_with_10k_rows_finishes_under_2_seconds()
+    public async Task Sample01_with_10k_rows_paginates_into_multiple_pages()
     {
         var rows = SyntheticVendas(10_000).ToList();
         var report = Sample01_VendasPorCliente.Build(rows);
 
-        var sw = Stopwatch.StartNew();
         var rendered = await report.PaginateAsync();
-        sw.Stop();
 
         rendered.Pages.Count.Should().BeGreaterThan(1);
-        // Asserção de wall-clock só no dev box: runners de CI compartilhados têm variância
-        // alta (já observamos 12s) e tornam um limite fixo flaky. No CI validamos apenas a
-        // correção (paginação produz múltiplas páginas); o orçamento de tempo fica para o dev.
-        if (Environment.GetEnvironmentVariable("CI") is null)
-        {
-            sw.Elapsed.TotalSeconds.Should().BeLessThan(2.0,
-                because: $"10k linhas levaram {sw.Elapsed.TotalSeconds:F2}s; alvo < 2s no dev box.");
-        }
     }
 
     private static IEnumerable<SampleVenda> SyntheticVendas(int n)

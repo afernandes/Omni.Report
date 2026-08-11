@@ -302,6 +302,14 @@ gradiente ligeiramente errado, deslocamento de baseline) em PDF/PNG/SVG.
 dependência morta. A primeira é claramente melhor para um motor de renderização — e tem sinergia com o item 13
 (o gradiente ausente no GDI seria pego por um golden file).
 
+**FEITO.** `tests/Reporting.Golden.Tests` — 4 relatórios pinados em duas camadas: o *display list* do paginador
+(geometria, fonte, cor, alinhamento, quebra de página, `Page.Total`) e a emissão SVG (preenchimento, traço,
+gradiente). A referência morta em `Reporting.Rendering.Tests` foi removida. Verificado por sabotagem: descartar
+o gradiente em `StyleResolver.BackgroundBrush` derruba os dois goldens de `Formas` — `fill=#FF8800→#FFFFFF/TopBottom`
+vira `fill=#FF8800` e o `<linearGradient>` some do SVG. Estabilidade cross-platform é por construção, não por
+sorte: mils inteiros + `AverageWidthTextMeasurer` + cultura fixa + resumo do SVG que descarta os avanços por
+glifo (que o Skia tira da fonte resolvida e mudam no Linux). Ver `tests/Reporting.Golden.Tests/README.md`.
+
 ---
 
 ### 11. `Expressions.Roslyn` sem sandbox, com 5 testes 🔍
@@ -485,6 +493,13 @@ automática contra regressão de performance. `LargeReportPaginationTests` cobre
 PDF/Excel. Rodar sob demanda; publicar tendência. Pré-requisito para atacar o item 15 com dado em vez de
 intuição.
 
+**Consequência colhida.** Com os benchmarks no lugar, a asserção de wall-clock que morava em
+`SamplesIntegrationTests.Sample01_with_10k_rows_finishes_under_2_seconds` foi removida. Ela rodava **só fora do
+CI** — dispensava o runner compartilhado e cobrava o orçamento de 2 s justamente da máquina do dev, que costuma
+estar no meio de um build; verificado que falhava na `main` limpa neste workstation enquanto o CI passava verde.
+Um `Stopwatch` em volta de uma execução fria também não controla JIT nem warmup. O teste manteve a asserção de
+correção (10k linhas ⇒ múltiplas páginas) e o orçamento de tempo passou a viver em `PaginationBenchmarks`.
+
 ---
 
 ### 21. Perda da semântica "inherit" no Designer 🔍
@@ -499,6 +514,55 @@ entregue em #181-183/#188-189. Um relatório editado no Designer deixa de respon
 
 **Ação.** Representar "inherit" como estado distinto no VM (nullable + placeholder na UI), não como valor
 materializado. Conhecido e pré-existente; a chegada dos named styles elevou sua relevância.
+
+---
+
+### 21a. `Style.Border` só é desenhada em Rectangle e Ellipse ✅
+
+Achado pela suíte de golden files (item 10) na primeira execução, e fixado em
+`tests/Reporting.Golden.Tests/RenderGapCharacterizationTests.cs`.
+
+`PenStyle.FromBorderSide` tem **um único chamador** em todo o `src/`: `ResolveBorderPen`
+(`Reporting.Layout/Internal/BandRenderer.cs:698`), invocado apenas nos casos `RectangleElement` (linha 320) e
+`EllipseElement` (linha 352). A passagem genérica de elemento emite um `DrawRectanglePrimitive` de **fundo**
+quando há preenchimento (linha 248), mas nunca um com traço.
+
+Consequência: `.Border(...)` num `Label`/`TextBox`/`Image` **não vira primitiva alguma** — nenhum backend pode
+desenhá-la. Um textbox com borda é o caso mais banal de relatório estilo SSRS. O Tablix também ignora
+`Style.Border`: desenha uma grade de cor fixa (`TablixRenderer.cs:24`, `#CBD5E1` a 0.5pt), não configurável.
+
+**Ação.** Emitir o retângulo de borda na passagem genérica (as 4 faces, não só `Top` como o fallback atual) e
+tornar a grade do Tablix dirigida por estilo. **Pronto quando** o golden `Estilos` mostrar a primitiva de borda
+e a caracterização correspondente falhar (então é apagada).
+
+---
+
+### 21b. `CornerRadius` é descartado em retângulo sem filhos ✅
+
+Mesmo achado, mesma caracterização. `DrawRectanglePrimitive` não tem campo de raio. O valor sobrevive só como
+`ClipCornerRadius`, que o `BandRenderer` carimba nos **filhos** do retângulo para recortar overflow
+(`BandRenderer.cs:342`). Um retângulo usado como forma arredondada não tem filhos, então o raio não chega a
+lugar nenhum — o SVG exportado é um `<rect>` sem `rx`, como registra `Goldens/Formas.svg.verified.txt`. Ser
+honrado para containers é justamente por que a lacuna passou despercebida.
+
+**Ação.** Campo de raio no `DrawRectanglePrimitive` + honrar em Skia, GDI, PDF, SVG e no overlay HTML.
+
+---
+
+### 21c. `ReportBuilderRoot.Culture(CultureInfo.InvariantCulture)` lança 🔍
+
+`Reporting.CodeFirst/ReportBuilder.cs:145` repassa `culture.Name` para `Language(string)`, que aplica
+`ArgumentException.ThrowIfNullOrWhiteSpace` — e o nome da cultura invariante é `""`. Uma chamada pública,
+documentada e perfeitamente razoável (é a escolha mais reprodutível para um relatório) lança
+`ArgumentException` com uma mensagem que cita um parâmetro que quem chamou nunca informou.
+
+Guardar `""` **não** resolve: `ReportPaginator.TryGetCulture` (linha 231) trata string vazia como "nenhuma
+cultura informada" e cai na cultura ambiente — silenciosamente o oposto do pedido. Suporte real exige um
+sentinela entendido pelos dois lados.
+
+**Ação.** Sentinela explícito (`Metadata["Language"] = "Invariant"`) reconhecido em `TryGetCulture`, ou —
+se a decisão for não suportar — lançar em `Culture()` com mensagem que diga isso. Contornado nos goldens
+fixando `en-US`.
 
 ---
 

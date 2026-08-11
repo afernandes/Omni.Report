@@ -1,0 +1,26 @@
+﻿report Bandas — 1 page
+
+page 1  A4 Portrait 210.01mm×297.00mm  margins 15.01mm/15.01mm/15.01mm/15.01mm  [23]
+  text    [15.01mm,15.01mm 119.99mm×8.00mm]  "Relatório de vendas"  Arial/16/Bold  src=e1
+  text    [15.01mm,29.01mm 50.01mm×5.00mm]  "Produto"  Arial/10/Bold  src=e2
+  text    [65.02mm,29.01mm 35.00mm×5.00mm]  "Região"  Arial/10/Bold  src=e3
+  text    [100.00mm,29.01mm 19.99mm×5.00mm]  "Qtd"  Arial/10/Bold align=Right/Top  src=e4
+  text    [120.02mm,29.01mm 30.00mm×5.00mm]  "Valor"  Arial/10/Bold align=Right/Top  src=e5
+  line    [15.01mm,35.00mm 135.00mm×0.00mm]  (15.01mm,35.00mm)→(150.01mm,35.00mm)  pen=#000000/0.5pt  src=e6
+  text    [15.01mm,37.01mm 50.01mm×5.00mm]  "Teclado"  Arial/10  src=e7
+  text    [65.02mm,37.01mm 35.00mm×5.00mm]  "Sul"  Arial/10  src=e8
+  text    [100.00mm,37.01mm 19.99mm×5.00mm]  "12"  Arial/10 align=Right/Top  src=e9
+  text    [120.02mm,37.01mm 30.00mm×5.00mm]  "1,450.90"  Arial/10 align=Right/Top  src=e10
+  text    [15.01mm,43.00mm 50.01mm×5.00mm]  "Monitor"  Arial/10  src=e7
+  text    [65.02mm,43.00mm 35.00mm×5.00mm]  "Sul"  Arial/10  src=e8
+  text    [100.00mm,43.00mm 19.99mm×5.00mm]  "3"  Arial/10 align=Right/Top  src=e9
+  text    [120.02mm,43.00mm 30.00mm×5.00mm]  "2,310.00"  Arial/10 align=Right/Top  src=e10
+  text    [15.01mm,49.00mm 50.01mm×5.00mm]  "Mouse"  Arial/10  src=e7
+  text    [65.02mm,49.00mm 35.00mm×5.00mm]  "Norte"  Arial/10  src=e8
+  text    [100.00mm,49.00mm 19.99mm×5.00mm]  "25"  Arial/10 align=Right/Top  src=e9
+  text    [120.02mm,49.00mm 30.00mm×5.00mm]  "875.25"  Arial/10 align=Right/Top  src=e10
+  text    [15.01mm,54.99mm 50.01mm×5.00mm]  "Headset"  Arial/10  src=e7
+  text    [65.02mm,54.99mm 35.00mm×5.00mm]  "Norte"  Arial/10  src=e8
+  text    [100.00mm,54.99mm 19.99mm×5.00mm]  "7"  Arial/10 align=Right/Top  src=e9
+  text    [120.02mm,54.99mm 30.00mm×5.00mm]  "1,099.99"  Arial/10 align=Right/Top  src=e10
+  text    [15.01mm,276.00mm 59.99mm×5.00mm]  "Página 1 de 1"  Arial/10  src=e11
