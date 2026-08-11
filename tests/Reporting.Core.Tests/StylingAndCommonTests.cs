@@ -113,6 +113,24 @@ public class CommonTests
         explicitEmpty.Equals(EquatableArray<int>.Empty).Should().BeTrue();
     }
 
+    /// <summary>
+    /// Every way into <see cref="EquatableArray{T}"/> treats "nothing" as an empty array — the
+    /// <c>default</c> struct, the two constructors and both implicit conversions. The conversion from
+    /// <c>T[]</c> used to be the one exception, throwing <see cref="ArgumentNullException"/>; a property
+    /// assigned from a nullable array blew up instead of coming back empty like every sibling path.
+    /// </summary>
+    [Fact]
+    public void Equatable_array_treats_null_as_empty_on_every_path()
+    {
+        int[]? nullArray = null;
+        EquatableArray<int> fromArray = nullArray!;
+        fromArray.Count.Should().Be(0, "a null array converts to Empty, not an exception");
+
+        new EquatableArray<int>((IEnumerable<int>)null!).Count.Should().Be(0);
+        new EquatableArray<int>(default(System.Collections.Immutable.ImmutableArray<int>)).Count.Should().Be(0);
+        default(EquatableArray<int>).Count.Should().Be(0);
+    }
+
     [Fact]
     public void Equatable_array_indexer_and_enumeration()
     {

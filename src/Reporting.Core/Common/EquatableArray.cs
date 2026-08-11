@@ -81,8 +81,11 @@ public readonly struct EquatableArray<T> : IEquatable<EquatableArray<T>>, IReadO
     /// <summary>Wraps an immutable array implicitly, so call sites read naturally.</summary>
     public static implicit operator EquatableArray<T>(ImmutableArray<T> items) => new(items);
 
-    /// <summary>Copies a plain array implicitly — lets a collection expression bind straight to a property.</summary>
-    public static implicit operator EquatableArray<T>(T[] items) => new(items.ToImmutableArray());
+    /// <summary>Copies a plain array implicitly — lets a collection expression bind straight to a property.
+    /// A null array becomes <see cref="Empty"/>, matching the constructors and the <c>default</c> instance:
+    /// every other way into this type treats "nothing" as an empty array rather than throwing.</summary>
+    public static implicit operator EquatableArray<T>(T[] items)
+        => items is null ? Empty : new(items.ToImmutableArray());
 }
 
 /// <summary>Factory helpers for <see cref="EquatableArray{T}"/>, so the element type can be inferred.</summary>

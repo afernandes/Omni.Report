@@ -39,8 +39,10 @@ public sealed record ImageElement : ReportElement
     /// <summary>Which of the three source properties below actually supplies the bytes.</summary>
     public ImageSourceKind Source { get; init; } = ImageSourceKind.Path;
 
-    /// <summary>File path or URL, used when <see cref="Source"/> is <see cref="ImageSourceKind.Path"/>.
-    /// A URL makes the renderer fetch it — see the SSRF note in the security policy.</summary>
+    /// <summary>File path or URL, used when <see cref="Source"/> is <see cref="ImageSourceKind.Path"/>.</summary>
+    /// <remarks>A URL makes the renderer perform an outbound request to an address that comes from the
+    /// report definition. If your definitions are not fully trusted, that is a server-side request forgery
+    /// vector: restrict egress at the network layer rather than relying on validation here.</remarks>
     public string? Path { get; init; }
 
     /// <summary>Expression resolving to bytes or a path, used when <see cref="Source"/> is
