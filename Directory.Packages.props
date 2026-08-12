@@ -51,6 +51,12 @@
     <PackageVersion Include="Testcontainers.MsSql" Version="4.13.0" />
     <PackageVersion Include="Testcontainers.PostgreSql" Version="4.13.0" />
     <PackageVersion Include="Testcontainers.MySql" Version="4.13.0" />
+    <!-- Transitivo do Testcontainers, pinado acima da versão vulnerável: SSH.NET <= 2025.1.0 tem
+         GHSA-q939-rpr3-3284 (severidade ALTA — o ScpClient permite escrita de arquivo arbitrária via nome
+         controlado pelo servidor), corrigido na 2026.0.0. O Testcontainers só usa SSH.NET no cenário de
+         daemon Docker remoto por SSH, que não é o nosso, mas o pacote entra no grafo de qualquer forma e o
+         gate de auditoria falha em High. Mesmo tratamento dado ao SQLitePCLRaw (GHSA-2m69-gcr7-jv3q). -->
+    <PackageVersion Include="SSH.NET" Version="2026.0.0" />
 
     <!-- Windows GDI (System.Drawing.Common no longer included by default in net*-windows TFMs) -->
     <PackageVersion Include="System.Drawing.Common" Version="9.0.0" />

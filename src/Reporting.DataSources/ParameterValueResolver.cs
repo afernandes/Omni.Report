@@ -11,6 +11,8 @@ namespace Reporting.DataSources;
 /// </summary>
 public static class ParameterValueResolver
 {
+    /// <summary>Resolves the available values of a parameter — the static list when one is declared, or the
+    /// rows of the query that supplies them.</summary>
     public static async Task<IReadOnlyList<ParameterValue>> ResolveAsync(
         ParameterAvailableValues available, DataSourceRegistry sources,
         IReadOnlyDictionary<string, object?>? parameterValues = null, CancellationToken cancellationToken = default)

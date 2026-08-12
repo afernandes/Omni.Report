@@ -32,6 +32,11 @@ public sealed class ReportExpressionContext : IReportExpressionContext
     // walks the bands so a later band can read an earlier one's value (e.g. a footer echoing the body).
     private readonly Dictionary<string, object?> _reportItems = new(StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>Creates a context.</summary>
+    /// <param name="evaluator">Evaluator used for aggregates and lookups. Sharing the report's own keeps the
+    /// parse cache warm; null builds a private one.</param>
+    /// <param name="culture">Culture driving formatting. Defaults to <c>pt-BR</c> — a report that must render
+    /// identically on every machine should pass its own rather than rely on this.</param>
     public ReportExpressionContext(ExpressionEvaluator? evaluator = null, CultureInfo? culture = null)
     {
         _evaluator = evaluator ?? new ExpressionEvaluator();
@@ -42,20 +47,47 @@ public sealed class ReportExpressionContext : IReportExpressionContext
         UserName = Environment.UserName ?? "anonymous";
     }
 
+    /// <summary>Writable parameter store. The host fills it before the run; expressions read it as
+    /// <see cref="Parameters"/>.</summary>
     public DictionaryLookup ParametersStore { get; }
+
+    /// <summary>Writable variable store, filled as report-level variables are evaluated.</summary>
     public DictionaryLookup VariablesStore { get; }
 
+    /// <summary>Fields of the row being rendered. Changes on every <see cref="SetCurrentRow"/>.</summary>
     public IValueLookup Fields => _fieldsLookup;
+
+    /// <summary>Read-only view of <see cref="ParametersStore"/>.</summary>
     public IValueLookup Parameters => ParametersStore;
+
+    /// <summary>Read-only view of <see cref="VariablesStore"/>.</summary>
     public IValueLookup Variables => VariablesStore;
 
+    /// <summary>Key of the group instance being rendered, or null outside a group.</summary>
     public object? GroupKey { get; set; }
+
+    /// <summary>Page currently being emitted, 1-based.</summary>
     public int PageNumber { get; set; } = 1;
+
+    /// <summary>Total page count. Only correct on the paginator's second pass — on the first it is a
+    /// placeholder, which is why <c>Page.Total</c> needs that pass at all.</summary>
     public int TotalPages { get; set; } = 1;
+
+    /// <summary>Timestamp for the run. Captured once at construction so every <c>Now()</c> in the report
+    /// agrees, instead of drifting between the first page and the last.</summary>
     public DateTime Now { get; set; }
+
+    /// <summary>Date part of <see cref="Now"/>.</summary>
     public DateTime Today => Now.Date;
+
+    /// <summary>User the report runs as. Defaults to the OS user; a server host should set its own.</summary>
     public string UserName { get; set; }
+
+    /// <summary>Report name, exposed to expressions as <c>Globals!ReportName</c>.</summary>
     public string ReportName { get; set; } = string.Empty;
+
+    /// <summary>Culture used for formatting. Fixed at construction — changing it mid-run would make one
+    /// report render in two conventions.</summary>
     public CultureInfo Culture { get; }
 
     /// <summary>Sets the field values for the current row and pushes a snapshot into the scope buffers.</summary>
@@ -194,6 +226,7 @@ public sealed class ReportExpressionContext : IReportExpressionContext
         }
     }
 
+    /// <summary>The full row set of a named dataset, for cross-dataset expressions. Null when unknown.</summary>
     public IValueLookup? GetSource(string sourceName)
     {
         if (string.IsNullOrEmpty(sourceName)) return null;
@@ -231,9 +264,13 @@ public sealed class ReportExpressionContext : IReportExpressionContext
         return false;
     }
 
+    /// <summary>Last value a named text box rendered to — SSRS <c>ReportItems!Name.Value</c>. Null when the
+    /// box has not rendered yet, which is why a footer can echo the body but not the reverse.</summary>
     public object? GetReportItem(string name)
         => !string.IsNullOrEmpty(name) && _reportItems.TryGetValue(name, out var v) ? v : null;
 
+    /// <summary>Records what a named text box rendered to, so later bands can read it. Called by the
+    /// renderer as it walks the bands; ignores an empty name.</summary>
     public void SetReportItem(string name, object? value)
     {
         if (!string.IsNullOrEmpty(name))
@@ -242,6 +279,10 @@ public sealed class ReportExpressionContext : IReportExpressionContext
         }
     }
 
+    /// <summary>Computes an aggregate over the rows of a scope.</summary>
+    /// <param name="function">Aggregate name — <c>Sum</c>, <c>Avg</c>, <c>Count</c>, <c>StDev</c>, …</param>
+    /// <param name="expression">Evaluated once per row in scope to produce the values.</param>
+    /// <param name="scope">Which buffered row set to aggregate over.</param>
     public object? EvaluateAggregate(string function, string expression, AggregateScope scope)
     {
         var rows = scope switch
@@ -255,6 +296,8 @@ public sealed class ReportExpressionContext : IReportExpressionContext
         return AggregateCalculator.Calculate(function, expression, rows, _evaluator, this);
     }
 
+    /// <summary>Computes a positional function — <c>RowNumber</c>, <c>Previous</c>, <c>First</c>,
+    /// <c>Last</c>, <c>CountRows</c>, <c>CountDistinct</c> — over the rows of a scope.</summary>
     public object? EvaluatePositional(string function, string expression, AggregateScope scope)
     {
         switch (function.ToUpperInvariant())
@@ -333,6 +376,12 @@ public sealed class ReportExpressionContext : IReportExpressionContext
         _datasets[name] = buffer;
     }
 
+    /// <summary>Cross-dataset lookup, backing SSRS <c>Lookup</c>/<c>LookupSet</c>.</summary>
+    /// <param name="source">Key value from the current row.</param>
+    /// <param name="destExpression">Evaluated per row of the target dataset to produce its key.</param>
+    /// <param name="resultExpression">Evaluated on the matched row to produce the result.</param>
+    /// <param name="datasetName">Dataset to search. Unknown or empty yields no match rather than an error.</param>
+    /// <param name="all">True returns every match (<c>LookupSet</c>); false returns the first (<c>Lookup</c>).</param>
     public object? EvaluateLookup(object? source, string destExpression, string resultExpression, string datasetName, bool all)
     {
         if (!_datasets.TryGetValue(datasetName, out var rows) || rows.Count == 0)

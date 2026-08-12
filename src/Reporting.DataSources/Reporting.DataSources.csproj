@@ -5,6 +5,12 @@
     <RootNamespace>Reporting.DataSources</RootNamespace>
     <AssemblyName>Reporting.DataSources</AssemblyName>
     <Description>OmniReport — abstractions over tabular data sources (IEnumerable&lt;T&gt;, DataTable, etc.) consumed by the layout engine.</Description>
+    <!-- Trava de documentação: toda API pública deste projeto precisa de <summary>. O Replace levanta a
+         supressão global de CS1591 (Directory.Build.props) só para ESTE projeto; junto com o
+         TreatWarningsAsErrors das bibliotecas empacotáveis, o build falha enquanto houver membro público sem
+         doc — e continua falhando se um novo chegar sem ela. Mesmo padrão de CodeFirst (#208), Core e
+         Rendering (#236). -->
+    <NoWarn>$(NoWarn.Replace(';CS1591','').Replace('CS1591',''))</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

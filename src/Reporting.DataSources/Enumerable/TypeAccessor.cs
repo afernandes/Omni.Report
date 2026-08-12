@@ -13,6 +13,8 @@ public sealed class TypeAccessor<T>
 {
     private static readonly Lazy<TypeAccessor<T>> _instance = new(() => new TypeAccessor<T>());
 
+    /// <summary>The shared accessor for <typeparamref name="T"/>. Built once: reflecting over the type per
+    /// row would dominate the cost of reading a large source.</summary>
     public static TypeAccessor<T> Instance => _instance.Value;
 
     private readonly Dictionary<string, Accessor> _byName;
@@ -33,8 +35,10 @@ public sealed class TypeAccessor<T>
         }
     }
 
+    /// <summary>Property accessors in declaration order, which fixes the field ordinals.</summary>
     public IReadOnlyList<Accessor> Accessors => _byOrdinal;
 
+    /// <summary>Accessor for a property by name, or null when the type has no such property.</summary>
     public Accessor? Get(string name) => _byName.GetValueOrDefault(name);
 
     private static Accessor BuildAccessor(PropertyInfo property)
@@ -45,6 +49,10 @@ public sealed class TypeAccessor<T>
         return new Accessor(property.Name, property.PropertyType, lambda);
     }
 
+    /// <summary>One property, ready to read.</summary>
+    /// <param name="Name">Property name, which becomes the field name.</param>
+    /// <param name="Type">Property type.</param>
+    /// <param name="Get">Compiled getter — a delegate rather than a reflection call per row.</param>
     public sealed record Accessor(string Name, Type Type, Func<T, object?> Get);
 }
 
@@ -53,6 +61,8 @@ internal static class TypeAccessorCache
 {
     private static readonly ConcurrentDictionary<Type, object> _cache = new();
 
+    /// <summary>Returns the <c>TypeAccessor&lt;T&gt;.Instance</c> for a type only known at runtime, for
+    /// callers that hold an <c>IEnumerable</c> without its element type in hand.</summary>
     public static object For(Type elementType)
         => _cache.GetOrAdd(elementType, t =>
         {

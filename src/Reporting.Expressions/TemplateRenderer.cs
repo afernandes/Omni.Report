@@ -12,6 +12,9 @@ public sealed class TemplateRenderer
 {
     private readonly ExpressionEvaluator _evaluator;
 
+    /// <summary>Creates a renderer.</summary>
+    /// <param name="evaluator">Evaluator used for the embedded expressions. Passing the report's own keeps
+    /// the shared parse cache; null builds a private one.</param>
     public TemplateRenderer(ExpressionEvaluator? evaluator = null)
         => _evaluator = evaluator ?? new ExpressionEvaluator();
 

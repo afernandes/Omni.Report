@@ -6,6 +6,7 @@ namespace Reporting.Layout;
 /// <summary>Inputs required to paginate a <c>ReportDefinition</c>.</summary>
 public sealed class PaginationRequest
 {
+    /// <summary>The report to render. Required.</summary>
     public required ReportDefinition Definition { get; init; }
 
     /// <summary>Named data sources keyed by <c>DataSourceDefinition.Name</c>. The first entry

@@ -42,6 +42,10 @@ public sealed partial class ReportPaginator : IReportPaginator
     // (GroupBand.RepeatHeaderOnNewPage), outer→inner. Maintained by OpenGroup/CloseGroup; replayed by BreakPage.
     private readonly List<GroupBand> _repeatHeaders = new();
 
+    /// <summary>Creates a paginator.</summary>
+    /// <param name="compiler">Expression compiler to reuse. Passing one shares its parse cache across runs,
+    /// which is the difference between compiling every expression once and compiling it per row. Null builds
+    /// a private compiler, fine for a one-off render.</param>
     public ReportPaginator(ExpressionCompiler? compiler = null)
     {
         _compiler = compiler ?? new ExpressionCompiler();

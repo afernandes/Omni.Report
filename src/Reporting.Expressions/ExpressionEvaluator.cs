@@ -13,6 +13,9 @@ public sealed class ExpressionEvaluator
 {
     private readonly ExpressionCompiler _compiler;
 
+    /// <summary>Creates an evaluator.</summary>
+    /// <param name="compiler">Compiler to reuse. Sharing one shares its parse cache, which is what keeps a
+    /// 100k-row report from re-parsing the same expression per row. Null builds a private compiler.</param>
     public ExpressionEvaluator(ExpressionCompiler? compiler = null)
         => _compiler = compiler ?? new ExpressionCompiler();
 
@@ -727,11 +730,17 @@ public sealed class ExpressionEvaluator
         new(StringComparer.OrdinalIgnoreCase) { "Sum", "Avg", "Average", "Count", "Min", "Max", "RunningTotal", "First", "Last", "CountDistinct", "Var", "VarP", "StDev", "StDevP" };
 }
 
+/// <summary>Thrown when an expression parses but fails while being evaluated — a missing field, a bad cast,
+/// a division by zero.</summary>
 public sealed class ExpressionEvaluationException : Exception
 {
+    /// <summary>Wraps the underlying failure, keeping the offending text for the message.</summary>
+    /// <param name="expression">The expression that failed to evaluate.</param>
+    /// <param name="inner">The original exception.</param>
     public ExpressionEvaluationException(string expression, Exception inner)
         : base($"Failed to evaluate expression: {expression}", inner)
         => Expression = expression;
 
+    /// <summary>The expression text that failed, so the error can name the field it came from.</summary>
     public string Expression { get; }
 }

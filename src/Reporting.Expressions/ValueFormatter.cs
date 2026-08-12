@@ -6,6 +6,12 @@ namespace Reporting.Expressions;
 /// honoring the supplied <see cref="CultureInfo"/>.</summary>
 public static class ValueFormatter
 {
+    /// <summary>Formats <paramref name="value"/> with <paramref name="format"/>.</summary>
+    /// <param name="value">The value. Null renders as an empty string, never as "null".</param>
+    /// <param name="format">A standard or custom .NET format string. Null or empty falls back to the value's
+    /// own representation.</param>
+    /// <param name="culture">Culture for separators and symbols. Null uses the current culture — which is why
+    /// a report that must render identically everywhere declares its own.</param>
     public static string Format(object? value, string? format, CultureInfo? culture = null)
     {
         culture ??= CultureInfo.CurrentCulture;
