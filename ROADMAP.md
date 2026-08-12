@@ -823,6 +823,41 @@ como decisão de escopo, como o projeto já faz bem em outros pontos.
 
 ---
 
+### 30a. Migração para SkiaSharp 4 ✅ — **NOVO**
+
+Adiado deliberadamente da varredura de dependências (que atualizou 19 pacotes). O SkiaSharp 4 depreciou a API
+mutável de `SKPath` em favor de `SKPathBuilder`, o que dá **10 erros CS0618 em 3 arquivos** —
+`SkiaPathBuilder.cs` (12 ocorrências), `SkiaPrimitiveRenderer.cs` (6) e `SkiaRenderingContext.cs` (2). Como as
+bibliotecas empacotáveis usam `TreatWarningsAsErrors`, obsolescência vira erro de build.
+
+Em linhas é contido, mas é o **núcleo de renderização**, e a major traz um Skia nativo novo que pode deslocar
+rasterização e métricas. Numa varredura com 19 outros pacotes, qualquer regressão ficaria inatribuível.
+
+**A favor de fazer agora:** os golden files (#233) cobrem exatamente isso — a camada de emissão SVG passa pelo
+Skia, então uma mudança de comportamento aparece no diff em vez de passar batido.
+
+**Ação.** PR próprio: migrar os 3 arquivos para `SKPathBuilder`, rodar os goldens e **ler o diff** antes de
+aceitar qualquer mudança neles.
+
+---
+
+### 30b. Migração para NCalc 7 ✅ — **NOVO**
+
+Também adiado da varredura. O NCalc 7 mudou a assinatura de `LogicalExpressionFactory.Create` (agora
+`(string, LogicalExpressionParserOptions?, CultureInfo?)`) e a resolução de overload do construtor de
+`Expression`, dando 4 erros em `ExpressionCompiler.cs:40,47`.
+
+São 2 call sites, mas é o **motor de expressões**: 165 testes e todo o vocabulário SSRS (agregados, posicionais,
+lookups, formatação) dependem dele, e uma major pode mudar semântica de avaliação — coerção de tipo, cultura,
+comportamento de operador — e não só assinatura. É a segunda vez que o NCalc muda API de forma incompatível
+(ver [[ncalc6-and-audit]]).
+
+**Ação.** PR próprio, com a suíte de expressões inteira como rede. Verificar especialmente se
+`ExpressionOptions.DecimalAsDefault` e `IgnoreCaseAtBuiltInFunctions` mantêm o mesmo efeito — são o que impede
+aritmética virar concatenação e o que faz `SUM` casar com `Sum`.
+
+---
+
 ## P4 — Features recomendadas
 
 ### 31. Watermark + rotação de texto/elemento ✅ — **NOVO**

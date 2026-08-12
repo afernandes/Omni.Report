@@ -174,10 +174,12 @@ public class ReportViewerTests : Bunit.BunitContext
     }
 
     [Fact]
-    public void Changing_report_resets_page_to_first()
+    public async Task Changing_report_resets_page_to_first()
     {
         var report1 = BuildSampleReport();
-        var report2 = Sample02_EspelhoProdutos.Build().PaginateAsync().GetAwaiter().GetResult();
+        // Await em vez de GetAwaiter().GetResult(): o analisador do xUnit sinaliza a chamada bloqueante
+        // (xUnit1031), que num runner com contexto de sincronização pode travar em vez de falhar.
+        var report2 = await Sample02_EspelhoProdutos.Build().PaginateAsync();
 
         var cut = Render<ReportViewer>(p => p.Add(v => v.Report, report1));
         cut.Markup.Should().Contain("/ " + report1.Pages.Count);

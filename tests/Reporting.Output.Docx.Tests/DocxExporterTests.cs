@@ -13,7 +13,7 @@ namespace Reporting.Output.Docx.Tests;
 public class DocxExporterTests
 {
     private static IEnumerable<string> CellTexts(WordprocessingDocument doc) =>
-        doc.MainDocumentPart!.Document.Body!.Descendants<TableCell>()
+        doc.MainDocumentPart!.Document!.Body!.Descendants<TableCell>()
             .Select(c => c.InnerText);
 
     [Fact]
@@ -28,7 +28,7 @@ public class DocxExporterTests
         using var doc = WordprocessingDocument.Open(ms, false);
 
         // Exactly one table carries the grid.
-        doc.MainDocumentPart!.Document.Body!.Descendants<Table>().Should().ContainSingle();
+        doc.MainDocumentPart!.Document!.Body!.Descendants<Table>().Should().ContainSingle();
 
         var texts = CellTexts(doc).ToList();
         texts.Should().Contain(s => s.Contains("Produto"), "the column header is a table cell");
@@ -55,7 +55,7 @@ public class DocxExporterTests
         using var ms = new MemoryStream(new DocxExporter().ExportToBytes(rendered));
         using var doc = WordprocessingDocument.Open(ms, false);
 
-        var firstRow = doc.MainDocumentPart!.Document.Body!.Descendants<Table>().First()
+        var firstRow = doc.MainDocumentPart!.Document!.Body!.Descendants<Table>().First()
             .Elements<TableRow>().First();
         var headerCells = firstRow.Descendants<TableCell>()
             .Where(c => !string.IsNullOrWhiteSpace(c.InnerText))
@@ -172,7 +172,7 @@ public class DocxExporterTests
         using var doc = WordprocessingDocument.Open(ms, false);
 
         doc.MainDocumentPart!.ImageParts.Should().ContainSingle("the chart rasterises to one PNG");
-        var cellTexts = doc.MainDocumentPart.Document.Body!.Descendants<TableCell>().Select(c => c.InnerText).ToList();
+        var cellTexts = doc.MainDocumentPart.Document!.Body!.Descendants<TableCell>().Select(c => c.InnerText).ToList();
         cellTexts.Should().Contain(s => s.Contains("ValorTabela"));
         cellTexts.Should().NotContain(s => s.Contains("EixoLabel"), "the chart's label is in the image, not the table");
 
@@ -193,7 +193,7 @@ public class DocxExporterTests
         using var doc = WordprocessingDocument.Open(ms, false);
 
         doc.MainDocumentPart!.ImageParts.Should().ContainSingle("a polygon-free bar chart still rasterises");
-        var cellTexts = doc.MainDocumentPart.Document.Body!.Descendants<TableCell>().Select(c => c.InnerText).ToList();
+        var cellTexts = doc.MainDocumentPart.Document!.Body!.Descendants<TableCell>().Select(c => c.InnerText).ToList();
         cellTexts.Should().Contain(s => s.Contains("ValorTabela"));
         cellTexts.Should().NotContain(s => s.Contains("BarLabel"));
         new OpenXmlValidator(FileFormatVersions.Office2019).Validate(doc).Should().BeEmpty();
@@ -217,13 +217,13 @@ public class DocxExporterTests
         using var doc = WordprocessingDocument.Open(ms, false);
 
         doc.MainDocumentPart!.ImageParts.Should().ContainSingle();
-        var blip = doc.MainDocumentPart.Document.Body!
+        var blip = doc.MainDocumentPart.Document!.Body!
             .Descendants<DocumentFormat.OpenXml.Drawing.Blip>().Single();
         blip.Embed!.Value.Should().NotBeNullOrEmpty();
         // The relationship id resolves to the embedded image part.
         doc.MainDocumentPart.GetPartById(blip.Embed!.Value!).Should().BeOfType<ImagePart>();
         // The inline drawing carries a positive extent within the page clamp.
-        var extent = doc.MainDocumentPart.Document.Body!
+        var extent = doc.MainDocumentPart.Document!.Body!
             .Descendants<DocumentFormat.OpenXml.Drawing.Wordprocessing.Extent>().Single();
         extent.Cx!.Value.Should().BeGreaterThan(0);
         extent.Cy!.Value.Should().BeGreaterThan(0);
@@ -273,7 +273,7 @@ public class DocxExporterTests
         using var ms = new MemoryStream(bytes);
         using var doc = WordprocessingDocument.Open(ms, false);
         doc.MainDocumentPart!.ImageParts.Should().BeEmpty();
-        new OpenXmlValidator(FileFormatVersions.Office2019).Validate(doc.MainDocumentPart.Document)
+        new OpenXmlValidator(FileFormatVersions.Office2019).Validate(doc.MainDocumentPart.Document!)
             .Should().BeEmpty();
     }
 
@@ -301,6 +301,6 @@ public class DocxExporterTests
         using var ms = new MemoryStream(new DocxExporter().ExportToBytes(rendered));
         using var doc = WordprocessingDocument.Open(ms, false);
         doc.MainDocumentPart!.ImageParts.Should().BeEmpty();
-        doc.MainDocumentPart.Document.Body!.Descendants<Drawing>().Should().BeEmpty();
+        doc.MainDocumentPart.Document!.Body!.Descendants<Drawing>().Should().BeEmpty();
     }
 }
