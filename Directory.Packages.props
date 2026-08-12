@@ -20,7 +20,11 @@
     <!-- Excel output -->
     <PackageVersion Include="ClosedXML" Version="0.105.1" />
 
-    <!-- Word (.docx) output — pinned to the version ClosedXML 0.105.0 already brings transitively. -->
+    <!-- Word (.docx) output. Dois consumidores: Reporting.Output.Docx usa diretamente, e o ClosedXML acima
+         puxa transitivamente aceitando a FAIXA [3.1.1, 4.0.0) — 3.1.1 é só o piso, não a versão que ele
+         "traz". Pinamos 3.5.1, a mais nova dentro dessa janela, para os dois usarem o mesmo assembly.
+         Ao subir o ClosedXML, confira se a faixa ainda comporta esta versão; sair de 4.x exigiria subir os
+         dois juntos. -->
     <PackageVersion Include="DocumentFormat.OpenXml" Version="3.5.1" />
 
     <!-- PDF inspection (test-side) -->
