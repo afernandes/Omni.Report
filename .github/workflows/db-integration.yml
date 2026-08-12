@@ -16,6 +16,9 @@ on:
       - "src/Reporting.DataSources.AdoNet/**"
       - "tests/Reporting.DataSources.Integration.Tests/**"
       - ".github/workflows/db-integration.yml"
+      # Mudança de versão de pacote entra aqui de propósito: é exatamente quando um driver ou o próprio
+      # Testcontainers pode quebrar contra o banco real, e nenhum outro job exercita esse caminho.
+      - "Directory.Packages.props"
   push:
     branches: [main]
     paths:

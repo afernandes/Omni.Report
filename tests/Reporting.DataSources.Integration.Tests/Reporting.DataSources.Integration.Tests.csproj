@@ -21,6 +21,9 @@
     <PackageReference Include="Testcontainers.MsSql" />
     <PackageReference Include="Testcontainers.PostgreSql" />
     <PackageReference Include="Testcontainers.MySql" />
+    <!-- Referência direta só para forçar a versão corrigida do transitivo do Testcontainers.
+         Ver a nota do GHSA-q939-rpr3-3284 no Directory.Packages.props. -->
+    <PackageReference Include="SSH.NET" />
   </ItemGroup>
 
 </Project>
