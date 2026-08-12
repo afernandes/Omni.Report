@@ -23,6 +23,10 @@ public sealed class MasterDetailDataSource : IReportDataSource
     private readonly string _childField;
     private object? _parentValue;
 
+    /// <summary>Wraps a child source so it yields only the rows matching a parent value.</summary>
+    /// <param name="name">Name the report binds to.</param>
+    /// <param name="child">Source holding the detail rows.</param>
+    /// <param name="childField">Field on the child compared against the parent value.</param>
     public MasterDetailDataSource(string name, IReportDataSource child, string childField)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
@@ -34,18 +38,26 @@ public sealed class MasterDetailDataSource : IReportDataSource
         ChildField = childField;
     }
 
+    /// <summary>Name the report binds to.</summary>
     public string Name { get; }
+
+    /// <summary>Schema of the child source, passed through unchanged.</summary>
     public IReportRecordSchema Schema => _child.Schema;
+
+    /// <summary>Field on the child compared against the parent value.</summary>
     public string ChildField { get; }
 
     /// <summary>Rebinds the filter to a new parent key. The next <see cref="ReadAsync"/> call
     /// will only emit children whose <see cref="ChildField"/> equals <paramref name="parentValue"/>.</summary>
+    /// <summary>A copy bound to a specific parent value. Returns a new instance rather than mutating, so the
+    /// same source can drive several parent rows — including concurrently.</summary>
     public MasterDetailDataSource WithParentValue(object? parentValue)
     {
         _parentValue = parentValue;
         return this;
     }
 
+    /// <summary>Yields the child rows whose <see cref="ChildField"/> matches the bound parent value.</summary>
     public async IAsyncEnumerable<IReportRecord> ReadAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         // Snapshot the filter value at iteration start — concurrent re-binding via

@@ -8,6 +8,9 @@ public sealed class DataTableDataSource : IReportDataSource
 {
     private readonly DataTable _table;
 
+    /// <summary>Wraps an ADO.NET <see cref="DataTable"/> as a report data source.</summary>
+    /// <param name="name">Name the report binds to.</param>
+    /// <param name="table">The table. Its columns become the schema; <c>DBNull</c> surfaces as null.</param>
     public DataTableDataSource(string name, DataTable table)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
@@ -22,9 +25,13 @@ public sealed class DataTableDataSource : IReportDataSource
         Schema = new ReportRecordSchema(fields);
     }
 
+    /// <summary>Name the report binds to.</summary>
     public string Name { get; }
+
+    /// <summary>Fields derived from the table columns.</summary>
     public IReportRecordSchema Schema { get; }
 
+    /// <summary>Yields one record per row, in table order.</summary>
     public async IAsyncEnumerable<IReportRecord> ReadAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         foreach (DataRow row in _table.Rows)

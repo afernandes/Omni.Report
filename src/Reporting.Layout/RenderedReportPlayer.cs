@@ -9,6 +9,9 @@ namespace Reporting.Layout;
 /// <see cref="IRenderingContext"/>. Backend-agnostic: works equally well for Skia, GDI, PDF, etc.</summary>
 public static class RenderedReportPlayer
 {
+    /// <summary>Replays every page of <paramref name="report"/> onto <paramref name="context"/>, opening and
+    /// closing each page around its primitives. This is the single place page framing is decided, so every
+    /// backend gets the same structure without repeating it.</summary>
     public static void Play(RenderedReport report, IRenderingContext context)
     {
         ArgumentNullException.ThrowIfNull(report);

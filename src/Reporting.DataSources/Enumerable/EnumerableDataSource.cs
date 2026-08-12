@@ -12,6 +12,11 @@ public sealed class EnumerableDataSource<T> : IReportDataSource
     private readonly IEnumerable<T> _items;
     private readonly TypeAccessor<T> _accessor;
 
+    /// <summary>Wraps a sequence of POCOs as a report data source. The schema comes from the public
+    /// properties of <typeparamref name="T"/>.</summary>
+    /// <param name="name">Name the report binds to.</param>
+    /// <param name="items">The rows. Kept lazy — enumeration happens during the render, so a deferred
+    /// query stays deferred.</param>
     public EnumerableDataSource(string name, IEnumerable<T> items)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
@@ -22,9 +27,13 @@ public sealed class EnumerableDataSource<T> : IReportDataSource
         Schema = new ReportRecordSchema(_accessor.Accessors.Select(a => new ReportField(a.Name, a.Type)));
     }
 
+    /// <summary>Name the report binds to.</summary>
     public string Name { get; }
+
+    /// <summary>Fields derived from the public properties of <typeparamref name="T"/>.</summary>
     public IReportRecordSchema Schema { get; }
 
+    /// <summary>Projects each item into a record, one at a time.</summary>
     public async IAsyncEnumerable<IReportRecord> ReadAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         foreach (var item in _items)

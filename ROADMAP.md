@@ -320,17 +320,24 @@ doc quebrada volta a passar silenciosa.
 PRs #205 e #208 documentaram 32 tipos de Core/Layout e travaram CS1591 no CodeFirst — é continuar por
 `Reporting.Core` → `Layout` → `Rendering`.
 
-**FEITO PARCIALMENTE — `Core` e `Rendering` documentados e travados; `Layout` fica para o próximo PR.**
+**FEITO — os cinco pacotes do núcleo documentados e travados.**
 
-**Correção da dimensão declarada acima.** Os "~444 em Core" contavam o warning duplicado que o MSBuild emite por
-membro. Medido por localização única, com `--no-incremental` (sem isso o build fica up-to-date e reporta **zero**,
-que foi como esse número se distorceu em primeiro lugar):
+**Correção das dimensões declaradas acima**, em duas rodadas. Os "~444 em Core" contavam o warning duplicado que
+o MSBuild emite por membro. E o "128 do Layout" somava a cadeia de dependências: compilar o `Layout` compila
+`Expressions` e `DataSources` junto, e os avisos deles apareciam no mesmo build. Medido por localização única e
+atribuído ao projeto dono, com `--no-incremental` (sem isso o build fica up-to-date e reporta **zero**, que foi
+como esses números se distorceram em primeiro lugar):
 
 | Pacote | Membros públicos sem doc | Situação |
 |---|--:|---|
 | `Reporting.Core` | 220 | documentado e travado |
+| `Reporting.Expressions` | 38 | documentado e travado |
+| `Reporting.DataSources` | 37 | documentado e travado |
+| `Reporting.Layout` | 29 | documentado e travado |
 | `Reporting.Rendering` | 24 | documentado e travado |
-| `Reporting.Layout` | 128 | **pendente** |
+
+Somado ao `CodeFirst` (#208), a trava cobre agora **todo o núcleo que um consumidor toca diretamente**. Fechar só
+o `Layout` teria travado um pacote e deixado suas duas dependências — igualmente públicas — degradando.
 
 A trava é a mesma do `CodeFirst` (#208): `NoWarn.Replace(';CS1591','')` no csproj do projeto, que somado ao
 `TreatWarningsAsErrors` das bibliotecas empacotáveis faz o build **falhar** enquanto houver membro público sem

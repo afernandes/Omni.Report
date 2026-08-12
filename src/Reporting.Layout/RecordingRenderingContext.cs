@@ -38,6 +38,10 @@ public sealed class RecordingRenderingContext : IRenderingContext, ITextMeasurer
     private PageSetup? _currentSetup;
     private int _pageNumber;
 
+    /// <summary>Creates the recorder.</summary>
+    /// <param name="measurer">Supplies text metrics. Recording cannot invent them, but it also does not need
+    /// its own rendering backend — typically a <c>SkiaRenderingContext</c>, or the arithmetic
+    /// <c>AverageWidthTextMeasurer</c> when determinism matters more than exact glyph widths.</param>
     public RecordingRenderingContext(ITextMeasurer measurer)
     {
         ArgumentNullException.ThrowIfNull(measurer);
@@ -55,8 +59,11 @@ public sealed class RecordingRenderingContext : IRenderingContext, ITextMeasurer
         return new RenderedReport(name, new EquatableArray<RenderedPage>([.. _pages]));
     }
 
+    /// <summary>Pages closed so far. A page still being drawn is not in here until
+    /// <see cref="EndPage"/> or <see cref="ToRenderedReport"/> closes it.</summary>
     public IReadOnlyList<RenderedPage> Pages => _pages;
 
+    /// <summary>Starts a page with the given setup, closing the previous one if it is still open.</summary>
     public void BeginPage(PageSetup pageSetup)
     {
         ArgumentNullException.ThrowIfNull(pageSetup);
@@ -69,6 +76,7 @@ public sealed class RecordingRenderingContext : IRenderingContext, ITextMeasurer
         _pageNumber++;
     }
 
+    /// <summary>Closes the current page and appends it to <see cref="Pages"/>. No-op when no page is open.</summary>
     public void EndPage()
     {
         if (_current is null || _currentSetup is null)
@@ -83,6 +91,7 @@ public sealed class RecordingRenderingContext : IRenderingContext, ITextMeasurer
         _currentSetup = null;
     }
 
+    /// <summary>Records a text run.</summary>
     public void DrawText(string text, Rectangle bounds, TextStyle style)
     {
         EnsurePage();
@@ -94,6 +103,8 @@ public sealed class RecordingRenderingContext : IRenderingContext, ITextMeasurer
         });
     }
 
+    /// <summary>Records a line. Its bounds are the axis-aligned box enclosing the segment, so hit-testing
+    /// behaves the same as for primitives the paginator emits.</summary>
     public void DrawLine(Point from, Point to, PenStyle pen)
     {
         EnsurePage();
@@ -112,6 +123,7 @@ public sealed class RecordingRenderingContext : IRenderingContext, ITextMeasurer
         });
     }
 
+    /// <summary>Records a rectangle.</summary>
     public void DrawRectangle(Rectangle bounds, PenStyle? pen, BrushStyle? fill)
     {
         EnsurePage();
@@ -123,6 +135,7 @@ public sealed class RecordingRenderingContext : IRenderingContext, ITextMeasurer
         });
     }
 
+    /// <summary>Records an ellipse.</summary>
     public void DrawEllipse(Rectangle bounds, PenStyle? pen, BrushStyle? fill)
     {
         EnsurePage();
@@ -134,6 +147,8 @@ public sealed class RecordingRenderingContext : IRenderingContext, ITextMeasurer
         });
     }
 
+    /// <summary>Records an image, copying the bytes so the primitive outlives the caller's buffer — a
+    /// recorded page is meant to be handed to an exporter later, possibly on another thread.</summary>
     public void DrawImage(ReadOnlySpan<byte> imageData, Rectangle bounds,
         Reporting.Elements.ImageSizing sizing = Reporting.Elements.ImageSizing.Fit)
     {
@@ -155,12 +170,16 @@ public sealed class RecordingRenderingContext : IRenderingContext, ITextMeasurer
         // intentionally no-op
     }
 
+    /// <summary>Delegates to the injected measurer.</summary>
     public Size MeasureText(string text, TextStyle style, Unit? maxWidth = null)
         => _measurer.Measure(text, style, maxWidth);
 
+    /// <summary>Delegates to the injected measurer. Same as <see cref="MeasureText"/>; both exist because the
+    /// recorder implements <c>IRenderingContext</c> and <c>ITextMeasurer</c> at once.</summary>
     public Size Measure(string text, TextStyle style, Unit? maxWidth = null)
         => _measurer.Measure(text, style, maxWidth);
 
+    /// <summary>Closes any page still open, so a recording used in a <c>using</c> never loses its last page.</summary>
     public void Dispose()
     {
         if (_current is not null)

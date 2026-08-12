@@ -48,35 +48,52 @@ public abstract record LayoutPrimitive
 /// <summary>Draws a run of text within <see cref="LayoutPrimitive.Bounds"/> using the given style.</summary>
 public sealed record DrawTextPrimitive : LayoutPrimitive
 {
+    /// <summary>The literal text to draw. Already resolved — expressions and formatting ran during layout,
+    /// so a backend never evaluates anything.</summary>
     public required string Text { get; init; }
+
+    /// <summary>Font, colour, alignment and wrapping to draw it with.</summary>
     public required TextStyle Style { get; init; }
 }
 
 /// <summary>Draws a straight line from <c>From</c> to <c>To</c> with the given pen.</summary>
 public sealed record DrawLinePrimitive : LayoutPrimitive
 {
+    /// <summary>Start point, in absolute page coordinates.</summary>
     public required Point From { get; init; }
+
+    /// <summary>End point, in absolute page coordinates.</summary>
     public required Point To { get; init; }
+
+    /// <summary>Stroke to draw the segment with.</summary>
     public required PenStyle Pen { get; init; }
 }
 
 /// <summary>Draws a rectangle filling <see cref="LayoutPrimitive.Bounds"/>, optionally stroked and/or filled.</summary>
 public sealed record DrawRectanglePrimitive : LayoutPrimitive
 {
+    /// <summary>Outline stroke. Null draws no outline.</summary>
     public PenStyle? Pen { get; init; }
+
+    /// <summary>Interior fill. Null leaves the interior untouched, showing whatever is beneath.</summary>
     public BrushStyle? Fill { get; init; }
 }
 
 /// <summary>Draws an ellipse inscribed in <see cref="LayoutPrimitive.Bounds"/>, optionally stroked and/or filled.</summary>
 public sealed record DrawEllipsePrimitive : LayoutPrimitive
 {
+    /// <summary>Outline stroke. Null draws no outline.</summary>
     public PenStyle? Pen { get; init; }
+
+    /// <summary>Interior fill. Null leaves the interior untouched, showing whatever is beneath.</summary>
     public BrushStyle? Fill { get; init; }
 }
 
 /// <summary>Draws a raster image into <see cref="LayoutPrimitive.Bounds"/> using the configured sizing mode.</summary>
 public sealed record DrawImagePrimitive : LayoutPrimitive
 {
+    /// <summary>The encoded image bytes (PNG, JPEG, …). Carried by value so the primitive stays
+    /// self-contained: it may be exported long after whatever produced it is gone.</summary>
     public required EquatableArray<byte> Data { get; init; }
 
     /// <summary>How the image fills <see cref="LayoutPrimitive.Bounds"/> — Stretch (distort), Fit (letterbox,
@@ -96,7 +113,10 @@ public sealed record DrawPolygonPrimitive : LayoutPrimitive
     /// when false it's an open polyline that is only stroked.</summary>
     public bool Closed { get; init; } = true;
 
+    /// <summary>Outline stroke. Null draws no outline.</summary>
     public PenStyle? Pen { get; init; }
+
+    /// <summary>Interior fill. Only meaningful when <see cref="Closed"/> is true.</summary>
     public BrushStyle? Fill { get; init; }
 
     /// <summary>Replays the vertices onto a path builder. Centralised so every backend

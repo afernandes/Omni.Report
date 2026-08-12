@@ -5,6 +5,7 @@ public sealed class ReportRecordSchema : IReportRecordSchema
 {
     private readonly Dictionary<string, int> _index;
 
+    /// <summary>Builds a schema from an ordered field list. Ordinals follow the order given.</summary>
     public ReportRecordSchema(IEnumerable<ReportField> fields)
     {
         ArgumentNullException.ThrowIfNull(fields);
@@ -16,8 +17,11 @@ public sealed class ReportRecordSchema : IReportRecordSchema
         }
     }
 
+    /// <summary>The fields, in ordinal order.</summary>
     public IReadOnlyList<ReportField> Fields { get; }
 
+    /// <summary>Ordinal of <paramref name="name"/>, or <c>-1</c> when absent. Returning -1 rather than
+    /// throwing is what lets an expression reference a missing field and yield null.</summary>
     public int IndexOf(string name)
         => _index.TryGetValue(name, out var ordinal) ? ordinal : -1;
 }
