@@ -683,10 +683,31 @@ Skia atende ou se é preciso pós-processamento com uma lib dedicada.
 
 ---
 
-### 23. Embedding/subsetting de fontes no PDF ✅ — **NOVO**
+### 23. Embedding/subsetting de fontes no PDF ❌ — **FALSO POSITIVO, não "corrija"**
 
-**O problema.** Não há nenhum controle de embutimento de fonte: **re-verificado, `EmbedFont`/`FontSubset` têm
-zero ocorrências em `src/`**. O PDF depende de a fonte existir na máquina que abre o arquivo.
+> **O PDF já embute E faz subsetting de fontes.** Verificado inspecionando um export real, não o código:
+>
+> ```
+> /FontFile2: 2                              ← programas TrueType EMBUTIDOS
+> /Type0: 2                                  ← fontes compostas (CID), o caminho Unicode do Skia
+> glifo 'R' fonte='AAAAAA+Arial-BoldMT'      ← o prefixo AAAAAA+ é o marcador padrão de SUBSET
+> ```
+>
+> O backend PDF do Skia faz as duas coisas por padrão. O item nasceu de inferir ausência de comportamento a
+> partir de ausência de identificador (`EmbedFont`/`FontSubset` não aparecem no `src/`) — o mesmo erro dos
+> outros três falsos positivos deste roadmap. Expor `EmbedFonts` seria adicionar um botão para algo que já
+> funciona e cujo único valor sensato é "ligado" (o PDF/A exige sempre).
+>
+> **O que faltava de verdade — e foi entregue:** nada verificava isso. Como é um *default* do Skia e não uma
+> decisão deste código, uma atualização da biblioteca ou outro caminho de criação do `SKDocument` poderia
+> desligar em silêncio, e a falha é invisível na máquina que gerou o arquivo — o PDF só quebra num leitor sem
+> a fonte. `FontEmbeddingTests` trava as três garantias: programa embutido para **cada** fonte usada, nome com
+> prefixo de subset, e texto ainda extraível depois do remapeamento de glifos.
+
+**O texto original do item, preservado para contexto:**
+
+**O problema (INCORRETO).** Não há nenhum controle de embutimento de fonte: `EmbedFont`/`FontSubset` têm
+zero ocorrências em `src/`. O PDF depende de a fonte existir na máquina que abre o arquivo.
 
 **Por que importa.** Um PDF gerado com "Arial" ou uma fonte corporativa abre com métricas diferentes — ou
 substituição total — em máquina Linux, celular ou leitor sem a fonte. Para documento fiscal ou contrato, isso é
@@ -696,10 +717,15 @@ fontes embutidas.
 **Paridade:** todas as engines comerciais embutem fontes por padrão; o subsetting (embutir só os glifos usados)
 é o que mantém o arquivo pequeno.
 
-**Ação.** Expor `EmbedFonts` (e idealmente `SubsetFonts`) em `PdfExportOptions`, implementando via a API de
-tipografia do Skia. Guardar com teste que verifique a presença do dicionário `/FontFile2` no PDF gerado.
+**Ação (SUPERADA).** Expor `EmbedFonts` (e idealmente `SubsetFonts`) em `PdfExportOptions`. Restou apenas a
+segunda metade — "guardar com teste que verifique a presença do dicionário `/FontFile2`" —, que é o que foi
+feito.
 
-**Pronto quando:** um PDF gerado abre com métricas idênticas numa máquina sem a fonte instalada.
+**Pronto quando:** um PDF gerado abre com métricas idênticas numa máquina sem a fonte instalada. **Já era o
+caso**; agora há teste que impede isso de regredir.
+
+**Consequência para o item 22 (PDF/A):** o pré-requisito de fontes embutidas está satisfeito e travado, então o
+PDF/A parte de uma base menor do que o item supunha.
 
 ---
 
