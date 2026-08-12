@@ -14,6 +14,19 @@ updates:
     commit-message:
       prefix: "chore(deps)"
     labels: [dependencies]
+    ignore:
+      # FluentAssertions parou na 6.x DE PROPÓSITO, por licença e não por técnica. A 6.12.2 é
+      # Apache-2.0 (licenseExpression no catálogo do NuGet); a partir da 8.x o pacote não declara SPDX e
+      # embarca um LICENSE que começa com "XCEED SOFTWARE INC. COMMUNITY LICENSE AGREEMENT (for
+      # Non-Commercial Use)". Trocar Apache-2.0 por licença proprietária de uso não-comercial, num
+      # projeto distribuído em 39 pacotes no NuGet, é decisão de produto — não item de atualização
+      # semanal. Sem esta regra o PR reabre toda segunda e a decisão vira ruído, com risco de ser
+      # mergeada por distração.
+      #
+      # Só o major é ignorado: patch e minor do 6.x continuam chegando normalmente. Sair do 6.x é
+      # migrar de biblioteca (AwesomeAssertions, Shouldly), não subir versão.
+      - dependency-name: "FluentAssertions"
+        update-types: ["version-update:semver-major"]
     groups:
       # Microsoft.*/System.* sobem em conjunto: o CPM do repo pina EF Core e afins num "trem de versões",
       # e subir um pacote isolado gera NU1109 por desalinhamento.
