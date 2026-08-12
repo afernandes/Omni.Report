@@ -32,12 +32,12 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0   # histórico completo para o SourceLink
 
       - name: Setup .NET 10
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: 10.0.x
 
@@ -75,7 +75,7 @@ jobs:
         run: dotnet pack OmniReport.slnx -c Release --no-build -o ./artifacts -p:Version=${{ env.VERSION }}
 
       - name: Upload artifacts (.nupkg + .snupkg)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: nupkgs-${{ env.VERSION }}
           path: |
@@ -155,7 +155,7 @@ jobs:
       # Só em push de tag (workflow_dispatch não tem tag para associar).
       - name: GitHub Release
         if: ${{ github.event_name == 'push' }}
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.ref_name }}
           name: OmniReport ${{ env.VERSION }}

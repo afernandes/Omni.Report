@@ -9,7 +9,7 @@
     <!-- Expressions -->
     <PackageVersion Include="NCalcSync" Version="6.1.1" />
     <!-- Opt-in Roslyn code evaluation (Reporting.Expressions.Roslyn only) -->
-    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="4.12.0" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="5.6.0" />
 
     <!-- Rendering -->
     <PackageVersion Include="SkiaSharp" Version="3.119.2" />
@@ -18,32 +18,36 @@
     <PackageVersion Include="SkiaSharp.HarfBuzz" Version="3.119.2" />
 
     <!-- Excel output -->
-    <PackageVersion Include="ClosedXML" Version="0.105.0" />
+    <PackageVersion Include="ClosedXML" Version="0.105.1" />
 
-    <!-- Word (.docx) output — pinned to the version ClosedXML 0.105.0 already brings transitively. -->
-    <PackageVersion Include="DocumentFormat.OpenXml" Version="3.1.1" />
+    <!-- Word (.docx) output. Dois consumidores: Reporting.Output.Docx usa diretamente, e o ClosedXML acima
+         puxa transitivamente aceitando a FAIXA [3.1.1, 4.0.0) — 3.1.1 é só o piso, não a versão que ele
+         "traz". Pinamos 3.5.1, a mais nova dentro dessa janela, para os dois usarem o mesmo assembly.
+         Ao subir o ClosedXML, confira se a faixa ainda comporta esta versão; sair de 4.x exigiria subir os
+         dois juntos. -->
+    <PackageVersion Include="DocumentFormat.OpenXml" Version="3.5.1" />
 
     <!-- PDF inspection (test-side) -->
-    <PackageVersion Include="PdfPig" Version="0.1.10" />
+    <PackageVersion Include="PdfPig" Version="0.1.15" />
 
     <!-- Snapshot testing -->
-    <PackageVersion Include="Verify.Xunit" Version="28.10.0" />
+    <PackageVersion Include="Verify.Xunit" Version="31.12.5" />
 
     <!-- Blazor component testing -->
-    <PackageVersion Include="bunit" Version="2.7.2" />
+    <PackageVersion Include="bunit" Version="2.9.0" />
 
     <!-- Benchmark harness (Reporting.Benchmarks; never packed — see Directory.Build.props) -->
-    <PackageVersion Include="BenchmarkDotNet" Version="0.14.0" />
+    <PackageVersion Include="BenchmarkDotNet" Version="0.15.8" />
 
     <!-- Test stack -->
-    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.8.1" />
     <PackageVersion Include="xunit" Version="2.9.3" />
-    <PackageVersion Include="xunit.runner.visualstudio" Version="2.8.2" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
     <PackageVersion Include="xunit.extensibility.core" Version="2.9.3" />
     <PackageVersion Include="xunit.extensibility.execution" Version="2.9.3" />
     <PackageVersion Include="FluentAssertions" Version="6.12.2" />
-    <PackageVersion Include="coverlet.collector" Version="6.0.2" />
-    <PackageVersion Include="coverlet.msbuild" Version="6.0.2" />
+    <PackageVersion Include="coverlet.collector" Version="10.0.1" />
+    <PackageVersion Include="coverlet.msbuild" Version="10.0.1" />
 
     <!-- Testcontainers: bancos reais em Docker para os testes de integração dos conectores SQL.
          Só Reporting.DataSources.Integration.Tests referencia. Os testes se auto-pulam quando não há
@@ -59,29 +63,29 @@
     <PackageVersion Include="SSH.NET" Version="2026.0.0" />
 
     <!-- Windows GDI (System.Drawing.Common no longer included by default in net*-windows TFMs) -->
-    <PackageVersion Include="System.Drawing.Common" Version="9.0.0" />
+    <PackageVersion Include="System.Drawing.Common" Version="10.0.11" />
 
     <!-- Serial port for ESC/POS thermal printers (cross-platform via the ports package) -->
-    <PackageVersion Include="System.IO.Ports" Version="9.0.0" />
+    <PackageVersion Include="System.IO.Ports" Version="10.0.11" />
 
     <!-- MAUI Blazor Hybrid (sample only). MAUI workload targets net11.0; OmniReport libs target net10.0. -->
     <PackageVersion Include="Microsoft.Maui.Controls" Version="10.0.20" />
     <PackageVersion Include="Microsoft.AspNetCore.Components.WebView.Maui" Version="10.0.20" />
-    <PackageVersion Include="Microsoft.Extensions.Logging.Debug" Version="10.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Debug" Version="10.0.11" />
 
     <!-- DI abstractions (used by libraries that ship Add* extensions) -->
-    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.7" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.11" />
 
     <!-- Database providers (ADO.NET) -->
-    <PackageVersion Include="Microsoft.Data.Sqlite" Version="9.0.0" />
+    <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.11" />
     <!-- Transitive override: Microsoft.Data.Sqlite pulls SQLitePCLRaw 2.1.x, whose bundled
          native SQLite (lib.e_sqlite3 ≤ 2.1.11) carries GHSA-2m69-gcr7-jv3q. The fix only exists
          in the 3.x stack (native moved to SourceGear.sqlite3 3.50.x), so we pin bundle+core to 3.x. -->
     <PackageVersion Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.3" />
     <PackageVersion Include="SQLitePCLRaw.core" Version="3.0.3" />
-    <PackageVersion Include="Npgsql" Version="9.0.2" />
-    <PackageVersion Include="Microsoft.Data.SqlClient" Version="6.0.1" />
-    <PackageVersion Include="MySqlConnector" Version="2.4.0" />
+    <PackageVersion Include="Npgsql" Version="10.0.3" />
+    <PackageVersion Include="Microsoft.Data.SqlClient" Version="7.0.2" />
+    <PackageVersion Include="MySqlConnector" Version="2.6.2" />
   </ItemGroup>
 
 </Project>
