@@ -157,11 +157,13 @@ public static class SkiaPrimitiveRenderer
             // otherwise ask the OS font manager for any typeface that does. Returning
             // null (no system font has the codepoint) falls back to primary so we
             // render *something* rather than crashing.
-            // A consulta de cobertura passou de SKTypeface para SKFont no SkiaSharp 4. Um SKFont
-            // efêmero sobre a typeface responde a mesma pergunta — o tamanho não afeta se o glifo existe.
+            // A consulta de cobertura passou de SKTypeface para SKFont no SkiaSharp 4. Usamos o próprio
+            // `primary`, que já é um SKFont sobre esta typeface — cobertura não depende do tamanho, então
+            // ele responde a mesma pergunta sem custo nenhum. Criar um SKFont efêmero aqui alocaria um
+            // objeto NATIVO POR CARACTERE: este laço roda por codepoint de cada linha, de cada banda, de
+            // cada página.
             SKTypeface typeface;
-            using var coverageProbe = new SKFont(primaryTypeface);
-            if (coverageProbe.GetGlyph(codepoint) != 0)
+            if (primary.GetGlyph(codepoint) != 0)
             {
                 typeface = primaryTypeface;
             }
