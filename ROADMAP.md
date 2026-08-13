@@ -860,7 +860,7 @@ descartável — antes não havia o que liberar, porque ele expunha o `SKPath` d
 
 ---
 
-### 30b. Migração para NCalc 7 ✅ — **NOVO**
+### 30b. Migração para NCalc 7 ✅ — **FEITO**
 
 Também adiado da varredura. O NCalc 7 mudou a assinatura de `LogicalExpressionFactory.Create` (agora
 `(string, LogicalExpressionParserOptions?, CultureInfo?)`) e a resolução de overload do construtor de
@@ -874,6 +874,26 @@ comportamento de operador — e não só assinatura. É a segunda vez que o NCal
 **Ação.** PR próprio, com a suíte de expressões inteira como rede. Verificar especialmente se
 `ExpressionOptions.DecimalAsDefault` e `IgnoreCaseAtBuiltInFunctions` mantêm o mesmo efeito — são o que impede
 aritmética virar concatenação e o que faz `SUM` casar com `Sum`.
+
+**FEITO — e a verificação recomendada era mesmo necessária.** O NCalc 7 dividiu as opções em duas metades:
+`Parsing` decide como o texto vira AST, `Evaluation` como esse AST executa. A fábrica passou a receber
+`LogicalExpressionParserOptions` + cultura, e o `CancellationToken` foi para o fim.
+
+O detalhe que quase passou: **o tipo numérico de um literal é decidido no PARSE**. Passar `null` como opções de
+parse — que parece inofensivo, já que a versão anterior passava `ExpressionOptions.None` — faz `2.5` virar nó
+`double`, e **nenhuma opção de avaliação desfaz isso depois**. Toda a aritmética dos relatórios voltaria a ponto
+flutuante binário: `0.1 + 0.2` = `0.30000000000000004`, valores monetários em `1450.8999999999999`.
+
+**Os 165 testes de expressão passaram com essa regressão ativa.** Eles comparam valores, e nas magnitudes de
+teste um `double` compara igual ao `decimal`. Nenhum assertava tipo. Só `ExpressionCompilerOptionsTests`,
+escrito para esta migração, pegou — e a sabotagem confirma: reintroduzir o `null` derruba 2 testes e deixa os
+outros 169 verdes.
+
+Registro de um erro de diagnóstico no caminho, porque a lição vale: eu primeiro concluí que a conversão
+implícita `ExpressionOptions → ExpressionConfiguration` "perdia" o `DecimalAsDefault`, e construí uma
+reconstrução manual do `MathOptions` para compensar. Uma sonda por reflexão desmentiu — a conversão preenche
+`Parsing.FloatingPointNumberType` **e** `Evaluation.Math.FloatingPointNumberType` corretamente. O defeito era
+meu, em não repassar `Configuration.Parsing` à fábrica. A solução final é mais simples que a errada.
 
 ---
 
