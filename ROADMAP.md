@@ -823,7 +823,7 @@ como decisão de escopo, como o projeto já faz bem em outros pontos.
 
 ---
 
-### 30a. Migração para SkiaSharp 4 ✅ — **NOVO**
+### 30a. Migração para SkiaSharp 4 ✅ — **FEITO**
 
 Adiado deliberadamente da varredura de dependências (que atualizou 19 pacotes). O SkiaSharp 4 depreciou a API
 mutável de `SKPath` em favor de `SKPathBuilder`, o que dá **10 erros CS0618 em 3 arquivos** —
@@ -838,6 +838,25 @@ Skia, então uma mudança de comportamento aparece no diff em vez de passar bati
 
 **Ação.** PR próprio: migrar os 3 arquivos para `SKPathBuilder`, rodar os goldens e **ler o diff** antes de
 aceitar qualquer mudança neles.
+
+**FEITO.** Foram 10 obsolescências, mais do que o `SKPath` previsto — além dos 6 do path builder,
+`SKTypeface.GetGlyph` (cobertura de glifo migrou para `SKFont`), `SKCanvas.DrawText` (agora exige `SKTextAlign`)
+e duas sobrecargas de `DrawImage` (agora exigem `SKSamplingOptions`). Em todas escolhi o valor que **preserva o
+comportamento**, não o "melhor": `SKTextAlign.Left` porque o cursor já resolve alinhamento antes da chamada, e
+`SKSamplingOptions.Default` porque filtragem linear melhoraria imagem reduzida mas mudaria pixel — isso seria
+decisão de qualidade, não de migração, e escaparia à revisão deste PR.
+
+**A prova de que nada mudou:** os goldens passaram **sem que nenhum `.verified` fosse tocado**. O diff inicial
+foi de 2 arquivos SVG e continha só ruído de float — `187.128` vs `187.12801`, `99.216` vs `99.216003` — na casa
+de 10⁻⁵ ponto, cerca de 3 nanômetros.
+
+E ele expôs um defeito no próprio normalizador do golden: dados de path colam o comando ao número seguinte, então
+`187.12801L368.496` chega como **um único token**, e a versão anterior só descascava letra no *início*. Esse token
+passava sem arredondamento — era o único do arquivo que escapava. Corrigido para varrer números em vez de dividir
+por espaço, com `SvgShapeTests` travando os quatro casos, inclusive o de que um movimento real ainda aparece.
+
+O `SKPathBuilder` é `IDisposable` e o `SKPath` agora sai por `Detach()`, então o adaptador passou a ser
+descartável — antes não havia o que liberar, porque ele expunha o `SKPath` direto.
 
 ---
 

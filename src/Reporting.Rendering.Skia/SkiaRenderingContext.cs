@@ -140,7 +140,8 @@ public sealed class SkiaRenderingContext : IRenderingContext, ITextMeasurer
                 using var image = SKImage.FromEncodedData(data);
                 if (image is not null)
                 {
-                    canvas.DrawImage(image, 0, 0);
+                    // Ver a nota sobre SKSamplingOptions.Default em SkiaPrimitiveRenderer.DrawImage.
+                    canvas.DrawImage(image, 0, 0, SKSamplingOptions.Default, paint: null);
                 }
                 document.EndPage();
             }
