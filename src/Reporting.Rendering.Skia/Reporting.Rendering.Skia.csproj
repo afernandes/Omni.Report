@@ -22,11 +22,15 @@
 
   <ItemGroup>
     <PackageReference Include="SkiaSharp" />
-    <!-- O metapacote base do SkiaSharp traz os nativos de Windows/macOS, mas NÃO o de
-         Linux. Sem isto, consumidores e o CI no Linux quebram com
-         DllNotFoundException: 'libSkiaSharp'. A variante .NoDependencies depende do
-         fontconfig do sistema (libfontconfig1) — instalado no job de CI. -->
-    <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" />
+    <!-- O metapacote base do SkiaSharp traz os nativos de Windows/macOS, mas NÃO o de Linux. Sem isto,
+         consumidores e o CI no Linux quebram com DllNotFoundException: 'libSkiaSharp'.
+
+         Era a variante .NoDependencies, que conta com o fontconfig do sistema. Isso funcionava no
+         SkiaSharp 3, mas no 4 o Linux passou a não resolver fonte NENHUMA: texto renderizava zero pixel
+         de tinta, MeasureText devolvia zero e o PDF saía sem fonte embutida — no Windows tudo passava.
+         Trocado pela variante completa, que traz as dependências nativas em vez de depender do que o
+         host tenha instalado. -->
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux" />
   </ItemGroup>
 
 </Project>

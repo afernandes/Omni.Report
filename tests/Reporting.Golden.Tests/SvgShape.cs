@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Xml.Linq;
 
 namespace Reporting.Golden.Tests;
@@ -25,7 +26,7 @@ namespace Reporting.Golden.Tests;
 /// dropped, duplicated, reordered or re-styled run. Text <em>geometry</em> is not lost from the suite
 /// — <see cref="LayoutGoldenTests"/> pins it from the model side, where it is deterministic.</para>
 /// </remarks>
-internal static class SvgShape
+internal static partial class SvgShape
 {
     private static readonly XNamespace Svg = "http://www.w3.org/2000/svg";
 
@@ -70,38 +71,32 @@ internal static class SvgShape
         }
     }
 
-    /// <summary>Re-formats numeric attribute values at a fixed precision. Skia emits single-precision
-    /// floats, so the same coordinate prints as <c>0.50400001</c> or <c>595.29602</c>; rounding keeps
-    /// the golden readable and immune to that last-digit noise without hiding a real move.</summary>
+    /// <summary>
+    /// Re-formats every number inside an attribute value at a fixed precision, leaving everything else
+    /// (path commands, separators, <c>url(#id)</c>, colour names) untouched.
+    /// </summary>
+    /// <remarks>
+    /// <para>Skia emits single-precision floats, so the same coordinate prints as <c>0.50400001</c> or
+    /// <c>595.29602</c>, and the exact digits shift between Skia versions. Rounding keeps the golden
+    /// readable and immune to that noise without hiding a real move.</para>
+    ///
+    /// <para>The rounding is applied by scanning for numbers rather than by splitting on spaces, because
+    /// path data packs a command letter against the next number with no separator: <c>"M28.368
+    /// 187.128L368.496"</c> has <c>187.128L368.496</c> as a single space-delimited token. The earlier
+    /// version only peeled a <em>leading</em> letter, so that token failed to parse and passed through
+    /// unnormalised — which is exactly how the SkiaSharp 4 upgrade produced a golden diff of
+    /// <c>187.128</c> vs <c>187.12801</c>: the same coordinate, one extra digit, on the one token the
+    /// normaliser could not read.</para>
+    /// </remarks>
     private static string Normalize(string value)
-    {
-        var parts = value.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        var outParts = new string[parts.Length];
-        for (int i = 0; i < parts.Length; i++)
-        {
-            outParts[i] = NormalizeToken(parts[i]);
-        }
-        return string.Join(' ', outParts);
-    }
+        => Number().Replace(value, m =>
+            double.TryParse(m.Value, NumberStyles.Float, CultureInfo.InvariantCulture, out var d)
+                ? d.ToString("0.###", CultureInfo.InvariantCulture)
+                : m.Value);
 
-    private static string NormalizeToken(string token)
-    {
-        // Path data interleaves commands with numbers ("M28.368" / "L368.496"), so peel a leading letter.
-        string prefix = string.Empty;
-        string rest = token;
-        if (rest.Length > 0 && char.IsLetter(rest[0]) && rest.Length > 1)
-        {
-            prefix = rest[..1];
-            rest = rest[1..];
-        }
-        string suffix = string.Empty;
-        if (rest.EndsWith(','))
-        {
-            suffix = ",";
-            rest = rest[..^1];
-        }
-        return double.TryParse(rest, NumberStyles.Float, CultureInfo.InvariantCulture, out var d)
-            ? prefix + d.ToString("0.###", CultureInfo.InvariantCulture) + suffix
-            : token;
-    }
+    /// <summary>A decimal number, optionally signed and in scientific notation. The exponent's <c>e</c> is
+    /// matched as part of the number so it is never mistaken for a path command — no SVG command uses that
+    /// letter, but the pattern is explicit about it rather than relying on that.</summary>
+    [GeneratedRegex(@"-?\d+(\.\d+)?([eE][-+]?\d+)?")]
+    private static partial Regex Number();
 }

@@ -71,7 +71,9 @@ public static class SkiaPrimitiveRenderer
                 foreach (var run in runs)
                 {
                     float runWidth = run.Font.MeasureText(run.Text);
-                    canvas.DrawText(run.Text, cursor, baselineY, run.Font, paint);
+                    // SKTextAlign.Left preserva o comportamento: o alinhamento do elemento ja foi
+                    // resolvido em `cursor` acima, e a sobrecarga antiga era left-aligned por definição.
+                    canvas.DrawText(run.Text, cursor, baselineY, SKTextAlign.Left, run.Font, paint);
                     if (decoPaint is not null)
                     {
                         DrawTextDecorations(canvas, decoPaint, run.Font, cursor, baselineY, runWidth, style.Font.Style);
@@ -155,8 +157,13 @@ public static class SkiaPrimitiveRenderer
             // otherwise ask the OS font manager for any typeface that does. Returning
             // null (no system font has the codepoint) falls back to primary so we
             // render *something* rather than crashing.
+            // A consulta de cobertura passou de SKTypeface para SKFont no SkiaSharp 4. Usamos o próprio
+            // `primary`, que já é um SKFont sobre esta typeface — cobertura não depende do tamanho, então
+            // ele responde a mesma pergunta sem custo nenhum. Criar um SKFont efêmero aqui alocaria um
+            // objeto NATIVO POR CARACTERE: este laço roda por codepoint de cada linha, de cada banda, de
+            // cada página.
             SKTypeface typeface;
-            if (primaryTypeface.GetGlyph(codepoint) != 0)
+            if (primary.GetGlyph(codepoint) != 0)
             {
                 typeface = primaryTypeface;
             }
@@ -270,7 +277,10 @@ public static class SkiaPrimitiveRenderer
         {
             canvas.ClipRect(bounds.ToSKRect(dpi));
         }
-        canvas.DrawImage(image, src, dest);
+        // SKSamplingOptions.Default reproduz a amostragem que a sobrecarga antiga usava. Trocar por
+        // filtragem linear melhoraria imagem reduzida, mas mudaria pixel — seria decisão de qualidade, não
+        // de migração, e escaparia à revisão deste PR.
+        canvas.DrawImage(image, src, dest, SKSamplingOptions.Default, paint: null);
         if (saved is { } s)
         {
             canvas.RestoreToCount(s);
@@ -281,9 +291,9 @@ public static class SkiaPrimitiveRenderer
     {
         ArgumentNullException.ThrowIfNull(canvas);
         ArgumentNullException.ThrowIfNull(build);
-        var builder = new SkiaPathBuilder(dpi);
+        using var builder = new SkiaPathBuilder(dpi);
         build(builder);
-        using var path = builder.Path;
+        using var path = builder.DetachPath();
         if (fill is not null && fill.IsVisible)
         {
             using var paint = CreateFillPaint(fill, path.Bounds);
