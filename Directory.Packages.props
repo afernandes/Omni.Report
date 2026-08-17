@@ -52,9 +52,9 @@
     <!-- Testcontainers: bancos reais em Docker para os testes de integração dos conectores SQL.
          Só Reporting.DataSources.Integration.Tests referencia. Os testes se auto-pulam quando não há
          daemon Docker, então a suíte normal não passa a exigir Docker de ninguém. -->
-    <PackageVersion Include="Testcontainers.MsSql" Version="4.13.0" />
-    <PackageVersion Include="Testcontainers.PostgreSql" Version="4.13.0" />
-    <PackageVersion Include="Testcontainers.MySql" Version="4.13.0" />
+    <PackageVersion Include="Testcontainers.MsSql" Version="4.14.0" />
+    <PackageVersion Include="Testcontainers.PostgreSql" Version="4.14.0" />
+    <PackageVersion Include="Testcontainers.MySql" Version="4.14.0" />
     <!-- Transitivo do Testcontainers, pinado acima da versão vulnerável: SSH.NET <= 2025.1.0 tem
          GHSA-q939-rpr3-3284 (severidade ALTA — o ScpClient permite escrita de arquivo arbitrária via nome
          controlado pelo servidor), corrigido na 2026.0.0. O Testcontainers só usa SSH.NET no cenário de
