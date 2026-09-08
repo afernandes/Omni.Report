@@ -67,6 +67,8 @@ public sealed class EscPosPrinter : IReportPrinter
         ArgumentNullException.ThrowIfNull(options);
 
         var selected = PrintPageSelection.Enumerate(report.Pages.Count, options);
+        cancellationToken.ThrowIfCancellationRequested();
+        if (report.PageCount == 0) return new PrintResult(Succeeded: true, PagesPrinted: 0);
         await _jobs.WaitAsync(cancellationToken).ConfigureAwait(false);
         IEscPosTransport? transport = null;
 

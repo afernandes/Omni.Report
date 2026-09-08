@@ -71,7 +71,11 @@ internal sealed class ContinuousPageBounds
 
     internal void PopClip()
     {
-        if (_clips.Count > 1) _clips.Pop();
+        if (_clips.Count > 1)
+        {
+            _clips.Pop();
+            CountOperation();
+        }
     }
 
     internal (int Width, int Height) RasterSize()

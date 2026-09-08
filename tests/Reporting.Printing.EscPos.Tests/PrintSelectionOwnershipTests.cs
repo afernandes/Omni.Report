@@ -44,8 +44,23 @@ public sealed class PrintSelectionOwnershipTests
     {
         var stream = new MemoryStream();
         var printer = new EscPosPrinter(_ => Task.FromResult<IEscPosTransport>(new StreamEscPosTransport(stream)));
-        var result = await printer.PrintAsync(new RenderedReport("Vazio", EquatableArray<RenderedPage>.Empty), new PrintOptions("esc-pos"));
+        var page = PrintingReplayFixture.Page(PrintingReplayFixture.Primitive(0));
+        var result = await printer.PrintAsync(new RenderedReport("Uma página", EquatableArray.Create(page)), new PrintOptions("esc-pos"));
         result.Succeeded.Should().BeTrue();
         stream.CanWrite.Should().BeFalse();
+    }
+    [Fact]
+    public async Task PrintAsync_RelatorioVazio_NaoAbreTransporteNemEnviaComandos()
+    {
+        bool opened = false;
+        var printer = new EscPosPrinter(_ =>
+        {
+            opened = true;
+            throw new InvalidOperationException("Não deve abrir transporte.");
+        });
+        var result = await printer.PrintAsync(new RenderedReport("Vazio", EquatableArray<RenderedPage>.Empty), new PrintOptions("esc-pos"));
+        result.Succeeded.Should().BeTrue();
+        result.PagesPrinted.Should().Be(0);
+        opened.Should().BeFalse();
     }
 }

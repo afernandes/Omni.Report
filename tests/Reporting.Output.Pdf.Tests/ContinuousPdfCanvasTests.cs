@@ -77,4 +77,18 @@ public sealed class ContinuousPdfCanvasTests
         using var pdf = PdfDocument.Open(stream.ToArray());
         Assert.InRange(pdf.GetPage(1).Height, 22.Mm().ToPoints(), 22.Mm().ToPoints() + 1.51);
     }
+    [Fact]
+    public void PopClip_LimiteExcedido_RestauraEstadoEPermiteFinalizarPdf()
+    {
+        using var stream = new MemoryStream();
+        using (var context = new SkiaPdfRenderingContext(stream, metadata: null, leaveOpen: true, continuousOptions: new() { MaxOperations = 1 }))
+        {
+            context.BeginPage(new PageSetup(PaperSize.Thermal80));
+            context.PushClip(new Rectangle(0.Mm(), 0.Mm(), 20.Mm(), 20.Mm()), Unit.Zero);
+            Assert.Contains("MaxOperations", Assert.Throws<InvalidOperationException>(context.PopClip).Message);
+            context.EndPage();
+        }
+        using var pdf = PdfDocument.Open(stream.ToArray());
+        Assert.Single(pdf.GetPages());
+    }
 }

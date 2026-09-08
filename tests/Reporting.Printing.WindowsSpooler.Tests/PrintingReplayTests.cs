@@ -125,7 +125,7 @@ public sealed class PrintingReplayTests
             var result = await printer.PrintAsync(report, new PrintOptions(printerName) { OutputFile = output });
             result.Succeeded.Should().BeTrue(result.ErrorMessage);
             result.PagesPrinted.Should().Be(1);
-            using var pdf = PdfDocument.Open(output);
+            using var pdf = await PdfPrintOutput.OpenCompletedAsync(output);
             pdf.NumberOfPages.Should().Be(1);
             pdf.GetPage(1).Paths.Where(p => p.IsFilled).Sum(p => p.Count).Should().BeGreaterThanOrEqualTo(2,
                 "o driver pode combinar as duas figuras como subpaths de um único caminho vetorial");

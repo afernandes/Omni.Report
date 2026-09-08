@@ -214,4 +214,17 @@ public abstract class ContinuousCanvasTests
         Assert.True(Size(context, 0).Height > 300);
         Assert.Equal(1, Size(context, 1).Height);
     }
+    [Fact]
+    public void PopClip_LimiteDeOperacoesExcedido_RestauraRecorteERejeitaOperacao()
+    {
+        using var context = Create(96, new() { MaxOperations = 1 });
+        context.BeginPage(new PageSetup(PaperSize.Thermal80));
+        context.PushClip(new Rectangle(0.Mm(), 0.Mm(), 20.Mm(), 20.Mm()), Unit.Zero);
+        Assert.Contains("MaxOperations", Assert.Throws<InvalidOperationException>(context.PopClip).Message);
+        context.EndPage();
+        context.BeginPage(new PageSetup(PaperSize.Thermal80));
+        context.DrawRectangle(new Rectangle(30.Mm(), 30.Mm(), 5.Mm(), 5.Mm()), null, BrushStyle.Black);
+        context.EndPage();
+        Assert.InRange(Size(context, 1).Height, (int)35.Mm().ToPixels(), (int)35.Mm().ToPixels() + 3);
+    }
 }

@@ -161,8 +161,8 @@ public sealed class SkiaRenderingContext : IRenderingContext, ITextMeasurer
 
     public void PopClip()
     {
-        _bounds?.PopClip();
         _canvas?.Restore();
+        _bounds?.PopClip();
     }
 
     private void Track(SKRect bounds) => _bounds!.Include(bounds.Left, bounds.Top, bounds.Right, bounds.Bottom);
