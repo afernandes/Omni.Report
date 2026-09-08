@@ -11,6 +11,7 @@ using Xunit;
 
 namespace Reporting.Printing.WindowsSpooler.Tests;
 
+[Collection("Windows print spooler")]
 public sealed class PrintingReplayTests
 {
     [Theory]
