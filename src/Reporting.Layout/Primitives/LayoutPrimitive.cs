@@ -45,17 +45,6 @@ public abstract record LayoutPrimitive
     public bool IsVisual { get; init; }
 }
 
-/// <summary>Draws a run of text within <see cref="LayoutPrimitive.Bounds"/> using the given style.</summary>
-public sealed record DrawTextPrimitive : LayoutPrimitive
-{
-    /// <summary>The literal text to draw. Already resolved — expressions and formatting ran during layout,
-    /// so a backend never evaluates anything.</summary>
-    public required string Text { get; init; }
-
-    /// <summary>Font, colour, alignment and wrapping to draw it with.</summary>
-    public required TextStyle Style { get; init; }
-}
-
 /// <summary>Draws a straight line from <c>From</c> to <c>To</c> with the given pen.</summary>
 public sealed record DrawLinePrimitive : LayoutPrimitive
 {

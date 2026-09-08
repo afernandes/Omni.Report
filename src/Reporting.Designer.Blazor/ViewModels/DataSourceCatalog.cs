@@ -360,7 +360,11 @@ public sealed class DesignerDataSource : Notifying
         if (pdict.TryGetValue(RepxKeys.Conn, out var cs)) ds.ConnectionString = cs;
         if (pdict.TryGetValue(RepxKeys.Sql,  out var sql)) ds.Sql = sql;
         if (pdict.TryGetValue(RepxKeys.StoredProc, out var sp)
-            && bool.TryParse(sp, out var spBool)) ds.IsStoredProcedure = spBool;
+            && bool.TryParse(sp, out var spBool))
+        {
+            ds.IsStoredProcedure = spBool;
+        }
+
         if (pdict.TryGetValue(RepxKeys.Timeout, out var to)
             && int.TryParse(to, NumberStyles.Integer, CultureInfo.InvariantCulture, out var toInt))
         {
@@ -620,31 +624,15 @@ public sealed class DesignerParameter : Notifying
     /// throw when serialized.</summary>
     private object? CoercedDefault()
     {
-        if (string.IsNullOrWhiteSpace(DefaultValue)) return null;
-        if (Type == DesignerFieldType.Text) return DefaultValue;
-        foreach (var ci in new[] { System.Globalization.CultureInfo.CurrentCulture, System.Globalization.CultureInfo.InvariantCulture })
-        {
-            try
-            {
-                return Type switch
-                {
-                    DesignerFieldType.Number => Convert.ToDouble(DefaultValue, ci),
-                    DesignerFieldType.Money => Convert.ToDecimal(DefaultValue, ci),
-                    DesignerFieldType.Date => DateTime.Parse(DefaultValue, ci),
-                    DesignerFieldType.Bool => bool.Parse(DefaultValue),
-                    _ => (object)DefaultValue,
-                };
-            }
-            catch (FormatException) { }
-            catch (OverflowException) { }
-        }
-        return null;
+        try { return ParameterValueConverter.Parse(DefaultValue, Type); }
+        catch (FormatException) { return null; }
+        catch (OverflowException) { return null; }
     }
 
     /// <summary>Rebuilds a designer parameter from a loaded core parameter (reverse of
     /// <see cref="ToReportParameter"/>) so a .repx round-trips every field.</summary>
     internal static DesignerParameter From(Reporting.Parameters.ReportParameter p)
-        => new(p.Name, ClassifyClr(p.ValueType), p.DefaultValue?.ToString())
+        => new(p.Name, ClassifyClr(p.ValueType), ParameterValueConverter.Format(p.DefaultValue))
         {
             DefaultValueExpression = p.DefaultValueExpression,
             Prompt = p.Prompt,

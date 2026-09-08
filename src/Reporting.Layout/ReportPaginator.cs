@@ -1,3 +1,4 @@
+using Reporting.Elements;
 using System.Text.RegularExpressions;
 using Reporting.Bands;
 using Reporting.Common;
@@ -23,12 +24,12 @@ namespace Reporting.Layout;
 /// singleton. Each call runs on its own private instance, so the per-run mutable state (the
 /// evaluator holding the request's <c>Code</c> resolver, and the open-group list used to reprint
 /// group headers) is never shared. Only the <see cref="ExpressionCompiler"/> is shared between
-/// runs, and its parse cache is a concurrent dictionary — so the cache still pays off across
+/// runs, and its parse cache is bounded and synchronized — so the cache still pays off across
 /// reports. Sharing an instance is therefore the intended usage, not merely a tolerated one.</para>
 /// </remarks>
 public sealed partial class ReportPaginator : IReportPaginator
 {
-    // SHARED across runs and safe to be: the compiler's cache is a ConcurrentDictionary, so reusing
+    // SHARED across runs and safe to be: the compiler's cache is bounded and synchronized, so reusing
     // one instance is both thread-safe AND the point — parsed expressions stay cached between reports.
     private readonly ExpressionCompiler _compiler;
 
@@ -37,6 +38,10 @@ public sealed partial class ReportPaginator : IReportPaginator
     // groups currently open. See PaginateAsync for how a run gets its own instance.
     private readonly ExpressionEvaluator _evaluator;
     private readonly TemplateRenderer _templates;
+    private CancellationToken _cancellationToken;
+    private Dictionary<string, List<IReadOnlyList<KeyValuePair<string, object?>>>> _preparedSources = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, ReportDefinition?> _resolvedSubreports = new(StringComparer.Ordinal);
+
 
     // Currently-open groups whose header must REPRINT at the top of every continuation page
     // (GroupBand.RepeatHeaderOnNewPage), outer→inner. Maintained by OpenGroup/CloseGroup; replayed by BreakPage.
@@ -69,41 +74,62 @@ public sealed partial class ReportPaginator : IReportPaginator
 
     private async Task<RenderedReport> ExecuteAsync(PaginationRequest request, CancellationToken ct)
     {
+        ct.ThrowIfCancellationRequested();
+        ValidatePageSetup(request.Definition);
+        _cancellationToken = ct;
         // Opt-in: wire the report's Code.X(...) resolver (null unless the host enabled it).
         _evaluator.CodeFunctionResolver = request.CodeFunctionResolver;
         var measurer = request.Measurer ?? new AverageWidthTextMeasurer();
         var (iterationRows, allSources) = await MaterializeAsync(request, ct).ConfigureAwait(false);
 
+        ct.ThrowIfCancellationRequested();
+        return ExecutePrepared(request, allSources, ct, iterationRows);
+    }
+
+    private RenderedReport ExecutePrepared(PaginationRequest request,
+        Dictionary<string, List<IReadOnlyList<KeyValuePair<string, object?>>>> allSources,
+        CancellationToken ct, List<IterationRow>? iterationRows = null)
+    {
+        ct.ThrowIfCancellationRequested();
+        ValidatePageSetup(request.Definition);
+        _cancellationToken = ct;
+        _preparedSources = allSources;
+        _evaluator.CodeFunctionResolver = request.CodeFunctionResolver;
+        var measurer = request.Measurer ?? new AverageWidthTextMeasurer();
+        iterationRows ??= BuildIterationRows(request, allSources);
+        var diagnostics = InspectLimitations(request.Definition);
         var firstPass = ExecutePass(request, iterationRows, allSources, measurer, totalPagesHint: 0);
         // A second pass is needed when an expression references Page.Total/TotalPages (so the count must be
         // known), OR when a page header/footer must be suppressed on the last page (PrintOnLastPage=false) —
         // the last page can't be identified during the forward-only first pass, only its total count can.
         if (!UsesTotalPages(request.Definition) && !UsesLastPageGating(request.Definition))
         {
-            return new RenderedReport(request.Definition.Name, new EquatableArray<RenderedPage>(firstPass.ToArray()));
+            return new RenderedReport(request.Definition.Name, new EquatableArray<RenderedPage>(firstPass.ToArray())) { Diagnostics = diagnostics };
         }
         var secondPass = ExecutePass(request, iterationRows, allSources, measurer, totalPagesHint: firstPass.Count);
-        return new RenderedReport(request.Definition.Name, new EquatableArray<RenderedPage>(secondPass.ToArray()));
+        return new RenderedReport(request.Definition.Name, new EquatableArray<RenderedPage>(secondPass.ToArray())) { Diagnostics = diagnostics };
     }
 
-    /// <summary>Pre-materializes every registered data source's rows (so sub-detail bands can
+    /// <summary>Pre-materializes the required data sources' rows (so sub-detail bands can
     /// iterate them in-memory) and builds the iteration list for the main Detail band.
     /// <para>Every source is read EXACTLY ONCE here; <see cref="BuildIterationRows"/> then works off that
     /// snapshot. It used to re-read the primary (and, in master-detail, the child) on its own, which meant a
     /// SQL-backed report issued the same query twice — four times for master-detail — and held two copies of
     /// the same rows in memory.</para></summary>
-    private static async Task<(List<IterationRow> iter,
+    private async Task<(List<IterationRow> iter,
         Dictionary<string, List<IReadOnlyList<KeyValuePair<string, object?>>>> allSources)>
         MaterializeAsync(PaginationRequest request, CancellationToken ct)
     {
         var allSources = new Dictionary<string, List<IReadOnlyList<KeyValuePair<string, object?>>>>(
             StringComparer.OrdinalIgnoreCase);
-        foreach (var name in request.DataSources.Names)
+        foreach (var name in RequiredSources(request))
         {
+            _cancellationToken.ThrowIfCancellationRequested();
             if (!request.DataSources.TryGet(name, out var ds)) continue;
             var rows = new List<IReadOnlyList<KeyValuePair<string, object?>>>();
             await foreach (var record in ds.ReadAsync(ct).ConfigureAwait(false))
             {
+                ct.ThrowIfCancellationRequested();
                 rows.Add(record.ToKeyValuePairs().ToList());
             }
             allSources[name] = rows;
@@ -121,7 +147,7 @@ public sealed partial class ReportPaginator : IReportPaginator
 
     /// <summary>Builds the Detail band's iteration list from the already-read <paramref name="allSources"/>
     /// snapshot — no I/O of its own, so each source is read exactly once per pagination.</summary>
-    private static List<IterationRow> BuildIterationRows(
+    private List<IterationRow> BuildIterationRows(
         PaginationRequest request,
         Dictionary<string, List<IReadOnlyList<KeyValuePair<string, object?>>>> allSources)
     {
@@ -152,8 +178,10 @@ public sealed partial class ReportPaginator : IReportPaginator
             // the primary source's snapshot so qualified Fields.<primary>.X still resolves.
             foreach (var row in primaryRows)
             {
+                _cancellationToken.ThrowIfCancellationRequested();
                 var sources = new Dictionary<string, IReadOnlyList<KeyValuePair<string, object?>>>(
-                    StringComparer.OrdinalIgnoreCase) { [primaryName] = row };
+                    StringComparer.OrdinalIgnoreCase)
+                { [primaryName] = row };
                 iteration.Add(new IterationRow(row, sources));
             }
             return iteration;
@@ -169,8 +197,10 @@ public sealed partial class ReportPaginator : IReportPaginator
             // Child source not registered — fall back to parent-only iteration.
             foreach (var row in primaryRows)
             {
+                _cancellationToken.ThrowIfCancellationRequested();
                 var sources = new Dictionary<string, IReadOnlyList<KeyValuePair<string, object?>>>(
-                    StringComparer.OrdinalIgnoreCase) { [primaryName] = row };
+                    StringComparer.OrdinalIgnoreCase)
+                { [primaryName] = row };
                 iteration.Add(new IterationRow(row, sources));
             }
             return iteration;
@@ -179,10 +209,12 @@ public sealed partial class ReportPaginator : IReportPaginator
         // Child rows come from the same snapshot — for each parent, emit one IterationRow per matching child.
         foreach (var parentRow in primaryRows)
         {
+            _cancellationToken.ThrowIfCancellationRequested();
             var parentKey = ValueOf(parentRow, rel.ParentField);
             bool anyMatch = false;
             foreach (var childRow in childRows)
             {
+                _cancellationToken.ThrowIfCancellationRequested();
                 var childKey = ValueOf(childRow, rel.ChildField);
                 if (!KeysMatch(parentKey, childKey)) continue;
                 anyMatch = true;
@@ -274,6 +306,7 @@ public sealed partial class ReportPaginator : IReportPaginator
     {
         foreach (var sub in subDetails)
         {
+            _cancellationToken.ThrowIfCancellationRequested();
             if (!sub.Visible) continue;
             if (!string.IsNullOrEmpty(sub.VisibleExpression))
             {
@@ -289,6 +322,7 @@ public sealed partial class ReportPaginator : IReportPaginator
             {
                 foreach (var r in primaryDef.Relations)
                 {
+                    _cancellationToken.ThrowIfCancellationRequested();
                     if (string.Equals(r.Name, sub.DataMember, StringComparison.Ordinal))
                     {
                         childSourceName = r.ChildSource;
@@ -315,6 +349,7 @@ public sealed partial class ReportPaginator : IReportPaginator
                 matchedChildren = new List<IReadOnlyList<KeyValuePair<string, object?>>>(allChildRows.Count);
                 foreach (var row in allChildRows)
                 {
+                    _cancellationToken.ThrowIfCancellationRequested();
                     if (KeysMatch(parentKey, ValueOf(row, childFieldName))) matchedChildren.Add(row);
                 }
             }
@@ -323,6 +358,19 @@ public sealed partial class ReportPaginator : IReportPaginator
                 matchedChildren = new List<IReadOnlyList<KeyValuePair<string, object?>>>(allChildRows);
             }
 
+            var filtered = ApplyFilterAndSort(matchedChildren.Select(row => new IterationRow(row)).ToList(),
+                sub.FilterExpression, sub.SortExpressions, ctx, childSourceName);
+            matchedChildren = filtered.Select(row => row.Fields).ToList();
+            ctx.SetCurrentRowNoSnapshot(parentRow);
+            if (matchedChildren.Count == 0 && !string.IsNullOrWhiteSpace(sub.NoRowsMessage))
+            {
+                var empty = new DetailBand(sub.Height, new Reporting.Common.EquatableArray<ReportElement>([
+                    new TextBoxElement { Bounds = new Rectangle(Unit.Zero, Unit.Zero, def.PageSetup.ContentWidth, sub.Height), Expression = sub.NoRowsMessage }]));
+                var height = bandRenderer.Measure(empty, ctx);
+                EnsureRoom(page, height, def, bandRenderer, ctx);
+                var layout = bandRenderer.Render(empty, page.Origin, ctx);
+                page.Emit(layout.Primitives, layout.Height);
+            }
             if (matchedChildren.Count == 0 && !sub.PrintIfEmpty) continue;
 
             // Header (renders once before child rows).
@@ -339,6 +387,7 @@ public sealed partial class ReportPaginator : IReportPaginator
             var transient = new Reporting.Bands.DetailBand(sub.Height, sub.Elements);
             foreach (var childRow in matchedChildren)
             {
+                _cancellationToken.ThrowIfCancellationRequested();
                 ctx.SetCurrentRowNoSnapshot(childRow);
                 ctx.SetSourceCurrentRow(childSourceName, childRow);
                 // Parent stays available via Fields.<Parent>.X (already published).
@@ -387,6 +436,7 @@ public sealed partial class ReportPaginator : IReportPaginator
         var filtered = new List<IterationRow>(rows.Count);
         foreach (var row in rows)
         {
+            _cancellationToken.ThrowIfCancellationRequested();
             ctx.SetCurrentRowNoSnapshot(row.Fields);
             if (row.SourceRows is { } srs)
             {
@@ -406,9 +456,10 @@ public sealed partial class ReportPaginator : IReportPaginator
         // Sort pass — composite stable sort by evaluating each sort expression per row.
         if (sorts.Count == 0) return filtered;
         // Pre-evaluate sort keys for each row once to avoid re-evaluation during compare.
-        var keyed = new (IterationRow Row, object?[] Keys)[filtered.Count];
+        var keyed = new (IterationRow Row, object?[] Keys, int Index)[filtered.Count];
         for (int i = 0; i < filtered.Count; i++)
         {
+            _cancellationToken.ThrowIfCancellationRequested();
             var row = filtered[i];
             ctx.SetCurrentRowNoSnapshot(row.Fields);
             if (row.SourceRows is { } srs)
@@ -422,22 +473,33 @@ public sealed partial class ReportPaginator : IReportPaginator
             var keys = new object?[sorts.Count];
             for (int s = 0; s < sorts.Count; s++)
             {
+                _cancellationToken.ThrowIfCancellationRequested();
                 keys[s] = _evaluator.Evaluate(sorts[s].Expression, ctx);
             }
-            keyed[i] = (row, keys);
+            keyed[i] = (row, keys, i);
         }
+        try
+        {
         Array.Sort(keyed, (a, b) =>
         {
             for (int s = 0; s < sorts.Count; s++)
             {
+                _cancellationToken.ThrowIfCancellationRequested();
                 var cmp = CompareValues(a.Keys[s], b.Keys[s]);
                 if (cmp != 0)
                 {
                     return sorts[s].Direction == Reporting.Data.SortDirection.Descending ? -cmp : cmp;
                 }
             }
-            return 0;
+            return a.Index.CompareTo(b.Index);
         });
+        }
+        catch (InvalidOperationException error) when (error.InnerException is OperationCanceledException && _cancellationToken.IsCancellationRequested)
+        {
+            _cancellationToken.ThrowIfCancellationRequested();
+            throw;
+        }
+        _cancellationToken.ThrowIfCancellationRequested();
         return keyed.Select(k => k.Row).ToList();
     }
 
@@ -478,18 +540,22 @@ public sealed partial class ReportPaginator : IReportPaginator
         ITextMeasurer measurer,
         int totalPagesHint)
     {
+        _cancellationToken.ThrowIfCancellationRequested();
         var def = request.Definition;
         // RDL <Report><Language> (carried in Metadata["Language"]) sets the report's culture, driving
         // Format/FormatDateTime/Style.Format. Opt-in: absent or invalid → null → the context's default culture.
         var culture = def.Metadata.TryGetValue("Language", out var lang) ? TryGetCulture(lang) : null;
-        var ctx = new ReportExpressionContext(_evaluator, culture);
+        var ctx = new ReportExpressionContext(_evaluator, culture) { CancellationToken = _cancellationToken };
         ApplyParameters(ctx, request);
+        ctx.PrimeReportScope(rows.Select(row => row.Fields));
+        InitializeVariables(ctx, def);
         ctx.TotalPages = totalPagesHint;
         ctx.ReportName = def.Name ?? string.Empty; // RDL Globals!ReportName
 
         // Expose every dataset's full rows for cross-dataset Lookup/LookupSet (SSRS-style).
         foreach (var (sourceName, sourceRows) in allSources)
         {
+            _cancellationToken.ThrowIfCancellationRequested();
             ctx.RegisterDataset(sourceName, sourceRows);
         }
 
@@ -529,7 +595,7 @@ public sealed partial class ReportPaginator : IReportPaginator
         var bandRenderer = new BandRenderer(_evaluator, _templates, measurer, allSources, primarySourceName,
             renderSubreport: (sub, subBounds, subCtx) => RenderSubreport(sub, subBounds, subCtx, request, measurer),
             mapTileResolver: request.MapTileResolver,
-            namedStyles: namedStyles);
+            namedStyles: namedStyles, cancellationToken: _cancellationToken);
         var page = new PageAccumulator(def.PageSetup);
 
         var pageHeaderHeight = def.PageHeader?.Height ?? Unit.Zero;
@@ -594,6 +660,7 @@ public sealed partial class ReportPaginator : IReportPaginator
 
         foreach (var iteration in rows)
         {
+            _cancellationToken.ThrowIfCancellationRequested();
             if (detailBreakStartPending)
             {
                 if (page.CurrentY > def.PageSetup.Margins.Top + pageHeaderHeight)
@@ -614,6 +681,7 @@ public sealed partial class ReportPaginator : IReportPaginator
             {
                 foreach (var kv in sourceRows)
                 {
+                    _cancellationToken.ThrowIfCancellationRequested();
                     ctx.SetSourceCurrentRow(kv.Key, kv.Value);
                 }
             }
@@ -623,6 +691,7 @@ public sealed partial class ReportPaginator : IReportPaginator
             ctx.SetCurrentRowNoSnapshot(row);
             for (int g = 0; g < def.Groups.Count; g++)
             {
+                _cancellationToken.ThrowIfCancellationRequested();
                 newKeys[g] = _evaluator.Evaluate(def.Groups[g].GroupExpression, ctx);
             }
 
@@ -632,6 +701,7 @@ public sealed partial class ReportPaginator : IReportPaginator
             bool willClose = false;
             for (int g = 0; g < def.Groups.Count; g++)
             {
+                _cancellationToken.ThrowIfCancellationRequested();
                 if (groupOpen[g] && !Equals(openGroupKeys[g], newKeys[g]))
                 {
                     willClose = true;
@@ -644,22 +714,31 @@ public sealed partial class ReportPaginator : IReportPaginator
             }
             for (int g = 0; g < def.Groups.Count; g++)
             {
+                _cancellationToken.ThrowIfCancellationRequested();
                 if (groupOpen[g] && !Equals(openGroupKeys[g], newKeys[g]))
                 {
                     for (int inner = def.Groups.Count - 1; inner >= g; inner--)
                     {
+                        _cancellationToken.ThrowIfCancellationRequested();
                         if (groupOpen[inner])
                         {
-                            CloseGroup(def.Groups[inner], page, bandRenderer, ctx, def);
+                            CloseGroup(def.Groups[inner], page, bandRenderer, ctx, def, inner);
                             groupOpen[inner] = false;
                             openGroupKeys[inner] = null;
-                            ctx.ResetGroup();
+                            ctx.EndGroup();
                         }
                     }
                     break;
                 }
             }
 
+            // Open each new accumulator before committing, so ancestors and descendants
+            // receive the same first-row snapshot. Headers select their own scope below.
+            for (int g = 0; g < def.Groups.Count; g++)
+            {
+                _cancellationToken.ThrowIfCancellationRequested();
+                if (!groupOpen[g]) ctx.BeginGroup(def.Groups[g].Name, newKeys[g]);
+            }
             // Phase 3: commit the new row to accumulators (group/page/report).
             ctx.SetCurrentRow(row);
             // Re-assert source contexts after SetCurrentRow (in case the SetCurrentRow path
@@ -669,6 +748,7 @@ public sealed partial class ReportPaginator : IReportPaginator
             {
                 foreach (var kv in again)
                 {
+                    _cancellationToken.ThrowIfCancellationRequested();
                     ctx.SetSourceCurrentRow(kv.Key, kv.Value);
                 }
             }
@@ -683,6 +763,7 @@ public sealed partial class ReportPaginator : IReportPaginator
             {
                 foreach (var calc in primaryDef.CalculatedFields)
                 {
+                    _cancellationToken.ThrowIfCancellationRequested();
                     object? value;
                     // Resilient by design: a bad calculated-field expression nulls the field, never aborts the
                     // render. Filtered by type so a genuine defect surfaces instead of silently nulling.
@@ -696,6 +777,7 @@ public sealed partial class ReportPaginator : IReportPaginator
             // Phase 4: open groups that aren't yet open.
             for (int g = 0; g < def.Groups.Count; g++)
             {
+                _cancellationToken.ThrowIfCancellationRequested();
                 if (!groupOpen[g])
                 {
                     // RDL-style PageBreak unifies NewPageBefore + the new enum. Start /
@@ -706,12 +788,15 @@ public sealed partial class ReportPaginator : IReportPaginator
                     {
                         BreakPage(def, page, bandRenderer, ctx);
                     }
-                    OpenGroup(def.Groups[g], page, bandRenderer, ctx, def, newKeys[g]);
+                    EvaluateGroupVariables(ctx, def.Groups[g], g);
+                    OpenGroup(def.Groups[g], page, bandRenderer, ctx, def, g);
                     groupOpen[g] = true;
                     openGroupKeys[g] = newKeys[g];
                 }
             }
             ctx.GroupKey = def.Groups.Count > 0 ? newKeys[def.Groups.Count - 1] : null;
+
+            _variables!.Evaluate(_evaluator, ctx, variable => variable.Scope == Reporting.Parameters.VariableScope.Row, ctx.VariablesStore.Set, _cancellationToken);
 
             // Phase 5: emit the detail band. A band taller than a full column can never fit even on a fresh
             // page, so it is split element-by-element across pages/columns (each element stays whole — text is
@@ -747,11 +832,12 @@ public sealed partial class ReportPaginator : IReportPaginator
         // Close remaining groups (outermost last)
         for (int inner = def.Groups.Count - 1; inner >= 0; inner--)
         {
+            _cancellationToken.ThrowIfCancellationRequested();
             if (groupOpen[inner])
             {
-                CloseGroup(def.Groups[inner], page, bandRenderer, ctx, def);
+                CloseGroup(def.Groups[inner], page, bandRenderer, ctx, def, inner);
                 groupOpen[inner] = false;
-                ctx.ResetGroup();
+                ctx.EndGroup();
             }
         }
 
@@ -804,7 +890,7 @@ public sealed partial class ReportPaginator : IReportPaginator
     }
 
     private void OpenGroup(GroupBand group, PageAccumulator page, BandRenderer renderer,
-        ReportExpressionContext ctx, ReportDefinition def, object? key)
+        ReportExpressionContext ctx, ReportDefinition def, int depth)
     {
         if (group.Header is null)
         {
@@ -821,7 +907,7 @@ public sealed partial class ReportPaginator : IReportPaginator
         {
             EnsureRoom(page, group.Header.Height, def, renderer, ctx);
         }
-        ctx.GroupKey = key;
+        using var selection = ctx.UseGroup(depth);
         var layout = renderer.Render(group.Header, page.Origin, ctx);
         page.Emit(layout.Primitives, layout.Height);
         // Register AFTER the first emission (so the EnsureRoom above can't reprint a not-yet-emitted header).
@@ -832,7 +918,7 @@ public sealed partial class ReportPaginator : IReportPaginator
     }
 
     private void CloseGroup(GroupBand group, PageAccumulator page, BandRenderer renderer,
-        ReportExpressionContext ctx, ReportDefinition def)
+        ReportExpressionContext ctx, ReportDefinition def, int depth)
     {
         // The group is closing — stop reprinting its header (regardless of whether it has a footer).
         _repeatHeaders.Remove(group);
@@ -841,6 +927,7 @@ public sealed partial class ReportPaginator : IReportPaginator
             return;
         }
         EnsureRoom(page, group.Footer.Height, def, renderer, ctx);
+        using var selection = ctx.UseGroup(depth);
         var layout = renderer.Render(group.Footer, page.Origin, ctx);
         page.Emit(layout.Primitives, layout.Height);
 
@@ -873,11 +960,17 @@ public sealed partial class ReportPaginator : IReportPaginator
 
         while (remaining.Count > 0)
         {
+            _cancellationToken.ThrowIfCancellationRequested();
+            if (page.RemainingInColumn <= Unit.Zero)
+            {
+                BreakOrAdvance(page, def, renderer, ctx);
+            }
             var available = page.RemainingInColumn;
             var slice = new List<Elements.ReportElement>();
             Unit sliceBottom = sliceTop;
             foreach (var el in remaining)
             {
+                _cancellationToken.ThrowIfCancellationRequested();
                 var elemBottom = renderer.EffectiveElementBottom(el, ctx);
                 // A column-tiling matrix is never placed "whole" — it must go to the lone EmitTablixSliced path so
                 // its columns can tile, even when it fits the page vertically.
@@ -942,6 +1035,7 @@ public sealed partial class ReportPaginator : IReportPaginator
 
             foreach (var el in slice)
             {
+                _cancellationToken.ThrowIfCancellationRequested();
                 remaining.Remove(el);
             }
             if (remaining.Count > 0)
@@ -963,6 +1057,7 @@ public sealed partial class ReportPaginator : IReportPaginator
         var trailing = bandTarget - reached;
         while (trailing > Unit.Zero)
         {
+            _cancellationToken.ThrowIfCancellationRequested();
             var available = page.RemainingInColumn;
             if (available <= Unit.Zero)
             {
@@ -999,7 +1094,8 @@ public sealed partial class ReportPaginator : IReportPaginator
         int startRow = 0;
         while (true) // row-bands (down the rows)
         {
-            if (!page.AtColumnTop && page.RemainingInColumn < minSlice)
+            _cancellationToken.ThrowIfCancellationRequested();
+            if (page.RemainingInColumn <= Unit.Zero || (!page.AtColumnTop && page.RemainingInColumn < minSlice))
             {
                 BreakOrAdvance(page, def, renderer, ctx);
             }
@@ -1010,6 +1106,7 @@ public sealed partial class ReportPaginator : IReportPaginator
             int nextRowOfBand = -1;
             while (true) // column tiles of this row-band (across the columns)
             {
+                _cancellationToken.ThrowIfCancellationRequested();
                 var origin = new Point(page.Origin.X, page.CurrentY - tablix.Bounds.Y);
                 var (prims, height, nextRow, nextCol) =
                     renderer.RenderTablixTile(tablix, origin, ctx, startRow, startCol, bandHeight, page.ColumnWidth);
@@ -1034,9 +1131,17 @@ public sealed partial class ReportPaginator : IReportPaginator
     /// <summary>Snake to the next column if one is available, otherwise break to a new page.</summary>
     private void BreakOrAdvance(PageAccumulator page, ReportDefinition def, BandRenderer renderer, ReportExpressionContext ctx)
     {
-        if (!page.AdvanceColumn())
+        _cancellationToken.ThrowIfCancellationRequested();
+        // A one-off report header can consume the entire first page. Its remaining columns share
+        // the same unusable top, so skip them and try a new physical page before rejecting the layout.
+        if (page.FullColumnHeight <= Unit.Zero || !page.AdvanceColumn())
         {
             BreakPage(def, page, renderer, ctx);
+        }
+        if (page.RemainingInColumn <= Unit.Zero)
+        {
+            throw new InvalidOperationException(
+                "Não há área útil para continuar a banda após a quebra de página. Verifique os cabeçalhos repetidos e o rodapé.");
         }
     }
 
@@ -1064,12 +1169,15 @@ public sealed partial class ReportPaginator : IReportPaginator
         EmitPageHeader(def, page, renderer, ctx);
         // Reprint the headers of groups that span this break (RepeatHeaderOnNewPage), below the page header, so a
         // continuation page still shows which group(s) the rows belong to. Outer→inner (registration order).
-        foreach (var group in _repeatHeaders)
+        for (int depth = 0; depth < def.Groups.Count; depth++)
         {
-            if (group.Header is null)
+            _cancellationToken.ThrowIfCancellationRequested();
+            var group = def.Groups[depth];
+            if (group.Header is null || !_repeatHeaders.Contains(group))
             {
                 continue;
             }
+            using var selection = ctx.UseGroup(depth);
             var layout = renderer.Render(group.Header, page.Origin, ctx);
             page.Emit(layout.Primitives, layout.Height);
         }
@@ -1133,6 +1241,7 @@ public sealed partial class ReportPaginator : IReportPaginator
     {
         foreach (var p in request.Definition.Parameters)
         {
+            _cancellationToken.ThrowIfCancellationRequested();
             object? value;
             if (request.Parameters.TryGetValue(p.Name, out var v))
             {
@@ -1170,23 +1279,17 @@ public sealed partial class ReportPaginator : IReportPaginator
     /// <summary>Checks whether the definition references <c>Page.Total</c> anywhere — used to
     /// decide whether a second pass is necessary.</summary>
     private static bool UsesTotalPages(ReportDefinition def)
-    {
-        foreach (var element in EnumerateAllElements(def))
-        {
-            if (element is Elements.TextBoxElement tb && PageTotalReference().IsMatch(tb.Expression))
-            {
-                return true;
-            }
-        }
-        return false;
-    }
+        => DefinitionInspection.Walk(def).OfType<string>().Any(text =>
+            Regex.IsMatch(text, @"\b(?:Page\.(?:Total|TotalPages)|TotalPages|Globals[!.]TotalPages)\b",
+                RegexOptions.IgnoreCase | RegexOptions.CultureInvariant));
 
-    private static IEnumerable<Elements.ReportElement> EnumerateAllElements(ReportDefinition def)
+    private IEnumerable<Elements.ReportElement> EnumerateAllElements(ReportDefinition def)
     {
         foreach (var e in Enumerate(def.ReportHeader)) yield return e;
         foreach (var e in Enumerate(def.PageHeader)) yield return e;
         foreach (var group in def.Groups)
         {
+            _cancellationToken.ThrowIfCancellationRequested();
             foreach (var e in Enumerate(group.Header)) yield return e;
             foreach (var e in Enumerate(group.Footer)) yield return e;
         }

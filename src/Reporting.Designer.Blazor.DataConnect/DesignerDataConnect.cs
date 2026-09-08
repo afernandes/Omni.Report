@@ -20,7 +20,7 @@ namespace Reporting.Designer.Blazor.DataConnect;
 /// </para>
 /// <para>Connection strings may contain <c>{secret:NAME}</c> placeholders — when an
 /// <see cref="ISecretResolver"/> is registered, the placeholders are expanded before opening
-/// the connection. Without a resolver, placeholders fall back to environment variables.</para>
+/// the connection. Without an explicitly authorized resolver, secret expansion is denied.</para>
 /// <para>Errors never throw out: each method returns a record with a non-null
 /// <c>Error</c>/<c>Message</c> string on failure. The dialog renders those inline.</para>
 /// </remarks>
@@ -30,7 +30,7 @@ public sealed class DesignerDataConnect : IDesignerDataConnect
 
     public DesignerDataConnect(ISecretResolver? secretResolver = null)
     {
-        _secretResolver = secretResolver ?? new EnvironmentSecretResolver();
+        _secretResolver = secretResolver ?? new DeniedSecretResolver();
     }
 
     public async Task<TestConnectionResult> TestConnectionAsync(
@@ -56,10 +56,10 @@ public sealed class DesignerDataConnect : IDesignerDataConnect
             sw.Stop();
             return new TestConnectionResult(true, $"Conectado em {sw.ElapsedMilliseconds} ms.", sw.Elapsed);
         }
-        catch (Exception ex)
+        catch (Exception) when (!cancellationToken.IsCancellationRequested)
         {
             sw.Stop();
-            return new TestConnectionResult(false, ex.Message, sw.Elapsed);
+            return new TestConnectionResult(false, "Não foi possível executar a operação de dados. Verifique a configuração e a autorização da conexão.", sw.Elapsed);
         }
     }
 
@@ -99,10 +99,10 @@ public sealed class DesignerDataConnect : IDesignerDataConnect
             sw.Stop();
             return new SchemaDiscoveryResult(fields, sw.Elapsed);
         }
-        catch (Exception ex)
+        catch (Exception) when (!cancellationToken.IsCancellationRequested)
         {
             sw.Stop();
-            return new SchemaDiscoveryResult(Array.Empty<DiscoveredField>(), sw.Elapsed, ex.Message);
+            return new SchemaDiscoveryResult(Array.Empty<DiscoveredField>(), sw.Elapsed, "Não foi possível executar a operação de dados. Verifique a configuração e a autorização da conexão.");
         }
     }
 
@@ -158,12 +158,12 @@ public sealed class DesignerDataConnect : IDesignerDataConnect
             sw.Stop();
             return new DataPreviewResult(fields, rows, sw.Elapsed);
         }
-        catch (Exception ex)
+        catch (Exception) when (!cancellationToken.IsCancellationRequested)
         {
             sw.Stop();
             return new DataPreviewResult(Array.Empty<DiscoveredField>(),
                 Array.Empty<IReadOnlyDictionary<string, object?>>(),
-                sw.Elapsed, ex.Message);
+                sw.Elapsed, "Não foi possível executar a operação de dados. Verifique a configuração e a autorização da conexão.");
         }
     }
 
@@ -188,10 +188,10 @@ public sealed class DesignerDataConnect : IDesignerDataConnect
             sw.Stop();
             return new SchemaExplorerResult(tables, sw.Elapsed);
         }
-        catch (Exception ex)
+        catch (Exception) when (!cancellationToken.IsCancellationRequested)
         {
             sw.Stop();
-            return new SchemaExplorerResult(Array.Empty<DatabaseTable>(), sw.Elapsed, ex.Message);
+            return new SchemaExplorerResult(Array.Empty<DatabaseTable>(), sw.Elapsed, "Não foi possível executar a operação de dados. Verifique a configuração e a autorização da conexão.");
         }
     }
 
@@ -223,10 +223,10 @@ public sealed class DesignerDataConnect : IDesignerDataConnect
             sw.Stop();
             return new StoredProcedureSignatureResult(paramList, sw.Elapsed);
         }
-        catch (Exception ex)
+        catch (Exception) when (!cancellationToken.IsCancellationRequested)
         {
             sw.Stop();
-            return new StoredProcedureSignatureResult(Array.Empty<StoredProcedureParameter>(), sw.Elapsed, ex.Message);
+            return new StoredProcedureSignatureResult(Array.Empty<StoredProcedureParameter>(), sw.Elapsed, "Não foi possível executar a operação de dados. Verifique a configuração e a autorização da conexão.");
         }
     }
 

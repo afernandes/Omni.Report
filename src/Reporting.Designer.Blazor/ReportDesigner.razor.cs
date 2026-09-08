@@ -1,0 +1,1498 @@
+using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Forms;
+using Microsoft.AspNetCore.Components.Web;
+using Microsoft.JSInterop;
+using Reporting;
+using Reporting.Bands;
+using Reporting.Common;
+using Reporting.Elements;
+using Reporting.Geometry;
+using Reporting.Paper;
+using Reporting.Styling;
+using Reporting.Designer.Blazor;
+using Reporting.Designer.Blazor.Components;
+using Reporting.Designer.Blazor.Icons;
+using Reporting.Designer.Blazor.ViewModels;
+using Reporting.Output.Pdf;
+using Reporting.Output.Excel;
+using Reporting.Printing;
+namespace Reporting.Designer.Blazor;
+
+public partial class ReportDesigner
+{
+    [Parameter] public DesignerState? InitialState { get; set; }
+    [Parameter] public EventCallback<byte[]> OnSaved { get; set; }
+
+    public DesignerState State { get; private set; } = default!;
+
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private List<byte[]> _previewPages = [];
+    private int _previewCurrentPage;
+    private Reporting.Layout.RenderedReport? _previewRendered;
+    private int _previewZoom = 100;
+    private bool _pageSetupOpen;
+    private bool _expressionEditorOpen;
+    private bool _printDialogOpen;
+    private bool _aboutOpen;
+    private ElementReference _rootRef;
+
+    // ── Parameter prompt cache (per session) ──────────────────────────────────
+    /// <summary>Runtime parameter values supplied by the user via <see cref="ParameterPromptDialog"/>.
+    /// Cached for the duration of the session so subsequent previews/exports don't re-ask.</summary>
+    private Dictionary<string, string?> _paramValues => State.ActiveTab.ParameterValues;
+    private bool _paramPromptOpen;
+    private TaskCompletionSource<IReadOnlyDictionary<string, string?>?>? _paramPromptTcs;
+    private DotNetObjectReference<ReportDesigner>? _selfRef;
+
+    // Context menu state — populated by OnContextMenuRequest JS interop.
+    private bool _ctxVisible;
+    private double _ctxX;
+    private double _ctxY;
+    private IReadOnlyList<ContextMenu.ContextMenuItem> _ctxItems = Array.Empty<ContextMenu.ContextMenuItem>();
+
+    // Data source editor dialog state.
+    private bool _dsEditorOpen;
+    private DesignerDataSource? _dsEditing;
+
+    // Group binding dialog state.
+    private bool _groupEditorOpen;
+    private BandViewModel? _groupEditing;
+
+    /// <summary>RDL band properties dialog state — opened from the band's right-click menu
+    /// or via "report.bandprops" in the command palette.</summary>
+    private bool _bandPropsOpen;
+    private BandViewModel? _bandPropsEditing;
+
+    protected override void OnInitialized()
+    {
+        State = InitialState ?? new DesignerState();
+        State.Changed += OnDesignerChanged;
+        _visibleTab = State.ActiveTab;
+        _visibleReport = State.Report;
+
+        // Resolve the exporter registry from DI — when the host registered exporters,
+        // we'll get one descriptor per format. When nothing's registered, descriptors
+        // is empty and the preview toolbar simply hides the export buttons. Optional
+        // service: if no registry was registered we degrade silently to "no exports".
+        if (Services.GetService(typeof(Reporting.Designer.Blazor.Services.IExporterRegistry))
+            is Reporting.Designer.Blazor.Services.IExporterRegistry registry)
+        {
+            _exporterDescriptors = registry.Descriptors;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _selfRef ??= DotNetObjectReference.Create(this);
+            try
+            {
+                await Js.InvokeVoidAsync("omniDesigner.register", _selfRef);
+                await Js.InvokeVoidAsync("omniDesigner.setTheme", State.Theme);
+                await Js.InvokeVoidAsync("omniDesigner.focus", _rootRef);
+            }
+            catch (JSException) { }
+            catch (InvalidOperationException) { /* pre-render */ }
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        State.Changed -= OnDesignerChanged;
+        _previewCancellation?.Cancel();
+        _paramPromptTcs?.TrySetResult(null);
+        try { await Js.InvokeVoidAsync("omniDesigner.unregister"); }
+        catch (JSException) { }
+        catch (InvalidOperationException) { }
+        _selfRef?.Dispose();
+    }
+
+    private int TotalElementCount => State.Report.Bands.Sum(b => b.Elements.Count);
+
+    /// <summary>Counts how many elements have validation errors in their expression.
+    /// Computed each render — costs O(elements × tokens) which is negligible in practice.</summary>
+    private int TotalExpressionErrors => State.Report.Bands
+        .SelectMany(b => b.Elements)
+        .Count(e => !string.IsNullOrEmpty(e.Expression)
+                 && ExpressionValidator.Validate(e.Expression, State.DataSources, State.Parameters) is not null);
+
+    /// <summary>Real paper + orientation label for the status bar (e.g. "A4 · Retrato"). The design
+    /// canvas isn't paginated, so there is no honest page-count to show here — paper size is.</summary>
+    private string PaperLabel
+    {
+        get
+        {
+            var ps = State.Report.PageSetup;
+            var orient = ps.Orientation == Reporting.Paper.Orientation.Landscape ? "Paisagem" : "Retrato";
+            return $"{ps.Paper.Name} · {orient}";
+        }
+    }
+
+    /// <summary>Real connection kind of the first data source — shown instead of a blanket
+    /// "conectado" (the designer doesn't verify live connections). Empty when there is no source.</summary>
+    private string DataSourceKindLabel => State.DataSources.FirstOrDefault()?.Kind switch
+    {
+        DataConnectionKind.InMemory => "in-memory",
+        DataConnectionKind.Sqlite => "SQLite",
+        DataConnectionKind.PostgreSql => "PostgreSQL",
+        DataConnectionKind.SqlServer => "SQL Server",
+        DataConnectionKind.MySql => "MySQL",
+        _ => string.Empty,
+    };
+
+    /// <summary>Real product version read from the assembly's informational version (build
+    /// metadata after '+' stripped) — never a hardcoded string, so the About box can't drift.</summary>
+    private static string AppVersion
+    {
+        get
+        {
+            var asm = typeof(ReportDesigner).Assembly;
+            var attr = (System.Reflection.AssemblyInformationalVersionAttribute?)
+                System.Attribute.GetCustomAttribute(asm, typeof(System.Reflection.AssemblyInformationalVersionAttribute));
+            var info = attr?.InformationalVersion;
+            if (!string.IsNullOrEmpty(info))
+            {
+                var plus = info.IndexOf('+');
+                return plus >= 0 ? info[..plus] : info;
+            }
+            return asm.GetName().Version?.ToString() ?? "—";
+        }
+    }
+
+    /// <summary>The live .NET runtime description, e.g. ".NET 10.0.0".</summary>
+    private static string RuntimeLabel => System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription;
+
+    private string CurrentBandLabel
+    {
+        get
+        {
+            if (State.SelectedElement is null) return "Detail";
+            var band = State.Report.Bands.FirstOrDefault(b => b.Elements.Contains(State.SelectedElement));
+            return band?.DisplayLabel ?? "Detail";
+        }
+    }
+
+    // ─── Selection / mutation ───────────────────────────────────────────────────
+    private void OnSelectionChanged(ElementViewModel? element) => State.SelectedElement = element;
+    private void OnActiveBandChanged(BandViewModel? band) => State.ActiveBand = band;
+
+    // ─── Context menu builders ──────────────────────────────────────────────────
+    /// <summary>Opens the right-click menu for an element (or multi-selection).</summary>
+    public void OpenElementContextMenu(ElementViewModel element, double clientX, double clientY)
+    {
+        // Promote the right-clicked element into the selection if it isn't already part of
+        // it — matches every OS file manager: right-click selects the target first.
+        if (!State.SelectedElements.Contains(element))
+        {
+            State.SelectedElement = element;
+        }
+        var multi = State.SelectedElements.Count > 1;
+        _ctxItems = new[]
+        {
+            new ContextMenu.ContextMenuItem { Label = multi ? $"Recortar ({State.SelectedElements.Count})" : "Recortar", Shortcut = "Ctrl+X", OnClick = EventCallback.Factory.Create(this, OnCut) },
+            new ContextMenu.ContextMenuItem { Label = multi ? $"Copiar ({State.SelectedElements.Count})" : "Copiar",   Shortcut = "Ctrl+C", OnClick = EventCallback.Factory.Create(this, OnCopy) },
+            new ContextMenu.ContextMenuItem { Label = "Duplicar", Shortcut = "Ctrl+D", OnClick = EventCallback.Factory.Create(this, DuplicateSelected) },
+            ContextMenu.ContextMenuItem.Separator(),
+            new ContextMenu.ContextMenuItem { Label = "Trazer para frente",  OnClick = EventCallback.Factory.Create(this, BringToFront) },
+            new ContextMenu.ContextMenuItem { Label = "Avançar uma camada",  OnClick = EventCallback.Factory.Create(this, () => ChangeZOrder(+1)) },
+            new ContextMenu.ContextMenuItem { Label = "Recuar uma camada",   OnClick = EventCallback.Factory.Create(this, () => ChangeZOrder(-1)) },
+            new ContextMenu.ContextMenuItem { Label = "Enviar para trás",    OnClick = EventCallback.Factory.Create(this, SendToBack) },
+            ContextMenu.ContextMenuItem.Separator(),
+            new ContextMenu.ContextMenuItem { Label = "Centralizar na banda (H)", OnClick = EventCallback.Factory.Create(this, CenterInBandH) },
+            new ContextMenu.ContextMenuItem { Label = "Centralizar na banda (V)", OnClick = EventCallback.Factory.Create(this, CenterInBandV) },
+            ContextMenu.ContextMenuItem.Separator(),
+            new ContextMenu.ContextMenuItem { Label = "Alinhar à esquerda",  IsDisabled = !multi, OnClick = EventCallback.Factory.Create(this, () => Align(AlignOp.Left)) },
+            new ContextMenu.ContextMenuItem { Label = "Centralizar (H)",     IsDisabled = !multi, OnClick = EventCallback.Factory.Create(this, () => Align(AlignOp.CenterH)) },
+            new ContextMenu.ContextMenuItem { Label = "Alinhar à direita",   IsDisabled = !multi, OnClick = EventCallback.Factory.Create(this, () => Align(AlignOp.Right)) },
+            new ContextMenu.ContextMenuItem { Label = "Mesma largura",       IsDisabled = !multi, OnClick = EventCallback.Factory.Create(this, () => Align(AlignOp.SameWidth)) },
+            new ContextMenu.ContextMenuItem { Label = "Mesma altura",        IsDisabled = !multi, OnClick = EventCallback.Factory.Create(this, () => Align(AlignOp.SameHeight)) },
+            new ContextMenu.ContextMenuItem { Label = "Mesmo tamanho",       IsDisabled = !multi, OnClick = EventCallback.Factory.Create(this, () => Align(AlignOp.SameBoth)) },
+            ContextMenu.ContextMenuItem.Separator(),
+            new ContextMenu.ContextMenuItem { Label = element.IsLocked ? "Desbloquear" : "Bloquear", OnClick = EventCallback.Factory.Create(this, () => { foreach (var e in State.SelectedElements.ToArray()) e.IsLocked = !e.IsLocked; }) },
+            new ContextMenu.ContextMenuItem { Label = element.IsVisible ? "Ocultar" : "Mostrar",     OnClick = EventCallback.Factory.Create(this, () => { foreach (var e in State.SelectedElements.ToArray()) e.IsVisible = !e.IsVisible; }) },
+            ContextMenu.ContextMenuItem.Separator(),
+            new ContextMenu.ContextMenuItem { Label = "Excluir", Shortcut = "Del", IsDanger = true, OnClick = EventCallback.Factory.Create(this, OnDeleteSelected) },
+        };
+        ShowContextMenu(clientX, clientY);
+    }
+
+    /// <summary>Opens the right-click menu for a band (strip or empty band area).</summary>
+    public void OpenBandContextMenu(BandViewModel band, double clientX, double clientY)
+    {
+        State.ActiveBand = band;
+        var isGroup = band.Kind is DesignerBandKind.GroupHeader or DesignerBandKind.GroupFooter;
+        var items = new List<ContextMenu.ContextMenuItem>
+        {
+            new() { Label = "Inserir Label aqui",    OnClick = EventCallback.Factory.Create(this, () => OnInsert(DesignerElementKind.Label)) },
+            new() { Label = "Inserir TextBox aqui",  OnClick = EventCallback.Factory.Create(this, () => OnInsert(DesignerElementKind.TextBox)) },
+            new() { Label = "Colar aqui", Shortcut = "Ctrl+V", IsDisabled = State.Clipboard.Count == 0, OnClick = EventCallback.Factory.Create(this, OnPaste) },
+            ContextMenu.ContextMenuItem.Separator(),
+            new() { Label = "Selecionar todos da banda", Shortcut = "Ctrl+A", IsDisabled = band.Elements.Count == 0, OnClick = EventCallback.Factory.Create(this, () => State.SelectMany(band.Elements)) },
+        };
+        if (isGroup)
+        {
+            items.Add(ContextMenu.ContextMenuItem.Separator());
+            var label = string.IsNullOrEmpty(band.GroupExpression)
+                ? "Agrupar por… (configurar campo)"
+                : $"Editar agrupamento ({band.GroupExpression})";
+            items.Add(new() { Label = label, OnClick = EventCallback.Factory.Create(this, () => OpenGroupBinding(band)) });
+        }
+        // RDL band properties — every band kind shows the entry (the dialog hides/shows
+        // sections per kind). Detail/SubDetail show NoRowsMessage + Filter/Sort + PageBreak;
+        // Group shows Filter/Sort + Variables + PageBreak; others show PageBreak only.
+        items.Add(ContextMenu.ContextMenuItem.Separator());
+        items.Add(new() { Label = "Propriedades da banda…", OnClick = EventCallback.Factory.Create(this, () => OpenBandProperties(band)) });
+        items.Add(new() { Label = "Configuração de página…", OnClick = EventCallback.Factory.Create(this, OnOpenPageSetup) });
+        _ctxItems = items.ToArray();
+        ShowContextMenu(clientX, clientY);
+    }
+
+    private void OpenGroupBinding(BandViewModel band)
+    {
+        _groupEditing = band;
+        _groupEditorOpen = true;
+    }
+
+    /// <summary>Opens the RDL band properties dialog (PageBreak / NoRowsMessage / Filter /
+    /// Sort / Variables — whichever apply to this band kind).</summary>
+    private void OpenBandProperties(BandViewModel band)
+    {
+        _bandPropsEditing = band;
+        _bandPropsOpen = true;
+    }
+
+    /// <summary>Opens the right-click menu for the page background (outside any element/band).</summary>
+    public void OpenPageContextMenu(double clientX, double clientY)
+    {
+        _ctxItems = new[]
+        {
+            new ContextMenu.ContextMenuItem { Label = "Colar", Shortcut = "Ctrl+V", IsDisabled = State.Clipboard.Count == 0, OnClick = EventCallback.Factory.Create(this, OnPaste) },
+            ContextMenu.ContextMenuItem.Separator(),
+            new ContextMenu.ContextMenuItem { Label = State.GridVisible ? "Ocultar grade" : "Mostrar grade", OnClick = EventCallback.Factory.Create(this, () => State.GridVisible = !State.GridVisible) },
+            new ContextMenu.ContextMenuItem { Label = State.SnapToGrid  ? "Desabilitar snap" : "Habilitar snap", OnClick = EventCallback.Factory.Create(this, () => State.SnapToGrid = !State.SnapToGrid) },
+            ContextMenu.ContextMenuItem.Separator(),
+            new ContextMenu.ContextMenuItem { Label = "Configuração de página…", OnClick = EventCallback.Factory.Create(this, OnOpenPageSetup) },
+            new ContextMenu.ContextMenuItem { Label = "Preview", Shortcut = "F5",  OnClick = EventCallback.Factory.Create(this, async () => await OnPreview()) },
+        };
+        ShowContextMenu(clientX, clientY);
+    }
+
+    private void ShowContextMenu(double clientX, double clientY)
+    {
+        _ctxX = clientX;
+        _ctxY = clientY;
+        _ctxVisible = true;
+        // [JSInvokable] doesn't auto-trigger render in Blazor — fields would just sit there
+        // until something else mutated state. Force the render so the menu shows on the
+        // first right-click instead of waiting for an unrelated state change.
+        StateHasChanged();
+    }
+
+    private void CloseContextMenu()
+    {
+        _ctxVisible = false;
+        StateHasChanged();
+    }
+
+    // JSInvokable bridge so .el / .band / .page can fire @oncontextmenu (which doesn't
+    // include the element identity) and the JS side can re-route to the right C# method
+    // with the necessary id payload.
+    [JSInvokable]
+    public Task OnContextMenuRequest(string target, string? id, double x, double y)
+    {
+        switch (target)
+        {
+            case "element":
+                if (id is not null)
+                {
+                    var el = State.Report.Bands.SelectMany(b => b.Elements).FirstOrDefault(e => e.Id == id);
+                    if (el is not null) OpenElementContextMenu(el, x, y);
+                }
+                break;
+            case "band":
+                var band = State.Report.Bands.FirstOrDefault(b => b.Kind.ToString() == id);
+                if (band is not null) OpenBandContextMenu(band, x, y);
+                break;
+            case "page":
+                OpenPageContextMenu(x, y);
+                break;
+        }
+        return Task.CompletedTask;
+    }
+
+    private void OnInsert(DesignerElementKind kind)
+    {
+        // Honour the active band — click-toolbox / Insert-menu adds to whichever band the
+        // user last clicked on. Falls back to Detail (or the first band) if nothing's
+        // focused yet, matching the historical default behaviour.
+        var band = State.ActiveBand
+                ?? State.Report.FindBand(DesignerBandKind.Detail)
+                ?? State.Report.Bands.First();
+        var element = NewElement(kind, Unit.FromMm(15), Unit.FromMm(2));
+        FitElementInBand(band, element);
+        State.History.Push(new AddElementCommand(band, element));
+        State.SelectedElement = element;
+    }
+
+    /// <summary>Mutates element X/Y and band Height (if needed) so the element fits inside
+    /// the band's bounds. Used on Paste, Toolbox click, Toolbox drop, and Field drop. The
+    /// rule: never shrink the element — grow the band instead. Losing user content is the
+    /// worse failure.</summary>
+    private static void FitElementInBand(BandViewModel band, ElementViewModel element)
+    {
+        var bandHmm = band.Height.ToMm();
+        var elHmm = element.Height.ToMm();
+        var elYmm = element.Y.ToMm();
+        if (elYmm < 0) { elYmm = 0; element.Y = Unit.Zero; }
+        if (elYmm + elHmm <= bandHmm) return;        // already fits — nothing to do
+        if (elHmm <= bandHmm)
+        {
+            // Slide the element up so it fits within the band's current height.
+            element.Y = Unit.FromMm(bandHmm - elHmm);
+        }
+        else
+        {
+            // Element is taller than the band itself — grow the band to accommodate.
+            element.Y = Unit.Zero;
+            band.Height = Unit.FromMm(elHmm);
+        }
+    }
+
+    private static ElementViewModel NewElement(DesignerElementKind kind, Unit x, Unit y)
+    {
+        // Per-kind creation defaults (size, placeholder text/expression) live on the [ToolboxElement]
+        // annotation — see ToolboxCatalog. A new element only needs that one annotation, not edits here.
+        var spec = ToolboxCatalog.For(kind);
+        return new(kind, Guid.NewGuid().ToString("n"))
+        {
+            X = x,
+            Y = y,
+            Width = Unit.FromMm(spec.DefaultWidthMm),
+            Height = Unit.FromMm(spec.DefaultHeightMm),
+            Text = spec.DefaultText ?? string.Empty,
+            Expression = spec.DefaultExpression ?? string.Empty,
+        };
+    }
+
+    private void OnDeleteSelected()
+    {
+        // Snapshot first — removing from band.Elements mutates State.SelectedElements (each
+        // removal triggers Set → ClearSelection paths). Iterate the snapshot to delete all.
+        var targets = State.SelectedElements.ToArray();
+        if (targets.Length == 0) return;
+        State.ClearSelection();
+        foreach (var element in targets)
+        {
+            var band = State.Report.Bands.FirstOrDefault(b => b.Elements.Contains(element));
+            if (band is null) continue;
+            State.History.Push(new RemoveElementCommand(band, element));
+        }
+    }
+
+    private void OnUndo() => State.History.Undo();
+    private void OnRedo() => State.History.Redo();
+
+    private void OnOpenPageSetup() => _pageSetupOpen = true;
+    private void OnPageSetupApplied(Reporting.Paper.PageSetup ps)
+    {
+        State.Report.PageSetup = ps;
+        _pageSetupOpen = false;
+    }
+
+    private void OnAddParameter()
+    {
+        var name = $"Param{State.Parameters.Count + 1}";
+        State.Parameters.Add(new DesignerParameter(name, DesignerFieldType.Text, null));
+    }
+
+    private void OnRemoveParameter(DesignerParameter p) => State.Parameters.Remove(p);
+
+    private void OnAddVariable()
+    {
+        var name = $"Var{State.Variables.Count + 1}";
+        State.Variables.Add(new DesignerVariable(name));
+    }
+
+    private void OnRemoveVariable(DesignerVariable v) => State.Variables.Remove(v);
+
+    /// <summary>Inserts a TextBox pre-bound to a system expression (page number, today,
+    /// report name, etc.). Triggered by the new "Sistema" section in the toolbox. Goes
+    /// into the active band — typically PageHeader / PageFooter for page numbers.</summary>
+    private void OnAddSystemField(ElementToolbox.SystemFieldDescriptor sf)
+    {
+        var band = State.ActiveBand
+                ?? State.Report.FindBand(DesignerBandKind.PageFooter)
+                ?? State.Report.FindBand(DesignerBandKind.Detail)
+                ?? State.Report.Bands.First();
+        var el = NewElement(DesignerElementKind.TextBox, Unit.FromMm(15), Unit.FromMm(2));
+        el.Width = Unit.FromMm(Math.Max(20, sf.WidthMm));
+        el.Expression = sf.Expression;
+        el.Name = SanitizeName(sf.Label);
+        FitElementInBand(band, el);
+        State.History.Push(new AddElementCommand(band, el));
+        State.SelectedElement = el;
+        State.ActiveBand = band;
+    }
+
+    private static string SanitizeName(string label)
+    {
+        var sb = new System.Text.StringBuilder(label.Length);
+        foreach (var c in label) if (char.IsLetterOrDigit(c)) sb.Append(c);
+        return sb.Length > 0 ? sb.ToString() : "Field";
+    }
+
+    private void OnAddDataSource()
+    {
+        // Create a blank source with one starter field, then immediately open the editor so
+        // the user can rename / add fields / paste JSON. Avoids the previous "ghost source
+        // with Id/Name/Value the user can't tell apart" UX.
+        var name = $"DataSource{State.DataSources.Count + 1}";
+        var ds = new DesignerDataSource(name, new[] { new DesignerField("Campo1", DesignerFieldType.Text) });
+        State.DataSources.Add(ds);
+        OnEditDataSource(ds);
+    }
+
+    private void OnEditDataSource(DesignerDataSource ds)
+    {
+        _dsEditing = ds;
+        _dsEditorOpen = true;
+    }
+
+    private void OnDataSourceApplied(DesignerDataSource ds)
+    {
+        // Source was mutated in-place by the dialog (Name / Fields). All bindings that
+        // observe the catalog (DataSourcesTree, ExpressionEditor autocomplete, status bar)
+        // re-render via the Notifying.Changed event raised on field assignment.
+        StateHasChanged();
+    }
+
+    private void OnDataSourceDeleted(DesignerDataSource ds)
+    {
+        State.DataSources.Remove(ds);
+        StateHasChanged();
+    }
+
+    // When set, the expression editor edits a per-property binding (PropertyExpressions[path]) instead of
+    // the element's primary Text/Expression — this is what the metadata grid's "fx" buttons target.
+    private string? _bindingPath;
+
+    private void OpenExpressionEditor(string? bindingPath = null)
+    {
+        _bindingPath = bindingPath;
+        _expressionEditorOpen = true;
+    }
+
+    private string CurrentEditedExpression()
+    {
+        if (State.SelectedElement is not { } el)
+        {
+            return string.Empty;
+        }
+        return _bindingPath is not null
+            ? el.GetPropertyExpression(_bindingPath) ?? string.Empty
+            : el.Expression;
+    }
+
+    private void OnExpressionApplied(string expression)
+    {
+        if (State.SelectedElement is { } el)
+        {
+            var path = _bindingPath;
+            if (path is not null)
+                State.History.Push(new ChangePropertyCommand<string?>("Editar expressão", () => el.GetPropertyExpression(path), value => el.SetPropertyExpression(path, value), expression));
+            else if (el.Kind == DesignerElementKind.Label)
+                State.History.Push(new ChangePropertyCommand<string>("Editar texto", () => el.Text, value => el.Text = value, expression));
+            else
+                State.History.Push(new ChangePropertyCommand<string>("Editar expressão", () => el.Expression, value => el.Expression = value, expression));
+        }
+        _bindingPath = null;
+        _expressionEditorOpen = false;
+    }
+
+    // ─── Alignment / Distribution / Z-order ─────────────────────────────────────
+    public enum AlignOp { Left, CenterH, Right, Top, MiddleV, Bottom, DistributeH, DistributeV, SameWidth, SameHeight, SameBoth }
+
+    private void Align(AlignOp op)
+    {
+        var sel = State.SelectedElements.ToList();
+        if (sel.Count < 2) return;
+
+        // Build the moves/resizes as commands (each captures the element's CURRENT position as "old"
+        // before anything is applied), then push ONE composite so the whole operation is a single
+        // undoable Ctrl+Z — matching every other designer mutation. Without this, align/distribute/
+        // same-size silently bypassed history and could not be undone.
+        var commands = new List<IDesignerCommand>();
+        void Move(ElementViewModel e, Unit x, Unit y)
+        {
+            if (e.X != x || e.Y != y) commands.Add(new MoveElementCommand(e, x, y));
+        }
+        void Resize(ElementViewModel e, Unit w, Unit h)
+        {
+            if (e.Width != w || e.Height != h) commands.Add(new ResizeElementCommand(e, w, h));
+        }
+
+        switch (op)
+        {
+            case AlignOp.Left:
+                {
+                    var x = sel.Min(e => e.X);
+                    foreach (var e in sel) Move(e, x, e.Y);
+                    break;
+                }
+            case AlignOp.Right:
+                {
+                    var right = sel.Max(e => e.X + e.Width);
+                    foreach (var e in sel) Move(e, right - e.Width, e.Y);
+                    break;
+                }
+            case AlignOp.CenterH:
+                {
+                    var centerMm = sel.Average(e => (e.X + e.Width / 2).ToMm());
+                    foreach (var e in sel) Move(e, Unit.FromMm(centerMm) - e.Width / 2, e.Y);
+                    break;
+                }
+            case AlignOp.Top:
+                {
+                    var y = sel.Min(e => e.Y);
+                    foreach (var e in sel) Move(e, e.X, y);
+                    break;
+                }
+            case AlignOp.Bottom:
+                {
+                    var bottom = sel.Max(e => e.Y + e.Height);
+                    foreach (var e in sel) Move(e, e.X, bottom - e.Height);
+                    break;
+                }
+            case AlignOp.MiddleV:
+                {
+                    var middleMm = sel.Average(e => (e.Y + e.Height / 2).ToMm());
+                    foreach (var e in sel) Move(e, e.X, Unit.FromMm(middleMm) - e.Height / 2);
+                    break;
+                }
+            case AlignOp.DistributeH when sel.Count >= 3:
+                {
+                    var ordered = sel.OrderBy(e => e.X.ToMm()).ToList();
+                    var first = ordered.First();
+                    var last = ordered.Last();
+                    var totalSpan = last.X + last.Width - first.X;
+                    var totalWidth = ordered.Sum(e => e.Width.ToMm());
+                    var gap = (totalSpan.ToMm() - totalWidth) / (ordered.Count - 1);
+                    var cursor = first.X;
+                    foreach (var e in ordered)
+                    {
+                        Move(e, cursor, e.Y);
+                        cursor += e.Width + Unit.FromMm(gap);
+                    }
+                    break;
+                }
+            case AlignOp.DistributeV when sel.Count >= 3:
+                {
+                    var ordered = sel.OrderBy(e => e.Y.ToMm()).ToList();
+                    var first = ordered.First();
+                    var last = ordered.Last();
+                    var totalSpan = last.Y + last.Height - first.Y;
+                    var totalHeight = ordered.Sum(e => e.Height.ToMm());
+                    var gap = (totalSpan.ToMm() - totalHeight) / (ordered.Count - 1);
+                    var cursor = first.Y;
+                    foreach (var e in ordered)
+                    {
+                        Move(e, e.X, cursor);
+                        cursor += e.Height + Unit.FromMm(gap);
+                    }
+                    break;
+                }
+            // Same-size operations use the FIRST element of the selection as the
+            // reference (matches Visual Studio + DevExpress). User can pick which one
+            // by toggling its selection last (Shift+click reorders SelectedElements).
+            case AlignOp.SameWidth:
+                {
+                    var w = sel[0].Width;
+                    foreach (var e in sel) Resize(e, w, e.Height);
+                    break;
+                }
+            case AlignOp.SameHeight:
+                {
+                    var h = sel[0].Height;
+                    foreach (var e in sel) Resize(e, e.Width, h);
+                    break;
+                }
+            case AlignOp.SameBoth:
+                {
+                    var w = sel[0].Width;
+                    var h = sel[0].Height;
+                    foreach (var e in sel) Resize(e, w, h);
+                    break;
+                }
+        }
+
+        if (commands.Count > 0)
+        {
+            State.History.Push(new CompositeCommand($"Align {op}", commands));
+        }
+    }
+
+    private void ChangeZOrder(int direction)
+    {
+        foreach (var el in State.SelectedElements.ToArray())
+        {
+            var band = State.Report.Bands.FirstOrDefault(b => b.Elements.Contains(el));
+            if (band is null) continue;
+            var idx = band.Elements.IndexOf(el);
+            var newIdx = Math.Clamp(idx + direction, 0, band.Elements.Count - 1);
+            if (newIdx == idx) continue;
+            State.History.Push(new ChangePropertyCommand<int>("Alterar ordem", () => band.Elements.IndexOf(el), value => band.Elements.Move(band.Elements.IndexOf(el), value), newIdx));
+        }
+    }
+
+    /// <summary>Sends every selected element to the very end (top) of its band's Z order.</summary>
+    private void BringToFront()
+    {
+        foreach (var el in State.SelectedElements.ToArray())
+        {
+            var band = State.Report.Bands.FirstOrDefault(b => b.Elements.Contains(el));
+            if (band is null) continue;
+            var idx = band.Elements.IndexOf(el);
+            if (idx == band.Elements.Count - 1) continue;
+            State.History.Push(new ChangePropertyCommand<int>("Alterar ordem", () => band.Elements.IndexOf(el), value => band.Elements.Move(band.Elements.IndexOf(el), value), band.Elements.Count - 1));
+        }
+    }
+
+    /// <summary>Sends every selected element to the very start (bottom) of its band's Z order.</summary>
+    private void SendToBack()
+    {
+        foreach (var el in State.SelectedElements.ToArray())
+        {
+            var band = State.Report.Bands.FirstOrDefault(b => b.Elements.Contains(el));
+            if (band is null) continue;
+            var idx = band.Elements.IndexOf(el);
+            if (idx == 0) continue;
+            State.History.Push(new ChangePropertyCommand<int>("Alterar ordem", () => band.Elements.IndexOf(el), value => band.Elements.Move(band.Elements.IndexOf(el), value), 0));
+        }
+    }
+
+    /// <summary>Centers each selected element horizontally inside its band. Industry-standard
+    /// "Center in Container" command — Visual Studio / WinForms calls it Center Horizontally.</summary>
+    private void CenterInBandH()
+    {
+        var pageWidthMm = State.Report.PageSetup.PageWidth.ToMm();
+        foreach (var el in State.SelectedElements.ToArray())
+        {
+            var elWMm = el.Width.ToMm();
+            el.X = Unit.FromMm(Math.Max(0, (pageWidthMm - elWMm) / 2));
+        }
+    }
+
+    /// <summary>Centers each selected element vertically inside its band.</summary>
+    private void CenterInBandV()
+    {
+        foreach (var el in State.SelectedElements.ToArray())
+        {
+            var band = State.Report.Bands.FirstOrDefault(b => b.Elements.Contains(el));
+            if (band is null) continue;
+            var bandHmm = band.Height.ToMm();
+            var elHmm = el.Height.ToMm();
+            el.Y = Unit.FromMm(Math.Max(0, (bandHmm - elHmm) / 2));
+        }
+    }
+
+    /// <summary>Duplicates every selected element in-place, offset by (2mm, 2mm). Bound to
+    /// Ctrl+D. The duplicates become the new selection so the user can drag them away.</summary>
+    private void DuplicateSelected()
+    {
+        var sources = State.SelectedElements.ToArray();
+        if (sources.Length == 0) return;
+        var copies = new List<ElementViewModel>(sources.Length);
+        foreach (var src in sources)
+        {
+            var band = State.Report.Bands.FirstOrDefault(b => b.Elements.Contains(src));
+            if (band is null) continue;
+            var copy = src.Clone();
+            copy.X = copy.X + Unit.FromMm(2);
+            copy.Y = copy.Y + Unit.FromMm(2);
+            FitElementInBand(band, copy);
+            State.History.Push(new AddElementCommand(band, copy));
+            copies.Add(copy);
+        }
+        if (copies.Count > 0) State.SelectMany(copies);
+    }
+
+    private void OnCopy()
+    {
+        if (State.SelectedElements.Count == 0) return;
+        State.Clipboard = State.SelectedElements.Select(e => e.Clone()).ToList();
+    }
+
+    private void OnCut()
+    {
+        if (State.SelectedElements.Count == 0) return;
+        State.Clipboard = State.SelectedElements.Select(e => e.Clone()).ToList();
+        OnDeleteSelected(); // deletes the whole multi-selection
+    }
+
+    private void OnPaste()
+    {
+        if (State.Clipboard.Count == 0) return;
+        // Resolution order: explicit ActiveBand → band of selected element → Detail → first.
+        // ActiveBand is set whenever the user clicks a band-strip or empty band area, so the
+        // user can cut/copy from one band and explicitly paste into another.
+        var band = State.ActiveBand
+                ?? (State.SelectedElement is null
+                        ? null
+                        : State.Report.Bands.FirstOrDefault(b => b.Elements.Contains(State.SelectedElement!)))
+                ?? State.Report.FindBand(DesignerBandKind.Detail)
+                ?? State.Report.Bands.First();
+        // Paste every clipboard element, each nudged by the same (2,2) offset so a multi-element group keeps its
+        // relative layout, then select the pasted set.
+        var pastedSet = new List<ElementViewModel>(State.Clipboard.Count);
+        foreach (var source in State.Clipboard)
+        {
+            var pasted = source.Clone();
+            pasted.X = pasted.X + Unit.FromMm(2);
+            pasted.Y = pasted.Y + Unit.FromMm(2);
+            FitElementInBand(band, pasted);
+            State.History.Push(new AddElementCommand(band, pasted));
+            pastedSet.Add(pasted);
+        }
+        if (pastedSet.Count == 1)
+        {
+            State.SelectedElement = pastedSet[0];
+        }
+        else if (pastedSet.Count > 1)
+        {
+            State.SelectMany(pastedSet);
+        }
+    }
+    private async Task OnToggleTheme()
+    {
+        State.ToggleTheme();
+        try { await Js.InvokeVoidAsync("omniDesigner.setTheme", State.Theme); }
+        catch (JSException) { }
+        catch (InvalidOperationException) { }
+    }
+    private void OnOpenPalette() => State.CommandPaletteOpen = true;
+
+    // ─── Tab management ─────────────────────────────────────────────────────────
+    private void OnActivateTab(DocumentTab tab) => State.ActiveTab = tab;
+    private void OnCloseTab(DocumentTab tab) => State.CloseTab(tab);
+    private void OnNewTab() => State.OpenNewDocument("Novo");
+
+    // ─── File ───────────────────────────────────────────────────────────────────
+    private async Task OnSave()
+    {
+        var bytes = State.Save();
+        var fileName = (State.Report.Name ?? "report") + ".repx";
+        try { await Js.InvokeVoidAsync("omniViewer.download", fileName, "application/xml", bytes); }
+        catch (JSException) { }
+        catch (InvalidOperationException) { }
+        if (OnSaved.HasDelegate) await OnSaved.InvokeAsync(bytes);
+    }
+
+    private async Task OnLoadFile(InputFileChangeEventArgs e)
+    {
+        if (e.File is null) return;
+        using var ms = new MemoryStream();
+        await using var src = e.File.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024);
+        await src.CopyToAsync(ms);
+        try { State.Load(ms.ToArray()); }
+        catch (Exception ex) { Console.Error.WriteLine($"Falha ao carregar .repx: {ex.Message}"); }
+    }
+
+    private async Task OnLoadRdlFile(InputFileChangeEventArgs e)
+    {
+        if (e.File is null) return;
+        using var ms = new MemoryStream();
+        await using var src = e.File.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024);
+        await src.CopyToAsync(ms);
+        try { State.LoadRdl(ms.ToArray()); }
+        catch (Exception ex) { Console.Error.WriteLine($"Falha ao importar .rdl: {ex.Message}"); }
+    }
+
+    // RDL export is a DEFINITION serialization (the native model projected to RDL), not a render export — so it
+    // goes straight through the RDL serializer, not the IExporterRegistry (which renders to PDF/XLSX/…).
+    private async Task OnExportRdl()
+    {
+        var bytes = State.SaveRdl();
+        var fileName = (State.Report.Name ?? "report") + ".rdl";
+        try { await Js.InvokeVoidAsync("omniViewer.download", fileName, "application/xml", bytes); }
+        catch (JSException) { }
+        catch (InvalidOperationException) { }
+    }
+
+    // ─── Preview ────────────────────────────────────────────────────────────────
+    /// <summary>Triggers preview/export. If any report parameter has no cached value and the
+    /// user hasn't explicitly skipped prompting, opens the <see cref="ParameterPromptDialog"/>
+    /// first; otherwise paginates immediately with the cached values.</summary>
+    private async Task OnPreview()
+    {
+        var requestedTab = State.ActiveTab;
+        try
+        {
+            // Prompt for parameter values when needed: missing cached values OR a parameter
+            // that has no default. The user can suppress prompts by checking "Lembrar" — the
+            // cache then carries through the session.
+            if (State.Parameters.Count > 0 && NeedsParameterPrompt())
+            {
+                var values = await PromptForParametersAsync();
+                if (values is null || !ReferenceEquals(requestedTab, State.ActiveTab)) return; // user cancelled
+                foreach (var kv in values) _paramValues[kv.Key] = kv.Value;
+            }
+
+            if (await PaginateAndRenderAsync() && ReferenceEquals(requestedTab, State.ActiveTab)) State.IsPreviewing = true;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Preview error: {ex.Message}");
+        }
+    }
+
+    private bool NeedsParameterPrompt()
+    {
+        foreach (var p in State.Parameters)
+        {
+            // Hidden params are driven by default/query and never prompted, so they don't trigger the
+            // dialog (a report whose only params are Hidden must not open an empty, never-closing prompt).
+            if (p.Hidden) continue;
+            if (!_paramValues.ContainsKey(p.Name)) return true;
+        }
+        return false;
+    }
+
+    private Task<IReadOnlyDictionary<string, string?>?> PromptForParametersAsync()
+    {
+        _paramPromptTcs = new TaskCompletionSource<IReadOnlyDictionary<string, string?>?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        _paramPromptOpen = true;
+        _promptRegistry = null; // build a fresh registry on first resolution this prompt session
+        StateHasChanged();
+        return _paramPromptTcs.Task;
+    }
+
+    private void OnParameterPromptConfirmed((IReadOnlyDictionary<string, string?> Values, bool Remember) result)
+    {
+        _paramPromptOpen = false;
+        _promptRegistry = null;
+        if (result.Remember)
+        {
+            foreach (var kv in result.Values) _paramValues[kv.Key] = kv.Value;
+        }
+        _paramPromptTcs?.TrySetResult(result.Values);
+    }
+
+    private void OnParameterPromptCancelled()
+    {
+        _paramPromptOpen = false;
+        _promptRegistry = null;
+        _paramPromptTcs?.TrySetResult(null);
+    }
+
+    // Cached per prompt session so the parent→child cascade doesn't rebuild the (DB-backed) registry on every
+    // dropdown change. Cleared when the prompt opens/closes so data-source edits between previews take effect.
+    private Reporting.DataSources.DataSourceRegistry? _promptRegistry;
+
+    /// <summary>Resolves a parameter's available-values domain for the preview prompt — query-driven and
+    /// SSRS-style cascading (the values entered so far filter a dependent parameter). Returns the static list
+    /// when the parameter isn't query-driven; an empty list when nothing is configured.</summary>
+    private async Task<IReadOnlyList<Reporting.Parameters.ParameterValue>> ResolveParameterOptionsAsync(
+        DesignerParameter parameter, IReadOnlyDictionary<string, string?> enteredValues)
+    {
+        var available = parameter.ToReportParameter().AvailableValues;
+        if (available is null)
+        {
+            return Array.Empty<Reporting.Parameters.ParameterValue>();
+        }
+        _promptRegistry ??= BuildRuntimeRegistry();
+        // Pass the raw entered strings as the parameter context; the resolver matches a cascade's FilterField
+        // against the parent value via Convert.ToString, so string-keyed domains (Estado→Cidade) line up.
+        var context = enteredValues.ToDictionary(kv => kv.Key, kv => (object?)kv.Value, StringComparer.Ordinal);
+        return await Reporting.DataSources.ParameterValueResolver.ResolveAsync(available, _promptRegistry, context);
+    }
+
+    /// <summary>Builds the report definition, materializes runtime data sources (DB-backed
+    /// via <see cref="IDesignerDataConnect"/> when available), runs the paginator, and
+    /// rasterizes each page for the preview viewport.</summary>
+    private async Task<bool> PaginateAndRenderAsync()
+    {
+        var previewTab = State.ActiveTab;
+        var generation = _previewGeneration;
+        _previewCancellation?.Cancel();
+        using var cancellation = new CancellationTokenSource();
+        _previewCancellation = cancellation;
+        try
+        {
+            var definition = State.BuildDefinition();
+            var paginator = new Reporting.Layout.ReportPaginator();
+
+            // Build the runtime registry from the designer's data sources + relations. The
+            // factory expands {secret:NAME} placeholders in connection strings, resolves SQL
+            // parameter bindings against the prompt cache, and wraps master-detail relations
+            // as MasterDetailDataSource views.
+            var registry = BuildRuntimeRegistry();
+
+            // Convert parameter cache to the paginator's runtime dictionary, coercing strings
+            // to the declared CLR type (DateTime, decimal, bool).
+            var runtimeParams = CoerceParameterValues();
+
+            var rendered = await paginator.PaginateAsync(new Reporting.Layout.PaginationRequest
+            {
+                Definition = definition,
+                DataSources = registry,
+                Parameters = runtimeParams,
+            }, cancellation.Token);
+
+            if (!ReferenceEquals(previewTab, State.ActiveTab) || generation != _previewGeneration) return false;
+            _previewRendered = rendered;
+            _previewDiagnostics = rendered.Diagnostics.Select(d => d.Message).Distinct().ToArray();
+            using var renderer = new Reporting.Rendering.Skia.SkiaRenderingContext();
+            Reporting.Layout.RenderedReportPlayer.Play(_previewRendered, renderer);
+            _previewPages = new List<byte[]>(_previewRendered.PageCount);
+            for (int i = 0; i < _previewRendered.PageCount; i++)
+            {
+                _previewPages.Add(renderer.GetPagePng(i));
+            }
+            _previewCurrentPage = 0;
+            return true;
+        }
+        catch (OperationCanceledException) when (cancellation.IsCancellationRequested) { return false; }
+        finally
+        {
+            if (ReferenceEquals(_previewCancellation, cancellation)) _previewCancellation = null;
+        }
+    }
+
+    /// <summary>Builds the runtime <c>DataSourceRegistry</c> for the preview/export paginator:
+    /// DB sources materialized via <see cref="IDesignerDataConnect"/>, then any host-supplied
+    /// in-memory <see cref="DesignerState.PreviewDataRegistry"/> merged in (so charts/map/tablix
+    /// render in the preview without a live database). DB sources of the same name win.</summary>
+    private Reporting.DataSources.DataSourceRegistry BuildRuntimeRegistry()
+    {
+        var registry = BuildDbBackedRegistry();
+        if (State.PreviewDataRegistry is { } preview)
+        {
+            foreach (var name in preview.Names)
+            {
+                if (!registry.TryGet(name, out _) && preview.TryGet(name, out var ds))
+                {
+                    registry.Register(ds);
+                }
+            }
+        }
+        return registry;
+    }
+
+    /// <summary>Live DB sources only, materialized via <see cref="IDesignerDataConnect"/> when
+    /// registered; in-memory ones are skipped (supplied through the preview registry instead).</summary>
+    private Reporting.DataSources.DataSourceRegistry BuildDbBackedRegistry()
+    {
+        // Look up the factory components from DI without taking a hard dependency.
+        var dataConnectAssembly = Services.GetService(typeof(IDesignerDataConnect));
+        if (dataConnectAssembly is null)
+        {
+            // No live-DB service registered — return an empty registry. Reports built
+            // against InMemory sources still render: the host registers the runtime data
+            // source themselves before calling OnSaved/OnExportXxx.
+            return new Reporting.DataSources.DataSourceRegistry();
+        }
+
+        // Reflectively call DesignerDataSourceFactory.BuildRegistry — keeps the Designer
+        // package free of a hard reference to DataConnect (which pulls all DB drivers).
+        var factoryType = Type.GetType("Reporting.Designer.Blazor.DataConnect.DesignerDataSourceFactory, Reporting.Designer.Blazor.DataConnect", throwOnError: false);
+        var secretResolver = Services.GetService(typeof(ISecretResolver));
+        if (factoryType is not null)
+        {
+            var method = factoryType.GetMethod("BuildRegistry");
+            if (method is not null)
+            {
+                var runtimeParams = (IReadOnlyDictionary<string, object?>)CoerceParameterValues();
+                var result = method.Invoke(null, new object?[]
+                {
+                    State.DataSources,
+                    State.Relations,
+                    runtimeParams,
+                    secretResolver,
+                });
+                if (result is Reporting.DataSources.DataSourceRegistry reg) return reg;
+            }
+        }
+        return new Reporting.DataSources.DataSourceRegistry();
+    }
+
+    /// <summary>Converts the prompt cache (all strings) into a runtime dictionary, coercing
+    /// each value to the parameter's declared CLR type. Invalid values fall back to the
+    /// designer-side default.</summary>
+    private Dictionary<string, object?> CoerceParameterValues()
+    {
+        var dict = new Dictionary<string, object?>(StringComparer.Ordinal);
+        foreach (var p in State.Parameters)
+        {
+            var raw = _paramValues.GetValueOrDefault(p.Name) ?? p.DefaultValue;
+            dict[p.Name] = CoerceTo(raw, p.Type);
+        }
+        return dict;
+    }
+
+    private static object? CoerceTo(string? raw, DesignerFieldType type)
+        => ParameterValueConverter.Parse(raw, type);
+
+    private void ClosePreview()
+    {
+        _previewPages = [];
+        _previewRendered = null;
+        _previewCurrentPage = 0;
+        State.IsPreviewing = false;
+    }
+
+    /// <summary>Single generic export handler — receives the descriptor the user clicked
+    /// and routes to <c>IReportExporter.Export</c>. No hardcoded format list: registering
+    /// a new exporter in DI automatically gets a working button + working handler.</summary>
+    private async Task OnExport(Reporting.Designer.Blazor.Services.ExporterDescriptor descriptor)
+    {
+        if (_previewRendered is null || descriptor is null) return;
+        try
+        {
+            // Each IReportExporter writes to a Stream. We capture to a MemoryStream so
+            // we can hand the bytes to omniViewer.download (browser flow). Streaming
+            // direct to the response would be lighter, but Blazor's JS interop has no
+            // stream contract for downloads — bytes is the lingua franca.
+            using var ms = new MemoryStream();
+            descriptor.Exporter.Export(_previewRendered, ms);
+            var bytes = ms.ToArray();
+            var fileName = SafeFileName(State.Report.Name) + descriptor.FileExtension;
+            await TriggerDownload(fileName, descriptor.ContentType, bytes);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Export ({descriptor.Format}) error: {ex.Message}");
+        }
+    }
+
+    /// <summary>Snapshot of registered exporters at component init time. The list comes
+    /// from <see cref="Reporting.Designer.Blazor.Services.IExporterRegistry"/>; resolving
+    /// once at OnInitialized keeps the toolbar layout stable across renders.</summary>
+    private IReadOnlyList<Reporting.Designer.Blazor.Services.ExporterDescriptor> _exporterDescriptors
+        = Array.Empty<Reporting.Designer.Blazor.Services.ExporterDescriptor>();
+
+    /// <summary>Opens the print configuration dialog. The actual printing happens in
+    /// <see cref="OnPrintConfirmed"/> after the user clicks Imprimir there. We require a
+    /// fresh paginate first — without it the preview pages list is empty and there's
+    /// nothing to print.</summary>
+    private async Task OnPrint()
+    {
+        if (_previewRendered is null)
+        {
+            // Auto-trigger a preview so the user can come straight from the canvas
+            // without having to hit Preview first. Matches Crystal/SSRS Viewer UX where
+            // "Print" implicitly runs the report.
+            if (!await PaginateAndRenderAsync() || _previewRendered is null) return; // pagination failed
+        }
+        _printDialogOpen = true;
+    }
+
+    /// <summary>Fires when the PrintDialog raises OnPrint. Resolves the print service
+    /// from DI (falling back to <see cref="Reporting.Designer.Blazor.Services.BrowserPrintService"/> when no override was
+    /// registered) and hands off the request. The dialog handles its own close on
+    /// success — we only surface the error path here.</summary>
+    private async Task OnPrintConfirmed(Reporting.Designer.Blazor.Services.PrintRequest request)
+    {
+        if (_previewRendered is null) return;
+
+        // Resolve the print service. DI override (NativePrinterAdapter on MAUI) takes
+        // precedence; otherwise we instantiate the universal BrowserPrintService here
+        // so hosts that didn't register anything still get working "print via browser"
+        // behavior. Zero-config success path.
+        var service = Services.GetService(typeof(Reporting.Designer.Blazor.Services.IDesignerPrintService))
+                      as Reporting.Designer.Blazor.Services.IDesignerPrintService
+                   ?? new Reporting.Designer.Blazor.Services.BrowserPrintService(Js);
+
+        try
+        {
+            await service.PrintAsync(_previewRendered, request);
+        }
+        catch (Exception ex)
+        {
+            // Errors surface in the dialog (it catches and shows the message). Log
+            // server-side so support can correlate.
+            Console.Error.WriteLine($"Print error: {ex.Message}");
+            throw;
+        }
+    }
+
+    private async Task TriggerDownload(string fileName, string mimeType, byte[] bytes)
+    {
+        try { await Js.InvokeVoidAsync("omniViewer.download", fileName, mimeType, bytes); }
+        catch (JSException) { }
+        catch (InvalidOperationException) { }
+    }
+
+    private static string SafeFileName(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "report";
+        foreach (var c in System.IO.Path.GetInvalidFileNameChars())
+        {
+            name = name.Replace(c, '_');
+        }
+        return name;
+    }
+
+    // ─── Keyboard ───────────────────────────────────────────────────────────────
+    private async Task OnKeyDown(KeyboardEventArgs e)
+    {
+        if (State.CommandPaletteOpen) return; // palette handles its own keys
+
+        if (e.Key == "F5") { await OnPreview(); return; }
+        if (e.Key == "F8") { OpenExpressionEditor(); return; }
+        if (e.Key == "Escape")
+        {
+            if (State.IsPreviewing) { ClosePreview(); return; }
+            State.SelectedElement = null;
+            return;
+        }
+        if (e.Key == "Delete" || e.Key == "Backspace") { OnDeleteSelected(); return; }
+
+        if (e.CtrlKey || e.MetaKey)
+        {
+            switch (e.Key.ToLowerInvariant())
+            {
+                case "z": OnUndo(); return;
+                case "y": OnRedo(); return;
+                case "s": await OnSave(); return;
+                case "k": State.CommandPaletteOpen = true; return;
+                case "x": OnCut(); return;
+                case "c": OnCopy(); return;
+                case "v": OnPaste(); return;
+                case "d": DuplicateSelected(); return;
+                case "a":
+                    // Ctrl+A: select all elements in the active band (industry standard).
+                    var b = State.ActiveBand ?? State.Report.FindBand(DesignerBandKind.Detail);
+                    if (b is not null && b.Elements.Count > 0) State.SelectMany(b.Elements);
+                    return;
+                case "o":
+                    try { await Js.InvokeVoidAsync("eval", "document.getElementById('__designer_open_repx')?.click()"); }
+                    catch (JSException) { }
+                    catch (InvalidOperationException) { }
+                    return;
+            }
+        }
+
+        // Arrow keys move EVERY selected element by the same step. Shift = 10mm coarse,
+        // bare = 1mm fine. Matches Visual Studio / DevExpress / Telerik.
+        if (State.SelectedElements.Count > 0
+            && (e.Key == "ArrowLeft" || e.Key == "ArrowRight" || e.Key == "ArrowUp" || e.Key == "ArrowDown"))
+        {
+            var stepMm = e.ShiftKey ? 10.0 : 1.0;
+            var moves = new List<IDesignerCommand>();
+            // Confine to band — same rule as JS drag (Telerik-style). Without this clamp
+            // the user could nudge an element outside its band and lose track of it.
+            var pageWidthMm = State.Report.PageSetup.PageWidth.ToMm();
+            foreach (var el in State.SelectedElements)
+            {
+                var band = State.Report.Bands.FirstOrDefault(b => b.Elements.Contains(el));
+                if (band is null) continue;
+                var bandHMm = band.Height.ToMm();
+                var elWMm = el.Width.ToMm();
+                var elHMm = el.Height.ToMm();
+                var maxX = Math.Max(0, pageWidthMm - elWMm);
+                var maxY = Math.Max(0, bandHMm - elHMm);
+                var x = el.X.ToMm();
+                var y = el.Y.ToMm();
+                switch (e.Key)
+                {
+                    case "ArrowLeft": x = Math.Clamp(x - stepMm, 0, maxX); break;
+                    case "ArrowRight": x = Math.Clamp(x + stepMm, 0, maxX); break;
+                    case "ArrowUp": y = Math.Clamp(y - stepMm, 0, maxY); break;
+                    case "ArrowDown": y = Math.Clamp(y + stepMm, 0, maxY); break;
+                }
+                moves.Add(new MoveElementCommand(el, Unit.FromMm(x), Unit.FromMm(y)));
+            }
+            if (moves.Count > 0) State.History.Push(new CompositeCommand("Mover seleção", moves));
+        }
+    }
+
+    // ─── JS interop callbacks ───────────────────────────────────────────────────
+    /// <summary>Called from <c>omniDesigner</c> when a pointer gesture (move/resize) commits.</summary>
+    [JSInvokable]
+    public Task OnGestureCommit(GesturePayload payload)
+    {
+        var band = State.Report.Bands.FirstOrDefault(b => b.Kind.ToString() == payload.BandKind);
+        if (band is null) return Task.CompletedTask;
+        var element = band.Elements.FirstOrDefault(e => e.Id == payload.ElementId);
+        if (element is null) return Task.CompletedTask;
+
+        if (payload.Kind == "move")
+        {
+            State.History.Push(new MoveElementCommand(element,
+                Unit.FromMm(payload.XMm), Unit.FromMm(payload.YMm)));
+        }
+        else if (payload.Kind == "resize")
+        {
+            // Resize moves origin too (when nw/n/w handles); commit both.
+            element.X = Unit.FromMm(payload.XMm);
+            element.Y = Unit.FromMm(payload.YMm);
+            State.History.Push(new ResizeElementCommand(element,
+                Unit.FromMm(payload.WidthMm), Unit.FromMm(payload.HeightMm)));
+        }
+
+        // Defensive: the JS layer clamps drag/resize so an element can't leave its band
+        // (Telerik-style strict confinement). If a stray payload sneaks past it, grow the
+        // band rather than truncate the element — losing user content is the worse failure.
+        var elementBottomMm = element.Y.ToMm() + element.Height.ToMm();
+        if (elementBottomMm > band.Height.ToMm())
+        {
+            band.Height = Unit.FromMm(elementBottomMm);
+        }
+        return Task.CompletedTask;
+    }
+
+    /// <summary>Called from <c>omniDesigner</c> when a field is dropped from the data tree.</summary>
+    [JSInvokable]
+    public Task OnFieldDrop(FieldDropPayload payload)
+    {
+        var band = State.Report.Bands.FirstOrDefault(b => b.Kind.ToString() == payload.BandKind);
+        if (band is null) return Task.CompletedTask;
+
+        var element = new ElementViewModel(DesignerElementKind.TextBox, Guid.NewGuid().ToString("n"))
+        {
+            X = Unit.FromMm(payload.XMm),
+            Y = Unit.FromMm(payload.YMm),
+            Width = Unit.FromMm(50),
+            Height = Unit.FromMm(6),
+            Name = payload.FieldName.Replace('.', '_'),
+            Expression = "{Fields." + payload.FieldName + "}",
+        };
+        FitElementInBand(band, element);
+        State.History.Push(new AddElementCommand(band, element));
+        State.SelectedElement = element;
+        State.ActiveBand = band;
+        return Task.CompletedTask;
+    }
+
+    /// <summary>Called from <c>omniDesigner</c> when a band resize handle commits.</summary>
+    [JSInvokable]
+    public Task OnBandResize(BandResizePayload payload)
+    {
+        var band = State.Report.Bands.FirstOrDefault(b => b.Kind.ToString() == payload.BandKind);
+        if (band is null) return Task.CompletedTask;
+        // Floor: never shrink below the bottom edge of the lowest element in this band.
+        // Crystal Reports / SSRS / DevExpress all clamp the band-resize handle here — going
+        // below would leave elements visually overflowing into the next band.
+        double elementsFloorMm = 0;
+        foreach (var el in band.Elements)
+        {
+            var bottom = el.Y.ToMm() + el.Height.ToMm();
+            if (bottom > elementsFloorMm) elementsFloorMm = bottom;
+        }
+        var minH = Math.Max(2, elementsFloorMm);
+        var newH = Unit.FromMm(Math.Max(minH, payload.HeightMm));
+        if (newH != band.Height)
+        {
+            band.Height = newH;
+        }
+        return Task.CompletedTask;
+    }
+
+    /// <summary>Called from <c>omniDesigner</c> when the user wheel-scrolls with Ctrl
+    /// held inside the canvas. Routes to the active surface — design canvas adjusts
+    /// <c>State.Zoom</c> (0.25–4.0); preview mode adjusts <c>_previewZoom</c> (25–400%).
+    /// Both ranges intentionally mirror their corresponding toolbar buttons.</summary>
+    [JSInvokable]
+    public Task OnZoomDelta(double delta)
+    {
+        if (State.IsPreviewing)
+        {
+            // delta is the same fractional step used by the design canvas (~0.10 or ~0.25);
+            // multiply by 100 to land in the preview's integer-percent space.
+            _previewZoom = Math.Clamp(_previewZoom + (int)Math.Round(delta * 100), 25, 400);
+            StateHasChanged();
+        }
+        else
+        {
+            State.Zoom = Math.Clamp(State.Zoom + delta, 0.25, 4.0);
+        }
+        return Task.CompletedTask;
+    }
+
+    /// <summary>Called from <c>omniDesigner</c> when the marquee finishes — receives the ids
+    /// of all elements caught under the rectangle.</summary>
+    [JSInvokable]
+    public Task OnMarqueeSelect(string[] elementIds)
+    {
+        var all = State.Report.Bands.SelectMany(b => b.Elements).ToDictionary(e => e.Id);
+        var picked = elementIds.Where(all.ContainsKey).Select(id => all[id]).ToList();
+        if (picked.Count == 0) State.ClearSelection();
+        else State.SelectMany(picked);
+        return Task.CompletedTask;
+    }
+
+    /// <summary>Called from <c>omniDesigner</c> on Shift+click to toggle multi-selection.</summary>
+    [JSInvokable]
+    public Task OnShiftClickElement(string elementId)
+    {
+        var el = State.Report.Bands.SelectMany(b => b.Elements).FirstOrDefault(e => e.Id == elementId);
+        if (el is not null) State.ToggleSelection(el);
+        return Task.CompletedTask;
+    }
+
+    /// <summary>Called from <c>omniDesigner</c> when a toolbox item is dropped on a band.</summary>
+    [JSInvokable]
+    public Task OnToolboxDrop(DropPayload payload)
+    {
+        if (!Enum.TryParse<DesignerElementKind>(payload.Kind, out var kind)) return Task.CompletedTask;
+        var band = State.Report.Bands.FirstOrDefault(b => b.Kind.ToString() == payload.BandKind);
+        if (band is null) return Task.CompletedTask;
+
+        var element = NewElement(kind, Unit.FromMm(payload.XMm), Unit.FromMm(payload.YMm));
+        FitElementInBand(band, element);
+        State.History.Push(new AddElementCommand(band, element));
+        State.SelectedElement = element;
+        State.ActiveBand = band;
+        return Task.CompletedTask;
+    }
+
+    private async Task OnMenuCommand(string id)
+    {
+        switch (id)
+        {
+            case "file.new": OnNewTab(); break;
+            case "file.save": await OnSave(); break;
+            case "file.saveas": await OnSave(); break;
+            // RDL export is a definition serializer, not a render exporter — handle it before the generic
+            // file.export.* case (which would look "rdl" up in the render registry and find nothing).
+            case "file.export.rdl": await OnExportRdl(); break;
+            // file.export.<format> — looks up the format in the registry and exports.
+            // The pattern is generic: any new exporter registered in DI becomes
+            // automatically available as a palette command via its Format slug, no
+            // case label needs adding here.
+            case var s when s.StartsWith("file.export.", StringComparison.OrdinalIgnoreCase):
+                {
+                    var format = s["file.export.".Length..];
+                    var registry = Services.GetService(typeof(Reporting.Designer.Blazor.Services.IExporterRegistry))
+                                   as Reporting.Designer.Blazor.Services.IExporterRegistry;
+                    var desc = registry?.Find(format);
+                    if (desc is not null)
+                    {
+                        await OnPreview();
+                        await OnExport(desc);
+                    }
+                    break;
+                }
+            case "file.print": await OnPreview(); await OnPrint(); break;
+            case "edit.undo": OnUndo(); break;
+            case "edit.redo": OnRedo(); break;
+            case "edit.cut": OnCut(); break;
+            case "edit.copy": OnCopy(); break;
+            case "edit.paste": OnPaste(); break;
+            case "edit.delete": OnDeleteSelected(); break;
+            case "edit.selectall":
+                State.SelectMany(State.Report.Bands.SelectMany(b => b.Elements));
+                break;
+            case "view.grid": State.GridVisible = !State.GridVisible; break;
+            case "view.snap": State.SnapToGrid = !State.SnapToGrid; break;
+            case "view.theme": await OnToggleTheme(); break;
+            case "view.zoomin": State.Zoom = Math.Min(4.0, State.Zoom + 0.1); break;
+            case "view.zoomout": State.Zoom = Math.Max(0.25, State.Zoom - 0.1); break;
+            case "view.zoom100": State.Zoom = 1.0; break;
+            case "view.preview": await OnPreview(); break;
+            case "insert.textbox": OnInsert(DesignerElementKind.TextBox); break;
+            case "insert.label": OnInsert(DesignerElementKind.Label); break;
+            case "insert.line": OnInsert(DesignerElementKind.Line); break;
+            case "insert.rectangle": OnInsert(DesignerElementKind.Rectangle); break;
+            case "insert.image": OnInsert(DesignerElementKind.Image); break;
+            case "insert.barcode": OnInsert(DesignerElementKind.Barcode); break;
+            case "report.pagesetup": _pageSetupOpen = true; break;
+            case "report.preview": await OnPreview(); break;
+            case "report.validate": await OnPreview(); break;  // preview surfaces compile errors
+            // RDL band properties dialog — opens for the currently active band, falling
+            // back to the Detail band when nothing is selected (the dialog itself adapts
+            // to the band kind).
+            case "report.bandprops":
+                {
+                    var target = State.ActiveBand ?? State.Report.FindBand(DesignerBandKind.Detail);
+                    if (target is not null) OpenBandProperties(target);
+                    break;
+                }
+            case "help.shortcuts": State.CommandPaletteOpen = true; break;
+            case "help.about": _aboutOpen = true; break;
+        }
+    }
+
+    private async Task OnPaletteCommand(string id)
+    {
+        State.CommandPaletteOpen = false;
+        switch (id)
+        {
+            case "new": OnNewTab(); break;
+            case "save": await OnSave(); break;
+            case "undo": OnUndo(); break;
+            case "redo": OnRedo(); break;
+            case "delete": OnDeleteSelected(); break;
+            case "preview": await OnPreview(); break;
+            case "theme": await OnToggleTheme(); break;
+            case "insert.text": OnInsert(DesignerElementKind.TextBox); break;
+            case "insert.label": OnInsert(DesignerElementKind.Label); break;
+            case "insert.rect": OnInsert(DesignerElementKind.Rectangle); break;
+            case "insert.line": OnInsert(DesignerElementKind.Line); break;
+            case "insert.img": OnInsert(DesignerElementKind.Image); break;
+        }
+    }
+
+    public sealed class GesturePayload
+    {
+        public string Kind { get; set; } = "";
+        public string ElementId { get; set; } = "";
+        public string BandKind { get; set; } = "";
+        public double XMm { get; set; }
+        public double YMm { get; set; }
+        public double WidthMm { get; set; }
+        public double HeightMm { get; set; }
+    }
+
+    public sealed class DropPayload
+    {
+        public string Kind { get; set; } = "";
+        public string BandKind { get; set; } = "";
+        public double XMm { get; set; }
+        public double YMm { get; set; }
+    }
+
+    public sealed class FieldDropPayload
+    {
+        public string FieldName { get; set; } = "";
+        public string BandKind { get; set; } = "";
+        public double XMm { get; set; }
+        public double YMm { get; set; }
+    }
+
+    public sealed class BandResizePayload
+    {
+        public string BandKind { get; set; } = "";
+        public double HeightMm { get; set; }
+    }
+
+    private IReadOnlyList<string> _previewDiagnostics = [];
+    private CancellationTokenSource? _previewCancellation;
+    private long _previewGeneration;
+    private ReportDefinitionViewModel? _visibleReport;
+    private DocumentTab? _visibleTab;
+    private void OnDesignerChanged()
+    {
+        if (!ReferenceEquals(_visibleTab, State.ActiveTab) || !ReferenceEquals(_visibleReport, State.Report))
+        {
+            _visibleTab = State.ActiveTab;
+            _visibleReport = State.Report;
+            _previewGeneration++;
+            _previewCancellation?.Cancel();
+            _paramPromptTcs?.TrySetResult(null);
+            _paramPromptOpen = false;
+            _printDialogOpen = false;
+            _previewDiagnostics = [];
+            _promptRegistry = null;
+            _previewPages = [];
+            _previewRendered = null;
+            _previewCurrentPage = 0;
+            _expressionEditorOpen = false;
+            _dsEditorOpen = false;
+        }
+        StateHasChanged();
+    }
+
+}

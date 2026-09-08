@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="..\Shared\ContinuousCanvasTests.cs" Link="ContinuousCanvasTests.cs" />
     <ProjectReference Include="..\..\src\Reporting.Rendering.Gdi\Reporting.Rendering.Gdi.csproj" />
     <ProjectReference Include="..\..\src\Reporting.Layout\Reporting.Layout.csproj" />
   </ItemGroup>

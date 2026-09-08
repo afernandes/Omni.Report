@@ -1,0 +1,146 @@
+[
+  {
+    "Pages": 1,
+    "TotalPages": false,
+    "Concurrency": 1,
+    "MedianMs": 6.4623,
+    "MedianAllocatedBytes": 669008,
+    "ObservedPrivateMax": 16084992,
+    "GdiRange": [
+      0,
+      0
+    ]
+  },
+  {
+    "Pages": 1,
+    "TotalPages": false,
+    "Concurrency": 5,
+    "MedianMs": 8.123,
+    "MedianAllocatedBytes": 2664416,
+    "ObservedPrivateMax": 17551360,
+    "GdiRange": [
+      0,
+      0
+    ]
+  },
+  {
+    "Pages": 1,
+    "TotalPages": true,
+    "Concurrency": 1,
+    "MedianMs": 6.6402,
+    "MedianAllocatedBytes": 1066272,
+    "ObservedPrivateMax": 19038208,
+    "GdiRange": [
+      0,
+      0
+    ]
+  },
+  {
+    "Pages": 1,
+    "TotalPages": true,
+    "Concurrency": 5,
+    "MedianMs": 8.4222,
+    "MedianAllocatedBytes": 4667064,
+    "ObservedPrivateMax": 19861504,
+    "GdiRange": [
+      0,
+      0
+    ]
+  },
+  {
+    "Pages": 10,
+    "TotalPages": false,
+    "Concurrency": 1,
+    "MedianMs": 13.5062,
+    "MedianAllocatedBytes": 4368176,
+    "ObservedPrivateMax": 27316224,
+    "GdiRange": [
+      0,
+      0
+    ]
+  },
+  {
+    "Pages": 10,
+    "TotalPages": false,
+    "Concurrency": 5,
+    "MedianMs": 20.5585,
+    "MedianAllocatedBytes": 22755864,
+    "ObservedPrivateMax": 36061184,
+    "GdiRange": [
+      0,
+      0
+    ]
+  },
+  {
+    "Pages": 10,
+    "TotalPages": true,
+    "Concurrency": 1,
+    "MedianMs": 14.5228,
+    "MedianAllocatedBytes": 8101440,
+    "ObservedPrivateMax": 36114432,
+    "GdiRange": [
+      0,
+      0
+    ]
+  },
+  {
+    "Pages": 10,
+    "TotalPages": true,
+    "Concurrency": 5,
+    "MedianMs": 37.7909,
+    "MedianAllocatedBytes": 43021944,
+    "ObservedPrivateMax": 40624128,
+    "GdiRange": [
+      0,
+      0
+    ]
+  },
+  {
+    "Pages": 100,
+    "TotalPages": false,
+    "Concurrency": 1,
+    "MedianMs": 71.0097,
+    "MedianAllocatedBytes": 41307208,
+    "ObservedPrivateMax": 50782208,
+    "GdiRange": [
+      0,
+      0
+    ]
+  },
+  {
+    "Pages": 100,
+    "TotalPages": false,
+    "Concurrency": 5,
+    "MedianMs": 279.0537,
+    "MedianAllocatedBytes": 224888920,
+    "ObservedPrivateMax": 81129472,
+    "GdiRange": [
+      0,
+      0
+    ]
+  },
+  {
+    "Pages": 100,
+    "TotalPages": true,
+    "Concurrency": 1,
+    "MedianMs": 140.6493,
+    "MedianAllocatedBytes": 78274440,
+    "ObservedPrivateMax": 57262080,
+    "GdiRange": [
+      0,
+      0
+    ]
+  },
+  {
+    "Pages": 100,
+    "TotalPages": true,
+    "Concurrency": 5,
+    "MedianMs": 346.811,
+    "MedianAllocatedBytes": 426936280,
+    "ObservedPrivateMax": 96174080,
+    "GdiRange": [
+      0,
+      0
+    ]
+  }
+]

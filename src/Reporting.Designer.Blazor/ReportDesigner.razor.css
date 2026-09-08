@@ -615,3 +615,6 @@
     border-bottom: 1px solid var(--border-soft);
 }
 ::deep .dlg-body table th { color: var(--text-tertiary); font-weight: 600; font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: var(--tracked); }
+
+.pagination-warning { padding: 12px 16px; background: #fff3cd; color: #664d03; border-bottom: 1px solid #b58105; }
+.pagination-warning p { margin: 4px 0; }

@@ -276,7 +276,7 @@ public sealed class JsonDataSource : IReportDataSource
         // %-on-int aren't surprised by float drift; fall back to double for fractions.
         if (el.TryGetInt32(out var i)) return i;
         if (el.TryGetInt64(out var l)) return l;
-        if (el.TryGetDouble(out var d)) return d;
+        if (el.TryGetDecimal(out var d)) return d;
         return el.GetRawText();
     }
 

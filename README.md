@@ -9,7 +9,7 @@
 [![RDL](https://img.shields.io/badge/RDL%20compat-~85%25-success)](docs/rdl-spec-compliance.md)
 
 **Motor profissional de relatórios bandados para .NET 10**, com **três modalidades de autoria**
-(code-first fluent, canvas low-level e designer visual Blazor — paridade total entre elas) e
+(code-first fluent, canvas low-level e designer visual Blazor) e
 pipeline de renderização pluggable (SkiaSharp, GDI/Windows, PDF vetorial, XLSX, **Word/.docx**,
 HTML/SVG/CSV/JSON/Markdown, ESC/POS térmico, Android Print Framework). Gráficos nativos
 (barras/linhas/pizza/área/dispersão/bolha/stock/radar), medidores KPI
@@ -21,6 +21,21 @@ SSRS** (~85% de conformidade) e tem round-trip próprio lossless (`.repx`/`.repj
 Equivalente em capacidade a Crystal Reports / SSRS / FastReport, original, MIT, com foco
 em cenários brasileiros (PDV, NFC-e, DANFE, ABNT NBR 5891). Veja a
 [comparação detalhada](docs/comparison.md) com o RDL oficial e outras engines.
+
+## Correções da auditoria F01–F27
+
+As correções e a evidência de validação estão em [correções F01–F27](docs/correcoes-f01-f27-2026-09-08.md).
+O designer mantém dados, parâmetros, histórico e preview por documento. Segredos exigem um resolver
+explicitamente autorizado pelo host; falhas de conexão retornam mensagens públicas sem detalhes do provedor.
+
+XLSX/CSV preservam valores escalares e identificadores. XLSX não deduz fórmulas pelo texto de totais;
+`EmitFormulas` exige opt-in e metadados explícitos. Decimais além da precisão numérica do Excel são
+exportados como texto. A inferência de JSON/XML usa `decimal` para valores fracionários.
+
+`GroupBand.FilterExpression`, `SortExpressions` e a garantia integral de `KeepTogether` ainda têm
+limitações: `RenderedReport.Diagnostics` emite `ORL024`, exibido pelo designer no preview. O host deve
+avaliar os diagnósticos antes de aceitar a saída. Isso não implica implementação integral dessas três propriedades.
+Subdetails aplicam filtro, ordenação e mensagem de ausência de linhas; variáveis têm avaliação por escopo e dependências.
 
 ## Galeria
 
@@ -89,7 +104,7 @@ graph TB
 
     subgraph Outputs["Output exporters"]
         Pdf[Reporting.Output.Pdf<br/>SkiaPdfExporter · vetorial nativo]
-        Xlsx[Reporting.Output.Excel<br/>ClosedXML · fórmulas =SUM]
+        Xlsx[Reporting.Output.Excel<br/>ClosedXML · valores tipados]
         Texto[Output.Svg · Html · Csv · Json · Markdown]
     end
 
@@ -213,7 +228,7 @@ var rendered = await report.PaginateAsync();
 new SkiaPdfExporter().ExportToFile(rendered, "vendas.pdf");
 ```
 
-Resultado: PDF vetorial com texto selecionável, fórmulas pt-BR (R$ 53,40), agrupado por cliente.
+Resultado: PDF vetorial com texto selecionável, formatação pt-BR (R$ 53,40), agrupado por cliente.
 
 ### Primeiro relatório no designer em 5 minutos
 
@@ -293,6 +308,53 @@ File.WriteAllBytes("cracha.png", ctx.GetPagePng(0));
 O **mesmo** código de desenho roda contra qualquer backend: troque `SkiaRenderingContext` por
 `SkiaPdfRenderingContext` (PDF vetorial) ou `RecordingRenderingContext` (→ XLSX) sem mudar uma
 linha. Guia completo em [`docs/low-level-canvas.md`](docs/low-level-canvas.md).
+
+### Exportação de imagens e orçamento de memória
+
+No canvas direto com papel `Thermal58`/`Thermal80`, os contextos PDF, Skia raster e
+GDI independente gravam o desenho e calculam a altura em `EndPage`, considerando
+recortes e margem inferior. `ContinuousPageOptions` permite limitar a altura
+(padrão 10.000 mm), o raster por página (16 milhões de pixels) e as chamadas de
+desenho/abertura de recorte (100 mil). Use `new SkiaRenderingContext(limits, dpi: 203)`,
+`new GdiRenderingContext(dpi: 203, continuousOptions: limits)` ou a sobrecarga de
+`SkiaPdfRenderingContext` com `continuousOptions`. Esses limites não abrangem toda
+a memória do host, imagens decodificadas ou concorrência. Veja os contratos e a
+validação da [correção F13](docs/correcao-f13-2026-09-07.md).
+
+`PngImageExporter.Export` produz um PNG vertical com todas as páginas. O limite padrão é
+**16 milhões de pixels no raster completo** (aproximadamente 61 MiB de pixels RGBA,
+além dos recursos do encoder e das primitivas). Imagens maiores são rejeitadas antes
+da alocação e da escrita. Para relatórios extensos, grave uma página por vez:
+
+```csharp
+using System.IO.Compression;
+using Reporting.Output.Image;
+
+using var arquivo = File.Create("relatorio.zip");
+using var zip = new ZipArchive(arquivo, ZipArchiveMode.Create);
+new PngImageExporter().ExportPages(renderedReport,
+    pagina => zip.CreateEntry($"pagina-{pagina:D4}.png").Open(), cancellationToken);
+```
+
+`ExportPages` assume a propriedade de cada stream retornado pela fábrica e o descarta
+antes de abrir o próximo, inclusive em falhas. Arquivos parciais ficam sob responsabilidade
+do consumidor. `RenderPages` continua disponível, mas retém todos os PNGs codificados em memória.
+Para permitir um PNG vertical maior, use o construtor com
+`new ImageRasterizationOptions { MaxRasterPixels = 32_000_000 }`; avalie o orçamento do host
+antes de aumentá-lo. `TiffImageExporter` usa o mesmo limite **por página**, grava diretamente
+em streams inclusive sem seek e rejeita arquivos que excedam os offsets de 32 bits do TIFF.
+Os métodos `Export` e `ExportAsync` deixam o destino aberto. `ExportAsync` executa o encoder
+sincronamente; observa cancelamento entre primitivas e, no TIFF, entre linhas de pixels.
+O host deve limitar a concorrência e o armazenamento dos destinos: o limite de raster
+não é um teto da memória total do processo.
+
+Nos grupos aninhados, cada nível acumula suas próprias linhas. O escopo `'Group'` em um
+cabeçalho/rodapé corresponde àquela banda; no detalhe, ao grupo mais interno. Um nome
+explícito, como `Sum(Fields.Total, 'PorCliente')`, consulta o grupo aberto correspondente,
+inclusive em `RunningValue`, `CountRows`, `RowNumber` e `Previous`. Nomes desconhecidos
+são rejeitados pelo contexto padrão. `Report`, `Group`, `Page` e `Running` permanecem
+reservados aos escopos predefinidos. Os acumuladores de grupo são incrementais: um
+cabeçalho inicial vê as linhas já processadas, e o rodapé vê todas as linhas da instância.
 
 ### Hospedando em ASP.NET Core / Blazor / MAUI
 

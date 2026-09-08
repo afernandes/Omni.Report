@@ -101,7 +101,7 @@ public class XmlDataSourceTests
     }
 
     [Fact]
-    public async Task Numeric_text_values_coerce_to_double()
+    public async Task ReadAsync_TextoDecimal_PreservaDecimal()
     {
         var ds = new XmlDataSource("Test", new XmlDataSourceOptions
         {
@@ -110,7 +110,7 @@ public class XmlDataSourceTests
             Discovery = XmlColumnDiscovery.Elements,
         });
         _ = await ds.ReadAsync().ToListAsync();
-        ds.Schema.Fields.First(f => f.Name == "total").Type.Should().Be(typeof(double));
+        ds.Schema.Fields.First(f => f.Name == "total").Type.Should().Be(typeof(decimal));
     }
 
     [Fact]

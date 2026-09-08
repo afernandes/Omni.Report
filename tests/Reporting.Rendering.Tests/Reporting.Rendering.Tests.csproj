@@ -7,6 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="..\Shared\ContinuousCanvasTests.cs" Link="ContinuousCanvasTests.cs" />
     <ProjectReference Include="..\..\src\Reporting.Layout\Reporting.Layout.csproj" />
     <ProjectReference Include="..\..\src\Reporting.Rendering.Skia\Reporting.Rendering.Skia.csproj" />
   </ItemGroup>

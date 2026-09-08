@@ -12,6 +12,26 @@ gravar `.rdl` — e a regra de que toda feature chega igual nos **três modos de
 API de baixo nível e Designer), com serialização e testes junto. As entradas abaixo são agrupadas por
 área em vez de uma por commit; o número entre parênteses é o PR.
 
+### Correções da auditoria F01–F27 (2026-09-08)
+
+- Segurança: resolução de segredos negada por padrão; erros públicos de dados sem detalhes do provedor;
+  política de protocolos para links HTML; assemblies Roslyn coletáveis com descarte explícito.
+- Dados e paginação: vínculos master-detail imutáveis, inferência decimal, cancelamento propagado,
+  snapshot compartilhado com subrelatórios, ordenação estável e detecção de total de páginas em conteúdo aninhado.
+- Expressões: variáveis de relatório/grupo/linha avaliadas por dependências, caches limitados e
+  acumulação incremental de Sum/RunningTotal/Avg/Count para expressões puras de campos e constantes.
+- XLSX/CSV: preservação do valor escalar; remoção da inferência de fórmulas por rótulos; fórmulas explícitas sob opt-in.
+- Designer: estado por documento, evento de dirty reanexado na troca de relatório, edição por histórico,
+  restauração da ordem no undo e proteção contra preview assíncrono de um documento anterior.
+- Impressão: seleção de páginas, cópias ESC/POS, ownership do transporte, descarte ADO.NET em falha e
+  compilação real Android com gate próprio no CI.
+- F24: filtro/ordenação/NoRows em subdetails e variáveis de grupo implementados; propriedades de grupo
+  ainda sem suporte integral geram diagnóstico `ORL024` no resultado e aviso no designer.
+- Mantidas as correções anteriores de progresso de paginação, exportação raster, totais de grupos,
+  canvas contínuo e replay de primitivas (F01/F03/F04/F13/F15).
+
+Detalhes, migrações de contrato, medições e limites: [correções F01–F27](docs/correcoes-f01-f27-2026-09-08.md).
+
 ### Added
 
 **Interoperabilidade RDL/SSRS**
@@ -138,6 +158,27 @@ API de baixo nível e Designer), com serialização e testes junto. As entradas 
 - Cinco `catch` nus em `Layout` passaram a filtrar por tipo, em vez de mascarar bugs reais. (#220)
 
 ### Fixed
+
+- **F13 — canvas em papel contínuo:** PDF, raster Skia e raster GDI calculam a altura
+  a partir dos desenhos e recortes, incluindo texto, traços e margem inferior.
+  O bitmap é alocado no fim da página, com limites configuráveis de altura, pixels
+  e operações em `ContinuousPageOptions`. O PDF composto do raster respeita o DPI,
+  e o texto gravado pelo GDI mantém sua escala física.
+
+- **F15 — fidelidade da impressão:** ESC/POS e Windows Spooler usam o player comum
+  das seis primitivas, incluindo polígonos e recortes retangulares/arredondados.
+  O estado de recorte e da página é restaurado também em falhas; primitivas
+  desconhecidas deixam de ser omitidas silenciosamente. ESC/POS mantém seu raster
+  a 203 DPI, sem codificação PNG intermediária; o spooler mantém saída vetorial GDI.
+
+- **F03 — memória de imagens:** PNG vertical passa a rejeitar rasters acima de 16 milhões
+  de pixels antes da alocação, com limite configurável em `ImageRasterizationOptions`.
+  Novo `PngImageExporter.ExportPages` grava e libera uma página por vez. TIFF grava
+  progressivamente em streams sem seek, sem buffers RGB de todas as páginas nem cópia
+  completa do arquivo. Dimensões, offsets, cancelamento e descarte passam a ser verificados.
+- **F04 — totais de grupos aninhados:** fechar um grupo interno preserva os acumuladores
+  externos. Cabeçalhos repetidos e rodapés usam o próprio escopo e `GroupKey`; agregações
+  e funções posicionais aceitam o nome explícito de um grupo aberto.
 
 - **`ReportPaginator` singleton vazava estado entre requisições concorrentes**, corrompendo headers
   e código entre relatórios servidos ao mesmo tempo. (#216)

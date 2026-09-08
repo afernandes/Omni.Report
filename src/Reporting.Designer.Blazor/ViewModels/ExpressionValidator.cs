@@ -63,7 +63,10 @@ public static class ExpressionValidator
                 }
                 return "Fechamento '}' sem abertura correspondente.";
             }
-            else i++;
+            else
+            {
+                i++;
+            }
         }
 
         // No placeholders found? The whole template is treated as a single expression by
@@ -167,7 +170,10 @@ public static class ExpressionValidator
         var depth = 1;
         for (var i = from; i < s.Length; i++)
         {
-            if (s[i] == '{') depth++;
+            if (s[i] == '{')
+            {
+                depth++;
+            }
             else if (s[i] == '}')
             {
                 depth--;

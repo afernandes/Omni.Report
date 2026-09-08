@@ -29,16 +29,27 @@ public sealed class ExpressionEvaluator
     public object? Evaluate(string expression, IReportExpressionContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
+        var cancellationToken = (context as ReportExpressionContext)?.CancellationToken ?? default;
+        cancellationToken.ThrowIfCancellationRequested();
         var expr = _compiler.Compile(expression);
         Bind(expr, context);
         try
         {
-            return expr.Evaluate();
+            var result = expr.Evaluate();
+            cancellationToken.ThrowIfCancellationRequested();
+            return result;
         }
-        catch (Exception ex) when (ex is not ExpressionParseException)
+        catch (Exception ex) when (ex is not ExpressionParseException and not OperationCanceledException)
         {
             throw new ExpressionEvaluationException(expression, ex);
         }
+    }
+
+    internal bool IsRowOnlyExpression(string expression)
+    {
+        try { return RowOnlyExpression.IsEligible(_compiler.Compile(expression).LogicalExpression!); }
+        catch (ExpressionParseException) { return false; }
+        catch (ArgumentException) { return false; }
     }
 
     /// <summary>Evaluates an expression and coerces the result to <typeparamref name="T"/>.</summary>
@@ -203,10 +214,8 @@ public sealed class ExpressionEvaluator
             {
                 innerFunc = "Sum"; // unrecognised inner function → Sum (RunningValue's most common form)
             }
-            var rvScope = args.Parameters.Count >= 3
-                ? ParseScope(args.Parameters.Evaluate(2))
-                : AggregateScope.Running;
-            result = context.EvaluateAggregate(innerFunc, rvExpr, rvScope);
+            var rvScope = args.Parameters.Count >= 3 ? args.Parameters.Evaluate(2) : "Running";
+            result = EvaluateScoped(context, innerFunc, rvExpr, rvScope, positional: false);
             return true;
         }
 
@@ -220,13 +229,13 @@ public sealed class ExpressionEvaluator
         }
         // The first argument is the expression text (we re-extract it from the AST).
         var expressionText = ExtractRawExpression(args.Parameters[0]);
-        var scope = AggregateScope.Report;
+        object? scope = null;
         if (args.Parameters.Count >= 2)
         {
             var scopeValue = args.Parameters.Evaluate(1);
-            scope = ParseScope(scopeValue);
+            scope = scopeValue;
         }
-        result = context.EvaluateAggregate(name, expressionText, scope);
+        result = EvaluateScoped(context, name, expressionText, scope, positional: false);
         return true;
     }
 
@@ -298,8 +307,8 @@ public sealed class ExpressionEvaluator
         if (string.Equals(name, "RowNumber", StringComparison.OrdinalIgnoreCase)
             || string.Equals(name, "CountRows", StringComparison.OrdinalIgnoreCase))
         {
-            var scope = args.Parameters.Count >= 1 ? ParseScope(args.Parameters.Evaluate(0)) : AggregateScope.Report;
-            result = context.EvaluatePositional(name, string.Empty, scope);
+            var scope = args.Parameters.Count >= 1 ? args.Parameters.Evaluate(0) : null;
+            result = EvaluateScoped(context, name, string.Empty, scope, positional: true);
             return true;
         }
         if (string.Equals(name, "Previous", StringComparison.OrdinalIgnoreCase))
@@ -309,8 +318,8 @@ public sealed class ExpressionEvaluator
                 return false;
             }
             var expr = ExtractRawExpression(args.Parameters[0]);
-            var scope = args.Parameters.Count >= 2 ? ParseScope(args.Parameters.Evaluate(1)) : AggregateScope.Report;
-            result = context.EvaluatePositional("Previous", expr, scope);
+            var scope = args.Parameters.Count >= 2 ? args.Parameters.Evaluate(1) : null;
+            result = EvaluateScoped(context, "Previous", expr, scope, positional: true);
             return true;
         }
         return false;
@@ -701,6 +710,25 @@ public sealed class ExpressionEvaluator
         }
     }
 
+    private static object? EvaluateScoped(IReportExpressionContext context, string function,
+        string expression, object? value, bool positional)
+    {
+        var text = Convert.ToString(value, CultureInfo.InvariantCulture);
+        if (!string.IsNullOrEmpty(text)
+            && !string.Equals(text, "Report", StringComparison.OrdinalIgnoreCase)
+            && !string.Equals(text, "Group", StringComparison.OrdinalIgnoreCase)
+            && !string.Equals(text, "Page", StringComparison.OrdinalIgnoreCase)
+            && !string.Equals(text, "Running", StringComparison.OrdinalIgnoreCase)
+            && context is INamedGroupExpressionContext named)
+        {
+            return positional ? named.EvaluateGroupPositional(function, expression, text)
+                : named.EvaluateGroupAggregate(function, expression, text);
+        }
+        var scope = ParseScope(value);
+        return positional ? context.EvaluatePositional(function, expression, scope)
+            : context.EvaluateAggregate(function, expression, scope);
+    }
+
     private static AggregateScope ParseScope(object? value)
     {
         if (value is null)
@@ -708,11 +736,11 @@ public sealed class ExpressionEvaluator
             return AggregateScope.Report;
         }
         var text = Convert.ToString(value, CultureInfo.InvariantCulture);
-        return text switch
+        return text?.ToUpperInvariant() switch
         {
-            "Group" or "group" => AggregateScope.Group,
-            "Page" or "page" => AggregateScope.Page,
-            "Running" or "running" => AggregateScope.Running,
+            "GROUP" => AggregateScope.Group,
+            "PAGE" => AggregateScope.Page,
+            "RUNNING" => AggregateScope.Running,
             _ => AggregateScope.Report,
         };
     }
@@ -723,7 +751,7 @@ public sealed class ExpressionEvaluator
         // serializes it back to its source text (the SerializationVisitor); for Identifier/Bracket
         // nodes that's the bracketed name, e.g. "[Fields.Total]" → "Fields.Total".
         var text = expression.ToExpressionString();
-        return text.Trim('[', ']');
+        return expression is Identifier identifier ? identifier.Name : text;
     }
 
     private static readonly HashSet<string> AggregateNames =

@@ -33,7 +33,7 @@ public class ExcelExporterTests
     }
 
     [Fact]
-    public async Task Sample03_caixa_emits_sum_formulas_for_subtotal_rows()
+    public async Task Export_TotalCalculado_NaoInfereFormulasPeloRotulo()
     {
         var rendered = await Sample03_RelatorioCaixa.Build().PaginateAsync();
         var bytes = new ExcelExporter().ExportToBytes(rendered);
@@ -44,8 +44,7 @@ public class ExcelExporterTests
 
         // Walk every cell looking for SUM formulas; the caixa report has 4 group subtotals + total
         var formulaCells = ws.CellsUsed(c => c.HasFormula).Select(c => c.FormulaA1).ToList();
-        formulaCells.Should().NotBeEmpty(because: "Subtotal/Total rows must be live SUM formulas");
-        formulaCells.Should().Contain(f => f.Contains("SUM(", StringComparison.OrdinalIgnoreCase));
+        formulaCells.Should().BeEmpty("o valor calculado pelo motor deve ser preservado");
     }
 
     [Fact]

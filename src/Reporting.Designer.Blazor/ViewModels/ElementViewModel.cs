@@ -1241,7 +1241,7 @@ public sealed class ElementViewModel : Notifying
     /// <see cref="ToElement"/>. Used by <see cref="FromElement"/> on load and by
     /// <see cref="ApplyMetaSet"/> to push a metadata-driven change back in place. Mutable collections are
     /// cleared first so re-loading stays idempotent (no duplicated rows).</summary>
-    private void LoadFrom(ReportElement element)
+    internal void LoadFrom(ReportElement element)
     {
         ConditionalFormats.Clear();
         ChartSeries.Clear();

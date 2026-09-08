@@ -156,8 +156,8 @@ public sealed class AdoNetDataSource : IReportDataSource
         {
             if (ownsConnection)
             {
-                await connection.CloseAsync().ConfigureAwait(false);
-                await connection.DisposeAsync().ConfigureAwait(false);
+                try { await connection.CloseAsync().ConfigureAwait(false); }
+                finally { await connection.DisposeAsync().ConfigureAwait(false); }
             }
         }
     }

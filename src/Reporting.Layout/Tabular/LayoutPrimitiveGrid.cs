@@ -20,20 +20,6 @@ public enum RowKind
     Total,
 }
 
-/// <summary>One row in a <see cref="LayoutPrimitiveGrid"/>, addressed by column index.</summary>
-public sealed class GridRow
-{
-    /// <summary>Cell text keyed by column index. Sparse — missing keys = blank cells.</summary>
-    public Dictionary<int, string> Cells { get; } = new();
-
-    /// <summary>The absolute Y coordinate (across pages) of the source text cluster — used by
-    /// the quantizer for clustering, exposed for ordering / debugging.</summary>
-    public Unit Y { get; set; }
-
-    /// <summary>Row classification — drives header bold, total formulas, group header color etc.</summary>
-    public RowKind Kind { get; set; } = RowKind.Detail;
-}
-
 /// <summary>
 /// A 2D grid reconstructed from a <see cref="RenderedReport"/>'s <see cref="DrawTextPrimitive"/>s
 /// by clustering their X / Y coordinates into columns and rows. This is the cell-based
@@ -79,7 +65,7 @@ public sealed partial class LayoutPrimitiveGrid
         var grid = new LayoutPrimitiveGrid();
 
         // Phase 1: collect all non-empty text primitives with absolute Y (across pages).
-        var entries = new List<(Unit Y, Unit X, string Text)>();
+        var entries = new List<(Unit Y, Unit X, string Text, DrawTextPrimitive Source)>();
         Unit pageOffset = Unit.Zero;
         foreach (var page in report.Pages)
         {
@@ -96,7 +82,7 @@ public sealed partial class LayoutPrimitiveGrid
                 {
                     continue;
                 }
-                entries.Add((text.Bounds.Y + pageOffset, text.Bounds.X, text.Text));
+                entries.Add((text.Bounds.Y + pageOffset, text.Bounds.X, text.Text, text));
             }
             pageOffset += page.PageSetup.PageHeight;
         }
@@ -118,6 +104,7 @@ public sealed partial class LayoutPrimitiveGrid
             }
             int colIndex = AssignColumn(grid, entry.X);
             row.Cells[colIndex] = entry.Text;
+            row.Sources[colIndex] = entry.Source;
         }
 
         ClassifyRows(grid);
@@ -146,6 +133,9 @@ public sealed partial class LayoutPrimitiveGrid
         {
             foreach (var row in grid.Rows)
             {
+                var sources = row.Sources.ToArray();
+                row.Sources.Clear();
+                foreach (var kv in sources) row.Sources[kv.Key >= insert ? kv.Key + 1 : kv.Key] = kv.Value;
                 var shifted = new Dictionary<int, string>();
                 foreach (var kv in row.Cells)
                 {
@@ -198,13 +188,18 @@ public sealed partial class LayoutPrimitiveGrid
         var cleaned = text.Replace("R$", "", StringComparison.Ordinal)
                           .Replace(" ", "", StringComparison.Ordinal)
                           .Trim();
-        if (decimal.TryParse(cleaned, NumberStyles.Any, CultureInfo.GetCultureInfo("pt-BR"), out var v1))
+        var digits = cleaned.TrimStart('-', '+');
+        if (digits.Length > 1 && digits[0] == '0' && char.IsDigit(digits[1])) return null;
+        if (cleaned.Contains(',') && cleaned.Contains('.'))
         {
-            return v1;
+            if (!text.Contains("R$", StringComparison.Ordinal)) return null;
+            cleaned = cleaned.Replace(".", "", StringComparison.Ordinal);
         }
-        if (decimal.TryParse(cleaned, NumberStyles.Any, CultureInfo.InvariantCulture, out var v2))
+        cleaned = cleaned.Replace(',', '.');
+        if (decimal.TryParse(cleaned, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint,
+            CultureInfo.InvariantCulture, out var value))
         {
-            return v2;
+            return value;
         }
         return null;
     }

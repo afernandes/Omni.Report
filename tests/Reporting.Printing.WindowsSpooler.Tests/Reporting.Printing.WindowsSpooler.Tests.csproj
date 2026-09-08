@@ -22,4 +22,8 @@
     <PackageReference Include="PdfPig" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="../Shared/PrintingReplayFixture.cs" Link="PrintingReplayFixture.cs" />
+    <Compile Include="../Shared/UnsupportedPrintPrimitive.cs" Link="UnsupportedPrintPrimitive.cs" />
+  </ItemGroup>
 </Project>

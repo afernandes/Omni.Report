@@ -79,6 +79,9 @@ public sealed class WindowsSpoolerPrinter : IReportPrinter
         ArgumentException.ThrowIfNullOrWhiteSpace(options.PrinterName);
         cancellationToken.ThrowIfCancellationRequested();
 
+        var selected = PrintPageSelection.Enumerate(report.Pages.Count, options, includeCopies: false).ToArray();
+        if (selected.Length == 0) return Task.FromResult(new PrintResult(true, 0));
+
         try
         {
             using var document = new PrintDocument
@@ -113,12 +116,8 @@ public sealed class WindowsSpoolerPrinter : IReportPrinter
             }
 
             // Page range
-            if (options.PageRange is not null)
-            {
-                document.PrinterSettings.PrintRange = PrintRange.SomePages;
-                document.PrinterSettings.FromPage = options.PageRange.Value.From;
-                document.PrinterSettings.ToPage = options.PageRange.Value.To;
-            }
+            // Pages are selected by the callback; the driver receives the resulting complete job.
+            document.PrinterSettings.PrintRange = PrintRange.AllPages;
 
             // PrintToFile (Microsoft Print to PDF / XPS Document Writer)
             if (!string.IsNullOrEmpty(options.OutputFile))
@@ -148,25 +147,26 @@ public sealed class WindowsSpoolerPrinter : IReportPrinter
 
             document.QueryPageSettings += (_, qe) =>
             {
-                if (pageIndex < report.Pages.Count)
+                if (pageIndex < selected.Length)
                 {
-                    ApplyPageSettings(qe.PageSettings, report.Pages[pageIndex].PageSetup, options.PaperSize);
+                    ApplyPageSettings(qe.PageSettings, report.Pages[selected[pageIndex]].PageSetup, options.PaperSize);
                 }
             };
 
             document.PrintPage += (_, pe) =>
             {
-                if (pageIndex >= report.Pages.Count)
+                cancellationToken.ThrowIfCancellationRequested();
+                if (pageIndex >= selected.Length)
                 {
                     pe.HasMorePages = false;
                     return;
                 }
-                var page = report.Pages[pageIndex];
+                var page = report.Pages[selected[pageIndex]];
                 using var ctx = new GdiRenderingContext(pe.Graphics!);
-                ReplayPage(ctx, page);
+                RenderedReportPlayer.PlayPage(page, ctx);
                 pageIndex++;
                 pagesPrinted++;
-                pe.HasMorePages = pageIndex < report.Pages.Count;
+                pe.HasMorePages = pageIndex < selected.Length;
             };
 
             document.Print();
@@ -183,46 +183,6 @@ public sealed class WindowsSpoolerPrinter : IReportPrinter
                 PagesPrinted: 0,
                 ErrorMessage: ex.Message,
                 Exception: ex));
-        }
-    }
-
-    private static void ReplayPage(GdiRenderingContext ctx, RenderedPage page)
-    {
-        ctx.BeginPage(page.PageSetup);
-        foreach (var primitive in page.Primitives)
-        {
-            Replay(ctx, primitive);
-        }
-        ctx.EndPage();
-    }
-
-    private static void Replay(IRenderingContext ctx, LayoutPrimitive primitive)
-    {
-        switch (primitive)
-        {
-            case DrawTextPrimitive t:
-                ctx.DrawText(t.Text, t.Bounds, t.Style);
-                break;
-            case DrawLinePrimitive l:
-                ctx.DrawLine(l.From, l.To, l.Pen);
-                break;
-            case DrawRectanglePrimitive r:
-                ctx.DrawRectangle(r.Bounds, r.Pen, r.Fill);
-                break;
-            case DrawEllipsePrimitive e:
-                ctx.DrawEllipse(e.Bounds, e.Pen, e.Fill);
-                break;
-            case DrawImagePrimitive i:
-                if (i.Data.Count > 0)
-                {
-                    var copy = new byte[i.Data.Count];
-                    for (int k = 0; k < copy.Length; k++)
-                    {
-                        copy[k] = i.Data[k];
-                    }
-                    ctx.DrawImage(copy, i.Bounds, i.Sizing);
-                }
-                break;
         }
     }
 

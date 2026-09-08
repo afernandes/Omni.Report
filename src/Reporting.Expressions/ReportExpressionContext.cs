@@ -1,3 +1,5 @@
+using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
 using System.Globalization;
 using Reporting.Aggregates;
 
@@ -8,11 +10,19 @@ namespace Reporting.Expressions;
 /// current row, plus all rows of the current group and report scope so that <see cref="EvaluateAggregate"/>
 /// can compute sums/averages/etc. without re-walking the data source.
 /// </summary>
-public sealed class ReportExpressionContext : IReportExpressionContext
+public sealed class ReportExpressionContext : IReportExpressionContext, INamedGroupExpressionContext
 {
     private readonly ExpressionEvaluator _evaluator;
+    private readonly BoundedCache<string, bool> _aggregateEligibility = new(256, StringComparer.Ordinal);
+    private readonly ConditionalWeakTable<List<DictionaryLookup>, Dictionary<string, FieldAggregateAccumulator>> _fieldAggregates = new();
+    /// <summary>Cancellation for row processing, aggregates and lookups within this execution.</summary>
+    public CancellationToken CancellationToken { get; set; }
+
     private readonly List<DictionaryLookup> _reportRows = [];
     private readonly List<DictionaryLookup> _groupRows = [];
+    private readonly List<GroupExpressionScope> _groups = [];
+    private GroupExpressionScope? _selectedGroup;
+    private List<DictionaryLookup> CurrentGroupRows => (_selectedGroup ?? _groups.LastOrDefault())?.Rows ?? _groupRows;
     private readonly List<DictionaryLookup> _pageRows = [];
     /// <summary>When set, supersedes <see cref="_reportRows"/> for <see cref="AggregateScope.Report"/>
     /// so report-scoped aggregates yield the dataset grand total in <em>any</em> band — including
@@ -43,7 +53,8 @@ public sealed class ReportExpressionContext : IReportExpressionContext
         Culture = culture ?? CultureInfo.GetCultureInfo("pt-BR");
         ParametersStore = new DictionaryLookup();
         VariablesStore = new DictionaryLookup();
-        Now = DateTime.Now;
+        Variables = new LayeredVariableLookup(VariableStores);
+        Now = DateTimeOffset.UtcNow.UtcDateTime;
         UserName = Environment.UserName ?? "anonymous";
     }
 
@@ -61,7 +72,18 @@ public sealed class ReportExpressionContext : IReportExpressionContext
     public IValueLookup Parameters => ParametersStore;
 
     /// <summary>Read-only view of <see cref="VariablesStore"/>.</summary>
-    public IValueLookup Variables => VariablesStore;
+    public IValueLookup Variables { get; }
+
+    /// <summary>Stores a variable in the selected group instance, isolated from ancestors and later groups.</summary>
+    public void SetGroupVariable(string name, object? value)
+        => (_selectedGroup ?? _groups.LastOrDefault() ?? throw new InvalidOperationException("No active group.")).Variables.Set(name, value);
+
+    private IEnumerable<DictionaryLookup> VariableStores()
+    {
+        int last = _selectedGroup is null ? _groups.Count - 1 : _groups.IndexOf(_selectedGroup);
+        for (int index = last; index >= 0; index--) yield return _groups[index].Variables;
+        yield return VariablesStore;
+    }
 
     /// <summary>Key of the group instance being rendered, or null outside a group.</summary>
     public object? GroupKey { get; set; }
@@ -106,7 +128,14 @@ public sealed class ReportExpressionContext : IReportExpressionContext
             snapshot.Set(kv.Key, kv.Value);
         }
         _reportRows.Add(snapshot);
-        _groupRows.Add(snapshot);
+        if (_groups.Count == 0)
+        {
+            _groupRows.Add(snapshot);
+        }
+        else
+        {
+            foreach (var group in _groups) group.Rows.Add(snapshot);
+        }
         _pageRows.Add(snapshot);
     }
 
@@ -127,16 +156,75 @@ public sealed class ReportExpressionContext : IReportExpressionContext
     }
 
     /// <summary>Resets the group accumulator (called on group boundary).</summary>
-    public void ResetGroup() => _groupRows.Clear();
+    public void ResetGroup() { _fieldAggregates.Remove(CurrentGroupRows); CurrentGroupRows.Clear(); }
+
+    /// <summary>Opens an empty nested group before its first row is committed.</summary>
+    public void BeginGroup(string name, object? key)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+        _groups.Add(new GroupExpressionScope(name, key));
+        _selectedGroup = null;
+        GroupKey = key;
+    }
+
+    /// <summary>Closes only the innermost group, preserving its ancestors' accumulated rows.</summary>
+    public void EndGroup()
+    {
+        if (_groups.Count == 0) throw new InvalidOperationException("Não há grupo aberto para encerrar.");
+        _groups.RemoveAt(_groups.Count - 1);
+        _selectedGroup = null;
+        GroupKey = _groups.LastOrDefault()?.Key;
+        _groupRows.Clear();
+    }
+
+    /// <summary>Temporarily selects a group's rows and key for rendering its header or footer.
+    /// Dispose the returned selection before opening or closing groups.</summary>
+    public IDisposable UseGroup(string name)
+    {
+        var group = _groups.LastOrDefault(g => string.Equals(g.Name, name, StringComparison.OrdinalIgnoreCase))
+            ?? throw new ArgumentException($"O grupo '{name}' não está aberto.", nameof(name));
+        return SelectGroup(group);
+    }
+
+    /// <summary>Temporarily selects an open group by zero-based nesting depth, outermost first.
+    /// This identifies a band's scope even when definitions reuse the same group name.</summary>
+    public IDisposable UseGroup(int depth) => SelectGroup(_groups[depth]);
+
+    private IDisposable SelectGroup(GroupExpressionScope group)
+    {
+        var previous = _selectedGroup;
+        var previousKey = GroupKey;
+        _selectedGroup = group;
+        GroupKey = group.Key;
+        return new GroupScopeSelection(() => { _selectedGroup = previous; GroupKey = previousKey; });
+    }
+
+    /// <inheritdoc/>
+    public object? EvaluateGroupAggregate(string function, string expression, string groupName)
+    {
+        using var selection = UseGroup(groupName);
+        return EvaluateAggregate(function, expression, AggregateScope.Group);
+    }
+
+    /// <inheritdoc/>
+    public object? EvaluateGroupPositional(string function, string expression, string groupName)
+    {
+        using var selection = UseGroup(groupName);
+        return EvaluatePositional(function, expression, AggregateScope.Group);
+    }
 
     /// <summary>Resets the page accumulator (called on page break).</summary>
-    public void ResetPage() => _pageRows.Clear();
+    public void ResetPage() { _fieldAggregates.Remove(_pageRows); _pageRows.Clear(); }
 
     /// <summary>Resets all accumulators (called when re-running the report for two-pass paging).</summary>
     public void ResetAll()
     {
+        _fieldAggregates.Clear();
         _reportRows.Clear();
         _groupRows.Clear();
+        _groups.Clear();
+        _selectedGroup = null;
+        GroupKey = null;
         _pageRows.Clear();
         _reportScopeOverride = null;
         foreach (var key in _fieldsLookup.Keys.ToArray())
@@ -288,11 +376,25 @@ public sealed class ReportExpressionContext : IReportExpressionContext
         var rows = scope switch
         {
             AggregateScope.Report => _reportScopeOverride ?? _reportRows,
-            AggregateScope.Group => _groupRows,
+            AggregateScope.Group => CurrentGroupRows,
             AggregateScope.Page => _pageRows,
-            AggregateScope.Running => _groupRows,
+            AggregateScope.Running => CurrentGroupRows,
             _ => _reportScopeOverride ?? _reportRows,
         };
+        CancellationToken.ThrowIfCancellationRequested();
+        var field = Regex.Match(expression, @"^Fields[!.](?<name>[\p{L}_][\p{L}\p{N}_]*)$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        if ((field.Success || _aggregateEligibility.GetOrAdd(expression, _evaluator.IsRowOnlyExpression)) && function.ToUpperInvariant() is "SUM" or "RUNNINGTOTAL" or "AVG" or "AVERAGE" or "COUNT")
+        {
+            var cache = _fieldAggregates.GetValue(rows, _ => new(StringComparer.Ordinal));
+            string key = function.ToUpperInvariant() + ":" + expression;
+            if (!cache.TryGetValue(key, out var accumulator))
+            {
+                if (cache.Count >= 256) cache.Clear();
+                cache[key] = accumulator = new FieldAggregateAccumulator();
+            }
+            accumulator.Append(rows, expression, field.Success ? field.Groups["name"].Value : null, function.Equals("COUNT", StringComparison.OrdinalIgnoreCase), _evaluator, this);
+            return accumulator.Value(function);
+        }
         return AggregateCalculator.Calculate(function, expression, rows, _evaluator, this);
     }
 
@@ -318,7 +420,7 @@ public sealed class ReportExpressionContext : IReportExpressionContext
     // Complete scope rows (Report uses the primed override) — mirrors EvaluateAggregate's selection.
     private List<DictionaryLookup> ScopeRows(AggregateScope scope) => scope switch
     {
-        AggregateScope.Group or AggregateScope.Running => _groupRows,
+        AggregateScope.Group or AggregateScope.Running => CurrentGroupRows,
         AggregateScope.Page => _pageRows,
         _ => _reportScopeOverride ?? _reportRows,
     };
@@ -326,7 +428,7 @@ public sealed class ReportExpressionContext : IReportExpressionContext
     // Incremental list for positional functions — its Count is the current 1-based position in the scope.
     private List<DictionaryLookup> PositionList(AggregateScope scope) => scope switch
     {
-        AggregateScope.Group or AggregateScope.Running => _groupRows,
+        AggregateScope.Group or AggregateScope.Running => CurrentGroupRows,
         AggregateScope.Page => _pageRows,
         _ => _reportRows,
     };

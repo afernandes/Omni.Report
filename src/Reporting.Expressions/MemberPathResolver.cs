@@ -8,7 +8,7 @@ namespace Reporting.Expressions;
 /// as a compiled accessor for repeated row evaluations.</summary>
 internal static class MemberPathResolver
 {
-    private static readonly ConcurrentDictionary<(Type, string), Func<object, object?>?> _cache = new();
+    private static readonly BoundedCache<(Type, string), Func<object, object?>?> _cache = new(4096);
 
     public static object? Resolve(object? root, ReadOnlySpan<char> path)
     {
@@ -17,6 +17,7 @@ internal static class MemberPathResolver
             return root;
         }
 
+        if (path.Length > 4096) throw new ArgumentException("Member path exceeds 4096 characters.", nameof(path));
         int dot = path.IndexOf('.');
         var head = dot < 0 ? path : path[..dot];
         var headName = head.ToString();

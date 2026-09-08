@@ -1,3 +1,4 @@
+@inherits DesignerEditComponent
 @using Reporting.Common
 @using Reporting.Designer.Blazor.Services
 @using Reporting.Designer.Blazor.ViewModels
@@ -31,83 +32,3 @@
     <button class="icon-btn" type="button" @onclick="AddRow"
             style="align-self:flex-start;font-size:10.5px;padding:2px 8px;">+ Adicionar</button>
 </div>
-
-@code {
-    [Parameter, EditorRequired] public ElementViewModel Element { get; set; } = default!;
-    [Parameter, EditorRequired] public PropertyGridDescriptor Descriptor { get; set; } = default!;
-
-    private sealed class Row
-    {
-        public string Id { get; } = Guid.NewGuid().ToString("N");
-        public string Key { get; set; } = string.Empty;
-        public string Value { get; set; } = string.Empty;
-    }
-
-    private readonly List<Row> _rows = new();
-    private ElementViewModel? _seededElement;
-    private string? _seededPath;
-
-    // Seed the local rows once per (element, descriptor) — NOT on our own commits, which keep the same
-    // Element reference. That keeps the visible order stable and independent of the dict's hash order.
-    protected override void OnParametersSet()
-    {
-        if (ReferenceEquals(_seededElement, Element) && _seededPath == Descriptor.Path)
-        {
-            return;
-        }
-        _seededElement = Element;
-        _seededPath = Descriptor.Path;
-        _rows.Clear();
-        var entries = Descriptor.Get(Element.ToElement()) as IEnumerable<KeyValuePair<string, string>>;
-        if (entries is not null)
-        {
-            foreach (var kv in entries)
-            {
-                _rows.Add(new Row { Key = kv.Key, Value = kv.Value });
-            }
-        }
-    }
-
-    private void EditKey(Row row, string key)
-    {
-        row.Key = key;
-        Commit();
-    }
-
-    private void EditValue(Row row, string val)
-    {
-        row.Value = val;
-        Commit();
-    }
-
-    private void AddRow()
-    {
-        var key = "param";
-        var n = 1;
-        while (_rows.Any(r => r.Key == key))
-        {
-            key = $"param{++n}";
-        }
-        _rows.Add(new Row { Key = key });
-        Commit();
-    }
-
-    private void RemoveRow(Row row)
-    {
-        _rows.Remove(row);
-        Commit();
-    }
-
-    private void Commit()
-    {
-        var dict = new Dictionary<string, string>(StringComparer.Ordinal);
-        foreach (var r in _rows)
-        {
-            if (!string.IsNullOrEmpty(r.Key))
-            {
-                dict[r.Key] = r.Value; // empty keys stay as rows but aren't persisted; last wins on a transient collision
-            }
-        }
-        Element.ApplyMetaSet(Descriptor, new EquatableDictionary<string, string>(dict));
-    }
-}
