@@ -12,6 +12,9 @@ public static class ReportLinkPolicy
             return false;
         }
         if (target.StartsWith('#')) return true;
+        // A web-root path is relative to the current origin. On Unix, UriKind.Absolute
+        // otherwise interprets it as a file URI, unlike the Windows implementation.
+        if (target.StartsWith('/')) return Uri.TryCreate(target, UriKind.Relative, out _);
         if (Uri.TryCreate(target, UriKind.Absolute, out var uri))
         {
             return uri.Scheme is "http" or "https" or "mailto" or "tel";
