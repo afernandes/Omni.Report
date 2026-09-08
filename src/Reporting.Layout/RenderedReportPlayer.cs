@@ -18,22 +18,31 @@ public static class RenderedReportPlayer
         ArgumentNullException.ThrowIfNull(context);
         foreach (var page in report.Pages)
         {
-            // For continuous (thermal) paper, Paper.Height is zero and renderers can't size
-            // their surface. Compute the effective height from the primitives themselves —
-            // same behaviour SkiaPdfExporter.ComputeContinuousHeightPt provides — and pass
-            // a resolved PageSetup to BeginPage so every renderer (raster Skia, GDI, future
-            // backends) renders the full content instead of clipping at the placeholder
-            // height. Crystal Reports / SSRS / FastReport / Stimulsoft thermal previews all
-            // honour the actual receipt extent.
-            var pageSetup = page.PageSetup.IsContinuous
-                ? ResolveContinuousHeight(page)
-                : page.PageSetup;
+            PlayPage(page, context);
+        }
+    }
 
-            context.BeginPage(pageSetup);
+    /// <summary>Replays one page, balancing page framing and each primitive's clipping even on failure.</summary>
+    public static void PlayPage(RenderedPage page, IRenderingContext context)
+    {
+        ArgumentNullException.ThrowIfNull(page);
+        ArgumentNullException.ThrowIfNull(context);
+        // Resolve continuous paper before page framing so owned raster surfaces have
+        // enough space for all content. Borrowed canvases retain their caller-defined size.
+        var pageSetup = page.PageSetup.IsContinuous
+            ? ResolveContinuousHeight(page)
+            : page.PageSetup;
+
+        context.BeginPage(pageSetup);
+        try
+        {
             foreach (var primitive in page.Primitives)
             {
                 Dispatch(primitive, context);
             }
+        }
+        finally
+        {
             context.EndPage();
         }
     }
@@ -105,6 +114,8 @@ public static class RenderedReportPlayer
             case DrawPolygonPrimitive poly:
                 context.DrawPath(poly.BuildPath, poly.Pen, poly.Fill);
                 break;
+            default:
+                throw new NotSupportedException($"Primitiva de layout não suportada: {primitive.GetType().FullName}.");
         }
         }
         finally

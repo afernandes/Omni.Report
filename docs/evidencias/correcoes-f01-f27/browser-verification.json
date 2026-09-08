@@ -1,0 +1,27 @@
+{
+  "date": "2026-09-08",
+  "surface": "Codex IAB",
+  "host": "http://localhost:5277/designer",
+  "observations": [
+    {
+      "scenario": "Propriedade e histórico por eventos reais",
+      "observed": "X 15 para 25; desfazer 15; refazer 25; seta direita 26; desfazer 25"
+    },
+    {
+      "scenario": "Novo documento",
+      "observed": "Zero fontes e parametros; historico vazio"
+    },
+    {
+      "scenario": "20 ciclos de criar e fechar aba de documento",
+      "observed": "Historico vazio em todas as novas abas; nao mede retencao de circuito Blazor nem comprova ausencia de vazamento"
+    },
+    {
+      "scenario": "Sample Vendas apos build final",
+      "observed": "Uma fonte e dois parametros; datas 2026-05-01 e 2026-05-31; Executar produziu imagem Pagina 1 de 1, Sem erros"
+    },
+    {
+      "scenario": "F06 exportacao HTML real",
+      "observed": "hrefs: #bm-inicio e null; clique em Link bloqueado preservou documento; clique no link permitido navegou para #bm-inicio; sentinela FALHA-XSS nao executada"
+    }
+  ]
+}

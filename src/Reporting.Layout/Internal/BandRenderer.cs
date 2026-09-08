@@ -18,6 +18,7 @@ namespace Reporting.Layout.Internal;
 internal sealed class BandRenderer
 {
     private readonly ExpressionEvaluator _evaluator;
+    private readonly CancellationToken _cancellationToken;
     private readonly TemplateRenderer _templates;
     private readonly ITextMeasurer _measurer;
     private readonly IReadOnlyDictionary<string, List<IReadOnlyList<KeyValuePair<string, object?>>>> _dataSources;
@@ -48,9 +49,11 @@ internal sealed class BandRenderer
         string? primarySource = null,
         Func<SubreportElement, Rectangle, IReportExpressionContext, IReadOnlyList<LayoutPrimitive>>? renderSubreport = null,
         Func<MapTileRequest, byte[]?>? mapTileResolver = null,
-        IReadOnlyDictionary<string, Style>? namedStyles = null)
+        IReadOnlyDictionary<string, Style>? namedStyles = null,
+        CancellationToken cancellationToken = default)
     {
         _evaluator = evaluator;
+        _cancellationToken = cancellationToken;
         _templates = templates;
         _measurer = measurer;
         _dataSources = dataSources ?? new Dictionary<string, List<IReadOnlyList<KeyValuePair<string, object?>>>>();
@@ -71,6 +74,7 @@ internal sealed class BandRenderer
 
         foreach (var rawElement in band.Elements)
         {
+            _cancellationToken.ThrowIfCancellationRequested();
             contentExtent = RenderElement(rawElement, origin, origin, primitives, ctx, contentExtent);
         }
 
@@ -90,6 +94,7 @@ internal sealed class BandRenderer
         Unit ignored = Unit.Zero;
         foreach (var rawElement in elements)
         {
+            _cancellationToken.ThrowIfCancellationRequested();
             ignored = RenderElement(rawElement, origin, origin, primitives, ctx, ignored);
         }
         return primitives;
@@ -290,8 +295,9 @@ internal sealed class BandRenderer
                     break;
 
                 case TextBoxElement tb:
-                    var text = ResolveTextBoxText(tb, ctx, effectiveStyle.Format);
-                    var rendered = EmitText(text, elementBounds, style, tb.Id, tb.CanGrow, tb.CanShrink);
+                    var resolved = ResolveTextBoxValue(tb, ctx, effectiveStyle.Format);
+                    var text = resolved.Text;
+                    var rendered = EmitText(text, elementBounds, style, tb.Id, tb.CanGrow, tb.CanShrink) with { SemanticValue = resolved.Value is string or char or bool or byte or sbyte or short or ushort or int or uint or long or ulong or float or double or decimal or DateTime or DateTimeOffset or Guid ? resolved.Value : null };
                     primitives.Add(rendered);
                     // Grow/shrink the background fill to the textbox's final height so it never clips.
                     if (bgIndex >= 0 && rendered.Bounds.Height != elementBounds.Height)
@@ -511,6 +517,7 @@ internal sealed class BandRenderer
         Unit contentExtent = Unit.Zero;
         foreach (var rawElement in band.Elements)
         {
+            _cancellationToken.ThrowIfCancellationRequested();
             var bottom = EffectiveElementBottom(rawElement, ctx);
             if (bottom > contentExtent)
             {
@@ -614,6 +621,27 @@ internal sealed class BandRenderer
         => tb.TextRuns.Count > 0
             ? string.Concat(tb.TextRuns.Select(r => ResolveText(r.Value, ctx)))
             : ResolveText(tb.Expression, ctx, elementFormat);
+
+    private (string Text, object? Value) ResolveTextBoxValue(TextBoxElement box, IReportExpressionContext ctx, string? format)
+    {
+        if (box.TextRuns.Count > 0) return (ResolveTextBoxText(box, ctx, format), null);
+        var expression = box.Expression;
+        if (TemplateRenderer.TryGetSingleValue(expression, out var single, out var inlineFormat))
+        {
+            var value = _evaluator.Evaluate(single, ctx);
+            return (ValueFormatter.Format(value, inlineFormat ?? format, ctx.Culture), value);
+        }
+        if (!TemplateRenderer.HasPlaceholders(expression))
+        {
+            try
+            {
+                var value = _evaluator.Evaluate(expression, ctx);
+                return (ValueFormatter.Format(value, format, ctx.Culture), value);
+            }
+            catch (ExpressionParseException) { return (expression, expression); }
+        }
+        return (ResolveTextBoxText(box, ctx, format), null);
+    }
 
     // Publishes a named element's rendered text so ReportItems!Name.Value resolves in later-rendered bands
     // (e.g. a page footer echoing a body text box). Unnamed elements are skipped.

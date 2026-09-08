@@ -10,6 +10,7 @@ using Xunit;
 namespace Reporting.Printing.WindowsSpooler.Tests;
 
 [SupportedOSPlatform("windows")]
+[Collection("Windows print spooler")]
 public class WindowsSpoolerPrinterTests
 {
     private const string PrintToPdf = "Microsoft Print to PDF";
@@ -89,7 +90,7 @@ public class WindowsSpoolerPrinterTests
             result.PagesPrinted.Should().Be(rendered.Pages.Count);
             File.Exists(outputPath).Should().BeTrue();
 
-            using var pdf = PdfDocument.Open(outputPath);
+            using var pdf = await PdfPrintOutput.OpenCompletedAsync(outputPath);
             pdf.NumberOfPages.Should().Be(rendered.Pages.Count);
             var text = string.Join(" ", pdf.GetPages().Select(pg => pg.Text));
             text.Should().Contain("Vendas");
@@ -126,6 +127,8 @@ public class WindowsSpoolerPrinterTests
                 PageRange = (1, 1),
             });
             result.Succeeded.Should().BeTrue($"Print failed: {result.ErrorMessage}");
+            using var pdf = await PdfPrintOutput.OpenCompletedAsync(outputPath);
+            pdf.NumberOfPages.Should().Be(1);
         }
         finally
         {

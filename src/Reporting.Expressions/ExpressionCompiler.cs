@@ -12,7 +12,7 @@ namespace Reporting.Expressions;
 /// </summary>
 public sealed class ExpressionCompiler
 {
-    private readonly ConcurrentDictionary<string, LogicalExpression> _cache = new(StringComparer.Ordinal);
+    private readonly BoundedCache<string, LogicalExpression> _cache = new(1024, StringComparer.Ordinal);
 
     /// <summary>The default <see cref="ExpressionOptions"/> used by compiled expressions:
     /// case-insensitive identifiers, decimals preferred over double for money math.</summary>
@@ -51,6 +51,7 @@ public sealed class ExpressionCompiler
     public Expression Compile(string expression)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(expression);
+        if (expression.Length > 16_384) throw new ArgumentException("Expression exceeds 16384 characters.", nameof(expression));
         var rewritten = ExpressionRewriter.Rewrite(expression);
         var ast = _cache.GetOrAdd(rewritten, static text =>
         {

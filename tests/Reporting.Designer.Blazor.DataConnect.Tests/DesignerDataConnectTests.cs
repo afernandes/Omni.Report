@@ -151,7 +151,7 @@ public class DesignerDataConnectTests : IDisposable
             "SELECT * FROM no_such_table");
 
         result.Error.Should().NotBeNullOrEmpty();
-        result.Error.Should().Contain("no_such_table", because: "the actual SQLite error mentions the missing table");
+        result.Error.Should().NotContain("no_such_table", "o erro publico nao deve expor detalhes do provedor");
         result.Fields.Should().BeEmpty();
     }
 

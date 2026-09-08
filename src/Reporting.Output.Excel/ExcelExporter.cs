@@ -12,10 +12,7 @@ namespace Reporting.Output.Excel;
 /// <remarks>
 /// <para>Strategy: walks every <see cref="DrawTextPrimitive"/> and lays it out on a grid by
 /// quantizing the X / Y coordinates of each primitive into column and row indices via
-/// <see cref="LayoutPrimitiveGrid"/>. After the grid is built, numeric columns are detected
-/// (every non-header cell parses as a number or currency) and any row marked as a "subtotal"
-/// or "total" — by the textual content of one of its cells — gets its numeric cells
-/// rewritten as live <c>=SUM(range)</c> formulas referencing the detail rows above.</para>
+/// <see cref="LayoutPrimitiveGrid"/>. Original scalar values are preserved. Formulas require explicit metadata and opt-in; labels never determine numeric values.</para>
 /// </remarks>
 public sealed class ExcelExporter : IReportExporter
 {
@@ -106,16 +103,40 @@ public sealed class ExcelExporter : IReportExporter
             {
                 int xlCol = kv.Key + 1;
                 var cell = ws.Cell(xlRow, xlCol);
-                var parsed = LayoutPrimitiveGrid.TryParseDecimal(kv.Value);
-                if (parsed is not null && gridRow.Kind == RowKind.Detail)
+                gridRow.Sources.TryGetValue(kv.Key, out var source);
+                var value = source?.SemanticValue ?? kv.Value;
+                if (_options.EmitFormulas && source?.SpreadsheetFormula is { Length: > 0 } formula)
                 {
-                    cell.Value = parsed.Value;
-                    cell.Style.NumberFormat.Format = LayoutPrimitiveGrid.LooksLikeCurrency(kv.Value) ? "R$ #,##0.00" : "#,##0.00";
+                    cell.FormulaA1 = formula;
+                }
+                else if (value is decimal number)
+                {
+                    // XLSX numeric cells have binary/15-digit precision. Preserve larger decimals as text.
+                    if (decimal.TryParse(((double)number).ToString("G15", System.Globalization.CultureInfo.InvariantCulture), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var rounded) && rounded == number) cell.Value = number;
+                    else cell.Value = number.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                }
+                else if (value is int integer)
+                {
+                    cell.Value = integer;
+                }
+                else if (value is long large && large is >= -999999999999999 and <= 999999999999999)
+                {
+                    cell.Value = large;
+                }
+                else if (value is bool boolean)
+                {
+                    cell.Value = boolean;
+                }
+                else if (value is DateTime date)
+                {
+                    cell.Value = date;
                 }
                 else
                 {
-                    cell.Value = kv.Value;
+                    cell.Value = Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty;
                 }
+
+                if (value is decimal && LayoutPrimitiveGrid.LooksLikeCurrency(kv.Value)) cell.Style.NumberFormat.Format = "\"R$\" #,##0.00";
                 if (gridRow.Kind == RowKind.Header)
                 {
                     cell.Style.Font.Bold = true;
@@ -134,69 +155,6 @@ public sealed class ExcelExporter : IReportExporter
             }
         }
 
-        if (_options.EmitFormulas)
-        {
-            ApplySumFormulas(ws, grid);
-        }
-    }
-
-    /// <summary>For every Subtotal/Total row:
-    /// (a) any cell that already holds a parsed number is replaced by <c>=SUM(detailRange)</c>;
-    /// (b) for every numeric column above the row that does NOT yet have a cell in this row,
-    /// a fresh formula cell is INSERTED — handles "Subtotal: R$ X · N rows" wide-text footers
-    /// that omit a separate numeric cell.</summary>
-    private static void ApplySumFormulas(IXLWorksheet ws, LayoutPrimitiveGrid grid)
-    {
-        for (int r = 0; r < grid.Rows.Count; r++)
-        {
-            var row = grid.Rows[r];
-            if (row.Kind is not (RowKind.Subtotal or RowKind.Total))
-            {
-                continue;
-            }
-            int start = r - 1;
-            while (start >= 0 && grid.Rows[start].Kind == RowKind.Detail)
-            {
-                start--;
-            }
-            int detailStart = start + 1;
-            int detailEnd = r - 1;
-            if (detailEnd < detailStart)
-            {
-                continue;
-            }
-            int xlRow = r + 1;
-
-            // Find every column that is numeric in the detail range.
-            for (int colIdx = 0; colIdx < grid.ColumnXs.Count; colIdx++)
-            {
-                bool columnIsNumeric = false;
-                bool currencyHint = false;
-                for (int rr = detailStart; rr <= detailEnd; rr++)
-                {
-                    if (grid.Rows[rr].Cells.TryGetValue(colIdx, out var v) && LayoutPrimitiveGrid.TryParseDecimal(v) is not null)
-                    {
-                        columnIsNumeric = true;
-                        if (LayoutPrimitiveGrid.LooksLikeCurrency(v))
-                        {
-                            currencyHint = true;
-                        }
-                    }
-                }
-                if (!columnIsNumeric)
-                {
-                    continue;
-                }
-                int xlCol = colIdx + 1;
-                var colLetter = XLHelper.GetColumnLetterFromNumber(xlCol);
-                var formula = $"=SUM({colLetter}{detailStart + 1}:{colLetter}{detailEnd + 1})";
-                var cell = ws.Cell(xlRow, xlCol);
-                cell.FormulaA1 = formula;
-                cell.Style.NumberFormat.Format = currencyHint ? "R$ #,##0.00" : "#,##0.00";
-                cell.Style.Font.Bold = true;
-                cell.Style.Border.TopBorder = XLBorderStyleValues.Thin;
-            }
-        }
     }
 
     private static void ApplyZebraStripes(IXLWorksheet ws, LayoutPrimitiveGrid grid)

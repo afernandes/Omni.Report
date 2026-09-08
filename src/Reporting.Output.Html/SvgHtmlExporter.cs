@@ -177,7 +177,7 @@ public sealed class SvgHtmlExporter : IReportExporter
         var sb = new StringBuilder();
         foreach (var prim in page.Primitives)
         {
-            if (prim.LinkTarget is null && prim.BookmarkId is null)
+            if (!Reporting.Elements.ReportLinkPolicy.IsAllowed(prim.LinkTarget) && prim.BookmarkId is null)
             {
                 continue;
             }
@@ -186,10 +186,10 @@ public sealed class SvgHtmlExporter : IReportExporter
             {
                 sb.Append(" id=\"").Append(WebUtility.HtmlEncode(prim.BookmarkId)).Append('"');
             }
-            if (prim.LinkTarget is not null)
+            if (Reporting.Elements.ReportLinkPolicy.IsAllowed(prim.LinkTarget))
             {
                 sb.Append(" href=\"").Append(WebUtility.HtmlEncode(prim.LinkTarget)).Append('"');
-                if (prim.LinkTarget.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                if (prim.LinkTarget!.StartsWith("http", StringComparison.OrdinalIgnoreCase))
                 {
                     sb.Append(" target=\"_blank\" rel=\"noopener noreferrer\"");
                 }

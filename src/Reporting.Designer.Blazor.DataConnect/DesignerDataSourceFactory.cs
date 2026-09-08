@@ -36,8 +36,8 @@ public static class DesignerDataSourceFactory
     /// resolve SQL placeholders bound via <see cref="DesignerSqlParameter.ReportParameter"/>.
     /// Pass <c>null</c> or empty when previewing with literals only.</param>
     /// <param name="secretResolver">Optional resolver for <c>{secret:NAME}</c> placeholders
-    /// embedded in the connection string. When <c>null</c>, placeholders are expanded
-    /// from environment variables (<see cref="EnvironmentSecretResolver"/>).</param>
+    /// embedded in the connection string. When <c>null</c>, secret placeholders are rejected.
+    /// The host must explicitly supply a resolver that authorizes access to each secret.</param>
     public static IReportDataSource? Build(
         DesignerDataSource vm,
         IReadOnlyDictionary<string, object?>? reportParameters = null,
@@ -125,14 +125,14 @@ public static class DesignerDataSourceFactory
     }
 
     /// <summary>Resolves <c>{secret:NAME}</c> placeholders in the connection string. Uses the
-    /// supplied resolver when available, otherwise falls back to environment variables
+    /// supplied resolver when available, otherwise rejects secret expansion
     /// — synchronously, because the runtime path is not async-only.</summary>
     private static string ExpandSecrets(string connectionString, ISecretResolver? resolver)
     {
         if (!SecretTemplate.ContainsPlaceholder(connectionString)) return connectionString;
         if (resolver is null)
         {
-            return SecretTemplate.ExpandFromEnvironment(connectionString);
+            throw new InvalidOperationException("O host deve autorizar a resolução de segredos para esta conexão.");
         }
         // Synchronously await the resolver — the factory runs during paginate setup, which
         // is itself async, so blocking here is acceptable. Callers that need a fully async

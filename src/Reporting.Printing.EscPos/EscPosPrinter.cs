@@ -27,10 +27,18 @@ public sealed class EscPosPrinter : IReportPrinter
 
     private readonly Func<CancellationToken, Task<IEscPosTransport>> _transportFactory;
     private readonly EscPosPrinterOptions _options;
+    private readonly bool _ownsTransport = true;
+    private readonly SemaphoreSlim _jobs = new(1, 1);
 
+    /// <summary>Borrows a transport. The caller disposes it after all jobs have completed.</summary>
     public EscPosPrinter(IEscPosTransport transport, EscPosPrinterOptions? options = null)
-        : this(_ => Task.FromResult(transport), options) { }
+        : this(_ => Task.FromResult(transport), options)
+    {
+        ArgumentNullException.ThrowIfNull(transport);
+        _ownsTransport = false;
+    }
 
+    /// <summary>Owns each transport returned by the factory and disposes it after its job, including failure.</summary>
     public EscPosPrinter(Func<CancellationToken, Task<IEscPosTransport>> transportFactory,
                         EscPosPrinterOptions? options = null)
     {
@@ -58,18 +66,23 @@ public sealed class EscPosPrinter : IReportPrinter
         ArgumentNullException.ThrowIfNull(report);
         ArgumentNullException.ThrowIfNull(options);
 
-        await using var transport = await _transportFactory(cancellationToken).ConfigureAwait(false);
+        var selected = PrintPageSelection.Enumerate(report.Pages.Count, options);
+        cancellationToken.ThrowIfCancellationRequested();
+        if (report.PageCount == 0) return new PrintResult(Succeeded: true, PagesPrinted: 0);
+        await _jobs.WaitAsync(cancellationToken).ConfigureAwait(false);
+        IEscPosTransport? transport = null;
 
         try
         {
+            transport = await _transportFactory(cancellationToken).ConfigureAwait(false);
             // Reset the printer once at the start.
             await transport.SendAsync(EscPosCommands.Reset, cancellationToken).ConfigureAwait(false);
 
             int pagesPrinted = 0;
-            foreach (var page in report.Pages)
+            foreach (var index in selected)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                var bytes = RenderPageToEscPos(page, _options);
+                var bytes = RenderPageToEscPos(report.Pages[index], _options);
                 await transport.SendAsync(bytes, cancellationToken).ConfigureAwait(false);
                 pagesPrinted++;
             }
@@ -87,13 +100,18 @@ public sealed class EscPosPrinter : IReportPrinter
 
             return new PrintResult(Succeeded: true, PagesPrinted: pagesPrinted);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
             return new PrintResult(
                 Succeeded: false,
                 PagesPrinted: 0,
                 ErrorMessage: ex.Message,
                 Exception: ex);
+        }
+        finally
+        {
+            try { if (_ownsTransport && transport is not null) await transport.DisposeAsync().ConfigureAwait(false); }
+            finally { _jobs.Release(); }
         }
     }
 
@@ -184,61 +202,18 @@ public sealed class EscPosPrinter : IReportPrinter
         }
 
         var bitmap = new SKBitmap(new SKImageInfo(dotWidth, heightDots, SKColorType.Rgba8888, SKAlphaType.Opaque));
-        using (var canvas = new SKCanvas(bitmap))
+        try
         {
+            using var canvas = new SKCanvas(bitmap);
             canvas.Clear(SKColors.White);
-            foreach (var primitive in page.Primitives)
-            {
-                Replay(canvas, primitive);
-            }
+            using var context = new SkiaCanvasRenderingContext(canvas, ThermalDpi);
+            RenderedReportPlayer.PlayPage(page, context);
+            return (bitmap, heightDots);
         }
-        return (bitmap, heightDots);
-    }
-
-    private static void Replay(SKCanvas canvas, LayoutPrimitive primitive)
-    {
-        switch (primitive)
+        catch
         {
-            case DrawTextPrimitive t:
-                SkiaPrimitiveRenderer.DrawText(canvas, t.Text, t.Bounds, t.Style, ThermalDpi);
-                break;
-            case DrawLinePrimitive l:
-                SkiaPrimitiveRenderer.DrawLine(canvas, l.From, l.To, l.Pen, ThermalDpi);
-                break;
-            case DrawRectanglePrimitive r:
-                SkiaPrimitiveRenderer.DrawRectangle(canvas, r.Bounds, r.Pen, r.Fill, ThermalDpi);
-                break;
-            case DrawEllipsePrimitive e:
-                SkiaPrimitiveRenderer.DrawEllipse(canvas, e.Bounds, e.Pen, e.Fill, ThermalDpi);
-                break;
-            case DrawImagePrimitive i:
-                if (i.Data.Count > 0)
-                {
-                    var copy = new byte[i.Data.Count];
-                    for (int k = 0; k < copy.Length; k++)
-                    {
-                        copy[k] = i.Data[k];
-                    }
-                    SkiaPrimitiveRenderer.DrawImage(canvas, copy, i.Bounds, ThermalDpi, i.Sizing);
-                }
-                break;
+            bitmap.Dispose();
+            throw;
         }
     }
-}
-
-/// <summary>Tunable knobs for the ESC/POS printer driver.</summary>
-public sealed record EscPosPrinterOptions
-{
-    /// <summary>Override the auto-detected dot width (e.g. for non-standard rolls).</summary>
-    public int? ForcedDotWidth { get; init; }
-
-    /// <summary>Luma threshold for the 1-bit dithering (0–255). Pixels darker than this
-    /// become black ink. Default 128 — fine for most thermal heads.</summary>
-    public byte BlackThreshold { get; init; } = 128;
-
-    /// <summary>Number of feed dots (1/8mm each) before cutting. Default 0 = cut immediately
-    /// using <c>GS V 0</c>; a positive value uses <c>GS V 65 n</c>.</summary>
-    public int FeedDotsBeforeCut { get; init; }
-
-    public static readonly EscPosPrinterOptions Default = new();
 }

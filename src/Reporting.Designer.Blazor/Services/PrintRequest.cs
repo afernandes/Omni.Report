@@ -22,7 +22,7 @@ public enum PrintColorMode
     Color,
     /// <summary>Force grayscale.</summary>
     Grayscale,
-    /// <summary>Force black & white (1-bit) — for low-end thermal / receipt printers.</summary>
+    /// <summary>Force black &amp; white (1-bit) — for low-end thermal / receipt printers.</summary>
     Monochrome,
 }
 
@@ -44,7 +44,7 @@ public enum PrintOutputMode
 
 /// <summary>
 /// Everything the print pipeline needs to know in one immutable record. The
-/// <see cref="PrintDialog"/> builds one of these from the user's choices and hands it
+/// <see cref="Reporting.Designer.Blazor.Components.PrintDialog"/> builds one of these from the user's choices and hands it
 /// to <see cref="IDesignerPrintService.PrintAsync"/>.
 /// </summary>
 /// <param name="PaperSize">Override the report's paper size (e.g. send an A4 report to a

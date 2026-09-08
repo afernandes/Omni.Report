@@ -16,25 +16,25 @@ public static class ServiceCollectionExtensions
 {
     /// <summary>Registers <see cref="IDesignerDataConnect"/> backed by the default
     /// <see cref="DesignerDataConnect"/> implementation (SQLite + PostgreSQL + SQL Server +
-    /// MySQL), plus an <see cref="ISecretResolver"/> defaulting to environment variables.</summary>
+    /// MySQL), plus an <see cref="ISecretResolver"/> denying resolution unless the host supplies an authorized resolver.</summary>
     /// <remarks>
     /// <para>Override the secret resolver by chaining
-    /// <c>services.AddSingleton&lt;ISecretResolver, MyVaultResolver&gt;()</c> <em>before</em>
-    /// (the extension uses <c>TryAddSingleton</c> so caller-supplied registrations win).</para>
+    /// <c>services.AddScoped&lt;ISecretResolver, MyVaultResolver&gt;()</c> <em>before</em>
+    /// (the extension uses <c>TryAddScoped</c> so caller-supplied registrations win).</para>
     ///
     /// <para>Typical wiring in <c>Program.cs</c>:</para>
     /// <code>
     /// builder.Services.AddOmniReportDesignerDataConnect();
     /// // …or with a custom secret resolver:
-    /// builder.Services.AddSingleton&lt;ISecretResolver, AzureKeyVaultResolver&gt;();
+    /// builder.Services.AddScoped&lt;ISecretResolver, AzureKeyVaultResolver&gt;();
     /// builder.Services.AddOmniReportDesignerDataConnect();
     /// </code>
     /// </remarks>
     public static IServiceCollection AddOmniReportDesignerDataConnect(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
-        services.TryAddSingleton<ISecretResolver, EnvironmentSecretResolver>();
-        services.TryAddSingleton<IDesignerDataConnect, DesignerDataConnect>();
+        services.TryAddScoped<ISecretResolver, DeniedSecretResolver>();
+        services.TryAddScoped<IDesignerDataConnect, DesignerDataConnect>();
         return services;
     }
 }

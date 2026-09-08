@@ -136,7 +136,7 @@ public sealed class AdvancedFeaturesTests : IDisposable
         child.Should().NotBeNull();
 
         var detail = new MasterDetailDataSource("PedidosDeCliente", child!, "cliente_id");
-        detail.WithParentValue(1);
+        detail = detail.WithParentValue(1);
         var rows1 = new List<int>();
         await foreach (var r in detail.ReadAsync())
         {
@@ -144,7 +144,7 @@ public sealed class AdvancedFeaturesTests : IDisposable
         }
         rows1.Should().HaveCount(2).And.OnlyContain(v => v == 1);
 
-        detail.WithParentValue(3);
+        detail = detail.WithParentValue(3);
         var rows3 = new List<int>();
         await foreach (var r in detail.ReadAsync())
         {

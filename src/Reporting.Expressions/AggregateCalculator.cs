@@ -168,11 +168,11 @@ internal static class AggregateCalculator
         return list;
     }
 
-    private static IEnumerable<object?> EvaluatePerRow(
+    internal static IEnumerable<object?> EvaluatePerRow(
         string expression,
         IReadOnlyList<DictionaryLookup> rows,
         ExpressionEvaluator evaluator,
-        ReportExpressionContext owner)
+        ReportExpressionContext owner, int startIndex = 0)
     {
         // Temporarily swap the current Fields lookup with each historical row, then restore.
         var liveSnapshot = ((DictionaryLookup)owner.Fields).Keys
@@ -181,15 +181,17 @@ internal static class AggregateCalculator
 
         try
         {
-            foreach (var row in rows)
+            for (int index = startIndex; index < rows.Count; index++)
             {
+                var row = rows[index];
+                owner.CancellationToken.ThrowIfCancellationRequested();
                 owner.SetCurrentRowNoSnapshot(row);
                 object? value;
                 try
                 {
                     value = evaluator.Evaluate(expression, owner);
                 }
-                catch
+                catch (Exception ex) when (ex is not OperationCanceledException)
                 {
                     continue;
                 }

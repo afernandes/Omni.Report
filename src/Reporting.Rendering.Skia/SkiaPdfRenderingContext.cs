@@ -18,7 +18,8 @@ namespace Reporting.Rendering.Skia;
 /// <para>
 /// Continuous-paper page setups (e.g. thermal 58/80mm) are supported: the page is recorded
 /// to an <see cref="SKPictureRecorder"/> first and the actual PDF page is created on
-/// <see cref="EndPage"/> with a height tight to the lowest drawn primitive plus the bottom margin.
+/// <see cref="EndPage"/> using drawing bounds, clipping, a one-point safety allowance and the bottom margin.
+/// Rounded clip envelopes can leave conservative whitespace. Limits are configured through <see cref="ContinuousPageOptions"/>.
 /// </para>
 /// </remarks>
 public sealed class SkiaPdfRenderingContext : IRenderingContext, ITextMeasurer
@@ -33,10 +34,20 @@ public sealed class SkiaPdfRenderingContext : IRenderingContext, ITextMeasurer
     private SKCanvas? _canvas;          // Active drawing surface (page canvas or recorder canvas).
     private SKPictureRecorder? _recorder; // Non-null only while a continuous page is in progress.
     private PageSetup? _currentPage;
+    private ContinuousPageBounds? _bounds;
+    private readonly ContinuousPageOptions _continuousOptions;
     private bool _closed;
 
     public SkiaPdfRenderingContext(Stream stream, SKDocumentPdfMetadata? metadata = null, bool leaveOpen = false)
+        : this(stream, metadata, leaveOpen, new ContinuousPageOptions()) { }
+
+    /// <summary>Creates a vector PDF context with explicit limits for continuous pages.</summary>
+    public SkiaPdfRenderingContext(Stream stream, SKDocumentPdfMetadata? metadata, bool leaveOpen,
+        ContinuousPageOptions continuousOptions)
     {
+        ArgumentNullException.ThrowIfNull(continuousOptions);
+        continuousOptions.Validate();
+        _continuousOptions = continuousOptions;
         ArgumentNullException.ThrowIfNull(stream);
         _stream = stream;
         _leaveOpen = leaveOpen;
@@ -64,11 +75,20 @@ public sealed class SkiaPdfRenderingContext : IRenderingContext, ITextMeasurer
 
         if (pageSetup.IsContinuous)
         {
-            // Height is unknown until we know what was drawn — record into an oversized
-            // bbox and tighten on EndPage.
-            _recorder = new SKPictureRecorder();
-            _canvas = _recorder.BeginRecording(new SKRect(0, 0, widthPt, 1_000_000f));
-            _canvas.Clear(SKColors.White);
+            try
+            {
+                _bounds = new ContinuousPageBounds(pageSetup, PdfDpi, _continuousOptions);
+                _recorder = new SKPictureRecorder();
+                _canvas = _recorder.BeginRecording(new SKRect(0, 0, widthPt, (float)_bounds.MaxHeight));
+            }
+            catch
+            {
+                _recorder?.Dispose();
+                _recorder = null;
+                _bounds = null;
+                _currentPage = null;
+                throw;
+            }
         }
         else
         {
@@ -80,82 +100,90 @@ public sealed class SkiaPdfRenderingContext : IRenderingContext, ITextMeasurer
 
     public void EndPage()
     {
-        if (_canvas is null || _currentPage is null)
+        if (_canvas is null || _currentPage is null) return;
+        try
         {
-            return;
+            if (_recorder is not null)
+            {
+                using var picture = _recorder.EndRecording();
+                var pageCanvas = _document.BeginPage((float)_currentPage.PageWidth.ToPoints(), (float)_bounds!.Height);
+                try
+                {
+                    pageCanvas.Clear(SKColors.White);
+                    pageCanvas.DrawPicture(picture);
+                }
+                finally { _document.EndPage(); }
+            }
+            else { _document.EndPage(); }
         }
-
-        if (_recorder is not null)
+        finally
         {
-            using var picture = _recorder.EndRecording();
-            float widthPt = (float)_currentPage.PageWidth.ToPoints();
-            float topMarginPt = (float)_currentPage.Margins.Top.ToPoints();
-            float bottomMarginPt = (float)_currentPage.Margins.Bottom.ToPoints();
-            float contentBottom = picture.CullRect.Bottom;
-            float heightPt = Math.Max(topMarginPt + 1f, contentBottom + bottomMarginPt);
-
-            var pageCanvas = _document.BeginPage(widthPt, heightPt);
-            pageCanvas.Clear(SKColors.White);
-            pageCanvas.DrawPicture(picture);
-            _document.EndPage();
-
-            _recorder.Dispose();
+            _recorder?.Dispose();
             _recorder = null;
+            _canvas = null;
+            _currentPage = null;
+            _bounds = null;
         }
-        else
-        {
-            _document.EndPage();
-        }
-
-        _canvas = null;
-        _currentPage = null;
     }
 
     public void DrawText(string text, Rectangle bounds, TextStyle style)
     {
         EnsurePage();
-        SkiaPrimitiveRenderer.DrawText(_canvas!, text, bounds, style, PdfDpi);
+        _bounds?.CountOperation();
+        SkiaPrimitiveRenderer.DrawText(_canvas!, text, bounds, style, PdfDpi, _bounds is null ? null : Track);
     }
 
     public void DrawLine(Point from, Point to, PenStyle pen)
     {
         EnsurePage();
-        SkiaPrimitiveRenderer.DrawLine(_canvas!, from, to, pen, PdfDpi);
+        _bounds?.CountOperation();
+        SkiaPrimitiveRenderer.DrawLine(_canvas!, from, to, pen, PdfDpi, _bounds is null ? null : Track);
     }
 
     public void DrawRectangle(Rectangle bounds, PenStyle? pen, BrushStyle? fill)
     {
         EnsurePage();
-        SkiaPrimitiveRenderer.DrawRectangle(_canvas!, bounds, pen, fill, PdfDpi);
+        _bounds?.CountOperation();
+        SkiaPrimitiveRenderer.DrawRectangle(_canvas!, bounds, pen, fill, PdfDpi, _bounds is null ? null : Track);
     }
 
     public void DrawEllipse(Rectangle bounds, PenStyle? pen, BrushStyle? fill)
     {
         EnsurePage();
-        SkiaPrimitiveRenderer.DrawEllipse(_canvas!, bounds, pen, fill, PdfDpi);
+        _bounds?.CountOperation();
+        SkiaPrimitiveRenderer.DrawEllipse(_canvas!, bounds, pen, fill, PdfDpi, _bounds is null ? null : Track);
     }
 
     public void DrawImage(ReadOnlySpan<byte> imageData, Rectangle bounds,
         Reporting.Elements.ImageSizing sizing = Reporting.Elements.ImageSizing.Fit)
     {
         EnsurePage();
-        SkiaPrimitiveRenderer.DrawImage(_canvas!, imageData, bounds, PdfDpi, sizing);
+        _bounds?.CountOperation();
+        SkiaPrimitiveRenderer.DrawImage(_canvas!, imageData, bounds, PdfDpi, sizing, _bounds is null ? null : Track);
     }
 
     public void DrawPath(Action<IPathBuilder> build, PenStyle? pen, BrushStyle? fill)
     {
         EnsurePage();
-        SkiaPrimitiveRenderer.DrawPath(_canvas!, build, pen, fill, PdfDpi);
+        _bounds?.CountOperation();
+        SkiaPrimitiveRenderer.DrawPath(_canvas!, build, pen, fill, PdfDpi, _bounds is null ? null : Track);
     }
 
     public void PushClip(Rectangle bounds, Unit cornerRadius)
     {
         EnsurePage();
+        _bounds?.PushClip(bounds);
         _canvas!.Save();
         SkiaPrimitiveRenderer.ApplyClip(_canvas, bounds, cornerRadius, PdfDpi);
     }
 
-    public void PopClip() => _canvas?.Restore();
+    public void PopClip()
+    {
+        _canvas?.Restore();
+        _bounds?.PopClip();
+    }
+
+    private void Track(SKRect bounds) => _bounds!.Include(bounds.Left, bounds.Top, bounds.Right, bounds.Bottom);
 
     public Size MeasureText(string text, TextStyle style, Unit? maxWidth = null)
         => SkiaPrimitiveRenderer.MeasureText(text, style, maxWidth, PdfDpi);
@@ -180,15 +208,17 @@ public sealed class SkiaPdfRenderingContext : IRenderingContext, ITextMeasurer
 
     public void Dispose()
     {
-        if (!_closed)
+        try { Close(); }
+        finally
         {
-            Close();
-        }
-        _recorder?.Dispose();
-        _document.Dispose();
-        if (!_leaveOpen)
-        {
-            _stream.Dispose();
+            _recorder?.Dispose();
+            _recorder = null;
+            _canvas = null;
+            _bounds = null;
+            _currentPage = null;
+            _closed = true;
+            _document.Dispose();
+            if (!_leaveOpen) _stream.Dispose();
         }
     }
 

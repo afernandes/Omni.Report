@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Reflection;
+using System.Runtime.Loader;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
@@ -18,13 +19,15 @@ namespace Reporting.Expressions.Roslyn;
 /// privileges. It is opt-in by design: the core engine never references this package.</para>
 /// <para>The compiled assembly is cached for this evaluator's lifetime. For a server rendering
 /// many distinct report definitions, create one evaluator per definition (e.g. keyed by a hash of
-/// the code) so assemblies don't accumulate; a collectible <c>AssemblyLoadContext</c> is a future
-/// refinement.</para>
+/// the code) and dispose it after use. Assemblies load into a collectible context; outstanding delegates
+/// keep their evaluator alive until released.</para>
 /// </remarks>
-public sealed class RoslynCodeEvaluator
+public sealed class RoslynCodeEvaluator : IDisposable
 {
-    private readonly object? _instance;
-    private readonly Dictionary<string, MethodInfo> _methods;
+    private object? _instance;
+    private AssemblyLoadContext? _loadContext;
+    private readonly object _gate = new();
+    private readonly Dictionary<string, MethodInfo> _methods = new(StringComparer.Ordinal);
 
     public RoslynCodeEvaluator(string source, IEnumerable<Assembly>? additionalReferences = null)
     {
@@ -58,7 +61,11 @@ public sealed class RoslynCodeEvaluator
             throw new RoslynCodeCompilationException(errors);
         }
 
-        var assembly = Assembly.Load(ms.ToArray());
+        _loadContext = new AssemblyLoadContext("OmniReport.Code", isCollectible: true);
+        try
+        {
+        ms.Position = 0;
+        var assembly = _loadContext.LoadFromStream(ms);
         var type = assembly.GetType("__ReportCode")
                    ?? throw new RoslynCodeCompilationException("Compiled code class '__ReportCode' was not found.");
 
@@ -68,6 +75,8 @@ public sealed class RoslynCodeEvaluator
             .Where(m => m.DeclaringType == type && !m.IsSpecialName)
             .GroupBy(m => m.Name, StringComparer.Ordinal)
             .ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal);
+        }
+        catch { _loadContext.Unload(); _loadContext = null; throw; }
     }
 
     /// <summary>Resolver shape for <see cref="ExpressionEvaluator.CodeFunctionResolver"/> —
@@ -75,6 +84,9 @@ public sealed class RoslynCodeEvaluator
     /// Returns <c>null</c> when the method doesn't exist.</summary>
     public object? Invoke(string methodName, object?[] args)
     {
+        lock (_gate)
+        {
+            ObjectDisposedException.ThrowIf(_loadContext is null, this);
         if (!_methods.TryGetValue(methodName, out var method))
         {
             return null;
@@ -87,7 +99,23 @@ public sealed class RoslynCodeEvaluator
             coerced[i] = Coerce(supplied, parameters[i].ParameterType);
         }
         return method.Invoke(method.IsStatic ? null : _instance, coerced);
+        }
     }
+
+    /// <summary>Releases code references and requests collectible assembly unloading after active calls finish.</summary>
+    public void Dispose()
+    {
+        lock (_gate)
+        {
+            _methods.Clear();
+            _instance = null;
+            _loadContext?.Unload();
+            _loadContext = null;
+        }
+        GC.SuppressFinalize(this);
+    }
+
+    ~RoslynCodeEvaluator() => _loadContext?.Unload();
 
     private static object? Coerce(object? value, Type target)
     {
@@ -149,14 +177,5 @@ public sealed class RoslynCodeEvaluator
         catch (IOException) { }
         catch (BadImageFormatException) { }
         catch (ArgumentException) { }
-    }
-}
-
-/// <summary>Thrown when an RDL <c>Code</c> block fails to compile.</summary>
-public sealed class RoslynCodeCompilationException : Exception
-{
-    public RoslynCodeCompilationException(string message)
-        : base("Failed to compile report Code block: " + message)
-    {
     }
 }

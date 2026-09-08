@@ -13,9 +13,8 @@ public sealed record ExcelExportOptions
     /// <summary>Document title; defaults to the report's name.</summary>
     public string? Title { get; init; }
 
-    /// <summary>If true, group-footer sums are emitted as live <c>=SUM(...)</c> formulas
-    /// referencing the detail rows of the group rather than the precomputed value.</summary>
-    public bool EmitFormulas { get; init; } = true;
+    /// <summary>If true, explicitly supplied SpreadsheetFormula metadata is emitted. Labels never generate formulas.</summary>
+    public bool EmitFormulas { get; init; } = false;
 
     /// <summary>If true, freeze the header row so it stays visible while scrolling.</summary>
     public bool FreezeHeader { get; init; } = true;

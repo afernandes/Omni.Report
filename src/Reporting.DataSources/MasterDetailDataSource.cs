@@ -21,7 +21,7 @@ public sealed class MasterDetailDataSource : IReportDataSource
 {
     private readonly IReportDataSource _child;
     private readonly string _childField;
-    private object? _parentValue;
+    private readonly object? _parentValue;
 
     /// <summary>Wraps a child source so it yields only the rows matching a parent value.</summary>
     /// <param name="name">Name the report binds to.</param>
@@ -53,9 +53,11 @@ public sealed class MasterDetailDataSource : IReportDataSource
     /// same source can drive several parent rows — including concurrently.</summary>
     public MasterDetailDataSource WithParentValue(object? parentValue)
     {
-        _parentValue = parentValue;
-        return this;
+        return new MasterDetailDataSource(Name, _child, _childField, parentValue);
     }
+
+    private MasterDetailDataSource(string name, IReportDataSource child, string childField, object? parentValue)
+        : this(name, child, childField) => _parentValue = parentValue;
 
     /// <summary>Yields the child rows whose <see cref="ChildField"/> matches the bound parent value.</summary>
     public async IAsyncEnumerable<IReportRecord> ReadAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)

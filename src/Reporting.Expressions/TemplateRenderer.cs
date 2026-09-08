@@ -91,6 +91,20 @@ public sealed class TemplateRenderer
         return expression.Length > 0;
     }
 
+    /// <summary>Extracts a single placeholder and its optional format without evaluating it.</summary>
+    public static bool TryGetSingleValue(string template, out string expression, out string? format)
+    {
+        expression = string.Empty;
+        format = null;
+        var trimmed = template.Trim();
+        if (trimmed.Length < 3 || trimmed[0] != '{' || trimmed[1] == '{' || FindClosing(trimmed, 1) != trimmed.Length - 1) return false;
+        var body = trimmed.AsSpan(1, trimmed.Length - 2);
+        int colon = FindFormatSeparator(body);
+        expression = (colon < 0 ? body : body[..colon]).Trim().ToString();
+        if (colon >= 0) format = body[(colon + 1)..].ToString();
+        return expression.Length > 0;
+    }
+
     /// <summary>Returns <c>true</c> if the input contains at least one placeholder.</summary>
     public static bool HasPlaceholders(string template)
     {

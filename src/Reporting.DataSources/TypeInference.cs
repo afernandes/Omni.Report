@@ -6,7 +6,7 @@ namespace Reporting.DataSources;
 /// Heuristic-driven CLR type inference for raw string values produced by text-based
 /// data providers (JSON, XML, REST, CSV). The four MyFyi-style providers (JSON, XML,
 /// WebService, FileSystem) all face the same problem: JSON-string "12.5" should become
-/// <see cref="double"/>, "2024-12-01" should become <see cref="DateTime"/>, "true"
+/// <see cref="decimal"/>, "2024-12-01" should become <see cref="DateTime"/>, "true"
 /// should become <see cref="bool"/>, etc. Centralising the logic here keeps every
 /// provider doing the same coercion — preventing the situation where the same .repx
 /// renders differently depending on which provider supplied the data.
@@ -20,7 +20,7 @@ namespace Reporting.DataSources;
 /// <para><b>Schema inference</b> aggregates per-column types across multiple rows:
 /// a column whose first row is "1" but whose second row is "foo" must be typed as
 /// string. <see cref="WidenType"/> merges two candidate types into the narrower common
-/// type that holds both values — e.g. <c>(int, double)</c> → <c>double</c>,
+/// type that holds both values — e.g. <c>(int, decimal)</c> → <c>decimal</c>,
 /// <c>(int, string)</c> → <c>string</c>, <c>(int, null)</c> → <c>int?</c>. We always
 /// fall through to <see cref="string"/> rather than throwing — a wrong-looking
 /// expression should still render in production.</para>
@@ -47,14 +47,14 @@ public static class TypeInference
             && (raw[0] == '0' || raw[0] == '+')
             && raw[1] >= '0' && raw[1] <= '9';
         if (isOpaqueId) return (raw, typeof(string));
-        // Integer before decimal — "12" is int, "12.5" is double.
+        // Integer before decimal — "12" is int, "12.5" is decimal.
         if (long.TryParse(raw, NumberStyles.Integer, Inv, out var l))
         {
             // Keep small ints small so reports doing arithmetic don't get surprising overflow.
             if (l >= int.MinValue && l <= int.MaxValue) return ((int)l, typeof(int));
             return (l, typeof(long));
         }
-        if (double.TryParse(raw, NumberStyles.Float, Inv, out var d)) return (d, typeof(double));
+        if (decimal.TryParse(raw, NumberStyles.Float, Inv, out var d)) return (d, typeof(decimal));
         // ISO-8601 first (round-trippable JSON/XML output); then locale-free general.
         if (DateTime.TryParse(raw, Inv, DateTimeStyles.RoundtripKind, out var dt)) return (dt, typeof(DateTime));
         if (DateTime.TryParse(raw, Inv, DateTimeStyles.AssumeLocal, out dt))     return (dt, typeof(DateTime));
@@ -65,18 +65,18 @@ public static class TypeInference
     /// hold both. Null on either side just propagates the other side (with nullable
     /// flag implicit). Mismatched types always widen to <see cref="string"/>.</summary>
     /// <remarks>
-    /// The lattice is intentionally small — bool / int / long / double / DateTime / string,
+    /// The lattice is intentionally small — bool / int / long / decimal / DateTime / string,
     /// in narrow-to-wide order. Anything else uses the existing type unchanged.
     /// </remarks>
     public static Type WidenType(Type a, Type b)
     {
         if (a == b) return a;
         if (a == typeof(string) || b == typeof(string)) return typeof(string);
-        // Numeric promotion: int < long < double.
+        // Numeric promotion: int < long < decimal.
         if (a == typeof(int) && b == typeof(long))    return typeof(long);
         if (a == typeof(long) && b == typeof(int))    return typeof(long);
-        if ((a == typeof(int) || a == typeof(long)) && b == typeof(double)) return typeof(double);
-        if (a == typeof(double) && (b == typeof(int) || b == typeof(long))) return typeof(double);
+        if ((a == typeof(int) || a == typeof(long)) && b == typeof(decimal)) return typeof(decimal);
+        if (a == typeof(decimal) && (b == typeof(int) || b == typeof(long))) return typeof(decimal);
         // Anything else: fall back to string. Crystal/SSRS do the same when type promotion
         // can't bridge the gap — the runtime then uses ToString() for display.
         return typeof(string);

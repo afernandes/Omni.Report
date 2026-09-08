@@ -39,11 +39,12 @@ public sealed class AndroidPrintFrameworkPrinter : IReportPrinter
 
 #else
 
-using Android.Content;
-using Android.OS;
-using Android.Print;
-using Android.App;
-using Java.IO;
+using global::Android.Content;
+using global::Android.OS;
+using global::Android.Print;
+using PrinterInfo = Reporting.Printing.PrinterInfo;
+using global::Android.App;
+using global::Java.IO;
 
 /// <summary>
 /// <see cref="IReportPrinter"/> driving the Android Print Framework
@@ -92,7 +93,7 @@ public sealed class AndroidPrintFrameworkPrinter : IReportPrinter
 
         var adapter = new InMemoryPdfPrintAdapter(pdfBytes, jobName);
         var attrs = new PrintAttributes.Builder()
-            .SetMediaSize(PrintAttributes.MediaSize.IsoA4)
+            .SetMediaSize(PrintAttributes.MediaSize.IsoA4 ?? throw new InvalidOperationException("Android A4 media size is unavailable."))
             .SetColorMode(PrintColorMode.Color)
             .Build();
         printManager.Print(jobName, adapter, attrs);
@@ -143,9 +144,9 @@ public sealed class AndroidPrintFrameworkPrinter : IReportPrinter
                 using var stream = new FileOutputStream(destination.FileDescriptor);
                 stream.Write(_pdfBytes);
                 stream.Flush();
-                callback?.OnWriteFinished(pages ?? [PageRange.AllPages]);
+                callback?.OnWriteFinished(pages ?? [PageRange.AllPages ?? throw new InvalidOperationException("Android page range is unavailable.")]);
             }
-            catch (Java.Lang.Exception ex)
+            catch (global::Java.Lang.Exception ex)
             {
                 callback?.OnWriteFailed(ex.Message);
             }

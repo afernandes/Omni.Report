@@ -12,6 +12,9 @@ namespace Reporting.Rendering.Skia;
 public static class SkiaPrimitiveRenderer
 {
     public static void DrawText(SKCanvas canvas, string text, Rectangle bounds, TextStyle style, float dpi)
+        => DrawText(canvas, text, bounds, style, dpi, null);
+
+    internal static void DrawText(SKCanvas canvas, string text, Rectangle bounds, TextStyle style, float dpi, Action<SKRect>? track)
     {
         ArgumentNullException.ThrowIfNull(canvas);
         ArgumentNullException.ThrowIfNull(style);
@@ -71,12 +74,18 @@ public static class SkiaPrimitiveRenderer
                 foreach (var run in runs)
                 {
                     float runWidth = run.Font.MeasureText(run.Text);
+                    if (track is not null && paint.Color.Alpha > 0)
+                    {
+                        run.Font.MeasureText(run.Text, out var ink);
+                        ink.Offset(cursor, baselineY);
+                        if (!ink.IsEmpty) TrackBounds(track, ink, paint);
+                    }
                     // SKTextAlign.Left preserva o comportamento: o alinhamento do elemento ja foi
                     // resolvido em `cursor` acima, e a sobrecarga antiga era left-aligned por definição.
                     canvas.DrawText(run.Text, cursor, baselineY, SKTextAlign.Left, run.Font, paint);
                     if (decoPaint is not null)
                     {
-                        DrawTextDecorations(canvas, decoPaint, run.Font, cursor, baselineY, runWidth, style.Font.Style);
+                        DrawTextDecorations(canvas, decoPaint, run.Font, cursor, baselineY, runWidth, style.Font.Style, track);
                     }
                     cursor += runWidth;
                 }
@@ -91,7 +100,7 @@ public static class SkiaPrimitiveRenderer
     /// <summary>Draws underline / strikethrough lines for a run — Skia typefaces don't carry them, so they
     /// are stroked from the run's own font metrics (per-run, so a fallback/emoji run is decorated at its own
     /// width). Positions/thicknesses use the metric hints when present, with size-relative fallbacks.</summary>
-    private static void DrawTextDecorations(SKCanvas canvas, SKPaint paint, SKFont font, float x, float baselineY, float width, FontStyle style)
+    private static void DrawTextDecorations(SKCanvas canvas, SKPaint paint, SKFont font, float x, float baselineY, float width, FontStyle style, Action<SKRect>? track)
     {
         if (width <= 0)
         {
@@ -104,6 +113,7 @@ public static class SkiaPrimitiveRenderer
             // UnderlinePosition is a positive offset BELOW the baseline.
             float y = baselineY + (m.UnderlinePosition ?? m.Descent * 0.5f);
             paint.StrokeWidth = m.UnderlineThickness ?? fallbackThickness;
+            TrackBounds(track, new SKRect(x, y, x + width, y), paint);
             canvas.DrawLine(x, y, x + width, y, paint);
         }
         if ((style & FontStyle.Strikeout) != 0)
@@ -111,6 +121,7 @@ public static class SkiaPrimitiveRenderer
             // StrikeoutPosition is a negative offset ABOVE the baseline (Ascent is negative).
             float y = baselineY + (m.StrikeoutPosition ?? m.Ascent * 0.35f);
             paint.StrokeWidth = m.StrikeoutThickness ?? fallbackThickness;
+            TrackBounds(track, new SKRect(x, y, x + width, y), paint);
             canvas.DrawLine(x, y, x + width, y, paint);
         }
     }
@@ -210,6 +221,9 @@ public static class SkiaPrimitiveRenderer
     private readonly record struct TextRun(string Text, SKFont Font);
 
     public static void DrawLine(SKCanvas canvas, Point from, Point to, PenStyle pen, float dpi)
+        => DrawLine(canvas, from, to, pen, dpi, null);
+
+    internal static void DrawLine(SKCanvas canvas, Point from, Point to, PenStyle pen, float dpi, Action<SKRect>? track)
     {
         ArgumentNullException.ThrowIfNull(canvas);
         ArgumentNullException.ThrowIfNull(pen);
@@ -218,43 +232,59 @@ public static class SkiaPrimitiveRenderer
             return;
         }
         using var paint = CreateStrokePaint(pen, dpi);
+        TrackBounds(track, new SKRect(Math.Min(from.X.Px(dpi), to.X.Px(dpi)), Math.Min(from.Y.Px(dpi), to.Y.Px(dpi)),
+            Math.Max(from.X.Px(dpi), to.X.Px(dpi)), Math.Max(from.Y.Px(dpi), to.Y.Px(dpi))), paint);
         canvas.DrawLine(from.ToSKPoint(dpi), to.ToSKPoint(dpi), paint);
     }
 
     public static void DrawRectangle(SKCanvas canvas, Rectangle bounds, PenStyle? pen, BrushStyle? fill, float dpi)
+        => DrawRectangle(canvas, bounds, pen, fill, dpi, null);
+
+    internal static void DrawRectangle(SKCanvas canvas, Rectangle bounds, PenStyle? pen, BrushStyle? fill, float dpi, Action<SKRect>? track)
     {
         ArgumentNullException.ThrowIfNull(canvas);
         var rect = bounds.ToSKRect(dpi);
         if (fill is not null && fill.IsVisible)
         {
             using var paint = CreateFillPaint(fill, rect);
+            TrackBounds(track, rect, paint, includeTransparent: fill is { HasGradient: true });
             canvas.DrawRect(rect, paint);
         }
         if (pen is not null && pen.IsVisible)
         {
             using var paint = CreateStrokePaint(pen, dpi);
+            TrackBounds(track, rect, paint);
             canvas.DrawRect(rect, paint);
         }
     }
 
     public static void DrawEllipse(SKCanvas canvas, Rectangle bounds, PenStyle? pen, BrushStyle? fill, float dpi)
+        => DrawEllipse(canvas, bounds, pen, fill, dpi, null);
+
+    internal static void DrawEllipse(SKCanvas canvas, Rectangle bounds, PenStyle? pen, BrushStyle? fill, float dpi, Action<SKRect>? track)
     {
         ArgumentNullException.ThrowIfNull(canvas);
         var rect = bounds.ToSKRect(dpi);
         if (fill is not null && fill.IsVisible)
         {
             using var paint = CreateFillPaint(fill, rect);
+            TrackBounds(track, rect, paint, includeTransparent: fill is { HasGradient: true });
             canvas.DrawOval(rect, paint);
         }
         if (pen is not null && pen.IsVisible)
         {
             using var paint = CreateStrokePaint(pen, dpi);
+            TrackBounds(track, rect, paint);
             canvas.DrawOval(rect, paint);
         }
     }
 
     public static void DrawImage(SKCanvas canvas, ReadOnlySpan<byte> imageData, Rectangle bounds, float dpi,
         Reporting.Elements.ImageSizing sizing = Reporting.Elements.ImageSizing.Fit)
+        => DrawImage(canvas, imageData, bounds, dpi, sizing, null);
+
+    internal static void DrawImage(SKCanvas canvas, ReadOnlySpan<byte> imageData, Rectangle bounds, float dpi,
+        Reporting.Elements.ImageSizing sizing, Action<SKRect>? track)
     {
         ArgumentNullException.ThrowIfNull(canvas);
         if (imageData.IsEmpty)
@@ -272,6 +302,9 @@ public static class SkiaPrimitiveRenderer
         var src = SKRect.Create(
             (float)(p.SrcX * image.Width), (float)(p.SrcY * image.Height),
             (float)(p.SrcW * image.Width), (float)(p.SrcH * image.Height));
+        var ink = dest;
+        if (p.Clip) ink.Intersect(bounds.ToSKRect(dpi));
+        track?.Invoke(ink);
         int? saved = p.Clip ? canvas.Save() : null;
         if (p.Clip)
         {
@@ -288,6 +321,9 @@ public static class SkiaPrimitiveRenderer
     }
 
     public static void DrawPath(SKCanvas canvas, Action<IPathBuilder> build, PenStyle? pen, BrushStyle? fill, float dpi)
+        => DrawPath(canvas, build, pen, fill, dpi, null);
+
+    internal static void DrawPath(SKCanvas canvas, Action<IPathBuilder> build, PenStyle? pen, BrushStyle? fill, float dpi, Action<SKRect>? track)
     {
         ArgumentNullException.ThrowIfNull(canvas);
         ArgumentNullException.ThrowIfNull(build);
@@ -297,13 +333,34 @@ public static class SkiaPrimitiveRenderer
         if (fill is not null && fill.IsVisible)
         {
             using var paint = CreateFillPaint(fill, path.Bounds);
+            if (track is not null)
+            {
+                using var outline = paint.GetFillPath(path);
+                if (!outline.IsEmpty && (paint.Color.Alpha > 0 || paint.Shader is not null))
+                    TrackBounds(track, outline.TightBounds, null, includeTransparent: true);
+            }
             canvas.DrawPath(path, paint);
         }
         if (pen is not null && pen.IsVisible)
         {
             using var paint = CreateStrokePaint(pen, dpi);
+            if (track is not null)
+            {
+                using var outline = paint.GetFillPath(path);
+                if (!outline.IsEmpty && (paint.Color.Alpha > 0 || paint.Shader is not null))
+                    TrackBounds(track, outline.TightBounds, null, includeTransparent: true);
+            }
             canvas.DrawPath(path, paint);
         }
+    }
+
+    private static void TrackBounds(Action<SKRect>? track, SKRect bounds, SKPaint? paint, bool includeTransparent = false)
+    {
+        if (track is null || (!includeTransparent && paint is not null && paint.Color.Alpha == 0)) return;
+        float padding = paint?.Style == SKPaintStyle.Stroke ? paint.StrokeWidth / 2 : 0;
+        // One device unit covers raster antialiasing / glyph hinting at the page edge.
+        bounds.Inflate(padding + 1, padding + 1);
+        track(bounds);
     }
 
     /// <summary>Builds the fill paint for a primitive: a solid colour, or a two-colour gradient shader when the

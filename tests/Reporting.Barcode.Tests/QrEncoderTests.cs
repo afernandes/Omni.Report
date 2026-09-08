@@ -86,8 +86,15 @@ public class QrEncoderTests
         var m = QrEncoder.EncodeUtf8("hi");
         int dark = 0;
         for (int r = 0; r < m.GetLength(0); r++)
+        {
             for (int c = 0; c < m.GetLength(1); c++)
-                if (m[r, c]) dark++;
+            {
+                if (m[r, c])
+                {
+                    dark++;
+                }
+            }
+        }
 
         var g = QrEncoder.ToGeometry(m, quietZoneModules: 4);
         g.Bars.Count.Should().Be(dark, "ToGeometry emits one BarcodeRect per dark module");

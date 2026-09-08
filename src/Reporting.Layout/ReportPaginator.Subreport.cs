@@ -24,7 +24,7 @@ public sealed partial class ReportPaginator
     {
         // Resolve the child: inline definition wins; otherwise resolve the id via the host.
         var childDef = sub.InlineDefinition
-            ?? (sub.ReportId is { Length: > 0 } id ? request.SubreportResolver?.Invoke(id) : null);
+            ?? (sub.ReportId is { Length: > 0 } id ? ResolveSubreport(id, request) : null);
         if (childDef is null || request.SubreportDepth >= MaxSubreportDepth)
         {
             return [];
@@ -53,12 +53,10 @@ public sealed partial class ReportPaginator
             SubreportDepth = request.SubreportDepth + 1,
         };
 
-        // The child's data is already materialised in-memory (shared registry), so the async
-        // paginate completes synchronously — blocking here is safe and keeps BandRenderer sync.
-        // ExecuteAsync (not PaginateAsync) because this IS already a fresh per-run instance: the child
-        // gets its own evaluator/repeat-headers, and only the expression cache is shared with us.
-        var child = new ReportPaginator(_compiler)
-            .ExecuteAsync(childRequest, CancellationToken.None).GetAwaiter().GetResult();
+        // The child consumes the execution snapshot directly. No provider I/O or blocking async wait occurs here.
+        var childPaginator = new ReportPaginator(_compiler);
+        foreach (var resolved in _resolvedSubreports) childPaginator._resolvedSubreports[resolved.Key] = resolved.Value;
+        var child = childPaginator.ExecutePrepared(childRequest, _preparedSources, _cancellationToken);
         if (child.Pages.Count == 0)
         {
             return [];

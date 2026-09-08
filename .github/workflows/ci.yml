@@ -42,7 +42,7 @@ jobs:
           dotnet test OmniReport.slnx -c Release --no-build
           --collect:"XPlat Code Coverage"
           --results-directory ./TestResults
-          --logger "trx;LogFileName=test-results.trx"
+          --logger trx
 
       - name: Upload TRX
         if: always()
@@ -57,6 +57,14 @@ jobs:
         with:
           name: coverage-windows
           path: ./TestResults/**/coverage.cobertura.xml
+
+      - name: Upload virtual printing diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: printing-diagnostics-windows
+          path: ./TestResults/printing/**
+          if-no-files-found: ignore
 
   build-linux:
     # O nome deste job é um CHECK OBRIGATÓRIO no ruleset "Proteção da main". Renomeá-lo faz o check
@@ -145,3 +153,17 @@ jobs:
           path: |
             ./artifacts/*.nupkg
             ./artifacts/*.snupkg
+
+  build-android:
+    name: Build real Android printing target
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+      - name: Install Android workload
+        run: dotnet workload install android
+      - name: Compile Android driver (not the portable stub)
+        run: dotnet build src/Reporting.Printing.Android/Reporting.Printing.Android.csproj -c Release -p:OMNIREPORT_BUILD_ANDROID=true

@@ -24,16 +24,10 @@ public sealed class DesignerState : Notifying
         SubscribeTab(initial);
 
         // Seed a single sample data source — hosts can replace via Replace*Catalog().
-        DataSources = new ObservableCollection<DesignerDataSource> { DesignerDataSource.SampleVendas };
-        Parameters = new ObservableCollection<DesignerParameter>
-        {
-            new("DataInicio", DesignerFieldType.Date, "01/10/2025"),
-            new("DataFim",    DesignerFieldType.Date, "31/10/2025"),
-        };
-        Relations = new ObservableCollection<DesignerRelation>();
-        Relations.CollectionChanged += (_, _) => RaiseChanged();
-        Variables = new ObservableCollection<DesignerVariable>();
-        Variables.CollectionChanged += (_, _) => RaiseChanged();
+        DataSources.Add(DesignerDataSource.SampleVendas);
+        Parameters.Add(new("DataInicio", DesignerFieldType.Date, "2025-10-01"));
+        Parameters.Add(new("DataFim", DesignerFieldType.Date, "2025-10-31"));
+        initial.IsDirty = false;
     }
 
     public ObservableCollection<DocumentTab> Tabs { get; } = [];
@@ -45,8 +39,10 @@ public sealed class DesignerState : Notifying
         set
         {
             if (ReferenceEquals(_activeTab, value)) return;
+            ClearSelection();
             _activeTab = value;
-            SelectedElement = null;
+            _activeBand = null;
+            IsPreviewing = false;
             RaiseChanged();
         }
     }
@@ -54,18 +50,18 @@ public sealed class DesignerState : Notifying
     /// <summary>The active document's report. Convenience proxy.</summary>
     public ReportDefinitionViewModel Report => _activeTab.Report;
 
-    public CommandHistory History { get; } = new();
+    public CommandHistory History => ActiveTab.History;
 
-    public ObservableCollection<DesignerDataSource> DataSources { get; }
+    public ObservableCollection<DesignerDataSource> DataSources => ActiveTab.DataSources;
 
     /// <summary>Master→detail relationships between data sources. Drives the Relations panel
     /// in the data tree and is consumed by the runtime to filter child rows for each parent.</summary>
-    public ObservableCollection<DesignerRelation> Relations { get; }
-    public ObservableCollection<DesignerParameter>  Parameters  { get; }
+    public ObservableCollection<DesignerRelation> Relations => ActiveTab.Relations;
+    public ObservableCollection<DesignerParameter> Parameters => ActiveTab.Parameters;
 
     /// <summary>Report-level computed variables (RDL <c>&lt;Variables&gt;</c>). Edited in the left panel
     /// and built into <see cref="ReportDefinition.Variables"/>.</summary>
-    public ObservableCollection<DesignerVariable> Variables { get; }
+    public ObservableCollection<DesignerVariable> Variables => ActiveTab.Variables;
 
     public IEnumerable<DesignerField> ActiveFields
         => DataSources.SelectMany(ds => ds.Fields);
@@ -187,7 +183,7 @@ public sealed class DesignerState : Notifying
     /// sandbox loading a code-first sample's own <c>Report.DataSources</c>. The preview pipeline
     /// merges it into the runtime registry; DB-materialised sources of the same name take
     /// precedence. Cleared automatically whenever the active report is replaced.</summary>
-    public Reporting.DataSources.DataSourceRegistry? PreviewDataRegistry { get; set; }
+    public Reporting.DataSources.DataSourceRegistry? PreviewDataRegistry { get => ActiveTab.PreviewDataRegistry; set => ActiveTab.PreviewDataRegistry = value; }
 
     public bool IsDirty => ActiveTab.IsDirty;
 
@@ -200,7 +196,14 @@ public sealed class DesignerState : Notifying
         UnsubscribeTab(_activeTab);
         _activeTab.Report = newReport;
         SubscribeTab(_activeTab);
-        SelectedElement = null;
+        ClearSelection();
+        ActiveBand = null;
+        IsPreviewing = false;
+        DataSources.Clear();
+        Relations.Clear();
+        Parameters.Clear();
+        Variables.Clear();
+        ActiveTab.ParameterValues.Clear();
         History.Clear();
         _activeTab.IsDirty = false;
         PreviewDataRegistry = null; // stale preview data no longer matches the new report
@@ -226,6 +229,7 @@ public sealed class DesignerState : Notifying
         if (idx < 0) return;
         UnsubscribeTab(tab);
         Tabs.RemoveAt(idx);
+        tab.Dispose();
         if (ReferenceEquals(tab, _activeTab))
         {
             ActiveTab = Tabs[Math.Max(0, idx - 1)];
@@ -252,7 +256,8 @@ public sealed class DesignerState : Notifying
         LoadDefinition(_rdl.LoadFromBytes(rdlBytes));
     }
 
-    private void LoadDefinition(ReportDefinition definition)
+    /// <summary>Loads a complete immutable definition and restores its document catalogs.</summary>
+    public void LoadDefinition(ReportDefinition definition)
     {
         ReplaceActiveReport(ReportDefinitionViewModel.FromDefinition(definition));
 
@@ -292,6 +297,7 @@ public sealed class DesignerState : Notifying
         {
             Variables.Add(DesignerVariable.From(v));
         }
+        ActiveTab.IsDirty = false;
     }
 
     /// <summary>Serializes the active tab to a .repx byte array — embeds the current data

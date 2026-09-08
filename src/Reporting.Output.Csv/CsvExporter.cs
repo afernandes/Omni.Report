@@ -64,7 +64,7 @@ public sealed class CsvExporter : IReportExporter
                 }
                 if (row.Cells.TryGetValue(c, out var raw))
                 {
-                    writer.Write(FormatCell(raw, row.Kind));
+                    writer.Write(FormatCell(raw, row.Sources.GetValueOrDefault(c)?.SemanticValue));
                 }
                 // else: empty cell → emit nothing between delimiters
             }
@@ -73,16 +73,15 @@ public sealed class CsvExporter : IReportExporter
         writer.Flush();
     }
 
-    private string FormatCell(string value, RowKind rowKind)
+    private string FormatCell(string value, object? semanticValue)
     {
         // Detail rows: prefer normalized numeric output so downstream parsers don't need
         // culture-specific decimal handling.
         string body;
         if (_options.NormalizeNumbers
-            && rowKind == RowKind.Detail
-            && LayoutPrimitiveGrid.TryParseDecimal(value) is decimal d)
+            && semanticValue is decimal or int or long)
         {
-            body = d.ToString("0.##########", InvariantNumberFormat(_options.DecimalSeparator));
+            body = Convert.ToDecimal(semanticValue, CultureInfo.InvariantCulture).ToString("G", InvariantNumberFormat(_options.DecimalSeparator));
         }
         else
         {

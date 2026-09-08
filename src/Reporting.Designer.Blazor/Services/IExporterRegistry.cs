@@ -82,7 +82,7 @@ public sealed class ExporterRegistry : IExporterRegistry
         return exporter.Format.ToLowerInvariant() switch
         {
             "pdf"      => new(exporter, "PDF",      "Portable Document Format — preserva vetores e fontes", "file-text",        Order: 10,  IsPrimary: true),
-            "xlsx"     => new(exporter, "Excel",    "Planilha do Excel (XLSX) com fórmulas e formatação",   "file-spreadsheet", Order: 20),
+            "xlsx"     => new(exporter, "Excel",    "Planilha do Excel (XLSX) com valores preservados e formatação",   "file-spreadsheet", Order: 20),
             "docx"     => new(exporter, "Word",     "Documento do Word (DOCX) editável",                    "file-text",        Order: 25),
             "html"     => new(exporter, "HTML",     "Página HTML estática com SVG vetorial",                "file-code",        Order: 30),
             "svg"      => new(exporter, "SVG",      "Gráfico vetorial escalável — uma página por arquivo",  "file-code",        Order: 40),

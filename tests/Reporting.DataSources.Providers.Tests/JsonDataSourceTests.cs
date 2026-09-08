@@ -114,27 +114,27 @@ public class JsonDataSourceTests
     }
 
     [Fact]
-    public async Task Schema_infers_int_double_bool_string_types()
+    public async Task ReadAsync_NumerosDecimais_InfereDecimal()
     {
         var json = """[{"n":1,"d":2.5,"b":true,"s":"hi"}]""";
         var ds = new JsonDataSource("Test", new JsonDataSourceOptions { InlineJson = json });
         _ = await ds.ReadAsync().ToListAsync(); // populate schema
         var schema = ds.Schema;
         schema.Fields.First(f => f.Name == "n").Type.Should().Be(typeof(int));
-        schema.Fields.First(f => f.Name == "d").Type.Should().Be(typeof(double));
+        schema.Fields.First(f => f.Name == "d").Type.Should().Be(typeof(decimal));
         schema.Fields.First(f => f.Name == "b").Type.Should().Be(typeof(bool));
         schema.Fields.First(f => f.Name == "s").Type.Should().Be(typeof(string));
     }
 
     [Fact]
-    public async Task Mixed_int_and_double_widens_to_double()
+    public async Task ReadAsync_InteirosEDecimais_PromoveParaDecimal()
     {
         // RDL-style: a column with mixed numeric kinds widens to the largest one so
         // expressions like Sum(Fields.price) don't lose fractional cents.
         var json = """[{"price":10},{"price":12.5}]""";
         var ds = new JsonDataSource("Test", new JsonDataSourceOptions { InlineJson = json });
         _ = await ds.ReadAsync().ToListAsync();
-        ds.Schema.Fields.First(f => f.Name == "price").Type.Should().Be(typeof(double));
+        ds.Schema.Fields.First(f => f.Name == "price").Type.Should().Be(typeof(decimal));
     }
 
     [Fact]

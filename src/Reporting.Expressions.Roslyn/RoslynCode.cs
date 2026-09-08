@@ -9,6 +9,8 @@ namespace Reporting.Expressions.Roslyn;
 /// <c>Code.MethodName(...)</c>.
 /// </summary>
 /// <remarks>
+/// Resolver delegates keep their evaluator alive; releasing them permits collection and unloading.
+/// For deterministic lifetime, construct and dispose <see cref="RoslynCodeEvaluator"/> explicitly.
 /// <b>Security:</b> enabling this compiles and runs arbitrary C# embedded in the report. Only use
 /// it with report definitions you trust. See <see cref="RoslynCodeEvaluator"/>.
 /// </remarks>
