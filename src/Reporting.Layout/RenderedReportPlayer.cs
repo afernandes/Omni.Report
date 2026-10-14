@@ -27,6 +27,7 @@ public static class RenderedReportPlayer
     {
         ArgumentNullException.ThrowIfNull(page);
         ArgumentNullException.ThrowIfNull(context);
+        using var operation = Reporting.Diagnostics.ReportTelemetry.Start("render");
         // Resolve continuous paper before page framing so owned raster surfaces have
         // enough space for all content. Borrowed canvases retain their caller-defined size.
         var pageSetup = page.PageSetup.IsContinuous
@@ -45,6 +46,7 @@ public static class RenderedReportPlayer
         {
             context.EndPage();
         }
+        operation.Complete();
     }
 
     /// <summary>Returns a new <see cref="PageSetup"/> with <c>Paper.Height</c> replaced by the
@@ -80,43 +82,43 @@ public static class RenderedReportPlayer
         }
         try
         {
-        switch (primitive)
-        {
-            case DrawTextPrimitive t:
-                context.DrawText(t.Text, t.Bounds, t.Style);
-                break;
-            case DrawLinePrimitive l:
-                context.DrawLine(l.From, l.To, l.Pen);
-                break;
-            case DrawRectanglePrimitive r:
-                context.DrawRectangle(r.Bounds, r.Pen, r.Fill);
-                break;
-            case DrawEllipsePrimitive e:
-                context.DrawEllipse(e.Bounds, e.Pen, e.Fill);
-                break;
-            case DrawImagePrimitive i:
-                ReadOnlySpan<byte> span;
-                if (i.Data.Count == 0)
-                {
-                    span = ReadOnlySpan<byte>.Empty;
-                }
-                else
-                {
-                    var copy = new byte[i.Data.Count];
-                    for (int k = 0; k < copy.Length; k++)
+            switch (primitive)
+            {
+                case DrawTextPrimitive t:
+                    context.DrawText(t.Text, t.Bounds, t.Style);
+                    break;
+                case DrawLinePrimitive l:
+                    context.DrawLine(l.From, l.To, l.Pen);
+                    break;
+                case DrawRectanglePrimitive r:
+                    context.DrawRectangle(r.Bounds, r.Pen, r.Fill);
+                    break;
+                case DrawEllipsePrimitive e:
+                    context.DrawEllipse(e.Bounds, e.Pen, e.Fill);
+                    break;
+                case DrawImagePrimitive i:
+                    ReadOnlySpan<byte> span;
+                    if (i.Data.Count == 0)
                     {
-                        copy[k] = i.Data[k];
+                        span = ReadOnlySpan<byte>.Empty;
                     }
-                    span = copy;
-                }
-                context.DrawImage(span, i.Bounds, i.Sizing);
-                break;
-            case DrawPolygonPrimitive poly:
-                context.DrawPath(poly.BuildPath, poly.Pen, poly.Fill);
-                break;
-            default:
-                throw new NotSupportedException($"Primitiva de layout não suportada: {primitive.GetType().FullName}.");
-        }
+                    else
+                    {
+                        var copy = new byte[i.Data.Count];
+                        for (int k = 0; k < copy.Length; k++)
+                        {
+                            copy[k] = i.Data[k];
+                        }
+                        span = copy;
+                    }
+                    context.DrawImage(span, i.Bounds, i.Sizing);
+                    break;
+                case DrawPolygonPrimitive poly:
+                    context.DrawPath(poly.BuildPath, poly.Pen, poly.Fill);
+                    break;
+                default:
+                    throw new NotSupportedException($"Primitiva de layout não suportada: {primitive.GetType().FullName}.");
+            }
         }
         finally
         {

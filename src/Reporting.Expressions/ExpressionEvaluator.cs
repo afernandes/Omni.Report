@@ -390,218 +390,224 @@ public sealed class ExpressionEvaluator
         // expression. Arithmetic errors (divide-by-zero) inside a taken branch still propagate as before.
         try
         {
-        switch (name.ToLowerInvariant())
-        {
-            // ── Conditional ──
-            case "iif": // only the taken branch is evaluated (safer than SSRS, which evaluates both)
-                if (n < 3) return false;
-                result = Bool(0) ? p.Evaluate(1) : p.Evaluate(2);
-                return true;
-            case "isnothing":
-                result = n > 0 && p.Evaluate(0) is null;
-                return true;
-            case "switch": // (cond1, val1, cond2, val2, …) → first matching value, else null
-                for (int i = 0; i + 1 < n; i += 2)
-                {
-                    if (Bool(i)) { result = p.Evaluate(i + 1); return true; }
-                }
-                return true;
-            case "choose": // 1-based index into the value list
-                if (n < 2) return false;
-                var idx = Int(0);
-                if (idx >= 1 && idx < n) { result = p.Evaluate(idx); }
-                return true;
-
-            // ── Text ──
-            case "concat": // variadic string concatenation — the target of VB's & operator
+            switch (name.ToLowerInvariant())
             {
-                var sb = new System.Text.StringBuilder();
-                for (int i = 0; i < n; i++) { sb.Append(S(i)); }
-                result = sb.ToString();
-                return true;
-            }
-            case "like": // VB Like: * = any run, ? = one char, # = one digit. Case-SENSITIVE (see VbLike).
-                if (n < 2) return false;
-                result = VbLike(S(0), S(1));
-                return true;
-            case "len":
-                result = n > 0 ? S(0).Length : 0;
-                return true;
-            case "left":
-                if (n < 2) return false;
-                { var s = S(0); result = s[..Math.Clamp(Int(1), 0, s.Length)]; }
-                return true;
-            case "right":
-                if (n < 2) return false;
-                { var s = S(0); result = s[(s.Length - Math.Clamp(Int(1), 0, s.Length))..]; }
-                return true;
-            case "mid": // VB Mid: 1-based start, optional length
-                if (n < 2) return false;
-                {
-                    var s = S(0);
-                    var start = Math.Max(1, Int(1)) - 1;
-                    if (start >= s.Length) { result = string.Empty; return true; }
-                    var len = n >= 3 ? Math.Max(0, Int(2)) : s.Length - start;
-                    result = s.Substring(start, Math.Min(len, s.Length - start));
-                }
-                return true;
-            case "trim": result = n > 0 ? S(0).Trim() : string.Empty; return true;
-            case "ltrim": result = n > 0 ? S(0).TrimStart() : string.Empty; return true;
-            case "rtrim": result = n > 0 ? S(0).TrimEnd() : string.Empty; return true;
-            case "ucase":
-            case "upper": result = n > 0 ? S(0).ToUpper(context.Culture) : string.Empty; return true;
-            case "lcase":
-            case "lower": result = n > 0 ? S(0).ToLower(context.Culture) : string.Empty; return true;
-            case "replace":
-                if (n < 3) return false;
-                result = S(0).Replace(S(1), S(2));
-                return true;
-            case "space": // VB Space(n): n blanks
-                result = new string(' ', n > 0 ? Math.Max(0, Int(0)) : 0);
-                return true;
-            case "strdup": // VB String(n, ch): n copies of the first char of the 2nd arg
-                if (n < 2) return false;
-                { var s = S(1); result = s.Length == 0 ? string.Empty : new string(s[0], Math.Max(0, Int(0))); }
-                return true;
-            case "strreverse":
-                if (n < 1) return false;
-                { var a = S(0).ToCharArray(); Array.Reverse(a); result = new string(a); }
-                return true;
-            case "asc": // VB Asc: code point of the first character (0 for empty)
-                { var s = S(0); result = s.Length == 0 ? 0 : (int)s[0]; }
-                return true;
-            case "chr": // VB Chr: character for a code point
-                if (n < 1) return false;
-                result = char.ConvertFromUtf32(Math.Clamp(Int(0), 0, 0x10FFFF));
-                return true;
-            case "val": // VB Val: leading numeric prefix parsed invariantly; 0 when none
-                result = ValOf(S(0));
-                return true;
-            case "instrrev": // VB InStrRev(s, sub): 1-based index of the LAST occurrence, 0 if none
-                if (n < 2) return false;
-                result = S(0).LastIndexOf(S(1), StringComparison.Ordinal) + 1;
-                return true;
-            case "strcomp": // VB StrComp(a, b): -1 / 0 / 1 (ordinal)
-                if (n < 2) return false;
-                result = Math.Sign(string.CompareOrdinal(S(0), S(1)));
-                return true;
-            case "strconv": // VB StrConv: 1=UpperCase, 2=LowerCase, 3=ProperCase (title case)
-                if (n < 2) return false;
-                {
-                    var s = S(0);
-                    result = Int(1) switch
-                    {
-                        1 => s.ToUpper(context.Culture),
-                        2 => s.ToLower(context.Culture),
-                        3 => context.Culture.TextInfo.ToTitleCase(s.ToLower(context.Culture)),
-                        _ => s,
-                    };
-                }
-                return true;
-
-            // ── Date parts ──
-            case "year": result = n > 0 ? Dt(0).Year : 0; return true;
-            case "month": result = n > 0 ? Dt(0).Month : 0; return true;
-            case "day": result = n > 0 ? Dt(0).Day : 0; return true;
-            case "hour": result = n > 0 ? Dt(0).Hour : 0; return true;
-            case "minute": result = n > 0 ? Dt(0).Minute : 0; return true;
-            case "second": result = n > 0 ? Dt(0).Second : 0; return true;
-            case "weekday": result = n > 0 ? (int)Dt(0).DayOfWeek + 1 : 0; return true; // VB: Sunday = 1
-
-            // ── Date math (VB-style interval strings) ──
-            case "dateadd":
-                if (n < 3) return false;
-                result = AddInterval(S(0), Int(1), Dt(2));
-                return true;
-            case "datediff":
-                if (n < 3) return false;
-                result = DiffInterval(S(0), Dt(1), Dt(2));
-                return true;
-
-            // ── More text ──
-            case "instr": // VB: 1-based position, 0 if not found. InStr(s, sub) or InStr(start, s, sub).
-                if (n == 2) { result = S(0).IndexOf(S(1), StringComparison.Ordinal) + 1; return true; }
-                if (n >= 3)
-                {
-                    var from = Math.Max(1, Int(0)) - 1;
-                    var hay = S(1);
-                    result = from >= hay.Length ? 0 : hay.IndexOf(S(2), from, StringComparison.Ordinal) + 1;
+                // ── Conditional ──
+                case "iif": // only the taken branch is evaluated (safer than SSRS, which evaluates both)
+                    if (n < 3) return false;
+                    result = Bool(0) ? p.Evaluate(1) : p.Evaluate(2);
                     return true;
-                }
-                return false;
+                case "isnothing":
+                    result = n > 0 && p.Evaluate(0) is null;
+                    return true;
+                case "switch": // (cond1, val1, cond2, val2, …) → first matching value, else null
+                    for (int i = 0; i + 1 < n; i += 2)
+                    {
+                        if (Bool(i)) { result = p.Evaluate(i + 1); return true; }
+                    }
+                    return true;
+                case "choose": // 1-based index into the value list
+                    if (n < 2) return false;
+                    var idx = Int(0);
+                    if (idx >= 1 && idx < n) { result = p.Evaluate(idx); }
+                    return true;
 
-            // ── Conversions (VB Cxxx) ──
-            // Numeric/date parsing uses InvariantCulture so a string literal means the same as the
-            // equivalent NCalc literal (the expression language is invariant — '1.5' == 1.5, never 15).
-            // CStr formats with the report culture (the display side); already-typed values pass through.
-            case "cstr": result = n > 0 ? S(0) : string.Empty; return true;
-            case "cint": // parse as double then round (VB CInt; "2.5" → 2), banker's rounding like VB
-                result = n > 0 ? (int)Math.Round(Convert.ToDouble(p.Evaluate(0), CultureInfo.InvariantCulture), MidpointRounding.ToEven) : 0;
-                return true;
-            case "cdbl": result = n > 0 ? Convert.ToDouble(p.Evaluate(0), CultureInfo.InvariantCulture) : 0d; return true;
-            case "cdec": result = n > 0 ? Convert.ToDecimal(p.Evaluate(0), CultureInfo.InvariantCulture) : 0m; return true;
-            case "cbool": result = n > 0 && Bool(0); return true;
-            case "cdate":
-                if (n == 0) { result = default(DateTime); return true; }
-                { var v = p.Evaluate(0); result = v is DateTime cd ? cd : Convert.ToDateTime(v, CultureInfo.InvariantCulture); }
-                return true;
+                // ── Text ──
+                case "concat": // variadic string concatenation — the target of VB's & operator
+                    {
+                        var sb = new System.Text.StringBuilder();
+                        for (int i = 0; i < n; i++) { sb.Append(S(i)); }
+                        result = sb.ToString();
+                        return true;
+                    }
+                case "like": // VB Like: * = any run, ? = one char, # = one digit. Case-SENSITIVE (see VbLike).
+                    if (n < 2) return false;
+                    result = VbLike(S(0), S(1));
+                    return true;
+                case "len":
+                    result = n > 0 ? S(0).Length : 0;
+                    return true;
+                case "left":
+                    if (n < 2) return false;
+                    { var s = S(0); result = s[..Math.Clamp(Int(1), 0, s.Length)]; }
+                    return true;
+                case "right":
+                    if (n < 2) return false;
+                    { var s = S(0); result = s[(s.Length - Math.Clamp(Int(1), 0, s.Length))..]; }
+                    return true;
+                case "mid": // VB Mid: 1-based start, optional length
+                    if (n < 2) return false;
+                    {
+                        var s = S(0);
+                        var start = Math.Max(1, Int(1)) - 1;
+                        if (start >= s.Length) { result = string.Empty; return true; }
+                        var len = n >= 3 ? Math.Max(0, Int(2)) : s.Length - start;
+                        result = s.Substring(start, Math.Min(len, s.Length - start));
+                    }
+                    return true;
+                case "trim": result = n > 0 ? S(0).Trim() : string.Empty; return true;
+                case "ltrim": result = n > 0 ? S(0).TrimStart() : string.Empty; return true;
+                case "rtrim": result = n > 0 ? S(0).TrimEnd() : string.Empty; return true;
+                case "ucase":
+                case "upper": result = n > 0 ? S(0).ToUpper(context.Culture) : string.Empty; return true;
+                case "lcase":
+                case "lower": result = n > 0 ? S(0).ToLower(context.Culture) : string.Empty; return true;
+                case "replace":
+                    if (n < 3) return false;
+                    result = S(0).Replace(S(1), S(2));
+                    return true;
+                case "space": // VB Space(n): n blanks
+                    result = new string(' ', n > 0 ? Math.Max(0, Int(0)) : 0);
+                    return true;
+                case "strdup": // VB String(n, ch): n copies of the first char of the 2nd arg
+                    if (n < 2) return false;
+                    { var s = S(1); result = s.Length == 0 ? string.Empty : new string(s[0], Math.Max(0, Int(0))); }
+                    return true;
+                case "strreverse":
+                    if (n < 1) return false;
+                    { var a = S(0).ToCharArray(); Array.Reverse(a); result = new string(a); }
+                    return true;
+                case "asc": // VB Asc: code point of the first character (0 for empty)
+                    { var s = S(0); result = s.Length == 0 ? 0 : (int)s[0]; }
+                    return true;
+                case "chr": // VB Chr: character for a code point
+                    if (n < 1) return false;
+                    result = char.ConvertFromUtf32(Math.Clamp(Int(0), 0, 0x10FFFF));
+                    return true;
+                case "val": // VB Val: leading numeric prefix parsed invariantly; 0 when none
+                    result = ValOf(S(0));
+                    return true;
+                case "instrrev": // VB InStrRev(s, sub): 1-based index of the LAST occurrence, 0 if none
+                    if (n < 2) return false;
+                    result = S(0).LastIndexOf(S(1), StringComparison.Ordinal) + 1;
+                    return true;
+                case "strcomp": // VB StrComp(a, b): -1 / 0 / 1 (ordinal)
+                    if (n < 2) return false;
+                    result = Math.Sign(string.CompareOrdinal(S(0), S(1)));
+                    return true;
+                case "strconv": // VB StrConv: 1=UpperCase, 2=LowerCase, 3=ProperCase (title case)
+                    if (n < 2) return false;
+                    {
+                        var s = S(0);
+                        result = Int(1) switch
+                        {
+                            1 => s.ToUpper(context.Culture),
+                            2 => s.ToLower(context.Culture),
+                            3 => context.Culture.TextInfo.ToTitleCase(s.ToLower(context.Culture)),
+                            _ => s,
+                        };
+                    }
+                    return true;
 
-            // ── More date parts (VB DatePart with interval string) ──
-            case "datepart": // DatePart(interval, date) — generalises Year/Month/Day/… via the interval string
-                if (n < 2) return false;
-                result = DatePartOf(S(0), Dt(1));
-                return true;
-            case "monthname": // MonthName(1..12 [, abbreviate])
-                if (n < 1) return false;
-                { var m = Int(0); var dtf = context.Culture.DateTimeFormat;
-                  result = m is >= 1 and <= 12 ? (n >= 2 && Bool(1) ? dtf.GetAbbreviatedMonthName(m) : dtf.GetMonthName(m)) : string.Empty; }
-                return true;
-            case "weekdayname": // WeekdayName(1..7 [, abbreviate]) — VB: 1 = Sunday
-                if (n < 1) return false;
-                { var wd = Int(0); var dtf = context.Culture.DateTimeFormat;
-                  result = wd is >= 1 and <= 7
-                      ? (n >= 2 && Bool(1) ? dtf.GetAbbreviatedDayName((DayOfWeek)(wd - 1)) : dtf.GetDayName((DayOfWeek)(wd - 1)))
-                      : string.Empty; }
-                return true;
+                // ── Date parts ──
+                case "year": result = n > 0 ? Dt(0).Year : 0; return true;
+                case "month": result = n > 0 ? Dt(0).Month : 0; return true;
+                case "day": result = n > 0 ? Dt(0).Day : 0; return true;
+                case "hour": result = n > 0 ? Dt(0).Hour : 0; return true;
+                case "minute": result = n > 0 ? Dt(0).Minute : 0; return true;
+                case "second": result = n > 0 ? Dt(0).Second : 0; return true;
+                case "weekday": result = n > 0 ? (int)Dt(0).DayOfWeek + 1 : 0; return true; // VB: Sunday = 1
 
-            // ── Formatting (VB Format* helpers → ValueFormatter with a standard .NET format string) ──
-            case "formatcurrency": // FormatCurrency(value [, decimals=2])
-                if (n < 1) return false;
-                result = ValueFormatter.Format(p.Evaluate(0), "C" + FormatDecimals(), context.Culture);
-                return true;
-            case "formatnumber":
-                if (n < 1) return false;
-                result = ValueFormatter.Format(p.Evaluate(0), "N" + FormatDecimals(), context.Culture);
-                return true;
-            case "formatpercent": // VB: 0.25 → "25%"
-                if (n < 1) return false;
-                result = ValueFormatter.Format(p.Evaluate(0), "P" + FormatDecimals(), context.Culture);
-                return true;
-            case "formatdatetime": // FormatDateTime(date [, VB DateFormat 0..4])
-                if (n < 1) return false;
-                { var d = Dt(0);
-                  result = (n >= 2 ? Int(1) : 0) switch
-                  {
-                      1 => d.ToString("D", context.Culture), // vbLongDate
-                      2 => d.ToString("d", context.Culture), // vbShortDate
-                      3 => d.ToString("T", context.Culture), // vbLongTime
-                      4 => d.ToString("t", context.Culture), // vbShortTime
-                      _ => d.ToString("G", context.Culture), // vbGeneralDate
-                  }; }
-                return true;
+                // ── Date math (VB-style interval strings) ──
+                case "dateadd":
+                    if (n < 3) return false;
+                    result = AddInterval(S(0), Int(1), Dt(2));
+                    return true;
+                case "datediff":
+                    if (n < 3) return false;
+                    result = DiffInterval(S(0), Dt(1), Dt(2));
+                    return true;
 
-            // ── More numeric (VB) ── (Sign is left to NCalc's native function.) InvariantCulture parse
-            // matches the Cxxx conversions: a string literal means the same as the NCalc numeric literal.
-            case "fix": // truncate toward zero: Fix(-2.7) = -2
-                result = n > 0 ? Math.Truncate(Convert.ToDouble(p.Evaluate(0), CultureInfo.InvariantCulture)) : 0d;
-                return true;
-            case "int": // VB Int: floor toward -∞: Int(-2.7) = -3
-                result = n > 0 ? Math.Floor(Convert.ToDouble(p.Evaluate(0), CultureInfo.InvariantCulture)) : 0d;
-                return true;
+                // ── More text ──
+                case "instr": // VB: 1-based position, 0 if not found. InStr(s, sub) or InStr(start, s, sub).
+                    if (n == 2) { result = S(0).IndexOf(S(1), StringComparison.Ordinal) + 1; return true; }
+                    if (n >= 3)
+                    {
+                        var from = Math.Max(1, Int(0)) - 1;
+                        var hay = S(1);
+                        result = from >= hay.Length ? 0 : hay.IndexOf(S(2), from, StringComparison.Ordinal) + 1;
+                        return true;
+                    }
+                    return false;
 
-            default:
-                return false;
-        }
+                // ── Conversions (VB Cxxx) ──
+                // Numeric/date parsing uses InvariantCulture so a string literal means the same as the
+                // equivalent NCalc literal (the expression language is invariant — '1.5' == 1.5, never 15).
+                // CStr formats with the report culture (the display side); already-typed values pass through.
+                case "cstr": result = n > 0 ? S(0) : string.Empty; return true;
+                case "cint": // parse as double then round (VB CInt; "2.5" → 2), banker's rounding like VB
+                    result = n > 0 ? (int)Math.Round(Convert.ToDouble(p.Evaluate(0), CultureInfo.InvariantCulture), MidpointRounding.ToEven) : 0;
+                    return true;
+                case "cdbl": result = n > 0 ? Convert.ToDouble(p.Evaluate(0), CultureInfo.InvariantCulture) : 0d; return true;
+                case "cdec": result = n > 0 ? Convert.ToDecimal(p.Evaluate(0), CultureInfo.InvariantCulture) : 0m; return true;
+                case "cbool": result = n > 0 && Bool(0); return true;
+                case "cdate":
+                    if (n == 0) { result = default(DateTime); return true; }
+                    { var v = p.Evaluate(0); result = v is DateTime cd ? cd : Convert.ToDateTime(v, CultureInfo.InvariantCulture); }
+                    return true;
+
+                // ── More date parts (VB DatePart with interval string) ──
+                case "datepart": // DatePart(interval, date) — generalises Year/Month/Day/… via the interval string
+                    if (n < 2) return false;
+                    result = DatePartOf(S(0), Dt(1));
+                    return true;
+                case "monthname": // MonthName(1..12 [, abbreviate])
+                    if (n < 1) return false;
+                    {
+                        var m = Int(0); var dtf = context.Culture.DateTimeFormat;
+                        result = m is >= 1 and <= 12 ? (n >= 2 && Bool(1) ? dtf.GetAbbreviatedMonthName(m) : dtf.GetMonthName(m)) : string.Empty;
+                    }
+                    return true;
+                case "weekdayname": // WeekdayName(1..7 [, abbreviate]) — VB: 1 = Sunday
+                    if (n < 1) return false;
+                    {
+                        var wd = Int(0); var dtf = context.Culture.DateTimeFormat;
+                        result = wd is >= 1 and <= 7
+                            ? (n >= 2 && Bool(1) ? dtf.GetAbbreviatedDayName((DayOfWeek)(wd - 1)) : dtf.GetDayName((DayOfWeek)(wd - 1)))
+                            : string.Empty;
+                    }
+                    return true;
+
+                // ── Formatting (VB Format* helpers → ValueFormatter with a standard .NET format string) ──
+                case "formatcurrency": // FormatCurrency(value [, decimals=2])
+                    if (n < 1) return false;
+                    result = ValueFormatter.Format(p.Evaluate(0), "C" + FormatDecimals(), context.Culture);
+                    return true;
+                case "formatnumber":
+                    if (n < 1) return false;
+                    result = ValueFormatter.Format(p.Evaluate(0), "N" + FormatDecimals(), context.Culture);
+                    return true;
+                case "formatpercent": // VB: 0.25 → "25%"
+                    if (n < 1) return false;
+                    result = ValueFormatter.Format(p.Evaluate(0), "P" + FormatDecimals(), context.Culture);
+                    return true;
+                case "formatdatetime": // FormatDateTime(date [, VB DateFormat 0..4])
+                    if (n < 1) return false;
+                    {
+                        var d = Dt(0);
+                        result = (n >= 2 ? Int(1) : 0) switch
+                        {
+                            1 => d.ToString("D", context.Culture), // vbLongDate
+                            2 => d.ToString("d", context.Culture), // vbShortDate
+                            3 => d.ToString("T", context.Culture), // vbLongTime
+                            4 => d.ToString("t", context.Culture), // vbShortTime
+                            _ => d.ToString("G", context.Culture), // vbGeneralDate
+                        };
+                    }
+                    return true;
+
+                // ── More numeric (VB) ── (Sign is left to NCalc's native function.) InvariantCulture parse
+                // matches the Cxxx conversions: a string literal means the same as the NCalc numeric literal.
+                case "fix": // truncate toward zero: Fix(-2.7) = -2
+                    result = n > 0 ? Math.Truncate(Convert.ToDouble(p.Evaluate(0), CultureInfo.InvariantCulture)) : 0d;
+                    return true;
+                case "int": // VB Int: floor toward -∞: Int(-2.7) = -3
+                    result = n > 0 ? Math.Floor(Convert.ToDouble(p.Evaluate(0), CultureInfo.InvariantCulture)) : 0d;
+                    return true;
+
+                default:
+                    return false;
+            }
         }
         catch (Exception ex) when (ex is FormatException or InvalidCastException or OverflowException)
         {
@@ -756,19 +762,4 @@ public sealed class ExpressionEvaluator
 
     private static readonly HashSet<string> AggregateNames =
         new(StringComparer.OrdinalIgnoreCase) { "Sum", "Avg", "Average", "Count", "Min", "Max", "RunningTotal", "First", "Last", "CountDistinct", "Var", "VarP", "StDev", "StDevP" };
-}
-
-/// <summary>Thrown when an expression parses but fails while being evaluated — a missing field, a bad cast,
-/// a division by zero.</summary>
-public sealed class ExpressionEvaluationException : Exception
-{
-    /// <summary>Wraps the underlying failure, keeping the offending text for the message.</summary>
-    /// <param name="expression">The expression that failed to evaluate.</param>
-    /// <param name="inner">The original exception.</param>
-    public ExpressionEvaluationException(string expression, Exception inner)
-        : base($"Failed to evaluate expression: {expression}", inner)
-        => Expression = expression;
-
-    /// <summary>The expression text that failed, so the error can name the field it came from.</summary>
-    public string Expression { get; }
 }

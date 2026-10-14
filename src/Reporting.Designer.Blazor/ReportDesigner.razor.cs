@@ -22,14 +22,24 @@ public partial class ReportDesigner
 {
     [Parameter] public DesignerState? InitialState { get; set; }
     [Parameter] public EventCallback<byte[]> OnSaved { get; set; }
+    /// <summary>Work budget for interactive previews; hosts can replace it for their workloads.</summary>
+    [Parameter]
+    public Reporting.Layout.PaginationLimits PreviewLimits { get; set; } = new()
+    {
+        MaxSourceRows = 100_000,
+        MaxIterationRows = 200_000,
+        MaxPages = 2_000,
+        MaxPrimitives = 1_000_000
+    };
 
     public DesignerState State { get; private set; } = default!;
 
     [Inject] private IServiceProvider Services { get; set; } = default!;
 
-    private List<byte[]> _previewPages = [];
+    private readonly Services.DesignerMenuCoordinator _menus = new();
+    private IReadOnlyList<byte[]> _previewPages = [];
     private int _previewCurrentPage;
-    private Reporting.Layout.RenderedReport? _previewRendered;
+    private Reporting.Layout.PreparedReport? _previewPrepared;
     private int _previewZoom = 100;
     private bool _pageSetupOpen;
     private bool _expressionEditorOpen;
@@ -89,8 +99,8 @@ public partial class ReportDesigner
             _selfRef ??= DotNetObjectReference.Create(this);
             try
             {
-                await Js.InvokeVoidAsync("omniDesigner.register", _selfRef);
-                await Js.InvokeVoidAsync("omniDesigner.setTheme", State.Theme);
+                await Js.InvokeVoidAsync("omniDesigner.register", _rootRef, _selfRef);
+                await Js.InvokeVoidAsync("omniDesigner.setTheme", State.Theme, _rootRef);
                 await Js.InvokeVoidAsync("omniDesigner.focus", _rootRef);
             }
             catch (JSException) { }
@@ -102,11 +112,32 @@ public partial class ReportDesigner
     {
         State.Changed -= OnDesignerChanged;
         _previewCancellation?.Cancel();
+        _previewPages = [];
+        _previewPrepared?.Dispose();
+        _previewPrepared = null;
         _paramPromptTcs?.TrySetResult(null);
-        try { await Js.InvokeVoidAsync("omniDesigner.unregister"); }
+        try { await Js.InvokeVoidAsync("omniDesigner.unregister", _rootRef); }
         catch (JSException) { }
+        catch (JSDisconnectedException) { }
         catch (InvalidOperationException) { }
         _selfRef?.Dispose();
+    }
+
+    private void ToggleSelectedProperty(bool locked)
+    {
+        var commands = new List<IDesignerCommand>();
+        foreach (var element in State.SelectedElements.ToArray())
+        {
+            var before = element.ToElement();
+            var beforeLocked = element.IsLocked;
+            if (locked) { element.IsLocked = !element.IsLocked; }
+            else { element.IsVisible = !element.IsVisible; }
+            commands.Add(new ElementSnapshotCommand(element, before, element.ToElement(), beforeLocked, element.IsLocked));
+        }
+        if (commands.Count > 0)
+        {
+            State.History.RecordExecuted(new CompositeCommand(locked ? "Bloquear seleção" : "Alterar visibilidade", commands));
+        }
     }
 
     private int TotalElementCount => State.Report.Bands.Sum(b => b.Elements.Count);
@@ -168,7 +199,10 @@ public partial class ReportDesigner
     {
         get
         {
-            if (State.SelectedElement is null) return "Detail";
+            if (State.SelectedElement is null)
+            {
+                return "Detail";
+            }
             var band = State.Report.Bands.FirstOrDefault(b => b.Elements.Contains(State.SelectedElement));
             return band?.DisplayLabel ?? "Detail";
         }
@@ -210,8 +244,8 @@ public partial class ReportDesigner
             new ContextMenu.ContextMenuItem { Label = "Mesma altura",        IsDisabled = !multi, OnClick = EventCallback.Factory.Create(this, () => Align(AlignOp.SameHeight)) },
             new ContextMenu.ContextMenuItem { Label = "Mesmo tamanho",       IsDisabled = !multi, OnClick = EventCallback.Factory.Create(this, () => Align(AlignOp.SameBoth)) },
             ContextMenu.ContextMenuItem.Separator(),
-            new ContextMenu.ContextMenuItem { Label = element.IsLocked ? "Desbloquear" : "Bloquear", OnClick = EventCallback.Factory.Create(this, () => { foreach (var e in State.SelectedElements.ToArray()) e.IsLocked = !e.IsLocked; }) },
-            new ContextMenu.ContextMenuItem { Label = element.IsVisible ? "Ocultar" : "Mostrar",     OnClick = EventCallback.Factory.Create(this, () => { foreach (var e in State.SelectedElements.ToArray()) e.IsVisible = !e.IsVisible; }) },
+            new ContextMenu.ContextMenuItem { Label = element.IsLocked ? "Desbloquear" : "Bloquear", OnClick = EventCallback.Factory.Create(this, () => ToggleSelectedProperty(true)) },
+            new ContextMenu.ContextMenuItem { Label = element.IsVisible ? "Ocultar" : "Mostrar",     OnClick = EventCallback.Factory.Create(this, () => ToggleSelectedProperty(false)) },
             ContextMenu.ContextMenuItem.Separator(),
             new ContextMenu.ContextMenuItem { Label = "Excluir", Shortcut = "Del", IsDanger = true, OnClick = EventCallback.Factory.Create(this, OnDeleteSelected) },
         };
@@ -308,12 +342,18 @@ public partial class ReportDesigner
                 if (id is not null)
                 {
                     var el = State.Report.Bands.SelectMany(b => b.Elements).FirstOrDefault(e => e.Id == id);
-                    if (el is not null) OpenElementContextMenu(el, x, y);
+                    if (el is not null)
+                    {
+                        OpenElementContextMenu(el, x, y);
+                    }
                 }
                 break;
             case "band":
                 var band = State.Report.Bands.FirstOrDefault(b => b.Kind.ToString() == id);
-                if (band is not null) OpenBandContextMenu(band, x, y);
+                if (band is not null)
+                {
+                    OpenBandContextMenu(band, x, y);
+                }
                 break;
             case "page":
                 OpenPageContextMenu(x, y);
@@ -346,7 +386,10 @@ public partial class ReportDesigner
         var elHmm = element.Height.ToMm();
         var elYmm = element.Y.ToMm();
         if (elYmm < 0) { elYmm = 0; element.Y = Unit.Zero; }
-        if (elYmm + elHmm <= bandHmm) return;        // already fits — nothing to do
+        if (elYmm + elHmm <= bandHmm)
+        {
+            return;        // already fits — nothing to do
+        }
         if (elHmm <= bandHmm)
         {
             // Slide the element up so it fits within the band's current height.
@@ -381,12 +424,18 @@ public partial class ReportDesigner
         // Snapshot first — removing from band.Elements mutates State.SelectedElements (each
         // removal triggers Set → ClearSelection paths). Iterate the snapshot to delete all.
         var targets = State.SelectedElements.ToArray();
-        if (targets.Length == 0) return;
+        if (targets.Length == 0)
+        {
+            return;
+        }
         State.ClearSelection();
         foreach (var element in targets)
         {
             var band = State.Report.Bands.FirstOrDefault(b => b.Elements.Contains(element));
-            if (band is null) continue;
+            if (band is null)
+            {
+                continue;
+            }
             State.History.Push(new RemoveElementCommand(band, element));
         }
     }
@@ -439,7 +488,13 @@ public partial class ReportDesigner
     private static string SanitizeName(string label)
     {
         var sb = new System.Text.StringBuilder(label.Length);
-        foreach (var c in label) if (char.IsLetterOrDigit(c)) sb.Append(c);
+        foreach (var c in label)
+        {
+            if (char.IsLetterOrDigit(c))
+            {
+                sb.Append(c);
+            }
+        }
         return sb.Length > 0 ? sb.ToString() : "Field";
     }
 
@@ -501,24 +556,29 @@ public partial class ReportDesigner
         {
             var path = _bindingPath;
             if (path is not null)
+            {
                 State.History.Push(new ChangePropertyCommand<string?>("Editar expressão", () => el.GetPropertyExpression(path), value => el.SetPropertyExpression(path, value), expression));
+            }
             else if (el.Kind == DesignerElementKind.Label)
+            {
                 State.History.Push(new ChangePropertyCommand<string>("Editar texto", () => el.Text, value => el.Text = value, expression));
+            }
             else
+            {
                 State.History.Push(new ChangePropertyCommand<string>("Editar expressão", () => el.Expression, value => el.Expression = value, expression));
+            }
         }
         _bindingPath = null;
         _expressionEditorOpen = false;
     }
 
-    // ─── Alignment / Distribution / Z-order ─────────────────────────────────────
-    public enum AlignOp { Left, CenterH, Right, Top, MiddleV, Bottom, DistributeH, DistributeV, SameWidth, SameHeight, SameBoth }
-
     private void Align(AlignOp op)
     {
         var sel = State.SelectedElements.ToList();
-        if (sel.Count < 2) return;
-
+        if (sel.Count < 2)
+        {
+            return;
+        }
         // Build the moves/resizes as commands (each captures the element's CURRENT position as "old"
         // before anything is applied), then push ONE composite so the whole operation is a single
         // undoable Ctrl+Z — matching every other designer mutation. Without this, align/distribute/
@@ -526,11 +586,17 @@ public partial class ReportDesigner
         var commands = new List<IDesignerCommand>();
         void Move(ElementViewModel e, Unit x, Unit y)
         {
-            if (e.X != x || e.Y != y) commands.Add(new MoveElementCommand(e, x, y));
+            if (e.X != x || e.Y != y)
+            {
+                commands.Add(new MoveElementCommand(e, x, y));
+            }
         }
         void Resize(ElementViewModel e, Unit w, Unit h)
         {
-            if (e.Width != w || e.Height != h) commands.Add(new ResizeElementCommand(e, w, h));
+            if (e.Width != w || e.Height != h)
+            {
+                commands.Add(new ResizeElementCommand(e, w, h));
+            }
         }
 
         switch (op)
@@ -538,37 +604,55 @@ public partial class ReportDesigner
             case AlignOp.Left:
                 {
                     var x = sel.Min(e => e.X);
-                    foreach (var e in sel) Move(e, x, e.Y);
+                    foreach (var e in sel)
+                    {
+                        Move(e, x, e.Y);
+                    }
                     break;
                 }
             case AlignOp.Right:
                 {
                     var right = sel.Max(e => e.X + e.Width);
-                    foreach (var e in sel) Move(e, right - e.Width, e.Y);
+                    foreach (var e in sel)
+                    {
+                        Move(e, right - e.Width, e.Y);
+                    }
                     break;
                 }
             case AlignOp.CenterH:
                 {
                     var centerMm = sel.Average(e => (e.X + e.Width / 2).ToMm());
-                    foreach (var e in sel) Move(e, Unit.FromMm(centerMm) - e.Width / 2, e.Y);
+                    foreach (var e in sel)
+                    {
+                        Move(e, Unit.FromMm(centerMm) - e.Width / 2, e.Y);
+                    }
                     break;
                 }
             case AlignOp.Top:
                 {
                     var y = sel.Min(e => e.Y);
-                    foreach (var e in sel) Move(e, e.X, y);
+                    foreach (var e in sel)
+                    {
+                        Move(e, e.X, y);
+                    }
                     break;
                 }
             case AlignOp.Bottom:
                 {
                     var bottom = sel.Max(e => e.Y + e.Height);
-                    foreach (var e in sel) Move(e, e.X, bottom - e.Height);
+                    foreach (var e in sel)
+                    {
+                        Move(e, e.X, bottom - e.Height);
+                    }
                     break;
                 }
             case AlignOp.MiddleV:
                 {
                     var middleMm = sel.Average(e => (e.Y + e.Height / 2).ToMm());
-                    foreach (var e in sel) Move(e, e.X, Unit.FromMm(middleMm) - e.Height / 2);
+                    foreach (var e in sel)
+                    {
+                        Move(e, e.X, Unit.FromMm(middleMm) - e.Height / 2);
+                    }
                     break;
                 }
             case AlignOp.DistributeH when sel.Count >= 3:
@@ -609,20 +693,29 @@ public partial class ReportDesigner
             case AlignOp.SameWidth:
                 {
                     var w = sel[0].Width;
-                    foreach (var e in sel) Resize(e, w, e.Height);
+                    foreach (var e in sel)
+                    {
+                        Resize(e, w, e.Height);
+                    }
                     break;
                 }
             case AlignOp.SameHeight:
                 {
                     var h = sel[0].Height;
-                    foreach (var e in sel) Resize(e, e.Width, h);
+                    foreach (var e in sel)
+                    {
+                        Resize(e, e.Width, h);
+                    }
                     break;
                 }
             case AlignOp.SameBoth:
                 {
                     var w = sel[0].Width;
                     var h = sel[0].Height;
-                    foreach (var e in sel) Resize(e, w, h);
+                    foreach (var e in sel)
+                    {
+                        Resize(e, w, h);
+                    }
                     break;
                 }
         }
@@ -638,10 +731,16 @@ public partial class ReportDesigner
         foreach (var el in State.SelectedElements.ToArray())
         {
             var band = State.Report.Bands.FirstOrDefault(b => b.Elements.Contains(el));
-            if (band is null) continue;
+            if (band is null)
+            {
+                continue;
+            }
             var idx = band.Elements.IndexOf(el);
             var newIdx = Math.Clamp(idx + direction, 0, band.Elements.Count - 1);
-            if (newIdx == idx) continue;
+            if (newIdx == idx)
+            {
+                continue;
+            }
             State.History.Push(new ChangePropertyCommand<int>("Alterar ordem", () => band.Elements.IndexOf(el), value => band.Elements.Move(band.Elements.IndexOf(el), value), newIdx));
         }
     }
@@ -652,9 +751,15 @@ public partial class ReportDesigner
         foreach (var el in State.SelectedElements.ToArray())
         {
             var band = State.Report.Bands.FirstOrDefault(b => b.Elements.Contains(el));
-            if (band is null) continue;
+            if (band is null)
+            {
+                continue;
+            }
             var idx = band.Elements.IndexOf(el);
-            if (idx == band.Elements.Count - 1) continue;
+            if (idx == band.Elements.Count - 1)
+            {
+                continue;
+            }
             State.History.Push(new ChangePropertyCommand<int>("Alterar ordem", () => band.Elements.IndexOf(el), value => band.Elements.Move(band.Elements.IndexOf(el), value), band.Elements.Count - 1));
         }
     }
@@ -665,9 +770,15 @@ public partial class ReportDesigner
         foreach (var el in State.SelectedElements.ToArray())
         {
             var band = State.Report.Bands.FirstOrDefault(b => b.Elements.Contains(el));
-            if (band is null) continue;
+            if (band is null)
+            {
+                continue;
+            }
             var idx = band.Elements.IndexOf(el);
-            if (idx == 0) continue;
+            if (idx == 0)
+            {
+                continue;
+            }
             State.History.Push(new ChangePropertyCommand<int>("Alterar ordem", () => band.Elements.IndexOf(el), value => band.Elements.Move(band.Elements.IndexOf(el), value), 0));
         }
     }
@@ -690,7 +801,10 @@ public partial class ReportDesigner
         foreach (var el in State.SelectedElements.ToArray())
         {
             var band = State.Report.Bands.FirstOrDefault(b => b.Elements.Contains(el));
-            if (band is null) continue;
+            if (band is null)
+            {
+                continue;
+            }
             var bandHmm = band.Height.ToMm();
             var elHmm = el.Height.ToMm();
             el.Y = Unit.FromMm(Math.Max(0, (bandHmm - elHmm) / 2));
@@ -702,12 +816,18 @@ public partial class ReportDesigner
     private void DuplicateSelected()
     {
         var sources = State.SelectedElements.ToArray();
-        if (sources.Length == 0) return;
+        if (sources.Length == 0)
+        {
+            return;
+        }
         var copies = new List<ElementViewModel>(sources.Length);
         foreach (var src in sources)
         {
             var band = State.Report.Bands.FirstOrDefault(b => b.Elements.Contains(src));
-            if (band is null) continue;
+            if (band is null)
+            {
+                continue;
+            }
             var copy = src.Clone();
             copy.X = copy.X + Unit.FromMm(2);
             copy.Y = copy.Y + Unit.FromMm(2);
@@ -715,26 +835,37 @@ public partial class ReportDesigner
             State.History.Push(new AddElementCommand(band, copy));
             copies.Add(copy);
         }
-        if (copies.Count > 0) State.SelectMany(copies);
+        if (copies.Count > 0)
+        {
+            State.SelectMany(copies);
+        }
     }
 
     private void OnCopy()
     {
-        if (State.SelectedElements.Count == 0) return;
+        if (State.SelectedElements.Count == 0)
+        {
+            return;
+        }
         State.Clipboard = State.SelectedElements.Select(e => e.Clone()).ToList();
     }
 
     private void OnCut()
     {
-        if (State.SelectedElements.Count == 0) return;
+        if (State.SelectedElements.Count == 0)
+        {
+            return;
+        }
         State.Clipboard = State.SelectedElements.Select(e => e.Clone()).ToList();
         OnDeleteSelected(); // deletes the whole multi-selection
     }
 
     private void OnPaste()
     {
-        if (State.Clipboard.Count == 0) return;
-        // Resolution order: explicit ActiveBand → band of selected element → Detail → first.
+        if (State.Clipboard.Count == 0)
+        {
+            return;
+        }        // Resolution order: explicit ActiveBand → band of selected element → Detail → first.
         // ActiveBand is set whenever the user clicks a band-strip or empty band area, so the
         // user can cut/copy from one band and explicitly paste into another.
         var band = State.ActiveBand
@@ -767,7 +898,7 @@ public partial class ReportDesigner
     private async Task OnToggleTheme()
     {
         State.ToggleTheme();
-        try { await Js.InvokeVoidAsync("omniDesigner.setTheme", State.Theme); }
+        try { await Js.InvokeVoidAsync("omniDesigner.setTheme", State.Theme, _rootRef); }
         catch (JSException) { }
         catch (InvalidOperationException) { }
     }
@@ -786,12 +917,18 @@ public partial class ReportDesigner
         try { await Js.InvokeVoidAsync("omniViewer.download", fileName, "application/xml", bytes); }
         catch (JSException) { }
         catch (InvalidOperationException) { }
-        if (OnSaved.HasDelegate) await OnSaved.InvokeAsync(bytes);
+        if (OnSaved.HasDelegate)
+        {
+            await OnSaved.InvokeAsync(bytes);
+        }
     }
 
     private async Task OnLoadFile(InputFileChangeEventArgs e)
     {
-        if (e.File is null) return;
+        if (e.File is null)
+        {
+            return;
+        }
         using var ms = new MemoryStream();
         await using var src = e.File.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024);
         await src.CopyToAsync(ms);
@@ -801,7 +938,10 @@ public partial class ReportDesigner
 
     private async Task OnLoadRdlFile(InputFileChangeEventArgs e)
     {
-        if (e.File is null) return;
+        if (e.File is null)
+        {
+            return;
+        }
         using var ms = new MemoryStream();
         await using var src = e.File.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024);
         await src.CopyToAsync(ms);
@@ -835,11 +975,20 @@ public partial class ReportDesigner
             if (State.Parameters.Count > 0 && NeedsParameterPrompt())
             {
                 var values = await PromptForParametersAsync();
-                if (values is null || !ReferenceEquals(requestedTab, State.ActiveTab)) return; // user cancelled
-                foreach (var kv in values) _paramValues[kv.Key] = kv.Value;
+                if (values is null || !ReferenceEquals(requestedTab, State.ActiveTab))
+                {
+                    return; // user cancelled
+                }
+                foreach (var kv in values)
+                {
+                    _paramValues[kv.Key] = kv.Value;
+                }
             }
 
-            if (await PaginateAndRenderAsync() && ReferenceEquals(requestedTab, State.ActiveTab)) State.IsPreviewing = true;
+            if (await PaginateAndRenderAsync() && ReferenceEquals(requestedTab, State.ActiveTab))
+            {
+                State.IsPreviewing = true;
+            }
         }
         catch (Exception ex)
         {
@@ -853,8 +1002,14 @@ public partial class ReportDesigner
         {
             // Hidden params are driven by default/query and never prompted, so they don't trigger the
             // dialog (a report whose only params are Hidden must not open an empty, never-closing prompt).
-            if (p.Hidden) continue;
-            if (!_paramValues.ContainsKey(p.Name)) return true;
+            if (p.Hidden)
+            {
+                continue;
+            }
+            if (!_paramValues.ContainsKey(p.Name))
+            {
+                return true;
+            }
         }
         return false;
     }
@@ -874,7 +1029,10 @@ public partial class ReportDesigner
         _promptRegistry = null;
         if (result.Remember)
         {
-            foreach (var kv in result.Values) _paramValues[kv.Key] = kv.Value;
+            foreach (var kv in result.Values)
+            {
+                _paramValues[kv.Key] = kv.Value;
+            }
         }
         _paramPromptTcs?.TrySetResult(result.Values);
     }
@@ -933,30 +1091,29 @@ public partial class ReportDesigner
             // to the declared CLR type (DateTime, decimal, bool).
             var runtimeParams = CoerceParameterValues();
 
-            var rendered = await paginator.PaginateAsync(new Reporting.Layout.PaginationRequest
+            var rendered = await paginator.PrepareAsync(new Reporting.Layout.PaginationRequest
             {
                 Definition = definition,
+                Limits = PreviewLimits,
                 DataSources = registry,
                 Parameters = runtimeParams,
-            }, cancellation.Token);
+            }, cancellationToken: cancellation.Token);
 
-            if (!ReferenceEquals(previewTab, State.ActiveTab) || generation != _previewGeneration) return false;
-            _previewRendered = rendered;
+            if (!ReferenceEquals(previewTab, State.ActiveTab) || generation != _previewGeneration) { rendered.Dispose(); return false; }
+            _previewPrepared?.Dispose();
+            _previewPrepared = rendered;
             _previewDiagnostics = rendered.Diagnostics.Select(d => d.Message).Distinct().ToArray();
-            using var renderer = new Reporting.Rendering.Skia.SkiaRenderingContext();
-            Reporting.Layout.RenderedReportPlayer.Play(_previewRendered, renderer);
-            _previewPages = new List<byte[]>(_previewRendered.PageCount);
-            for (int i = 0; i < _previewRendered.PageCount; i++)
-            {
-                _previewPages.Add(renderer.GetPagePng(i));
-            }
+            _previewPages = new Services.PreviewPageCache(rendered);
             _previewCurrentPage = 0;
             return true;
         }
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested) { return false; }
         finally
         {
-            if (ReferenceEquals(_previewCancellation, cancellation)) _previewCancellation = null;
+            if (ReferenceEquals(_previewCancellation, cancellation))
+            {
+                _previewCancellation = null;
+            }
         }
     }
 
@@ -1011,7 +1168,10 @@ public partial class ReportDesigner
                     runtimeParams,
                     secretResolver,
                 });
-                if (result is Reporting.DataSources.DataSourceRegistry reg) return reg;
+                if (result is Reporting.DataSources.DataSourceRegistry reg)
+                {
+                    return reg;
+                }
             }
         }
         return new Reporting.DataSources.DataSourceRegistry();
@@ -1037,7 +1197,8 @@ public partial class ReportDesigner
     private void ClosePreview()
     {
         _previewPages = [];
-        _previewRendered = null;
+        _previewPrepared?.Dispose();
+        _previewPrepared = null;
         _previewCurrentPage = 0;
         State.IsPreviewing = false;
     }
@@ -1047,7 +1208,10 @@ public partial class ReportDesigner
     /// a new exporter in DI automatically gets a working button + working handler.</summary>
     private async Task OnExport(Reporting.Designer.Blazor.Services.ExporterDescriptor descriptor)
     {
-        if (_previewRendered is null || descriptor is null) return;
+        if (_previewPrepared is null || descriptor is null)
+        {
+            return;
+        }
         try
         {
             // Each IReportExporter writes to a Stream. We capture to a MemoryStream so
@@ -1055,7 +1219,7 @@ public partial class ReportDesigner
             // direct to the response would be lighter, but Blazor's JS interop has no
             // stream contract for downloads — bytes is the lingua franca.
             using var ms = new MemoryStream();
-            descriptor.Exporter.Export(_previewRendered, ms);
+            descriptor.Exporter.Export(MaterializePreview(), ms);
             var bytes = ms.ToArray();
             var fileName = SafeFileName(State.Report.Name) + descriptor.FileExtension;
             await TriggerDownload(fileName, descriptor.ContentType, bytes);
@@ -1078,12 +1242,15 @@ public partial class ReportDesigner
     /// nothing to print.</summary>
     private async Task OnPrint()
     {
-        if (_previewRendered is null)
+        if (_previewPrepared is null)
         {
             // Auto-trigger a preview so the user can come straight from the canvas
             // without having to hit Preview first. Matches Crystal/SSRS Viewer UX where
             // "Print" implicitly runs the report.
-            if (!await PaginateAndRenderAsync() || _previewRendered is null) return; // pagination failed
+            if (!await PaginateAndRenderAsync() || _previewPrepared is null)
+            {
+                return; // pagination failed
+            }
         }
         _printDialogOpen = true;
     }
@@ -1094,8 +1261,10 @@ public partial class ReportDesigner
     /// success — we only surface the error path here.</summary>
     private async Task OnPrintConfirmed(Reporting.Designer.Blazor.Services.PrintRequest request)
     {
-        if (_previewRendered is null) return;
-
+        if (_previewPrepared is null)
+        {
+            return;
+        }
         // Resolve the print service. DI override (NativePrinterAdapter on MAUI) takes
         // precedence; otherwise we instantiate the universal BrowserPrintService here
         // so hosts that didn't register anything still get working "print via browser"
@@ -1106,7 +1275,7 @@ public partial class ReportDesigner
 
         try
         {
-            await service.PrintAsync(_previewRendered, request);
+            await service.PrintAsync(MaterializePreview(), request);
         }
         catch (Exception ex)
         {
@@ -1115,6 +1284,14 @@ public partial class ReportDesigner
             Console.Error.WriteLine($"Print error: {ex.Message}");
             throw;
         }
+    }
+
+    private Reporting.Layout.RenderedReport MaterializePreview()
+    {
+        var document = _previewPrepared ?? throw new InvalidOperationException("Preview indisponível.");
+        return new(document.Name, new EquatableArray<Reporting.Layout.RenderedPage>(
+            Enumerable.Range(0, document.PageCount).Select(index => document.GetPage(index))))
+        { Diagnostics = document.Diagnostics };
     }
 
     private async Task TriggerDownload(string fileName, string mimeType, byte[] bytes)
@@ -1126,7 +1303,10 @@ public partial class ReportDesigner
 
     private static string SafeFileName(string name)
     {
-        if (string.IsNullOrWhiteSpace(name)) return "report";
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return "report";
+        }
         foreach (var c in System.IO.Path.GetInvalidFileNameChars())
         {
             name = name.Replace(c, '_');
@@ -1137,8 +1317,10 @@ public partial class ReportDesigner
     // ─── Keyboard ───────────────────────────────────────────────────────────────
     private async Task OnKeyDown(KeyboardEventArgs e)
     {
-        if (State.CommandPaletteOpen) return; // palette handles its own keys
-
+        if (State.CommandPaletteOpen)
+        {
+            return; // palette handles its own keys
+        }
         if (e.Key == "F5") { await OnPreview(); return; }
         if (e.Key == "F8") { OpenExpressionEditor(); return; }
         if (e.Key == "Escape")
@@ -1164,10 +1346,13 @@ public partial class ReportDesigner
                 case "a":
                     // Ctrl+A: select all elements in the active band (industry standard).
                     var b = State.ActiveBand ?? State.Report.FindBand(DesignerBandKind.Detail);
-                    if (b is not null && b.Elements.Count > 0) State.SelectMany(b.Elements);
+                    if (b is not null && b.Elements.Count > 0)
+                    {
+                        State.SelectMany(b.Elements);
+                    }
                     return;
                 case "o":
-                    try { await Js.InvokeVoidAsync("eval", "document.getElementById('__designer_open_repx')?.click()"); }
+                    try { await Js.InvokeVoidAsync("omniDesigner.openFile", _rootRef); }
                     catch (JSException) { }
                     catch (InvalidOperationException) { }
                     return;
@@ -1187,7 +1372,10 @@ public partial class ReportDesigner
             foreach (var el in State.SelectedElements)
             {
                 var band = State.Report.Bands.FirstOrDefault(b => b.Elements.Contains(el));
-                if (band is null) continue;
+                if (band is null)
+                {
+                    continue;
+                }
                 var bandHMm = band.Height.ToMm();
                 var elWMm = el.Width.ToMm();
                 var elHMm = el.Height.ToMm();
@@ -1204,7 +1392,10 @@ public partial class ReportDesigner
                 }
                 moves.Add(new MoveElementCommand(el, Unit.FromMm(x), Unit.FromMm(y)));
             }
-            if (moves.Count > 0) State.History.Push(new CompositeCommand("Mover seleção", moves));
+            if (moves.Count > 0)
+            {
+                State.History.Push(new CompositeCommand("Mover seleção", moves));
+            }
         }
     }
 
@@ -1214,10 +1405,15 @@ public partial class ReportDesigner
     public Task OnGestureCommit(GesturePayload payload)
     {
         var band = State.Report.Bands.FirstOrDefault(b => b.Kind.ToString() == payload.BandKind);
-        if (band is null) return Task.CompletedTask;
+        if (band is null)
+        {
+            return Task.CompletedTask;
+        }
         var element = band.Elements.FirstOrDefault(e => e.Id == payload.ElementId);
-        if (element is null) return Task.CompletedTask;
-
+        if (element is null)
+        {
+            return Task.CompletedTask;
+        }
         if (payload.Kind == "move")
         {
             State.History.Push(new MoveElementCommand(element,
@@ -1248,8 +1444,10 @@ public partial class ReportDesigner
     public Task OnFieldDrop(FieldDropPayload payload)
     {
         var band = State.Report.Bands.FirstOrDefault(b => b.Kind.ToString() == payload.BandKind);
-        if (band is null) return Task.CompletedTask;
-
+        if (band is null)
+        {
+            return Task.CompletedTask;
+        }
         var element = new ElementViewModel(DesignerElementKind.TextBox, Guid.NewGuid().ToString("n"))
         {
             X = Unit.FromMm(payload.XMm),
@@ -1271,15 +1469,20 @@ public partial class ReportDesigner
     public Task OnBandResize(BandResizePayload payload)
     {
         var band = State.Report.Bands.FirstOrDefault(b => b.Kind.ToString() == payload.BandKind);
-        if (band is null) return Task.CompletedTask;
-        // Floor: never shrink below the bottom edge of the lowest element in this band.
+        if (band is null)
+        {
+            return Task.CompletedTask;
+        }        // Floor: never shrink below the bottom edge of the lowest element in this band.
         // Crystal Reports / SSRS / DevExpress all clamp the band-resize handle here — going
         // below would leave elements visually overflowing into the next band.
         double elementsFloorMm = 0;
         foreach (var el in band.Elements)
         {
             var bottom = el.Y.ToMm() + el.Height.ToMm();
-            if (bottom > elementsFloorMm) elementsFloorMm = bottom;
+            if (bottom > elementsFloorMm)
+            {
+                elementsFloorMm = bottom;
+            }
         }
         var minH = Math.Max(2, elementsFloorMm);
         var newH = Unit.FromMm(Math.Max(minH, payload.HeightMm));
@@ -1318,8 +1521,14 @@ public partial class ReportDesigner
     {
         var all = State.Report.Bands.SelectMany(b => b.Elements).ToDictionary(e => e.Id);
         var picked = elementIds.Where(all.ContainsKey).Select(id => all[id]).ToList();
-        if (picked.Count == 0) State.ClearSelection();
-        else State.SelectMany(picked);
+        if (picked.Count == 0)
+        {
+            State.ClearSelection();
+        }
+        else
+        {
+            State.SelectMany(picked);
+        }
         return Task.CompletedTask;
     }
 
@@ -1328,7 +1537,10 @@ public partial class ReportDesigner
     public Task OnShiftClickElement(string elementId)
     {
         var el = State.Report.Bands.SelectMany(b => b.Elements).FirstOrDefault(e => e.Id == elementId);
-        if (el is not null) State.ToggleSelection(el);
+        if (el is not null)
+        {
+            State.ToggleSelection(el);
+        }
         return Task.CompletedTask;
     }
 
@@ -1336,10 +1548,15 @@ public partial class ReportDesigner
     [JSInvokable]
     public Task OnToolboxDrop(DropPayload payload)
     {
-        if (!Enum.TryParse<DesignerElementKind>(payload.Kind, out var kind)) return Task.CompletedTask;
+        if (!Enum.TryParse<DesignerElementKind>(payload.Kind, out var kind))
+        {
+            return Task.CompletedTask;
+        }
         var band = State.Report.Bands.FirstOrDefault(b => b.Kind.ToString() == payload.BandKind);
-        if (band is null) return Task.CompletedTask;
-
+        if (band is null)
+        {
+            return Task.CompletedTask;
+        }
         var element = NewElement(kind, Unit.FromMm(payload.XMm), Unit.FromMm(payload.YMm));
         FitElementInBand(band, element);
         State.History.Push(new AddElementCommand(band, element));
@@ -1407,7 +1624,10 @@ public partial class ReportDesigner
             case "report.bandprops":
                 {
                     var target = State.ActiveBand ?? State.Report.FindBand(DesignerBandKind.Detail);
-                    if (target is not null) OpenBandProperties(target);
+                    if (target is not null)
+                    {
+                        OpenBandProperties(target);
+                    }
                     break;
                 }
             case "help.shortcuts": State.CommandPaletteOpen = true; break;
@@ -1435,39 +1655,6 @@ public partial class ReportDesigner
         }
     }
 
-    public sealed class GesturePayload
-    {
-        public string Kind { get; set; } = "";
-        public string ElementId { get; set; } = "";
-        public string BandKind { get; set; } = "";
-        public double XMm { get; set; }
-        public double YMm { get; set; }
-        public double WidthMm { get; set; }
-        public double HeightMm { get; set; }
-    }
-
-    public sealed class DropPayload
-    {
-        public string Kind { get; set; } = "";
-        public string BandKind { get; set; } = "";
-        public double XMm { get; set; }
-        public double YMm { get; set; }
-    }
-
-    public sealed class FieldDropPayload
-    {
-        public string FieldName { get; set; } = "";
-        public string BandKind { get; set; } = "";
-        public double XMm { get; set; }
-        public double YMm { get; set; }
-    }
-
-    public sealed class BandResizePayload
-    {
-        public string BandKind { get; set; } = "";
-        public double HeightMm { get; set; }
-    }
-
     private IReadOnlyList<string> _previewDiagnostics = [];
     private CancellationTokenSource? _previewCancellation;
     private long _previewGeneration;
@@ -1487,7 +1674,8 @@ public partial class ReportDesigner
             _previewDiagnostics = [];
             _promptRegistry = null;
             _previewPages = [];
-            _previewRendered = null;
+            _previewPrepared?.Dispose();
+            _previewPrepared = null;
             _previewCurrentPage = 0;
             _expressionEditorOpen = false;
             _dsEditorOpen = false;

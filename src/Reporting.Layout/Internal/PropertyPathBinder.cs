@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+using Reporting.Common;
 using System.Globalization;
 using System.Reflection;
 using Reporting.Elements;
@@ -15,21 +15,14 @@ namespace Reporting.Layout.Internal;
 /// <c>(type, path)</c>. On any failure (unknown path, uncoercible value, null record on the way) it
 /// returns the input unchanged, so the property's static value remains the graceful fallback.
 /// </summary>
-internal static class PropertyPathBinder
+internal static partial class PropertyPathBinder
 {
-    // One level of the path. The owner at this level is rebuilt immutably with <see cref="Prop"/> changed:
-    // a record CLASS via its synthesized <c>&lt;Clone&gt;$</c> + init-only set; a record STRUCT (Rectangle,
-    // Thickness, …) — which has no <c>&lt;Clone&gt;$</c> — by re-invoking its positional constructor with
-    // every component copied except the one being navigated. That makes struct-segment paths such as
-    // <c>"Bounds.Width"</c> and <c>"Style.Padding.Left"</c> actually bind instead of silently no-op'ing.
-    private sealed record Level(PropertyInfo Prop, MethodInfo? CloneFn, ConstructorInfo? Ctor, PropertyInfo[]? CtorProps);
 
-    private sealed record Plan(Level[] Levels, Type LeafType);
-
-    private static readonly ConcurrentDictionary<(Type Type, string Path), Plan?> Cache = new();
+    private static readonly BoundedCache<(Type Type, string Path), Plan?> Cache = new(1024);
 
     public static ReportElement Apply(ReportElement element, string path, object? raw, CultureInfo culture)
     {
+        if (string.IsNullOrWhiteSpace(path) || path.Length > 512) return element;
         var plan = Cache.GetOrAdd((element.GetType(), path), k => BuildPlan(k.Type, k.Path));
         if (plan is null || !TryCoerce(raw, plan.LeafType, culture, out var value))
         {

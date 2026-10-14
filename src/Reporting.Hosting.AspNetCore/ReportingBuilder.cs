@@ -106,29 +106,3 @@ public sealed class ReportingBuilder
         return this;
     }
 }
-
-/// <summary>DI entry point. Usage:
-/// <code>
-/// services.AddReporting(opts =&gt; opts
-///     .UseSkiaRendering()
-///     .UsePdfOutput()
-///     .UseExcelOutput()
-///     .UsePrinter&lt;WindowsSpoolerPrinter&gt;()
-///     .AddDataSource("Vendas", vendasList));
-/// </code></summary>
-public static class ServiceCollectionExtensions
-{
-    public static IServiceCollection AddReporting(
-        this IServiceCollection services,
-        Action<ReportingBuilder>? configure = null)
-    {
-        ArgumentNullException.ThrowIfNull(services);
-        var builder = new ReportingBuilder(services);
-        // Sensible defaults: Skia rendering + PDF/XLSX exporters.
-        builder.UseSkiaRendering();
-        builder.UsePdfOutput();
-        builder.UseExcelOutput();
-        configure?.Invoke(builder);
-        return services;
-    }
-}

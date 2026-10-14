@@ -4,7 +4,7 @@ using System.Runtime.CompilerServices;
 namespace Reporting.DataSources;
 
 /// <summary>Data source over an ADO.NET <see cref="DataTable"/>. Column names map to field names.</summary>
-public sealed class DataTableDataSource : IReportDataSource
+public sealed partial class DataTableDataSource : IReportDataSource
 {
     private readonly DataTable _table;
 
@@ -39,48 +39,6 @@ public sealed class DataTableDataSource : IReportDataSource
             cancellationToken.ThrowIfCancellationRequested();
             yield return new DataTableRecord(row, Schema);
             await Task.Yield();
-        }
-    }
-
-    private sealed class DataTableRecord(DataRow row, IReportRecordSchema schema) : IReportRecord
-    {
-        public IReportRecordSchema Schema => schema;
-
-        public object? this[string name]
-        {
-            get
-            {
-                if (!row.Table.Columns.Contains(name))
-                {
-                    return null;
-                }
-                var value = row[name];
-                return value == DBNull.Value ? null : value;
-            }
-        }
-
-        public object? this[int ordinal]
-        {
-            get
-            {
-                if (ordinal < 0 || ordinal >= row.Table.Columns.Count)
-                {
-                    return null;
-                }
-                var value = row[ordinal];
-                return value == DBNull.Value ? null : value;
-            }
-        }
-
-        public IEnumerable<KeyValuePair<string, object?>> ToKeyValuePairs()
-        {
-            for (int i = 0; i < row.Table.Columns.Count; i++)
-            {
-                var value = row[i];
-                yield return new KeyValuePair<string, object?>(
-                    row.Table.Columns[i].ColumnName,
-                    value == DBNull.Value ? null : value);
-            }
         }
     }
 }

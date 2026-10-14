@@ -24,13 +24,3 @@
         <Icon Name="plus" Size="16" CssClass="icon icon-16" />
     </button>
 </div>
-
-@code {
-    [Parameter, EditorRequired] public IReadOnlyList<DocumentTab> Tabs { get; set; } = default!;
-    [Parameter] public DocumentTab? ActiveTab { get; set; }
-    [Parameter] public EventCallback<DocumentTab> Activate { get; set; }
-    [Parameter] public EventCallback<DocumentTab> Close { get; set; }
-    [Parameter] public EventCallback OnNew { get; set; }
-
-    private Task OnNewClicked() => OnNew.InvokeAsync();
-}

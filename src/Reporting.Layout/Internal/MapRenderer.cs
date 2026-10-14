@@ -23,7 +23,7 @@ namespace Reporting.Layout.Internal;
 /// separate future online layer; this renderer is fully offline and vector, so it works in every
 /// exporter (PDF/SVG/PNG/…).
 /// </remarks>
-internal static class MapRenderer
+internal static partial class MapRenderer
 {
     private static readonly Color Background = Color.FromHex("#EFF6FF"); // blue-50 (water)
     private static readonly Color BorderColor = Color.FromHex("#93C5FD"); // blue-300
@@ -300,10 +300,6 @@ internal static class MapRenderer
         double normY = (1 - my / Math.PI) / 2;
         return (int)Math.Floor(normY * n);
     }
-
-    // ─── GeoJSON parsing ─────────────────────────────────────────────────────────────
-
-    private sealed record GeoShape(IReadOnlyList<(double Lon, double Lat)> Points, bool Filled);
 
     private static List<GeoShape> ParseGeoJson(string geoJson)
     {

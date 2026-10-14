@@ -13,6 +13,7 @@ public abstract class DesignerEditComponent : ComponentBase, IHandleEvent
         var history = EditHistory;
         var revision = history?.Revision;
         var before = element?.ToElement();
+        var beforeLocked = element?.IsLocked;
         try
         {
             await callback.InvokeAsync(arg);
@@ -22,7 +23,8 @@ public abstract class DesignerEditComponent : ComponentBase, IHandleEvent
             if (element is not null && before is not null && history is not null && history.Revision == revision)
             {
                 var after = element.ToElement();
-                if (!Equals(before, after)) history.RecordExecuted(new ElementSnapshotCommand(element, before, after));
+                if (!Equals(before, after) || beforeLocked != element.IsLocked)
+                    history.RecordExecuted(new ElementSnapshotCommand(element, before, after, beforeLocked, element.IsLocked));
             }
             StateHasChanged();
         }

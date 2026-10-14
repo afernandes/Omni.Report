@@ -43,7 +43,7 @@ namespace Reporting.DataSources.Json;
 /// </list>
 /// </para>
 /// </remarks>
-public sealed class JsonDataSource : IReportDataSource
+public sealed partial class JsonDataSource : IReportDataSource
 {
     private readonly JsonDataSourceOptions _opts;
     private readonly HttpClient? _httpClient;
@@ -206,12 +206,6 @@ public sealed class JsonDataSource : IReportDataSource
         }
     }
 
-    private readonly record struct PathToken(string Name, int Index, bool IsIndex)
-    {
-        public static PathToken Property(string name) => new(name, 0, false);
-        public static PathToken AtIndex(int index) => new(string.Empty, index, true);
-    }
-
     // ── Per-row conversion ──────────────────────────────────────────────────────
 
     /// <summary>Flattens a single JSON object into a name→CLR-value dictionary. Nested
@@ -324,13 +318,5 @@ public sealed class JsonDataSource : IReportDataSource
         var fields = columns.Select(c => new ReportField(c,
             TypeInference.ConsolidateColumnType(typeCandidates[c]))).ToArray();
         return new ReportRecordSchema(fields);
-    }
-
-    /// <summary>Sentinel schema returned before the first <c>ReadAsync</c> call.</summary>
-    private sealed class EmptyJsonSchema : IReportRecordSchema
-    {
-        public static readonly EmptyJsonSchema Instance = new();
-        public IReadOnlyList<ReportField> Fields { get; } = Array.Empty<ReportField>();
-        public int IndexOf(string name) => -1;
     }
 }

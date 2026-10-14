@@ -1,0 +1,3970 @@
+{
+  "timestamp": "2026-09-09T23:35:15.6223483+00:00",
+  "framework": ".NET 10.0.12",
+  "os": "Microsoft Windows 10.0.26200",
+  "dpi": 96,
+  "warmup": "one report per mode",
+  "sampleIntervalMs": 20,
+  "results": [
+    {
+      "mode": "buffered",
+      "pages": 1,
+      "concurrency": 1,
+      "repetition": 1,
+      "elapsedMs": 14.3827,
+      "pagesPerSecond": 69.52797458057249,
+      "allocatedBytes": 469664,
+      "collections": [
+        0,
+        0,
+        0
+      ],
+      "managedBefore": 1311816,
+      "managedPeakSampled": 1788776,
+      "managedAfterGc": 1270824,
+      "privateBefore": 19832832,
+      "privatePeakSampled": 19836928,
+      "privateAfterGc": 19947520,
+      "workingPeakSampled": 59060224,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 3,
+      "reports": [
+        {
+          "actualPages": 1,
+          "firstPageMs": 13.4305,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        }
+      ]
+    },
+    {
+      "mode": "buffered",
+      "pages": 1,
+      "concurrency": 1,
+      "repetition": 2,
+      "elapsedMs": 17.1198,
+      "pagesPerSecond": 58.41189733524924,
+      "allocatedBytes": 467904,
+      "collections": [
+        0,
+        0,
+        0
+      ],
+      "managedBefore": 1356536,
+      "managedPeakSampled": 1643312,
+      "managedAfterGc": 1352520,
+      "privateBefore": 16367616,
+      "privatePeakSampled": 16629760,
+      "privateAfterGc": 16871424,
+      "workingPeakSampled": 56041472,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 3,
+      "reports": [
+        {
+          "actualPages": 1,
+          "firstPageMs": 16.9516,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        }
+      ]
+    },
+    {
+      "mode": "buffered",
+      "pages": 1,
+      "concurrency": 1,
+      "repetition": 3,
+      "elapsedMs": 13.7435,
+      "pagesPerSecond": 72.76166915269037,
+      "allocatedBytes": 462928,
+      "collections": [
+        0,
+        0,
+        0
+      ],
+      "managedBefore": 1365904,
+      "managedPeakSampled": 1834672,
+      "managedAfterGc": 1352104,
+      "privateBefore": 16871424,
+      "privatePeakSampled": 16871424,
+      "privateAfterGc": 16871424,
+      "workingPeakSampled": 56356864,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 3,
+      "reports": [
+        {
+          "actualPages": 1,
+          "firstPageMs": 13.5756,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        }
+      ]
+    },
+    {
+      "mode": "prepared",
+      "pages": 1,
+      "concurrency": 1,
+      "repetition": 1,
+      "elapsedMs": 14.9192,
+      "pagesPerSecond": 67.02772266609469,
+      "allocatedBytes": 574880,
+      "collections": [
+        0,
+        0,
+        0
+      ],
+      "managedBefore": 1365288,
+      "managedPeakSampled": 1914336,
+      "managedAfterGc": 1353112,
+      "privateBefore": 16871424,
+      "privatePeakSampled": 16871424,
+      "privateAfterGc": 16871424,
+      "workingPeakSampled": 56422400,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 4,
+      "reports": [
+        {
+          "actualPages": 1,
+          "firstPageMs": 14.6069,
+          "storageBytes": 23687,
+          "cachedPngs": 0
+        }
+      ]
+    },
+    {
+      "mode": "prepared",
+      "pages": 1,
+      "concurrency": 1,
+      "repetition": 2,
+      "elapsedMs": 13.6608,
+      "pagesPerSecond": 73.2021550714453,
+      "allocatedBytes": 609112,
+      "collections": [
+        0,
+        0,
+        0
+      ],
+      "managedBefore": 1383592,
+      "managedPeakSampled": 1998064,
+      "managedAfterGc": 1404568,
+      "privateBefore": 16871424,
+      "privatePeakSampled": 16871424,
+      "privateAfterGc": 16904192,
+      "workingPeakSampled": 56487936,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 5,
+      "reports": [
+        {
+          "actualPages": 1,
+          "firstPageMs": 13.3122,
+          "storageBytes": 23687,
+          "cachedPngs": 0
+        }
+      ]
+    },
+    {
+      "mode": "prepared",
+      "pages": 1,
+      "concurrency": 1,
+      "repetition": 3,
+      "elapsedMs": 20.4574,
+      "pagesPerSecond": 48.88206712485457,
+      "allocatedBytes": 576816,
+      "collections": [
+        0,
+        0,
+        0
+      ],
+      "managedBefore": 1435008,
+      "managedPeakSampled": 1714600,
+      "managedAfterGc": 1424768,
+      "privateBefore": 16904192,
+      "privatePeakSampled": 16904192,
+      "privateAfterGc": 16904192,
+      "workingPeakSampled": 56520704,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 5,
+      "reports": [
+        {
+          "actualPages": 1,
+          "firstPageMs": 19.9677,
+          "storageBytes": 23687,
+          "cachedPngs": 0
+        }
+      ]
+    },
+    {
+      "mode": "stream",
+      "pages": 1,
+      "concurrency": 1,
+      "repetition": 1,
+      "elapsedMs": 15.0775,
+      "pagesPerSecond": 66.3239927043608,
+      "allocatedBytes": 465392,
+      "collections": [
+        0,
+        0,
+        0
+      ],
+      "managedBefore": 1438128,
+      "managedPeakSampled": 1717696,
+      "managedAfterGc": 1425056,
+      "privateBefore": 16900096,
+      "privatePeakSampled": 17747968,
+      "privateAfterGc": 17379328,
+      "workingPeakSampled": 57372672,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 5,
+      "reports": [
+        {
+          "actualPages": 1,
+          "firstPageMs": 14.9597,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        }
+      ]
+    },
+    {
+      "mode": "stream",
+      "pages": 1,
+      "concurrency": 1,
+      "repetition": 2,
+      "elapsedMs": 11.0505,
+      "pagesPerSecond": 90.49364282159179,
+      "allocatedBytes": 464896,
+      "collections": [
+        0,
+        0,
+        0
+      ],
+      "managedBefore": 1446576,
+      "managedPeakSampled": 1934008,
+      "managedAfterGc": 1424600,
+      "privateBefore": 17379328,
+      "privatePeakSampled": 17707008,
+      "privateAfterGc": 16527360,
+      "workingPeakSampled": 57774080,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 5,
+      "reports": [
+        {
+          "actualPages": 1,
+          "firstPageMs": 10.8994,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        }
+      ]
+    },
+    {
+      "mode": "stream",
+      "pages": 1,
+      "concurrency": 1,
+      "repetition": 3,
+      "elapsedMs": 13.0963,
+      "pagesPerSecond": 76.35744446904852,
+      "allocatedBytes": 464896,
+      "collections": [
+        0,
+        0,
+        0
+      ],
+      "managedBefore": 1437824,
+      "managedPeakSampled": 1920944,
+      "managedAfterGc": 1424864,
+      "privateBefore": 16527360,
+      "privatePeakSampled": 16920576,
+      "privateAfterGc": 16539648,
+      "workingPeakSampled": 57622528,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 5,
+      "reports": [
+        {
+          "actualPages": 1,
+          "firstPageMs": 12.9744,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        }
+      ]
+    },
+    {
+      "mode": "preview-all",
+      "pages": 1,
+      "concurrency": 1,
+      "repetition": 1,
+      "elapsedMs": 18.8908,
+      "pagesPerSecond": 52.93582061109112,
+      "allocatedBytes": 510112,
+      "collections": [
+        0,
+        0,
+        0
+      ],
+      "managedBefore": 1438088,
+      "managedPeakSampled": 1946008,
+      "managedAfterGc": 1440696,
+      "privateBefore": 16539648,
+      "privatePeakSampled": 19341312,
+      "privateAfterGc": 16535552,
+      "workingPeakSampled": 60280832,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 5,
+      "reports": [
+        {
+          "actualPages": 1,
+          "firstPageMs": 18.7674,
+          "storageBytes": 0,
+          "cachedPngs": 1
+        }
+      ]
+    },
+    {
+      "mode": "preview-all",
+      "pages": 1,
+      "concurrency": 1,
+      "repetition": 2,
+      "elapsedMs": 21.3688,
+      "pagesPerSecond": 46.79719965557261,
+      "allocatedBytes": 495288,
+      "collections": [
+        0,
+        0,
+        0
+      ],
+      "managedBefore": 1453992,
+      "managedPeakSampled": 1953712,
+      "managedAfterGc": 1440960,
+      "privateBefore": 17592320,
+      "privatePeakSampled": 21737472,
+      "privateAfterGc": 21102592,
+      "workingPeakSampled": 63004672,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 5,
+      "reports": [
+        {
+          "actualPages": 1,
+          "firstPageMs": 21.2607,
+          "storageBytes": 0,
+          "cachedPngs": 1
+        }
+      ]
+    },
+    {
+      "mode": "preview-all",
+      "pages": 1,
+      "concurrency": 1,
+      "repetition": 3,
+      "elapsedMs": 25.0359,
+      "pagesPerSecond": 39.942642365563046,
+      "allocatedBytes": 496208,
+      "collections": [
+        0,
+        0,
+        0
+      ],
+      "managedBefore": 1454256,
+      "managedPeakSampled": 1954000,
+      "managedAfterGc": 1442144,
+      "privateBefore": 21102592,
+      "privatePeakSampled": 24059904,
+      "privateAfterGc": 21258240,
+      "workingPeakSampled": 65343488,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 5,
+      "reports": [
+        {
+          "actualPages": 1,
+          "firstPageMs": 24.8933,
+          "storageBytes": 0,
+          "cachedPngs": 1
+        }
+      ]
+    },
+    {
+      "mode": "preview-window",
+      "pages": 1,
+      "concurrency": 1,
+      "repetition": 1,
+      "elapsedMs": 28.3176,
+      "pagesPerSecond": 35.31372715201854,
+      "allocatedBytes": 667696,
+      "collections": [
+        0,
+        0,
+        0
+      ],
+      "managedBefore": 1455480,
+      "managedPeakSampled": 1938448,
+      "managedAfterGc": 1443464,
+      "privateBefore": 21258240,
+      "privatePeakSampled": 21585920,
+      "privateAfterGc": 21889024,
+      "workingPeakSampled": 62926848,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 5,
+      "reports": [
+        {
+          "actualPages": 1,
+          "firstPageMs": 27.9541,
+          "storageBytes": 23687,
+          "cachedPngs": 1
+        }
+      ]
+    },
+    {
+      "mode": "preview-window",
+      "pages": 1,
+      "concurrency": 1,
+      "repetition": 2,
+      "elapsedMs": 35.1517,
+      "pagesPerSecond": 28.44812626416361,
+      "allocatedBytes": 666552,
+      "collections": [
+        0,
+        0,
+        0
+      ],
+      "managedBefore": 1456784,
+      "managedPeakSampled": 1711704,
+      "managedAfterGc": 1443728,
+      "privateBefore": 21889024,
+      "privatePeakSampled": 21889024,
+      "privateAfterGc": 22052864,
+      "workingPeakSampled": 63479808,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 5,
+      "reports": [
+        {
+          "actualPages": 1,
+          "firstPageMs": 34.6469,
+          "storageBytes": 23687,
+          "cachedPngs": 1
+        }
+      ]
+    },
+    {
+      "mode": "preview-window",
+      "pages": 1,
+      "concurrency": 1,
+      "repetition": 3,
+      "elapsedMs": 36.83,
+      "pagesPerSecond": 27.151778441487917,
+      "allocatedBytes": 700128,
+      "collections": [
+        0,
+        0,
+        0
+      ],
+      "managedBefore": 1457048,
+      "managedPeakSampled": 1802368,
+      "managedAfterGc": 1477616,
+      "privateBefore": 22052864,
+      "privatePeakSampled": 22052864,
+      "privateAfterGc": 22134784,
+      "workingPeakSampled": 63725568,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 5,
+      "reports": [
+        {
+          "actualPages": 1,
+          "firstPageMs": 36.4529,
+          "storageBytes": 23687,
+          "cachedPngs": 1
+        }
+      ]
+    },
+    {
+      "mode": "buffered",
+      "pages": 1,
+      "concurrency": 5,
+      "repetition": 1,
+      "elapsedMs": 16.2761,
+      "pagesPerSecond": 307.198898999146,
+      "allocatedBytes": 1722280,
+      "collections": [
+        0,
+        0,
+        0
+      ],
+      "managedBefore": 1490976,
+      "managedPeakSampled": 3242616,
+      "managedAfterGc": 1514000,
+      "privateBefore": 22134784,
+      "privatePeakSampled": 23330816,
+      "privateAfterGc": 23404544,
+      "workingPeakSampled": 65056768,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 5,
+      "reports": [
+        {
+          "actualPages": 1,
+          "firstPageMs": 14.7313,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 1,
+          "firstPageMs": 13.5462,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 1,
+          "firstPageMs": 13.8388,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 1,
+          "firstPageMs": 12.8303,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 1,
+          "firstPageMs": 13.7365,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        }
+      ]
+    },
+    {
+      "mode": "buffered",
+      "pages": 1,
+      "concurrency": 5,
+      "repetition": 2,
+      "elapsedMs": 14.0707,
+      "pagesPerSecond": 355.3483479855302,
+      "allocatedBytes": 1716216,
+      "collections": [
+        0,
+        0,
+        0
+      ],
+      "managedBefore": 1524808,
+      "managedPeakSampled": 3271200,
+      "managedAfterGc": 1530440,
+      "privateBefore": 23408640,
+      "privatePeakSampled": 23457792,
+      "privateAfterGc": 23474176,
+      "workingPeakSampled": 65392640,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 6,
+      "reports": [
+        {
+          "actualPages": 1,
+          "firstPageMs": 13.7886,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 1,
+          "firstPageMs": 13.9398,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 1,
+          "firstPageMs": 13.7457,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 1,
+          "firstPageMs": 13.734,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 1,
+          "firstPageMs": 12.5818,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        }
+      ]
+    },
+    {
+      "mode": "buffered",
+      "pages": 1,
+      "concurrency": 5,
+      "repetition": 3,
+      "elapsedMs": 11.2341,
+      "pagesPerSecond": 445.0734816318174,
+      "allocatedBytes": 1683688,
+      "collections": [
+        0,
+        0,
+        0
+      ],
+      "managedBefore": 1558376,
+      "managedPeakSampled": 3270344,
+      "managedAfterGc": 1553088,
+      "privateBefore": 23478272,
+      "privatePeakSampled": 23494656,
+      "privateAfterGc": 23560192,
+      "workingPeakSampled": 65609728,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 6,
+      "reports": [
+        {
+          "actualPages": 1,
+          "firstPageMs": 9.3112,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 1,
+          "firstPageMs": 11.0344,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 1,
+          "firstPageMs": 10.9068,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 1,
+          "firstPageMs": 11.0108,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 1,
+          "firstPageMs": 10.7072,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        }
+      ]
+    },
+    {
+      "mode": "prepared",
+      "pages": 1,
+      "concurrency": 5,
+      "repetition": 1,
+      "elapsedMs": 17.2236,
+      "pagesPerSecond": 290.2993566966255,
+      "allocatedBytes": 2451352,
+      "collections": [
+        0,
+        0,
+        0
+      ],
+      "managedBefore": 1564272,
+      "managedPeakSampled": 3890320,
+      "managedAfterGc": 1755264,
+      "privateBefore": 23560192,
+      "privatePeakSampled": 24166400,
+      "privateAfterGc": 24707072,
+      "workingPeakSampled": 66215936,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 6,
+      "reports": [
+        {
+          "actualPages": 1,
+          "firstPageMs": 16.8866,
+          "storageBytes": 23687,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 1,
+          "firstPageMs": 16.077,
+          "storageBytes": 23867,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 1,
+          "firstPageMs": 16.2339,
+          "storageBytes": 23867,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 1,
+          "firstPageMs": 15.8174,
+          "storageBytes": 23867,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 1,
+          "firstPageMs": 14.8711,
+          "storageBytes": 23867,
+          "cachedPngs": 0
+        }
+      ]
+    },
+    {
+      "mode": "prepared",
+      "pages": 1,
+      "concurrency": 5,
+      "repetition": 2,
+      "elapsedMs": 16.973,
+      "pagesPerSecond": 294.5855181759265,
+      "allocatedBytes": 2220656,
+      "collections": [
+        0,
+        0,
+        0
+      ],
+      "managedBefore": 1765336,
+      "managedPeakSampled": 3747200,
+      "managedAfterGc": 1757256,
+      "privateBefore": 24707072,
+      "privatePeakSampled": 24707072,
+      "privateAfterGc": 24707072,
+      "workingPeakSampled": 66617344,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 7,
+      "reports": [
+        {
+          "actualPages": 1,
+          "firstPageMs": 15.7072,
+          "storageBytes": 23687,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 1,
+          "firstPageMs": 14.9365,
+          "storageBytes": 23867,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 1,
+          "firstPageMs": 16.4344,
+          "storageBytes": 23867,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 1,
+          "firstPageMs": 14.8829,
+          "storageBytes": 23867,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 1,
+          "firstPageMs": 16.7073,
+          "storageBytes": 23867,
+          "cachedPngs": 0
+        }
+      ]
+    },
+    {
+      "mode": "prepared",
+      "pages": 1,
+      "concurrency": 5,
+      "repetition": 3,
+      "elapsedMs": 15.373,
+      "pagesPerSecond": 325.24556039810057,
+      "allocatedBytes": 2233168,
+      "collections": [
+        0,
+        0,
+        0
+      ],
+      "managedBefore": 1767952,
+      "managedPeakSampled": 3949808,
+      "managedAfterGc": 1757256,
+      "privateBefore": 24707072,
+      "privatePeakSampled": 24707072,
+      "privateAfterGc": 24698880,
+      "workingPeakSampled": 66863104,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 8,
+      "reports": [
+        {
+          "actualPages": 1,
+          "firstPageMs": 15.1119,
+          "storageBytes": 23687,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 1,
+          "firstPageMs": 14.701,
+          "storageBytes": 23867,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 1,
+          "firstPageMs": 14.271,
+          "storageBytes": 23867,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 1,
+          "firstPageMs": 12.916,
+          "storageBytes": 23867,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 1,
+          "firstPageMs": 12.3487,
+          "storageBytes": 23867,
+          "cachedPngs": 0
+        }
+      ]
+    },
+    {
+      "mode": "stream",
+      "pages": 1,
+      "concurrency": 5,
+      "repetition": 1,
+      "elapsedMs": 8.3685,
+      "pagesPerSecond": 597.4786401386151,
+      "allocatedBytes": 1725328,
+      "collections": [
+        0,
+        0,
+        0
+      ],
+      "managedBefore": 1768448,
+      "managedPeakSampled": 3521144,
+      "managedAfterGc": 1757120,
+      "privateBefore": 24698880,
+      "privatePeakSampled": 24776704,
+      "privateAfterGc": 24817664,
+      "workingPeakSampled": 67223552,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 8,
+      "reports": [
+        {
+          "actualPages": 1,
+          "firstPageMs": 8.235,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 1,
+          "firstPageMs": 8.2164,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 1,
+          "firstPageMs": 8.1635,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 1,
+          "firstPageMs": 8.1277,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 1,
+          "firstPageMs": 6.9479,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        }
+      ]
+    },
+    {
+      "mode": "stream",
+      "pages": 1,
+      "concurrency": 5,
+      "repetition": 2,
+      "elapsedMs": 9.8761,
+      "pagesPerSecond": 506.27271898826467,
+      "allocatedBytes": 1669672,
+      "collections": [
+        0,
+        0,
+        0
+      ],
+      "managedBefore": 1768152,
+      "managedPeakSampled": 3477248,
+      "managedAfterGc": 1757576,
+      "privateBefore": 24817664,
+      "privatePeakSampled": 24817664,
+      "privateAfterGc": 24817664,
+      "workingPeakSampled": 67403776,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 8,
+      "reports": [
+        {
+          "actualPages": 1,
+          "firstPageMs": 9.5774,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 1,
+          "firstPageMs": 9.6936,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 1,
+          "firstPageMs": 9.1023,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 1,
+          "firstPageMs": 9.6401,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 1,
+          "firstPageMs": 9.107,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        }
+      ]
+    },
+    {
+      "mode": "stream",
+      "pages": 1,
+      "concurrency": 5,
+      "repetition": 3,
+      "elapsedMs": 8.8959,
+      "pagesPerSecond": 562.0566777953889,
+      "allocatedBytes": 1702976,
+      "collections": [
+        0,
+        0,
+        0
+      ],
+      "managedBefore": 1768608,
+      "managedPeakSampled": 3502832,
+      "managedAfterGc": 1758152,
+      "privateBefore": 24817664,
+      "privatePeakSampled": 24817664,
+      "privateAfterGc": 24817664,
+      "workingPeakSampled": 67403776,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 8,
+      "reports": [
+        {
+          "actualPages": 1,
+          "firstPageMs": 8.5531,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 1,
+          "firstPageMs": 8.0523,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 1,
+          "firstPageMs": 8.7801,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 1,
+          "firstPageMs": 8.7275,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 1,
+          "firstPageMs": 8.7264,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        }
+      ]
+    },
+    {
+      "mode": "preview-all",
+      "pages": 1,
+      "concurrency": 5,
+      "repetition": 1,
+      "elapsedMs": 26.1813,
+      "pagesPerSecond": 190.97600195559426,
+      "allocatedBytes": 1891944,
+      "collections": [
+        0,
+        0,
+        0
+      ],
+      "managedBefore": 1769000,
+      "managedPeakSampled": 3655320,
+      "managedAfterGc": 1760008,
+      "privateBefore": 24817664,
+      "privatePeakSampled": 38649856,
+      "privateAfterGc": 26275840,
+      "workingPeakSampled": 80785408,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 8,
+      "reports": [
+        {
+          "actualPages": 1,
+          "firstPageMs": 24.6189,
+          "storageBytes": 0,
+          "cachedPngs": 1
+        },
+        {
+          "actualPages": 1,
+          "firstPageMs": 25.8536,
+          "storageBytes": 0,
+          "cachedPngs": 1
+        },
+        {
+          "actualPages": 1,
+          "firstPageMs": 25.116,
+          "storageBytes": 0,
+          "cachedPngs": 1
+        },
+        {
+          "actualPages": 1,
+          "firstPageMs": 25.988,
+          "storageBytes": 0,
+          "cachedPngs": 1
+        },
+        {
+          "actualPages": 1,
+          "firstPageMs": 20.4718,
+          "storageBytes": 0,
+          "cachedPngs": 1
+        }
+      ]
+    },
+    {
+      "mode": "preview-all",
+      "pages": 1,
+      "concurrency": 5,
+      "repetition": 2,
+      "elapsedMs": 24.555,
+      "pagesPerSecond": 203.62451639177357,
+      "allocatedBytes": 1859416,
+      "collections": [
+        0,
+        0,
+        0
+      ],
+      "managedBefore": 1770896,
+      "managedPeakSampled": 3597736,
+      "managedAfterGc": 1760488,
+      "privateBefore": 26279936,
+      "privatePeakSampled": 38739968,
+      "privateAfterGc": 26386432,
+      "workingPeakSampled": 80916480,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 8,
+      "reports": [
+        {
+          "actualPages": 1,
+          "firstPageMs": 21.7025,
+          "storageBytes": 0,
+          "cachedPngs": 1
+        },
+        {
+          "actualPages": 1,
+          "firstPageMs": 23.7508,
+          "storageBytes": 0,
+          "cachedPngs": 1
+        },
+        {
+          "actualPages": 1,
+          "firstPageMs": 18.9997,
+          "storageBytes": 0,
+          "cachedPngs": 1
+        },
+        {
+          "actualPages": 1,
+          "firstPageMs": 24.3464,
+          "storageBytes": 0,
+          "cachedPngs": 1
+        },
+        {
+          "actualPages": 1,
+          "firstPageMs": 22.8652,
+          "storageBytes": 0,
+          "cachedPngs": 1
+        }
+      ]
+    },
+    {
+      "mode": "preview-all",
+      "pages": 1,
+      "concurrency": 5,
+      "repetition": 3,
+      "elapsedMs": 25.1605,
+      "pagesPerSecond": 198.7241906957334,
+      "allocatedBytes": 1877608,
+      "collections": [
+        0,
+        0,
+        0
+      ],
+      "managedBefore": 1771352,
+      "managedPeakSampled": 3628840,
+      "managedAfterGc": 1760944,
+      "privateBefore": 26382336,
+      "privatePeakSampled": 38735872,
+      "privateAfterGc": 26066944,
+      "workingPeakSampled": 80883712,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 8,
+      "reports": [
+        {
+          "actualPages": 1,
+          "firstPageMs": 24.9237,
+          "storageBytes": 0,
+          "cachedPngs": 1
+        },
+        {
+          "actualPages": 1,
+          "firstPageMs": 25.0346,
+          "storageBytes": 0,
+          "cachedPngs": 1
+        },
+        {
+          "actualPages": 1,
+          "firstPageMs": 22.4281,
+          "storageBytes": 0,
+          "cachedPngs": 1
+        },
+        {
+          "actualPages": 1,
+          "firstPageMs": 24.3703,
+          "storageBytes": 0,
+          "cachedPngs": 1
+        },
+        {
+          "actualPages": 1,
+          "firstPageMs": 21.8433,
+          "storageBytes": 0,
+          "cachedPngs": 1
+        }
+      ]
+    },
+    {
+      "mode": "preview-window",
+      "pages": 1,
+      "concurrency": 5,
+      "repetition": 1,
+      "elapsedMs": 32.8578,
+      "pagesPerSecond": 152.17086962608573,
+      "allocatedBytes": 2713024,
+      "collections": [
+        0,
+        0,
+        0
+      ],
+      "managedBefore": 1771848,
+      "managedPeakSampled": 3745512,
+      "managedAfterGc": 1761448,
+      "privateBefore": 26066944,
+      "privatePeakSampled": 26066944,
+      "privateAfterGc": 26652672,
+      "workingPeakSampled": 68132864,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 8,
+      "reports": [
+        {
+          "actualPages": 1,
+          "firstPageMs": 32.4502,
+          "storageBytes": 23687,
+          "cachedPngs": 1
+        },
+        {
+          "actualPages": 1,
+          "firstPageMs": 32.4221,
+          "storageBytes": 23867,
+          "cachedPngs": 1
+        },
+        {
+          "actualPages": 1,
+          "firstPageMs": 23.528,
+          "storageBytes": 23867,
+          "cachedPngs": 1
+        },
+        {
+          "actualPages": 1,
+          "firstPageMs": 29.7404,
+          "storageBytes": 23867,
+          "cachedPngs": 1
+        },
+        {
+          "actualPages": 1,
+          "firstPageMs": 29.7856,
+          "storageBytes": 23867,
+          "cachedPngs": 1
+        }
+      ]
+    },
+    {
+      "mode": "preview-window",
+      "pages": 1,
+      "concurrency": 5,
+      "repetition": 2,
+      "elapsedMs": 34.1419,
+      "pagesPerSecond": 146.44762007972608,
+      "allocatedBytes": 2732776,
+      "collections": [
+        0,
+        0,
+        0
+      ],
+      "managedBefore": 1772264,
+      "managedPeakSampled": 3966112,
+      "managedAfterGc": 1761904,
+      "privateBefore": 26652672,
+      "privatePeakSampled": 26652672,
+      "privateAfterGc": 26599424,
+      "workingPeakSampled": 68485120,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 8,
+      "reports": [
+        {
+          "actualPages": 1,
+          "firstPageMs": 33.8132,
+          "storageBytes": 23687,
+          "cachedPngs": 1
+        },
+        {
+          "actualPages": 1,
+          "firstPageMs": 30.8779,
+          "storageBytes": 23867,
+          "cachedPngs": 1
+        },
+        {
+          "actualPages": 1,
+          "firstPageMs": 33.1519,
+          "storageBytes": 23867,
+          "cachedPngs": 1
+        },
+        {
+          "actualPages": 1,
+          "firstPageMs": 25.5748,
+          "storageBytes": 23867,
+          "cachedPngs": 1
+        },
+        {
+          "actualPages": 1,
+          "firstPageMs": 29.8692,
+          "storageBytes": 23867,
+          "cachedPngs": 1
+        }
+      ]
+    },
+    {
+      "mode": "preview-window",
+      "pages": 1,
+      "concurrency": 5,
+      "repetition": 3,
+      "elapsedMs": 34.5024,
+      "pagesPerSecond": 144.91745501762196,
+      "allocatedBytes": 2730272,
+      "collections": [
+        0,
+        0,
+        0
+      ],
+      "managedBefore": 1772720,
+      "managedPeakSampled": 3650168,
+      "managedAfterGc": 1762360,
+      "privateBefore": 26599424,
+      "privatePeakSampled": 26599424,
+      "privateAfterGc": 26578944,
+      "workingPeakSampled": 68591616,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 8,
+      "reports": [
+        {
+          "actualPages": 1,
+          "firstPageMs": 29.2554,
+          "storageBytes": 23687,
+          "cachedPngs": 1
+        },
+        {
+          "actualPages": 1,
+          "firstPageMs": 32.4186,
+          "storageBytes": 23867,
+          "cachedPngs": 1
+        },
+        {
+          "actualPages": 1,
+          "firstPageMs": 34.1383,
+          "storageBytes": 23867,
+          "cachedPngs": 1
+        },
+        {
+          "actualPages": 1,
+          "firstPageMs": 31.4823,
+          "storageBytes": 23867,
+          "cachedPngs": 1
+        },
+        {
+          "actualPages": 1,
+          "firstPageMs": 26.4996,
+          "storageBytes": 23867,
+          "cachedPngs": 1
+        }
+      ]
+    },
+    {
+      "mode": "buffered",
+      "pages": 10,
+      "concurrency": 1,
+      "repetition": 1,
+      "elapsedMs": 11.3938,
+      "pagesPerSecond": 877.6703119240289,
+      "allocatedBytes": 1545408,
+      "collections": [
+        0,
+        0,
+        0
+      ],
+      "managedBefore": 1773248,
+      "managedPeakSampled": 3335744,
+      "managedAfterGc": 1759632,
+      "privateBefore": 26574848,
+      "privatePeakSampled": 26574848,
+      "privateAfterGc": 26574848,
+      "workingPeakSampled": 68698112,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 8,
+      "reports": [
+        {
+          "actualPages": 10,
+          "firstPageMs": 11.3065,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        }
+      ]
+    },
+    {
+      "mode": "buffered",
+      "pages": 10,
+      "concurrency": 1,
+      "repetition": 2,
+      "elapsedMs": 11.8566,
+      "pagesPerSecond": 843.4121080242228,
+      "allocatedBytes": 1545344,
+      "collections": [
+        0,
+        0,
+        0
+      ],
+      "managedBefore": 1772624,
+      "managedPeakSampled": 3335144,
+      "managedAfterGc": 1759896,
+      "privateBefore": 26574848,
+      "privatePeakSampled": 26574848,
+      "privateAfterGc": 26574848,
+      "workingPeakSampled": 68722688,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 8,
+      "reports": [
+        {
+          "actualPages": 10,
+          "firstPageMs": 11.7778,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        }
+      ]
+    },
+    {
+      "mode": "buffered",
+      "pages": 10,
+      "concurrency": 1,
+      "repetition": 3,
+      "elapsedMs": 18.855,
+      "pagesPerSecond": 530.363298859719,
+      "allocatedBytes": 1545776,
+      "collections": [
+        0,
+        0,
+        0
+      ],
+      "managedBefore": 1772888,
+      "managedPeakSampled": 2735056,
+      "managedAfterGc": 1760904,
+      "privateBefore": 26574848,
+      "privatePeakSampled": 26574848,
+      "privateAfterGc": 26574848,
+      "workingPeakSampled": 68722688,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 8,
+      "reports": [
+        {
+          "actualPages": 10,
+          "firstPageMs": 18.7379,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        }
+      ]
+    },
+    {
+      "mode": "prepared",
+      "pages": 10,
+      "concurrency": 1,
+      "repetition": 1,
+      "elapsedMs": 27.7503,
+      "pagesPerSecond": 360.35646461479695,
+      "allocatedBytes": 2108224,
+      "collections": [
+        0,
+        0,
+        0
+      ],
+      "managedBefore": 1774264,
+      "managedPeakSampled": 2284048,
+      "managedAfterGc": 1761424,
+      "privateBefore": 26574848,
+      "privatePeakSampled": 26574848,
+      "privateAfterGc": 26578944,
+      "workingPeakSampled": 68722688,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 8,
+      "reports": [
+        {
+          "actualPages": 10,
+          "firstPageMs": 27.1434,
+          "storageBytes": 236931,
+          "cachedPngs": 0
+        }
+      ]
+    },
+    {
+      "mode": "prepared",
+      "pages": 10,
+      "concurrency": 1,
+      "repetition": 2,
+      "elapsedMs": 26.6259,
+      "pagesPerSecond": 375.57415899556446,
+      "allocatedBytes": 2108160,
+      "collections": [
+        0,
+        0,
+        0
+      ],
+      "managedBefore": 1774488,
+      "managedPeakSampled": 2086824,
+      "managedAfterGc": 1761688,
+      "privateBefore": 26853376,
+      "privatePeakSampled": 26853376,
+      "privateAfterGc": 27123712,
+      "workingPeakSampled": 68820992,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 9,
+      "reports": [
+        {
+          "actualPages": 10,
+          "firstPageMs": 26.2087,
+          "storageBytes": 236931,
+          "cachedPngs": 0
+        }
+      ]
+    },
+    {
+      "mode": "prepared",
+      "pages": 10,
+      "concurrency": 1,
+      "repetition": 3,
+      "elapsedMs": 22.353,
+      "pagesPerSecond": 447.3672437704111,
+      "allocatedBytes": 2108208,
+      "collections": [
+        0,
+        0,
+        0
+      ],
+      "managedBefore": 1774752,
+      "managedPeakSampled": 2316528,
+      "managedAfterGc": 1761952,
+      "privateBefore": 27123712,
+      "privatePeakSampled": 27123712,
+      "privateAfterGc": 27123712,
+      "workingPeakSampled": 69046272,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 9,
+      "reports": [
+        {
+          "actualPages": 10,
+          "firstPageMs": 21.9561,
+          "storageBytes": 236931,
+          "cachedPngs": 0
+        }
+      ]
+    },
+    {
+      "mode": "stream",
+      "pages": 10,
+      "concurrency": 1,
+      "repetition": 1,
+      "elapsedMs": 19.0917,
+      "pagesPerSecond": 523.7878240282427,
+      "allocatedBytes": 1547352,
+      "collections": [
+        0,
+        0,
+        0
+      ],
+      "managedBefore": 1775056,
+      "managedPeakSampled": 2219008,
+      "managedAfterGc": 1762216,
+      "privateBefore": 27123712,
+      "privatePeakSampled": 27123712,
+      "privateAfterGc": 27123712,
+      "workingPeakSampled": 69050368,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 9,
+      "reports": [
+        {
+          "actualPages": 10,
+          "firstPageMs": 14.752,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        }
+      ]
+    },
+    {
+      "mode": "stream",
+      "pages": 10,
+      "concurrency": 1,
+      "repetition": 2,
+      "elapsedMs": 12.9904,
+      "pagesPerSecond": 769.7992363591576,
+      "allocatedBytes": 1546808,
+      "collections": [
+        0,
+        0,
+        0
+      ],
+      "managedBefore": 1775280,
+      "managedPeakSampled": 3345912,
+      "managedAfterGc": 1761736,
+      "privateBefore": 27123712,
+      "privatePeakSampled": 27123712,
+      "privateAfterGc": 27115520,
+      "workingPeakSampled": 69050368,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 9,
+      "reports": [
+        {
+          "actualPages": 10,
+          "firstPageMs": 8.918,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        }
+      ]
+    },
+    {
+      "mode": "stream",
+      "pages": 10,
+      "concurrency": 1,
+      "repetition": 3,
+      "elapsedMs": 10.7226,
+      "pagesPerSecond": 932.6096282618021,
+      "allocatedBytes": 1546856,
+      "collections": [
+        0,
+        0,
+        0
+      ],
+      "managedBefore": 1774728,
+      "managedPeakSampled": 3337248,
+      "managedAfterGc": 1762000,
+      "privateBefore": 27115520,
+      "privatePeakSampled": 27115520,
+      "privateAfterGc": 27119616,
+      "workingPeakSampled": 69046272,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 9,
+      "reports": [
+        {
+          "actualPages": 10,
+          "firstPageMs": 7.9985,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        }
+      ]
+    },
+    {
+      "mode": "preview-all",
+      "pages": 10,
+      "concurrency": 1,
+      "repetition": 1,
+      "elapsedMs": 113.3687,
+      "pagesPerSecond": 88.20776810530596,
+      "allocatedBytes": 1888464,
+      "collections": [
+        0,
+        0,
+        0
+      ],
+      "managedBefore": 1774928,
+      "managedPeakSampled": 3633416,
+      "managedAfterGc": 1763088,
+      "privateBefore": 27119616,
+      "privatePeakSampled": 29528064,
+      "privateAfterGc": 27107328,
+      "workingPeakSampled": 71733248,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 9,
+      "reports": [
+        {
+          "actualPages": 10,
+          "firstPageMs": 113.2687,
+          "storageBytes": 0,
+          "cachedPngs": 10
+        }
+      ]
+    },
+    {
+      "mode": "preview-all",
+      "pages": 10,
+      "concurrency": 1,
+      "repetition": 2,
+      "elapsedMs": 130.547,
+      "pagesPerSecond": 76.60076447562948,
+      "allocatedBytes": 1892128,
+      "collections": [
+        0,
+        0,
+        0
+      ],
+      "managedBefore": 1776152,
+      "managedPeakSampled": 3667536,
+      "managedAfterGc": 1763352,
+      "privateBefore": 27107328,
+      "privatePeakSampled": 29519872,
+      "privateAfterGc": 27115520,
+      "workingPeakSampled": 71925760,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 9,
+      "reports": [
+        {
+          "actualPages": 10,
+          "firstPageMs": 130.46,
+          "storageBytes": 0,
+          "cachedPngs": 10
+        }
+      ]
+    },
+    {
+      "mode": "preview-all",
+      "pages": 10,
+      "concurrency": 1,
+      "repetition": 3,
+      "elapsedMs": 116.114,
+      "pagesPerSecond": 86.12225915910226,
+      "allocatedBytes": 1888400,
+      "collections": [
+        0,
+        0,
+        0
+      ],
+      "managedBefore": 1776416,
+      "managedPeakSampled": 3634912,
+      "managedAfterGc": 1763616,
+      "privateBefore": 27123712,
+      "privatePeakSampled": 29532160,
+      "privateAfterGc": 27119616,
+      "workingPeakSampled": 72171520,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 9,
+      "reports": [
+        {
+          "actualPages": 10,
+          "firstPageMs": 115.9976,
+          "storageBytes": 0,
+          "cachedPngs": 10
+        }
+      ]
+    },
+    {
+      "mode": "preview-window",
+      "pages": 10,
+      "concurrency": 1,
+      "repetition": 1,
+      "elapsedMs": 150.1896,
+      "pagesPerSecond": 66.58250637860411,
+      "allocatedBytes": 3052936,
+      "collections": [
+        0,
+        0,
+        0
+      ],
+      "managedBefore": 1776720,
+      "managedPeakSampled": 4840056,
+      "managedAfterGc": 1763880,
+      "privateBefore": 27119616,
+      "privatePeakSampled": 29724672,
+      "privateAfterGc": 27320320,
+      "workingPeakSampled": 72409088,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 9,
+      "reports": [
+        {
+          "actualPages": 10,
+          "firstPageMs": 25.2442,
+          "storageBytes": 236931,
+          "cachedPngs": 3
+        }
+      ]
+    },
+    {
+      "mode": "preview-window",
+      "pages": 10,
+      "concurrency": 1,
+      "repetition": 2,
+      "elapsedMs": 141.0636,
+      "pagesPerSecond": 70.89000989624537,
+      "allocatedBytes": 3053496,
+      "collections": [
+        0,
+        0,
+        0
+      ],
+      "managedBefore": 1776944,
+      "managedPeakSampled": 4748720,
+      "managedAfterGc": 1764768,
+      "privateBefore": 27316224,
+      "privatePeakSampled": 29728768,
+      "privateAfterGc": 27316224,
+      "workingPeakSampled": 72617984,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 9,
+      "reports": [
+        {
+          "actualPages": 10,
+          "firstPageMs": 27.0363,
+          "storageBytes": 236931,
+          "cachedPngs": 3
+        }
+      ]
+    },
+    {
+      "mode": "preview-window",
+      "pages": 10,
+      "concurrency": 1,
+      "repetition": 3,
+      "elapsedMs": 222.3604,
+      "pagesPerSecond": 44.97203638777408,
+      "allocatedBytes": 3056480,
+      "collections": [
+        0,
+        0,
+        0
+      ],
+      "managedBefore": 1777832,
+      "managedPeakSampled": 4850376,
+      "managedAfterGc": 1765096,
+      "privateBefore": 27320320,
+      "privatePeakSampled": 29749248,
+      "privateAfterGc": 27344896,
+      "workingPeakSampled": 72716288,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 9,
+      "reports": [
+        {
+          "actualPages": 10,
+          "firstPageMs": 50.2628,
+          "storageBytes": 236931,
+          "cachedPngs": 3
+        }
+      ]
+    },
+    {
+      "mode": "buffered",
+      "pages": 10,
+      "concurrency": 5,
+      "repetition": 1,
+      "elapsedMs": 18.2415,
+      "pagesPerSecond": 2741.0026587725793,
+      "allocatedBytes": 7655528,
+      "collections": [
+        0,
+        0,
+        0
+      ],
+      "managedBefore": 1778200,
+      "managedPeakSampled": 9457848,
+      "managedAfterGc": 1766120,
+      "privateBefore": 27340800,
+      "privatePeakSampled": 32043008,
+      "privateAfterGc": 32055296,
+      "workingPeakSampled": 75108352,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 9,
+      "reports": [
+        {
+          "actualPages": 10,
+          "firstPageMs": 17.0838,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 10,
+          "firstPageMs": 16.0104,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 10,
+          "firstPageMs": 16.7141,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 10,
+          "firstPageMs": 16.5144,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 10,
+          "firstPageMs": 17.0088,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        }
+      ]
+    },
+    {
+      "mode": "buffered",
+      "pages": 10,
+      "concurrency": 5,
+      "repetition": 2,
+      "elapsedMs": 18.08,
+      "pagesPerSecond": 2765.486725663717,
+      "allocatedBytes": 7587288,
+      "collections": [
+        0,
+        0,
+        0
+      ],
+      "managedBefore": 1777656,
+      "managedPeakSampled": 9389376,
+      "managedAfterGc": 1766840,
+      "privateBefore": 32055296,
+      "privatePeakSampled": 35401728,
+      "privateAfterGc": 35471360,
+      "workingPeakSampled": 78618624,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 9,
+      "reports": [
+        {
+          "actualPages": 10,
+          "firstPageMs": 13.4778,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 10,
+          "firstPageMs": 14.995,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 10,
+          "firstPageMs": 14.8928,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 10,
+          "firstPageMs": 13.1735,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 10,
+          "firstPageMs": 17.949,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        }
+      ]
+    },
+    {
+      "mode": "buffered",
+      "pages": 10,
+      "concurrency": 5,
+      "repetition": 3,
+      "elapsedMs": 17.709,
+      "pagesPerSecond": 2823.423118188492,
+      "allocatedBytes": 7580520,
+      "collections": [
+        0,
+        0,
+        0
+      ],
+      "managedBefore": 1778112,
+      "managedPeakSampled": 9280544,
+      "managedAfterGc": 1768112,
+      "privateBefore": 35475456,
+      "privatePeakSampled": 38232064,
+      "privateAfterGc": 38436864,
+      "workingPeakSampled": 81465344,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 9,
+      "reports": [
+        {
+          "actualPages": 10,
+          "firstPageMs": 12.4939,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 10,
+          "firstPageMs": 13.0333,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 10,
+          "firstPageMs": 12.9728,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 10,
+          "firstPageMs": 13.9017,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 10,
+          "firstPageMs": 17.6122,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        }
+      ]
+    },
+    {
+      "mode": "prepared",
+      "pages": 10,
+      "concurrency": 5,
+      "repetition": 1,
+      "elapsedMs": 32.0679,
+      "pagesPerSecond": 1559.1915903442382,
+      "allocatedBytes": 10367512,
+      "collections": [
+        0,
+        0,
+        0
+      ],
+      "managedBefore": 1779424,
+      "managedPeakSampled": 5424488,
+      "managedAfterGc": 1769048,
+      "privateBefore": 38436864,
+      "privatePeakSampled": 38436864,
+      "privateAfterGc": 36380672,
+      "workingPeakSampled": 81731584,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 9,
+      "reports": [
+        {
+          "actualPages": 10,
+          "firstPageMs": 29.7374,
+          "storageBytes": 236931,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 10,
+          "firstPageMs": 30.0035,
+          "storageBytes": 238671,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 10,
+          "firstPageMs": 29.9997,
+          "storageBytes": 238671,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 10,
+          "firstPageMs": 31.0368,
+          "storageBytes": 238671,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 10,
+          "firstPageMs": 31.7423,
+          "storageBytes": 238671,
+          "cachedPngs": 0
+        }
+      ]
+    },
+    {
+      "mode": "prepared",
+      "pages": 10,
+      "concurrency": 5,
+      "repetition": 2,
+      "elapsedMs": 32.4081,
+      "pagesPerSecond": 1542.824170500585,
+      "allocatedBytes": 10347808,
+      "collections": [
+        0,
+        0,
+        0
+      ],
+      "managedBefore": 1779840,
+      "managedPeakSampled": 6670672,
+      "managedAfterGc": 1884344,
+      "privateBefore": 36388864,
+      "privatePeakSampled": 36634624,
+      "privateAfterGc": 39780352,
+      "workingPeakSampled": 80601088,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 9,
+      "reports": [
+        {
+          "actualPages": 10,
+          "firstPageMs": 29.8685,
+          "storageBytes": 236931,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 10,
+          "firstPageMs": 31.903,
+          "storageBytes": 238671,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 10,
+          "firstPageMs": 29.7392,
+          "storageBytes": 238671,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 10,
+          "firstPageMs": 31.3951,
+          "storageBytes": 238671,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 10,
+          "firstPageMs": 31.5791,
+          "storageBytes": 238671,
+          "cachedPngs": 0
+        }
+      ]
+    },
+    {
+      "mode": "prepared",
+      "pages": 10,
+      "concurrency": 5,
+      "repetition": 3,
+      "elapsedMs": 28.1809,
+      "pagesPerSecond": 1774.251354640909,
+      "allocatedBytes": 10352504,
+      "collections": [
+        0,
+        0,
+        0
+      ],
+      "managedBefore": 1894760,
+      "managedPeakSampled": 5615560,
+      "managedAfterGc": 1953280,
+      "privateBefore": 39780352,
+      "privatePeakSampled": 40259584,
+      "privateAfterGc": 38535168,
+      "workingPeakSampled": 83673088,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 10,
+      "reports": [
+        {
+          "actualPages": 10,
+          "firstPageMs": 27.352,
+          "storageBytes": 236931,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 10,
+          "firstPageMs": 23.8085,
+          "storageBytes": 238671,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 10,
+          "firstPageMs": 27.8314,
+          "storageBytes": 238671,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 10,
+          "firstPageMs": 22.5332,
+          "storageBytes": 238671,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 10,
+          "firstPageMs": 26.9075,
+          "storageBytes": 238671,
+          "cachedPngs": 0
+        }
+      ]
+    },
+    {
+      "mode": "stream",
+      "pages": 10,
+      "concurrency": 5,
+      "repetition": 1,
+      "elapsedMs": 15.1243,
+      "pagesPerSecond": 3305.9381260620326,
+      "allocatedBytes": 7660576,
+      "collections": [
+        0,
+        0,
+        0
+      ],
+      "managedBefore": 1963856,
+      "managedPeakSampled": 9671136,
+      "managedAfterGc": 1963784,
+      "privateBefore": 38539264,
+      "privatePeakSampled": 38539264,
+      "privateAfterGc": 38555648,
+      "workingPeakSampled": 82186240,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 11,
+      "reports": [
+        {
+          "actualPages": 10,
+          "firstPageMs": 10.107,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 10,
+          "firstPageMs": 9.9441,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 10,
+          "firstPageMs": 9.8974,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 10,
+          "firstPageMs": 9.81,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 10,
+          "firstPageMs": 9.4513,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        }
+      ]
+    },
+    {
+      "mode": "stream",
+      "pages": 10,
+      "concurrency": 5,
+      "repetition": 2,
+      "elapsedMs": 15.9945,
+      "pagesPerSecond": 3126.074588139673,
+      "allocatedBytes": 7686328,
+      "collections": [
+        0,
+        0,
+        0
+      ],
+      "managedBefore": 1974824,
+      "managedPeakSampled": 9466600,
+      "managedAfterGc": 1981536,
+      "privateBefore": 38555648,
+      "privatePeakSampled": 38612992,
+      "privateAfterGc": 38617088,
+      "workingPeakSampled": 82489344,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 11,
+      "reports": [
+        {
+          "actualPages": 10,
+          "firstPageMs": 11.4324,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 10,
+          "firstPageMs": 11.3985,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 10,
+          "firstPageMs": 11.404,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 10,
+          "firstPageMs": 10.5287,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 10,
+          "firstPageMs": 10.1162,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        }
+      ]
+    },
+    {
+      "mode": "stream",
+      "pages": 10,
+      "concurrency": 5,
+      "repetition": 3,
+      "elapsedMs": 12.0645,
+      "pagesPerSecond": 4144.390567367069,
+      "allocatedBytes": 7653936,
+      "collections": [
+        0,
+        0,
+        0
+      ],
+      "managedBefore": 1992272,
+      "managedPeakSampled": 9681272,
+      "managedAfterGc": 2002152,
+      "privateBefore": 38617088,
+      "privatePeakSampled": 38625280,
+      "privateAfterGc": 38633472,
+      "workingPeakSampled": 82530304,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 11,
+      "reports": [
+        {
+          "actualPages": 10,
+          "firstPageMs": 7.8834,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 10,
+          "firstPageMs": 7.7254,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 10,
+          "firstPageMs": 7.4587,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 10,
+          "firstPageMs": 7.5304,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 10,
+          "firstPageMs": 7.5407,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        }
+      ]
+    },
+    {
+      "mode": "preview-all",
+      "pages": 10,
+      "concurrency": 5,
+      "repetition": 1,
+      "elapsedMs": 194.596,
+      "pagesPerSecond": 256.94258874797015,
+      "allocatedBytes": 9561664,
+      "collections": [
+        0,
+        0,
+        0
+      ],
+      "managedBefore": 2013112,
+      "managedPeakSampled": 11612184,
+      "managedAfterGc": 2003712,
+      "privateBefore": 38625280,
+      "privatePeakSampled": 53059584,
+      "privateAfterGc": 39624704,
+      "workingPeakSampled": 97079296,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 12,
+      "reports": [
+        {
+          "actualPages": 10,
+          "firstPageMs": 182.5577,
+          "storageBytes": 0,
+          "cachedPngs": 10
+        },
+        {
+          "actualPages": 10,
+          "firstPageMs": 189.9724,
+          "storageBytes": 0,
+          "cachedPngs": 10
+        },
+        {
+          "actualPages": 10,
+          "firstPageMs": 189.4394,
+          "storageBytes": 0,
+          "cachedPngs": 10
+        },
+        {
+          "actualPages": 10,
+          "firstPageMs": 182.1698,
+          "storageBytes": 0,
+          "cachedPngs": 10
+        },
+        {
+          "actualPages": 10,
+          "firstPageMs": 194.492,
+          "storageBytes": 0,
+          "cachedPngs": 10
+        }
+      ]
+    },
+    {
+      "mode": "preview-all",
+      "pages": 10,
+      "concurrency": 5,
+      "repetition": 2,
+      "elapsedMs": 188.5967,
+      "pagesPerSecond": 265.11598559253684,
+      "allocatedBytes": 9571408,
+      "collections": [
+        0,
+        0,
+        0
+      ],
+      "managedBefore": 2014592,
+      "managedPeakSampled": 11617656,
+      "managedAfterGc": 2008784,
+      "privateBefore": 39624704,
+      "privatePeakSampled": 52445184,
+      "privateAfterGc": 39604224,
+      "workingPeakSampled": 96817152,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 12,
+      "reports": [
+        {
+          "actualPages": 10,
+          "firstPageMs": 187.3104,
+          "storageBytes": 0,
+          "cachedPngs": 10
+        },
+        {
+          "actualPages": 10,
+          "firstPageMs": 188.4841,
+          "storageBytes": 0,
+          "cachedPngs": 10
+        },
+        {
+          "actualPages": 10,
+          "firstPageMs": 170.0642,
+          "storageBytes": 0,
+          "cachedPngs": 10
+        },
+        {
+          "actualPages": 10,
+          "firstPageMs": 177.8417,
+          "storageBytes": 0,
+          "cachedPngs": 10
+        },
+        {
+          "actualPages": 10,
+          "firstPageMs": 187.2517,
+          "storageBytes": 0,
+          "cachedPngs": 10
+        }
+      ]
+    },
+    {
+      "mode": "preview-all",
+      "pages": 10,
+      "concurrency": 5,
+      "repetition": 3,
+      "elapsedMs": 188.0226,
+      "pagesPerSecond": 265.9254791711209,
+      "allocatedBytes": 9529984,
+      "collections": [
+        0,
+        0,
+        0
+      ],
+      "managedBefore": 2019592,
+      "managedPeakSampled": 11598688,
+      "managedAfterGc": 2010272,
+      "privateBefore": 39620608,
+      "privatePeakSampled": 53506048,
+      "privateAfterGc": 39444480,
+      "workingPeakSampled": 98414592,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 12,
+      "reports": [
+        {
+          "actualPages": 10,
+          "firstPageMs": 170.878,
+          "storageBytes": 0,
+          "cachedPngs": 10
+        },
+        {
+          "actualPages": 10,
+          "firstPageMs": 187.8999,
+          "storageBytes": 0,
+          "cachedPngs": 10
+        },
+        {
+          "actualPages": 10,
+          "firstPageMs": 187.0273,
+          "storageBytes": 0,
+          "cachedPngs": 10
+        },
+        {
+          "actualPages": 10,
+          "firstPageMs": 179.071,
+          "storageBytes": 0,
+          "cachedPngs": 10
+        },
+        {
+          "actualPages": 10,
+          "firstPageMs": 187.7137,
+          "storageBytes": 0,
+          "cachedPngs": 10
+        }
+      ]
+    },
+    {
+      "mode": "preview-window",
+      "pages": 10,
+      "concurrency": 5,
+      "repetition": 1,
+      "elapsedMs": 210.2989,
+      "pagesPerSecond": 237.75683087262937,
+      "allocatedBytes": 15013736,
+      "collections": [
+        1,
+        0,
+        0
+      ],
+      "managedBefore": 2021120,
+      "managedPeakSampled": 13140936,
+      "managedAfterGc": 2059584,
+      "privateBefore": 39456768,
+      "privatePeakSampled": 55574528,
+      "privateAfterGc": 39370752,
+      "workingPeakSampled": 100450304,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 12,
+      "reports": [
+        {
+          "actualPages": 10,
+          "firstPageMs": 42.2327,
+          "storageBytes": 236931,
+          "cachedPngs": 3
+        },
+        {
+          "actualPages": 10,
+          "firstPageMs": 41.8047,
+          "storageBytes": 238671,
+          "cachedPngs": 3
+        },
+        {
+          "actualPages": 10,
+          "firstPageMs": 33.4593,
+          "storageBytes": 238671,
+          "cachedPngs": 3
+        },
+        {
+          "actualPages": 10,
+          "firstPageMs": 43.1408,
+          "storageBytes": 238671,
+          "cachedPngs": 3
+        },
+        {
+          "actualPages": 10,
+          "firstPageMs": 43.3139,
+          "storageBytes": 238671,
+          "cachedPngs": 3
+        }
+      ]
+    },
+    {
+      "mode": "preview-window",
+      "pages": 10,
+      "concurrency": 5,
+      "repetition": 2,
+      "elapsedMs": 236.3581,
+      "pagesPerSecond": 211.54341653617962,
+      "allocatedBytes": 14959088,
+      "collections": [
+        1,
+        0,
+        0
+      ],
+      "managedBefore": 2074456,
+      "managedPeakSampled": 13438584,
+      "managedAfterGc": 2061120,
+      "privateBefore": 39366656,
+      "privatePeakSampled": 57008128,
+      "privateAfterGc": 38735872,
+      "workingPeakSampled": 102985728,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 13,
+      "reports": [
+        {
+          "actualPages": 10,
+          "firstPageMs": 41.5793,
+          "storageBytes": 236931,
+          "cachedPngs": 3
+        },
+        {
+          "actualPages": 10,
+          "firstPageMs": 44.1368,
+          "storageBytes": 238671,
+          "cachedPngs": 3
+        },
+        {
+          "actualPages": 10,
+          "firstPageMs": 40.0398,
+          "storageBytes": 238671,
+          "cachedPngs": 3
+        },
+        {
+          "actualPages": 10,
+          "firstPageMs": 43.4446,
+          "storageBytes": 238671,
+          "cachedPngs": 3
+        },
+        {
+          "actualPages": 10,
+          "firstPageMs": 39.3601,
+          "storageBytes": 238671,
+          "cachedPngs": 3
+        }
+      ]
+    },
+    {
+      "mode": "preview-window",
+      "pages": 10,
+      "concurrency": 5,
+      "repetition": 3,
+      "elapsedMs": 291.012,
+      "pagesPerSecond": 171.81422071942052,
+      "allocatedBytes": 14987416,
+      "collections": [
+        1,
+        0,
+        0
+      ],
+      "managedBefore": 2075992,
+      "managedPeakSampled": 14092560,
+      "managedAfterGc": 2061576,
+      "privateBefore": 38735872,
+      "privatePeakSampled": 57171968,
+      "privateAfterGc": 40419328,
+      "workingPeakSampled": 102572032,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 13,
+      "reports": [
+        {
+          "actualPages": 10,
+          "firstPageMs": 77.4798,
+          "storageBytes": 236931,
+          "cachedPngs": 3
+        },
+        {
+          "actualPages": 10,
+          "firstPageMs": 49.93,
+          "storageBytes": 238671,
+          "cachedPngs": 3
+        },
+        {
+          "actualPages": 10,
+          "firstPageMs": 50.4709,
+          "storageBytes": 238671,
+          "cachedPngs": 3
+        },
+        {
+          "actualPages": 10,
+          "firstPageMs": 61.4037,
+          "storageBytes": 238671,
+          "cachedPngs": 3
+        },
+        {
+          "actualPages": 10,
+          "firstPageMs": 50.1549,
+          "storageBytes": 238671,
+          "cachedPngs": 3
+        }
+      ]
+    },
+    {
+      "mode": "buffered",
+      "pages": 100,
+      "concurrency": 1,
+      "repetition": 1,
+      "elapsedMs": 26.9418,
+      "pagesPerSecond": 3711.704488935409,
+      "allocatedBytes": 12382576,
+      "collections": [
+        0,
+        0,
+        0
+      ],
+      "managedBefore": 2076520,
+      "managedPeakSampled": 12564904,
+      "managedAfterGc": 2063888,
+      "privateBefore": 40415232,
+      "privatePeakSampled": 42393600,
+      "privateAfterGc": 44503040,
+      "workingPeakSampled": 87891968,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 13,
+      "reports": [
+        {
+          "actualPages": 100,
+          "firstPageMs": 26.8126,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        }
+      ]
+    },
+    {
+      "mode": "buffered",
+      "pages": 100,
+      "concurrency": 1,
+      "repetition": 2,
+      "elapsedMs": 18.7883,
+      "pagesPerSecond": 5322.461319012364,
+      "allocatedBytes": 12382512,
+      "collections": [
+        0,
+        0,
+        0
+      ],
+      "managedBefore": 2076632,
+      "managedPeakSampled": 6747520,
+      "managedAfterGc": 2064152,
+      "privateBefore": 44503040,
+      "privatePeakSampled": 44503040,
+      "privateAfterGc": 40415232,
+      "workingPeakSampled": 90009600,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 13,
+      "reports": [
+        {
+          "actualPages": 100,
+          "firstPageMs": 18.7065,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        }
+      ]
+    },
+    {
+      "mode": "buffered",
+      "pages": 100,
+      "concurrency": 1,
+      "repetition": 3,
+      "elapsedMs": 15.148,
+      "pagesPerSecond": 6601.531555320835,
+      "allocatedBytes": 12382512,
+      "collections": [
+        0,
+        0,
+        0
+      ],
+      "managedBefore": 2076896,
+      "managedPeakSampled": 12844824,
+      "managedAfterGc": 2064416,
+      "privateBefore": 38989824,
+      "privatePeakSampled": 41033728,
+      "privateAfterGc": 43077632,
+      "workingPeakSampled": 87097344,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 13,
+      "reports": [
+        {
+          "actualPages": 100,
+          "firstPageMs": 15.0884,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        }
+      ]
+    },
+    {
+      "mode": "prepared",
+      "pages": 100,
+      "concurrency": 1,
+      "repetition": 1,
+      "elapsedMs": 70.1213,
+      "pagesPerSecond": 1426.100200652298,
+      "allocatedBytes": 17465776,
+      "collections": [
+        1,
+        0,
+        0
+      ],
+      "managedBefore": 2077200,
+      "managedPeakSampled": 4516864,
+      "managedAfterGc": 2062960,
+      "privateBefore": 43077632,
+      "privatePeakSampled": 43212800,
+      "privateAfterGc": 42938368,
+      "workingPeakSampled": 89305088,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 13,
+      "reports": [
+        {
+          "actualPages": 100,
+          "firstPageMs": 69.564,
+          "storageBytes": 2374312,
+          "cachedPngs": 0
+        }
+      ]
+    },
+    {
+      "mode": "prepared",
+      "pages": 100,
+      "concurrency": 1,
+      "repetition": 2,
+      "elapsedMs": 73.5376,
+      "pagesPerSecond": 1359.8485672635497,
+      "allocatedBytes": 17465712,
+      "collections": [
+        1,
+        0,
+        0
+      ],
+      "managedBefore": 2077504,
+      "managedPeakSampled": 3569352,
+      "managedAfterGc": 2063224,
+      "privateBefore": 42938368,
+      "privatePeakSampled": 42938368,
+      "privateAfterGc": 42938368,
+      "workingPeakSampled": 89034752,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 13,
+      "reports": [
+        {
+          "actualPages": 100,
+          "firstPageMs": 72.9787,
+          "storageBytes": 2374312,
+          "cachedPngs": 0
+        }
+      ]
+    },
+    {
+      "mode": "prepared",
+      "pages": 100,
+      "concurrency": 1,
+      "repetition": 3,
+      "elapsedMs": 62.0842,
+      "pagesPerSecond": 1610.7157698738163,
+      "allocatedBytes": 17465496,
+      "collections": [
+        1,
+        0,
+        0
+      ],
+      "managedBefore": 2078280,
+      "managedPeakSampled": 7328368,
+      "managedAfterGc": 2064016,
+      "privateBefore": 42954752,
+      "privatePeakSampled": 43040768,
+      "privateAfterGc": 38821888,
+      "workingPeakSampled": 89366528,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 13,
+      "reports": [
+        {
+          "actualPages": 100,
+          "firstPageMs": 61.3569,
+          "storageBytes": 2374312,
+          "cachedPngs": 0
+        }
+      ]
+    },
+    {
+      "mode": "stream",
+      "pages": 100,
+      "concurrency": 1,
+      "repetition": 1,
+      "elapsedMs": 16.6473,
+      "pagesPerSecond": 6006.980110888852,
+      "allocatedBytes": 12380768,
+      "collections": [
+        0,
+        0,
+        0
+      ],
+      "managedBefore": 2078600,
+      "managedPeakSampled": 10129424,
+      "managedAfterGc": 2066016,
+      "privateBefore": 38821888,
+      "privatePeakSampled": 38821888,
+      "privateAfterGc": 42971136,
+      "workingPeakSampled": 85266432,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 13,
+      "reports": [
+        {
+          "actualPages": 100,
+          "firstPageMs": 7.486,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        }
+      ]
+    },
+    {
+      "mode": "stream",
+      "pages": 100,
+      "concurrency": 1,
+      "repetition": 2,
+      "elapsedMs": 13.5946,
+      "pagesPerSecond": 7355.861886337222,
+      "allocatedBytes": 12380408,
+      "collections": [
+        0,
+        0,
+        0
+      ],
+      "managedBefore": 2078760,
+      "managedPeakSampled": 10269680,
+      "managedAfterGc": 2066280,
+      "privateBefore": 42975232,
+      "privatePeakSampled": 42975232,
+      "privateAfterGc": 42975232,
+      "workingPeakSampled": 89354240,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 13,
+      "reports": [
+        {
+          "actualPages": 100,
+          "firstPageMs": 7.3436,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        }
+      ]
+    },
+    {
+      "mode": "stream",
+      "pages": 100,
+      "concurrency": 1,
+      "repetition": 3,
+      "elapsedMs": 12.7693,
+      "pagesPerSecond": 7831.2828424424215,
+      "allocatedBytes": 12379952,
+      "collections": [
+        0,
+        0,
+        0
+      ],
+      "managedBefore": 2079024,
+      "managedPeakSampled": 10993504,
+      "managedAfterGc": 2066544,
+      "privateBefore": 42967040,
+      "privatePeakSampled": 42971136,
+      "privateAfterGc": 42979328,
+      "workingPeakSampled": 89358336,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 13,
+      "reports": [
+        {
+          "actualPages": 100,
+          "firstPageMs": 6.9267,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        }
+      ]
+    },
+    {
+      "mode": "preview-all",
+      "pages": 100,
+      "concurrency": 1,
+      "repetition": 1,
+      "elapsedMs": 904.2622,
+      "pagesPerSecond": 110.58739378910232,
+      "allocatedBytes": 16084000,
+      "collections": [
+        1,
+        0,
+        0
+      ],
+      "managedBefore": 2079328,
+      "managedPeakSampled": 14044752,
+      "managedAfterGc": 2064920,
+      "privateBefore": 42979328,
+      "privatePeakSampled": 47603712,
+      "privateAfterGc": 41037824,
+      "workingPeakSampled": 95154176,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 13,
+      "reports": [
+        {
+          "actualPages": 100,
+          "firstPageMs": 904.2078,
+          "storageBytes": 0,
+          "cachedPngs": 100
+        }
+      ]
+    },
+    {
+      "mode": "preview-all",
+      "pages": 100,
+      "concurrency": 1,
+      "repetition": 2,
+      "elapsedMs": 922.3745,
+      "pagesPerSecond": 108.4158332651217,
+      "allocatedBytes": 16080712,
+      "collections": [
+        1,
+        0,
+        0
+      ],
+      "managedBefore": 2079792,
+      "managedPeakSampled": 13576808,
+      "managedAfterGc": 2064576,
+      "privateBefore": 41037824,
+      "privatePeakSampled": 47837184,
+      "privateAfterGc": 41205760,
+      "workingPeakSampled": 95887360,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 13,
+      "reports": [
+        {
+          "actualPages": 100,
+          "firstPageMs": 922.2292,
+          "storageBytes": 0,
+          "cachedPngs": 100
+        }
+      ]
+    },
+    {
+      "mode": "preview-all",
+      "pages": 100,
+      "concurrency": 1,
+      "repetition": 3,
+      "elapsedMs": 1010.9467,
+      "pagesPerSecond": 98.91718326989941,
+      "allocatedBytes": 16079240,
+      "collections": [
+        1,
+        0,
+        0
+      ],
+      "managedBefore": 2079760,
+      "managedPeakSampled": 14576344,
+      "managedAfterGc": 2064840,
+      "privateBefore": 41205760,
+      "privatePeakSampled": 47931392,
+      "privateAfterGc": 41308160,
+      "workingPeakSampled": 95973376,
+      "lohAfterLastObservedGc": 0,
+      "gdiPeak": 0,
+      "userPeak": 13,
+      "reports": [
+        {
+          "actualPages": 100,
+          "firstPageMs": 1010.8789,
+          "storageBytes": 0,
+          "cachedPngs": 100
+        }
+      ]
+    },
+    {
+      "mode": "preview-window",
+      "pages": 100,
+      "concurrency": 1,
+      "repetition": 1,
+      "elapsedMs": 1204.7279,
+      "pagesPerSecond": 83.00629544646553,
+      "allocatedBytes": 27310344,
+      "collections": [
+        2,
+        1,
+        0
+      ],
+      "managedBefore": 2097224,
+      "managedPeakSampled": 14869128,
+      "managedAfterGc": 2165104,
+      "privateBefore": 41377792,
+      "privatePeakSampled": 49250304,
+      "privateAfterGc": 42553344,
+      "workingPeakSampled": 97161216,
+      "lohAfterLastObservedGc": 98384,
+      "gdiPeak": 0,
+      "userPeak": 14,
+      "reports": [
+        {
+          "actualPages": 100,
+          "firstPageMs": 34.6433,
+          "storageBytes": 2374312,
+          "cachedPngs": 3
+        }
+      ]
+    },
+    {
+      "mode": "preview-window",
+      "pages": 100,
+      "concurrency": 1,
+      "repetition": 2,
+      "elapsedMs": 1125.5633,
+      "pagesPerSecond": 88.84440350889194,
+      "allocatedBytes": 27169368,
+      "collections": [
+        2,
+        1,
+        0
+      ],
+      "managedBefore": 2180288,
+      "managedPeakSampled": 14780608,
+      "managedAfterGc": 2165304,
+      "privateBefore": 42553344,
+      "privatePeakSampled": 49238016,
+      "privateAfterGc": 42532864,
+      "workingPeakSampled": 97198080,
+      "lohAfterLastObservedGc": 98384,
+      "gdiPeak": 0,
+      "userPeak": 14,
+      "reports": [
+        {
+          "actualPages": 100,
+          "firstPageMs": 36.7639,
+          "storageBytes": 2374312,
+          "cachedPngs": 3
+        }
+      ]
+    },
+    {
+      "mode": "preview-window",
+      "pages": 100,
+      "concurrency": 1,
+      "repetition": 3,
+      "elapsedMs": 948.6731,
+      "pagesPerSecond": 105.41038846785052,
+      "allocatedBytes": 27169200,
+      "collections": [
+        2,
+        1,
+        0
+      ],
+      "managedBefore": 2180488,
+      "managedPeakSampled": 14681384,
+      "managedAfterGc": 2165632,
+      "privateBefore": 42532864,
+      "privatePeakSampled": 49184768,
+      "privateAfterGc": 36544512,
+      "workingPeakSampled": 97189888,
+      "lohAfterLastObservedGc": 98384,
+      "gdiPeak": 0,
+      "userPeak": 14,
+      "reports": [
+        {
+          "actualPages": 100,
+          "firstPageMs": 36.3567,
+          "storageBytes": 2374312,
+          "cachedPngs": 3
+        }
+      ]
+    },
+    {
+      "mode": "buffered",
+      "pages": 100,
+      "concurrency": 5,
+      "repetition": 1,
+      "elapsedMs": 38.9265,
+      "pagesPerSecond": 12844.720177770929,
+      "allocatedBytes": 66907648,
+      "collections": [
+        5,
+        1,
+        0
+      ],
+      "managedBefore": 2180856,
+      "managedPeakSampled": 4686008,
+      "managedAfterGc": 2179896,
+      "privateBefore": 36548608,
+      "privatePeakSampled": 40894464,
+      "privateAfterGc": 41443328,
+      "workingPeakSampled": 88838144,
+      "lohAfterLastObservedGc": 98384,
+      "gdiPeak": 0,
+      "userPeak": 14,
+      "reports": [
+        {
+          "actualPages": 100,
+          "firstPageMs": 37.7713,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 100,
+          "firstPageMs": 38.0293,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 100,
+          "firstPageMs": 38.4157,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 100,
+          "firstPageMs": 38.7289,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 100,
+          "firstPageMs": 38.7598,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        }
+      ]
+    },
+    {
+      "mode": "buffered",
+      "pages": 100,
+      "concurrency": 5,
+      "repetition": 2,
+      "elapsedMs": 52.1397,
+      "pagesPerSecond": 9589.621727781327,
+      "allocatedBytes": 66632896,
+      "collections": [
+        5,
+        1,
+        0
+      ],
+      "managedBefore": 2193248,
+      "managedPeakSampled": 14452664,
+      "managedAfterGc": 2207168,
+      "privateBefore": 44982272,
+      "privatePeakSampled": 46661632,
+      "privateAfterGc": 45576192,
+      "workingPeakSampled": 94625792,
+      "lohAfterLastObservedGc": 98384,
+      "gdiPeak": 0,
+      "userPeak": 14,
+      "reports": [
+        {
+          "actualPages": 100,
+          "firstPageMs": 46.2049,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 100,
+          "firstPageMs": 50.8969,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 100,
+          "firstPageMs": 51.3686,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 100,
+          "firstPageMs": 44.7141,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 100,
+          "firstPageMs": 52.0837,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        }
+      ]
+    },
+    {
+      "mode": "buffered",
+      "pages": 100,
+      "concurrency": 5,
+      "repetition": 3,
+      "elapsedMs": 49.1109,
+      "pagesPerSecond": 10181.039239761438,
+      "allocatedBytes": 66996968,
+      "collections": [
+        5,
+        1,
+        0
+      ],
+      "managedBefore": 2220520,
+      "managedPeakSampled": 11139528,
+      "managedAfterGc": 2220928,
+      "privateBefore": 45576192,
+      "privatePeakSampled": 46698496,
+      "privateAfterGc": 45596672,
+      "workingPeakSampled": 94654464,
+      "lohAfterLastObservedGc": 98384,
+      "gdiPeak": 0,
+      "userPeak": 14,
+      "reports": [
+        {
+          "actualPages": 100,
+          "firstPageMs": 43.1088,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 100,
+          "firstPageMs": 48.29,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 100,
+          "firstPageMs": 48.2878,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 100,
+          "firstPageMs": 48.6763,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 100,
+          "firstPageMs": 49.0404,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        }
+      ]
+    },
+    {
+      "mode": "prepared",
+      "pages": 100,
+      "concurrency": 5,
+      "repetition": 1,
+      "elapsedMs": 64.2226,
+      "pagesPerSecond": 7785.421331431614,
+      "allocatedBytes": 90066080,
+      "collections": [
+        7,
+        1,
+        0
+      ],
+      "managedBefore": 2241272,
+      "managedPeakSampled": 7464752,
+      "managedAfterGc": 2272032,
+      "privateBefore": 45596672,
+      "privatePeakSampled": 49926144,
+      "privateAfterGc": 52510720,
+      "workingPeakSampled": 97972224,
+      "lohAfterLastObservedGc": 98384,
+      "gdiPeak": 0,
+      "userPeak": 15,
+      "reports": [
+        {
+          "actualPages": 100,
+          "firstPageMs": 63.0151,
+          "storageBytes": 2374312,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 100,
+          "firstPageMs": 60.0781,
+          "storageBytes": 2386792,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 100,
+          "firstPageMs": 62.1205,
+          "storageBytes": 2386792,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 100,
+          "firstPageMs": 61.9232,
+          "storageBytes": 2386792,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 100,
+          "firstPageMs": 63.024,
+          "storageBytes": 2386792,
+          "cachedPngs": 0
+        }
+      ]
+    },
+    {
+      "mode": "prepared",
+      "pages": 100,
+      "concurrency": 5,
+      "repetition": 2,
+      "elapsedMs": 59.3055,
+      "pagesPerSecond": 8430.921246764634,
+      "allocatedBytes": 90415552,
+      "collections": [
+        7,
+        1,
+        0
+      ],
+      "managedBefore": 2293608,
+      "managedPeakSampled": 7777104,
+      "managedAfterGc": 2324336,
+      "privateBefore": 52510720,
+      "privatePeakSampled": 52514816,
+      "privateAfterGc": 48517120,
+      "workingPeakSampled": 100720640,
+      "lohAfterLastObservedGc": 98384,
+      "gdiPeak": 0,
+      "userPeak": 16,
+      "reports": [
+        {
+          "actualPages": 100,
+          "firstPageMs": 56.795,
+          "storageBytes": 2374312,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 100,
+          "firstPageMs": 58.0896,
+          "storageBytes": 2386792,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 100,
+          "firstPageMs": 56.945,
+          "storageBytes": 2386792,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 100,
+          "firstPageMs": 55.688,
+          "storageBytes": 2386792,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 100,
+          "firstPageMs": 58.1839,
+          "storageBytes": 2386792,
+          "cachedPngs": 0
+        }
+      ]
+    },
+    {
+      "mode": "prepared",
+      "pages": 100,
+      "concurrency": 5,
+      "repetition": 3,
+      "elapsedMs": 58.7745,
+      "pagesPerSecond": 8507.090660065165,
+      "allocatedBytes": 90095840,
+      "collections": [
+        7,
+        1,
+        0
+      ],
+      "managedBefore": 2337688,
+      "managedPeakSampled": 7676336,
+      "managedAfterGc": 2327032,
+      "privateBefore": 48517120,
+      "privatePeakSampled": 48930816,
+      "privateAfterGc": 48934912,
+      "workingPeakSampled": 97136640,
+      "lohAfterLastObservedGc": 98384,
+      "gdiPeak": 0,
+      "userPeak": 16,
+      "reports": [
+        {
+          "actualPages": 100,
+          "firstPageMs": 57.0874,
+          "storageBytes": 2374312,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 100,
+          "firstPageMs": 58.0452,
+          "storageBytes": 2386792,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 100,
+          "firstPageMs": 54.7586,
+          "storageBytes": 2386792,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 100,
+          "firstPageMs": 56.5693,
+          "storageBytes": 2386792,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 100,
+          "firstPageMs": 55.9224,
+          "storageBytes": 2386792,
+          "cachedPngs": 0
+        }
+      ]
+    },
+    {
+      "mode": "stream",
+      "pages": 100,
+      "concurrency": 5,
+      "repetition": 1,
+      "elapsedMs": 28.5061,
+      "pagesPerSecond": 17540.105451113974,
+      "allocatedBytes": 67178512,
+      "collections": [
+        5,
+        1,
+        0
+      ],
+      "managedBefore": 2340232,
+      "managedPeakSampled": 5760776,
+      "managedAfterGc": 2338472,
+      "privateBefore": 48934912,
+      "privatePeakSampled": 48984064,
+      "privateAfterGc": 48984064,
+      "workingPeakSampled": 97153024,
+      "lohAfterLastObservedGc": 98384,
+      "gdiPeak": 0,
+      "userPeak": 16,
+      "reports": [
+        {
+          "actualPages": 100,
+          "firstPageMs": 9.8239,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 100,
+          "firstPageMs": 9.8422,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 100,
+          "firstPageMs": 9.7629,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 100,
+          "firstPageMs": 9.7587,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 100,
+          "firstPageMs": 9.6748,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        }
+      ]
+    },
+    {
+      "mode": "stream",
+      "pages": 100,
+      "concurrency": 5,
+      "repetition": 2,
+      "elapsedMs": 26.1423,
+      "pagesPerSecond": 19126.09066532019,
+      "allocatedBytes": 66975152,
+      "collections": [
+        5,
+        1,
+        0
+      ],
+      "managedBefore": 2351632,
+      "managedPeakSampled": 3847696,
+      "managedAfterGc": 2348968,
+      "privateBefore": 48984064,
+      "privatePeakSampled": 48996352,
+      "privateAfterGc": 49041408,
+      "workingPeakSampled": 97157120,
+      "lohAfterLastObservedGc": 98384,
+      "gdiPeak": 0,
+      "userPeak": 16,
+      "reports": [
+        {
+          "actualPages": 100,
+          "firstPageMs": 7.9814,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 100,
+          "firstPageMs": 8.217,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 100,
+          "firstPageMs": 8.0802,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 100,
+          "firstPageMs": 8.224,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 100,
+          "firstPageMs": 8.1553,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        }
+      ]
+    },
+    {
+      "mode": "stream",
+      "pages": 100,
+      "concurrency": 5,
+      "repetition": 3,
+      "elapsedMs": 25.5478,
+      "pagesPerSecond": 19571.156811936842,
+      "allocatedBytes": 67091408,
+      "collections": [
+        5,
+        1,
+        0
+      ],
+      "managedBefore": 2378864,
+      "managedPeakSampled": 4508864,
+      "managedAfterGc": 2378152,
+      "privateBefore": 49106944,
+      "privatePeakSampled": 49106944,
+      "privateAfterGc": 48783360,
+      "workingPeakSampled": 97202176,
+      "lohAfterLastObservedGc": 98384,
+      "gdiPeak": 0,
+      "userPeak": 17,
+      "reports": [
+        {
+          "actualPages": 100,
+          "firstPageMs": 7.5254,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 100,
+          "firstPageMs": 7.4928,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 100,
+          "firstPageMs": 7.5771,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 100,
+          "firstPageMs": 7.59,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        },
+        {
+          "actualPages": 100,
+          "firstPageMs": 7.4514,
+          "storageBytes": 0,
+          "cachedPngs": 0
+        }
+      ]
+    },
+    {
+      "mode": "preview-all",
+      "pages": 100,
+      "concurrency": 5,
+      "repetition": 1,
+      "elapsedMs": 1496.8183,
+      "pagesPerSecond": 334.0418807012181,
+      "allocatedBytes": 86894840,
+      "collections": [
+        7,
+        1,
+        0
+      ],
+      "managedBefore": 2391352,
+      "managedPeakSampled": 20335288,
+      "managedAfterGc": 2378688,
+      "privateBefore": 48783360,
+      "privatePeakSampled": 69308416,
+      "privateAfterGc": 46456832,
+      "workingPeakSampled": 116621312,
+      "lohAfterLastObservedGc": 98384,
+      "gdiPeak": 0,
+      "userPeak": 17,
+      "reports": [
+        {
+          "actualPages": 100,
+          "firstPageMs": 1476.5768,
+          "storageBytes": 0,
+          "cachedPngs": 100
+        },
+        {
+          "actualPages": 100,
+          "firstPageMs": 1451.7571,
+          "storageBytes": 0,
+          "cachedPngs": 100
+        },
+        {
+          "actualPages": 100,
+          "firstPageMs": 1478.1337,
+          "storageBytes": 0,
+          "cachedPngs": 100
+        },
+        {
+          "actualPages": 100,
+          "firstPageMs": 1471.4937,
+          "storageBytes": 0,
+          "cachedPngs": 100
+        },
+        {
+          "actualPages": 100,
+          "firstPageMs": 1496.7572,
+          "storageBytes": 0,
+          "cachedPngs": 100
+        }
+      ]
+    },
+    {
+      "mode": "preview-all",
+      "pages": 100,
+      "concurrency": 5,
+      "repetition": 2,
+      "elapsedMs": 1839.5476,
+      "pagesPerSecond": 271.80595924780636,
+      "allocatedBytes": 86720000,
+      "collections": [
+        7,
+        1,
+        0
+      ],
+      "managedBefore": 2391848,
+      "managedPeakSampled": 20360680,
+      "managedAfterGc": 2380784,
+      "privateBefore": 46456832,
+      "privatePeakSampled": 69308416,
+      "privateAfterGc": 39710720,
+      "workingPeakSampled": 117051392,
+      "lohAfterLastObservedGc": 98384,
+      "gdiPeak": 0,
+      "userPeak": 19,
+      "reports": [
+        {
+          "actualPages": 100,
+          "firstPageMs": 1839.4634,
+          "storageBytes": 0,
+          "cachedPngs": 100
+        },
+        {
+          "actualPages": 100,
+          "firstPageMs": 1753.5004,
+          "storageBytes": 0,
+          "cachedPngs": 100
+        },
+        {
+          "actualPages": 100,
+          "firstPageMs": 1789.8822,
+          "storageBytes": 0,
+          "cachedPngs": 100
+        },
+        {
+          "actualPages": 100,
+          "firstPageMs": 1787.1205,
+          "storageBytes": 0,
+          "cachedPngs": 100
+        },
+        {
+          "actualPages": 100,
+          "firstPageMs": 1770.705,
+          "storageBytes": 0,
+          "cachedPngs": 100
+        }
+      ]
+    },
+    {
+      "mode": "preview-all",
+      "pages": 100,
+      "concurrency": 5,
+      "repetition": 3,
+      "elapsedMs": 1645.0342,
+      "pagesPerSecond": 303.94504868044686,
+      "allocatedBytes": 86793072,
+      "collections": [
+        7,
+        1,
+        0
+      ],
+      "managedBefore": 2411656,
+      "managedPeakSampled": 20048168,
+      "managedAfterGc": 2375440,
+      "privateBefore": 39710720,
+      "privatePeakSampled": 62304256,
+      "privateAfterGc": 39878656,
+      "workingPeakSampled": 109887488,
+      "lohAfterLastObservedGc": 98384,
+      "gdiPeak": 0,
+      "userPeak": 20,
+      "reports": [
+        {
+          "actualPages": 100,
+          "firstPageMs": 1596.1771,
+          "storageBytes": 0,
+          "cachedPngs": 100
+        },
+        {
+          "actualPages": 100,
+          "firstPageMs": 1559.6314,
+          "storageBytes": 0,
+          "cachedPngs": 100
+        },
+        {
+          "actualPages": 100,
+          "firstPageMs": 1594.9306,
+          "storageBytes": 0,
+          "cachedPngs": 100
+        },
+        {
+          "actualPages": 100,
+          "firstPageMs": 1595.5555,
+          "storageBytes": 0,
+          "cachedPngs": 100
+        },
+        {
+          "actualPages": 100,
+          "firstPageMs": 1644.9521,
+          "storageBytes": 0,
+          "cachedPngs": 100
+        }
+      ]
+    },
+    {
+      "mode": "preview-window",
+      "pages": 100,
+      "concurrency": 5,
+      "repetition": 1,
+      "elapsedMs": 1705.7143,
+      "pagesPerSecond": 293.1323258531631,
+      "allocatedBytes": 140110656,
+      "collections": [
+        11,
+        1,
+        0
+      ],
+      "managedBefore": 2388448,
+      "managedPeakSampled": 16621480,
+      "managedAfterGc": 2390728,
+      "privateBefore": 39878656,
+      "privatePeakSampled": 61870080,
+      "privateAfterGc": 39301120,
+      "workingPeakSampled": 109649920,
+      "lohAfterLastObservedGc": 98384,
+      "gdiPeak": 0,
+      "userPeak": 20,
+      "reports": [
+        {
+          "actualPages": 100,
+          "firstPageMs": 77.6699,
+          "storageBytes": 2374312,
+          "cachedPngs": 3
+        },
+        {
+          "actualPages": 100,
+          "firstPageMs": 75.8145,
+          "storageBytes": 2386792,
+          "cachedPngs": 3
+        },
+        {
+          "actualPages": 100,
+          "firstPageMs": 77.2083,
+          "storageBytes": 2386792,
+          "cachedPngs": 3
+        },
+        {
+          "actualPages": 100,
+          "firstPageMs": 78.8639,
+          "storageBytes": 2386792,
+          "cachedPngs": 3
+        },
+        {
+          "actualPages": 100,
+          "firstPageMs": 81.5929,
+          "storageBytes": 2386792,
+          "cachedPngs": 3
+        }
+      ]
+    },
+    {
+      "mode": "preview-window",
+      "pages": 100,
+      "concurrency": 5,
+      "repetition": 2,
+      "elapsedMs": 1879.7026,
+      "pagesPerSecond": 265.99952566964583,
+      "allocatedBytes": 140200264,
+      "collections": [
+        11,
+        1,
+        0
+      ],
+      "managedBefore": 2403272,
+      "managedPeakSampled": 15747440,
+      "managedAfterGc": 2340264,
+      "privateBefore": 39301120,
+      "privatePeakSampled": 61669376,
+      "privateAfterGc": 39829504,
+      "workingPeakSampled": 109395968,
+      "lohAfterLastObservedGc": 98384,
+      "gdiPeak": 0,
+      "userPeak": 22,
+      "reports": [
+        {
+          "actualPages": 100,
+          "firstPageMs": 83.0511,
+          "storageBytes": 2374312,
+          "cachedPngs": 3
+        },
+        {
+          "actualPages": 100,
+          "firstPageMs": 76.7031,
+          "storageBytes": 2386792,
+          "cachedPngs": 3
+        },
+        {
+          "actualPages": 100,
+          "firstPageMs": 72.9076,
+          "storageBytes": 2386792,
+          "cachedPngs": 3
+        },
+        {
+          "actualPages": 100,
+          "firstPageMs": 81.2798,
+          "storageBytes": 2386792,
+          "cachedPngs": 3
+        },
+        {
+          "actualPages": 100,
+          "firstPageMs": 81.8116,
+          "storageBytes": 2386792,
+          "cachedPngs": 3
+        }
+      ]
+    },
+    {
+      "mode": "preview-window",
+      "pages": 100,
+      "concurrency": 5,
+      "repetition": 3,
+      "elapsedMs": 1549.579,
+      "pagesPerSecond": 322.66828603123815,
+      "allocatedBytes": 140148552,
+      "collections": [
+        11,
+        1,
+        0
+      ],
+      "managedBefore": 2353232,
+      "managedPeakSampled": 15867288,
+      "managedAfterGc": 2496584,
+      "privateBefore": 39829504,
+      "privatePeakSampled": 63447040,
+      "privateAfterGc": 41967616,
+      "workingPeakSampled": 111333376,
+      "lohAfterLastObservedGc": 98384,
+      "gdiPeak": 0,
+      "userPeak": 22,
+      "reports": [
+        {
+          "actualPages": 100,
+          "firstPageMs": 67.3004,
+          "storageBytes": 2374312,
+          "cachedPngs": 3
+        },
+        {
+          "actualPages": 100,
+          "firstPageMs": 64.8039,
+          "storageBytes": 2386792,
+          "cachedPngs": 3
+        },
+        {
+          "actualPages": 100,
+          "firstPageMs": 69.7559,
+          "storageBytes": 2386792,
+          "cachedPngs": 3
+        },
+        {
+          "actualPages": 100,
+          "firstPageMs": 68.9718,
+          "storageBytes": 2386792,
+          "cachedPngs": 3
+        },
+        {
+          "actualPages": 100,
+          "firstPageMs": 64.9955,
+          "storageBytes": 2386792,
+          "cachedPngs": 3
+        }
+      ]
+    }
+  ]
+}

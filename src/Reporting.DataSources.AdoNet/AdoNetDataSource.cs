@@ -30,7 +30,7 @@ namespace Reporting.DataSources.AdoNet;
 /// Microsoft.Data.Sqlite, MySqlConnector, Oracle.ManagedDataAccess, etc., because it only
 /// touches the <see cref="System.Data.Common"/> abstractions.</para>
 /// </remarks>
-public sealed class AdoNetDataSource : IReportDataSource
+public sealed partial class AdoNetDataSource : IReportDataSource
 {
     private readonly Func<DbConnection>? _connectionFactory;
     private readonly DbConnection? _borrowedConnection;
@@ -179,37 +179,5 @@ public sealed class AdoNetDataSource : IReportDataSource
             }
         }
         return new SnapshotRecord(schema, values);
-    }
-
-    private sealed class SnapshotRecord(IReportRecordSchema schema, object?[] values) : IReportRecord
-    {
-        public IReportRecordSchema Schema => schema;
-
-        public object? this[string name]
-        {
-            get
-            {
-                var ord = schema.IndexOf(name);
-                return ord < 0 ? null : values[ord];
-            }
-        }
-
-        public object? this[int ordinal]
-            => ordinal < 0 || ordinal >= values.Length ? null : values[ordinal];
-
-        public IEnumerable<KeyValuePair<string, object?>> ToKeyValuePairs()
-        {
-            for (int i = 0; i < values.Length; i++)
-            {
-                yield return new KeyValuePair<string, object?>(schema.Fields[i].Name, values[i]);
-            }
-        }
-    }
-
-    private sealed class EmptySchema : IReportRecordSchema
-    {
-        public static readonly EmptySchema Instance = new();
-        public IReadOnlyList<ReportField> Fields { get; } = Array.Empty<ReportField>();
-        public int IndexOf(string name) => -1;
     }
 }

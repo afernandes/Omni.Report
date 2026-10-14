@@ -7,14 +7,8 @@ namespace Reporting.Designer.Blazor.ViewModels;
 /// selected elements relative to each other (NOT text alignment). Pure geometry over the elements' bounds, so it
 /// unit-tests directly; the UI applies the returned positions to each element's <see cref="Rectangle.X"/>/Y.
 /// </summary>
-public static class Arrange
+public static partial class Arrange
 {
-    public enum Op
-    {
-        AlignLeft, AlignHCenter, AlignRight,
-        AlignTop, AlignVCenter, AlignBottom,
-        DistributeH, DistributeV,
-    }
 
     /// <summary>Computes the new top-left (X, Y) for each input element (same order). Elements with fewer than two
     /// items, or unchanged axes, keep their current position.</summary>

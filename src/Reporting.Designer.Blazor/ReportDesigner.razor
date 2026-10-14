@@ -2,6 +2,7 @@
 @implements IAsyncDisposable
 @inject IJSRuntime Js
 
+<CascadingValue Value="_menus" IsFixed="true">
 <CascadingValue Value="State.History">
 <div class="report-designer" tabindex="0"
      @onkeydown="OnKeyDown" @ref="_rootRef">
@@ -12,7 +13,7 @@
             @foreach (var message in _previewDiagnostics) { <p>@message</p> }
         </div>
     }
-    <div class="app" id="app">
+    <div class="app">
         <TopBar DocumentName="@State.Report.Name"
                 IsDarkTheme="@(State.Theme == "dark")"
                 OnToggleTheme="OnToggleTheme"
@@ -144,7 +145,7 @@
         <PrintDialog Visible="_printDialogOpen"
                      PreviewPages="_previewPages"
                      CurrentPage="_previewCurrentPage"
-                     TotalPages="@(_previewRendered?.PageCount ?? 0)"
+                     TotalPages="@(_previewPrepared?.PageCount ?? 0)"
                      DocumentPaper="@State.Report.PageSetup.Paper.Name"
                      DocumentOrientation="State.Report.PageSetup.Orientation"
                      OnPrint="OnPrintConfirmed"
@@ -216,7 +217,7 @@
         </DesignerModal>
 
         <!-- Hidden file input used when the user picks 'open' from menu/palette. -->
-        <InputFile id="__designer_repx_input" style="display:none" OnChange="OnLoadFile" accept=".repx" />
+        <InputFile style="display:none" OnChange="OnLoadFile" accept=".repx" />
 
         <!-- Compat affordances for the bUnit harness: a snap checkbox and a
              screen-reader-only list of band display labels (so plain text queries pass). -->
@@ -233,5 +234,7 @@
         </div>
     </div>
 </div>
+
+</CascadingValue>
 
 </CascadingValue>

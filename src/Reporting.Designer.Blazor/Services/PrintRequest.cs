@@ -3,45 +3,6 @@ using Reporting.Paper;
 
 namespace Reporting.Designer.Blazor.Services;
 
-/// <summary>How the user wants page numbers narrowed for printing.</summary>
-public enum PrintPageRangeMode
-{
-    /// <summary>Every page in the rendered report.</summary>
-    All,
-    /// <summary>Just the page the viewer is currently showing.</summary>
-    Current,
-    /// <summary>An ad-hoc text range like "1-3,5,7-9".</summary>
-    Range,
-}
-
-/// <summary>Color mode hint. The browser print dialog always offers its own toggle on top
-/// of this — we use it for the PDF metadata + native printers that respect it.</summary>
-public enum PrintColorMode
-{
-    /// <summary>Full color (default).</summary>
-    Color,
-    /// <summary>Force grayscale.</summary>
-    Grayscale,
-    /// <summary>Force black &amp; white (1-bit) — for low-end thermal / receipt printers.</summary>
-    Monochrome,
-}
-
-/// <summary>How we actually push the bytes to a printer.</summary>
-public enum PrintOutputMode
-{
-    /// <summary>Open the rendered PDF in a new browser tab/window and call
-    /// <c>window.print()</c>. The user picks printer + driver options in the
-    /// browser/OS dialog. Universal — works in Server, WebAssembly and MAUI Blazor.</summary>
-    BrowserDialog,
-    /// <summary>Send directly to a named printer via <c>IReportPrinter</c> (Windows spooler,
-    /// ESC/POS, Android Print). Requires a native print service registered in DI; the
-    /// dialog hides this option when no such service is available.</summary>
-    SystemSpooler,
-    /// <summary>Generate the PDF and trigger a file download. Useful when the user wants
-    /// to email/keep it rather than send to a physical device.</summary>
-    SaveAsPdf,
-}
-
 /// <summary>
 /// Everything the print pipeline needs to know in one immutable record. The
 /// <see cref="Reporting.Designer.Blazor.Components.PrintDialog"/> builds one of these from the user's choices and hands it
@@ -113,7 +74,7 @@ public sealed record PrintRequest(
             var leftRaw = token[..dash];
             var rightRaw = token[(dash + 1)..];
             int from = int.TryParse(leftRaw, out var l) ? l : 1;
-            int to   = int.TryParse(rightRaw, out var r) ? r : totalPages;
+            int to = int.TryParse(rightRaw, out var r) ? r : totalPages;
             if (from > to) (from, to) = (to, from);
             from = Math.Max(1, from);
             to = Math.Min(totalPages, to);

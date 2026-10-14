@@ -14,7 +14,7 @@ public sealed record PdfExportOptions
     /// <summary>Creator application string (e.g. "OmniReport Designer 0.1").</summary>
     public string? Creator { get; init; }
 
-    /// <summary>Optional creation date stamp. Defaults to <see cref="DateTime.Now"/>.</summary>
+    /// <summary>Optional creation date stamp. Defaults to <see cref="DateTimeOffset.UtcNow"/>.</summary>
     public DateTime? CreationDate { get; init; }
 
     /// <summary>If true, raster images embedded into the PDF will be compressed.</summary>

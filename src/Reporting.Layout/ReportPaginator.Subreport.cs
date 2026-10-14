@@ -54,7 +54,7 @@ public sealed partial class ReportPaginator
         };
 
         // The child consumes the execution snapshot directly. No provider I/O or blocking async wait occurs here.
-        var childPaginator = new ReportPaginator(_compiler);
+        var childPaginator = new ReportPaginator(_compiler) { _budget = _budget };
         foreach (var resolved in _resolvedSubreports) childPaginator._resolvedSubreports[resolved.Key] = resolved.Value;
         var child = childPaginator.ExecutePrepared(childRequest, _preparedSources, _cancellationToken);
         if (child.Pages.Count == 0)

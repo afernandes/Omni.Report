@@ -45,12 +45,3 @@
         + Adicionar variável
     </button>
 </div>
-
-@code {
-    [Parameter, EditorRequired] public IReadOnlyList<DesignerVariable> Variables { get; set; } = default!;
-    [Parameter] public EventCallback OnAdd { get; set; }
-    [Parameter] public EventCallback<DesignerVariable> OnRemove { get; set; }
-
-    private static VariableScope ParseScope(string? v)
-        => Enum.TryParse<VariableScope>(v, out var s) ? s : VariableScope.Report;
-}

@@ -4,7 +4,40 @@
 
 (function () {
     "use strict";
+    const instances = new WeakMap();
+    function createInstance(root) {
+    const lifetime = new AbortController();
+    const observers = new Map();
+    const elementLifetimes = new Map();
+    const elementOptions = new WeakMap();
+    const timers = new Set();
+    function listen(target, event, callback, options, outsideRoot = false) {
+        // Root-bound events isolate keyboard, toolbar, splitter and drag initiation.
+        // Continuation events stay on document so a gesture can finish outside its root.
+        if (!outsideRoot && target === document && !["pointermove", "pointerup", "pointercancel"].includes(event)) target = root;
+        const settings = typeof options === "boolean" ? { capture: options } : (options || {});
+        let controller = lifetime;
+        if (target instanceof Element && target !== root) {
+            controller = elementLifetimes.get(target);
+            if (!controller) { controller = new AbortController(); elementLifetimes.set(target, controller); }
+        }
+        target.addEventListener(event, callback, { ...settings, signal: controller.signal });
+    }
+    function later(callback, delay) {
+        const id = setTimeout(() => { timers.delete(id); if (!lifetime.signal.aborted) callback(); }, delay);
+        timers.add(id);
+        return id;
+    }
 
+    const removedNodes = new MutationObserver(() => {
+        for (const [element, controller] of elementLifetimes) {
+            if (root.contains(element)) continue;
+            controller.abort(); elementLifetimes.delete(element);
+            observers.get(element)?.disconnect(); observers.delete(element);
+            for (const key of Object.keys(element.dataset)) if (key.startsWith("omni")) delete element.dataset[key];
+        }
+    });
+    removedNodes.observe(root, { childList: true, subtree: true });
     const mm = 3.43; // px per mm (matches --mm in tokens.css with --page-w=720)
 
     // Live snap-to-grid/guides toggle, driven pelo botão Snap do toolbar via setSnap().
@@ -23,7 +56,7 @@
     // element.style.left/top are CSS units. Without dividing by z, drag/resize/marquee
     // gestures move twice as fast at 200% zoom, half as fast at 50%, etc.
     function getCanvasZoom() {
-        const stage = document.querySelector(".canvas-stage");
+        const stage = root.querySelector(".canvas-stage");
         if (!stage) return 1;
         // Inline style first (cheap); fall back to computed matrix.
         const inline = stage.style.transform;
@@ -50,7 +83,7 @@
     // Medimos o .page-shell (offset* são px de layout, imunes ao transform) para evitar
     // loop de feedback com o ResizeObserver do .canvas-scroll.
     function sizeZoomBox() {
-        const stage = document.querySelector(".canvas-stage");
+        const stage = root.querySelector(".canvas-stage");
         if (!stage) return;
         const shell = stage.querySelector(".page-shell");
         if (!shell) { stage.style.marginRight = ""; stage.style.marginBottom = ""; return; }
@@ -104,7 +137,7 @@
         // de-facto replaces the selection on commit (Blazor will reconcile via OnGestureCommit).
         const others = [];
         if (element.classList.contains("is-selected")) {
-            document.querySelectorAll(".el.is-selected[data-element-id]").forEach(el => {
+            root.querySelectorAll(".el.is-selected[data-element-id]").forEach(el => {
                 if (el === element) return;
                 const om = getElementMetrics(el);
                 others.push({ el, origX: om.x, origY: om.y, elementId: el.dataset.elementId, bandKind: el.dataset.bandKind });
@@ -123,8 +156,8 @@
             bandKind: element.dataset.bandKind,
             others,
         };
-        document.addEventListener("pointermove", onPointerMove);
-        document.addEventListener("pointerup",   onPointerUp,   { once: true });
+        listen(document, "pointermove", onPointerMove);
+        listen(document, "pointerup",   onPointerUp,   { once: true });
         element.setPointerCapture?.(ev.pointerId);
     }
 
@@ -143,8 +176,8 @@
             elementId: element.dataset.elementId,
             bandKind: element.dataset.bandKind,
         };
-        document.addEventListener("pointermove", onPointerMove);
-        document.addEventListener("pointerup",   onPointerUp,   { once: true });
+        listen(document, "pointermove", onPointerMove);
+        listen(document, "pointerup",   onPointerUp,   { once: true });
     }
 
     // Reads the parent band's inner dimensions (the .band-content box) in CSS pixels.
@@ -233,7 +266,7 @@
     // All math is done in PAGE-relative coordinates so cross-band alignment works
     // correctly (e.g. a Detail TextBox can align with a PageHeader column).
     function computeSmartGuides(target, nx, ny) {
-        const pageEl = document.querySelector(".page");
+        const pageEl = root.querySelector(".page");
         if (!pageEl) return { snapX: null, snapY: null };
         clearGuides();
 
@@ -458,7 +491,7 @@
         const a = state.active;
         if (!a) return;
         document.removeEventListener("pointermove", onPointerMove);
-        const pageEl = document.querySelector(".page");
+        const pageEl = root.querySelector(".page");
         clearGuides();
         const m = getElementMetrics(a.element);
         state.active = null;
@@ -510,12 +543,12 @@
     function setupToolboxDrag(item, kind) {
         item.setAttribute("draggable", "true");
         if (kind && !item.dataset.kind) item.dataset.kind = kind;
-        item.addEventListener("dragstart", ev => {
+        listen(item, "dragstart", ev => {
             ev.dataTransfer.setData("application/x-omni-toolbox-kind", item.dataset.kind || kind);
             ev.dataTransfer.effectAllowed = "copy";
             item.classList.add("is-drag-source");
         });
-        item.addEventListener("dragend", () => item.classList.remove("is-drag-source"));
+        listen(item, "dragend", () => item.classList.remove("is-drag-source"));
     }
 
     // ───── Preview-mode keyboard scroll ──────────────────────────────────────────
@@ -523,8 +556,8 @@
     // keys / PageUp / PageDown / Home / End scroll the paper rectangle — same behaviour
     // as Acrobat, Foxit, and the SSRS Report Viewer. The handler is gated so it doesn't
     // hijack the design-mode arrow-key move of selected elements.
-    document.addEventListener("keydown", ev => {
-        const preview = document.querySelector(".preview-scroll");
+    listen(document, "keydown", ev => {
+        const preview = root.querySelector(".preview-scroll");
         if (!preview) return;                                  // not in preview mode
         if (ev.ctrlKey || ev.metaKey || ev.altKey) return;     // leave shortcuts alone
         // Don't fight inputs / editors that might be focused (export filename prompts, etc.)
@@ -559,7 +592,7 @@
     // an authoring tool. Capture it on the canvas-scroll host and route through OnZoomDelta
     // on the .NET side so the designer's State.Zoom advances. Bare wheel is left alone so
     // the canvas-scroll container handles native vertical scroll.
-    document.addEventListener("wheel", ev => {
+    listen(document, "wheel", ev => {
         if (!ev.ctrlKey && !ev.metaKey) return;
         const host = ev.target?.closest?.("[data-omni-zoom-host]");
         if (!host) return;
@@ -580,7 +613,7 @@
     // it (and a couple of other VS-style shortcuts) at the capture phase whenever focus is
     // inside the .report-designer host but not inside a real editable surface (input /
     // textarea / contenteditable / Monaco editor).
-    document.addEventListener("keydown", ev => {
+    listen(document, "keydown", ev => {
         const inDesigner = ev.target?.closest?.(".report-designer");
         if (!inDesigner) return;
         const inEditable = ev.target?.closest?.(
@@ -603,11 +636,11 @@
     // NON-focusable canvas element (an SVG node) drops focus to <body>, so Delete then did
     // nothing. After any pointerdown on a non-editable designer surface, pull focus back to the
     // host (deferred past the browser's own focus/blur).
-    document.addEventListener("pointerdown", ev => {
+    listen(document, "pointerdown", ev => {
         const host = ev.target?.closest?.(".report-designer");
         if (!host) return;
         if (ev.target?.closest?.('input, textarea, select, [contenteditable="true"], .monaco-editor, .monaco-host')) return;
-        setTimeout(() => {
+        later(() => {
             if (!host.contains(document.activeElement)) {
                 try { host.focus({ preventScroll: true }); } catch { /* host gone */ }
             }
@@ -619,7 +652,7 @@
     // and dispatches to the .NET side via OnContextMenuRequest. The browser's own context
     // menu is suppressed only for our specific targets — other right-clicks (link, image
     // outside canvas, devtools needs) keep their native menus.
-    document.addEventListener("contextmenu", ev => {
+    listen(document, "contextmenu", ev => {
         if (!state.dotnetRef) return;
         const tgt = ev.target?.closest?.(".el[data-element-id], .band-content[data-band-kind], .band-strip, .page");
         if (!tgt) return;
@@ -645,7 +678,7 @@
     // `<div class="tbx-item" draggable="true" data-kind="...">` so a single document-level
     // listener handles all items — present and future — without needing per-item interop.
     // Items marked `aria-disabled="true"` (the "(em breve)" placeholders) are skipped.
-    document.addEventListener("dragstart", ev => {
+    listen(document, "dragstart", ev => {
         const item = ev.target.closest?.('.tbx-item[draggable="true"][data-kind]');
         if (!item) return;
         if (item.getAttribute("aria-disabled") === "true") { ev.preventDefault(); return; }
@@ -653,7 +686,7 @@
         ev.dataTransfer.effectAllowed = "copy";
         item.classList.add("is-drag-source");
     });
-    document.addEventListener("dragend", ev => {
+    listen(document, "dragend", ev => {
         const item = ev.target.closest?.('.tbx-item');
         if (item) item.classList.remove("is-drag-source");
     });
@@ -662,7 +695,7 @@
     // data-source-name/data-ambiguous from the DOM each drag so renames take effect without
     // a re-attach. The qualified form "Source.Field" only flies when ambiguous; otherwise
     // single-source reports keep their natural short "Field" token.
-    document.addEventListener("dragstart", ev => {
+    listen(document, "dragstart", ev => {
         const item = ev.target?.closest?.('.is-field[draggable="true"][data-field-name]');
         if (!item) return;
         const fieldName = item.dataset.fieldName;
@@ -681,15 +714,15 @@
         const accepts = t => t.includes("application/x-omni-toolbox-kind")
                           || t.includes("application/x-omni-field");
 
-        bandContent.addEventListener("dragover", ev => {
+        listen(bandContent, "dragover", ev => {
             if (accepts(ev.dataTransfer.types)) {
                 ev.preventDefault();
                 ev.dataTransfer.dropEffect = "copy";
                 bandContent.classList.add("is-drop-target");
             }
         });
-        bandContent.addEventListener("dragleave", () => bandContent.classList.remove("is-drop-target"));
-        bandContent.addEventListener("drop", ev => {
+        listen(bandContent, "dragleave", () => bandContent.classList.remove("is-drop-target"));
+        listen(bandContent, "drop", ev => {
             ev.preventDefault();
             bandContent.classList.remove("is-drop-target");
 
@@ -714,7 +747,7 @@
 
     function setupFieldDrag(element, fieldName) {
         element.setAttribute("draggable", "true");
-        element.addEventListener("dragstart", ev => {
+        listen(element, "dragstart", ev => {
             ev.dataTransfer.setData("application/x-omni-field", fieldName);
             ev.dataTransfer.effectAllowed = "copy";
         });
@@ -728,18 +761,18 @@
         handle.style.cursor = "ns-resize";
 
         // Visual feedback on hover so users discover the resize affordance.
-        handle.addEventListener("pointerenter", () => {
+        listen(handle, "pointerenter", () => {
             handle.style.background = "var(--selection-soft, rgba(59,130,246,0.10))";
             handle.style.boxShadow = "inset 0 -2px 0 var(--selection, #3B82F6)";
         });
-        handle.addEventListener("pointerleave", () => {
+        listen(handle, "pointerleave", () => {
             if (!handle.classList.contains("is-dragging")) {
                 handle.style.background = "transparent";
                 handle.style.boxShadow = "none";
             }
         });
 
-        handle.addEventListener("pointerdown", ev => {
+        listen(handle, "pointerdown", ev => {
             if (ev.button !== 0) return;
             ev.preventDefault();
             ev.stopPropagation();
@@ -790,8 +823,8 @@
                     }).catch(err => console.warn("[designer] band resize commit failed", err));
                 }
             }
-            document.addEventListener("pointermove", onMove);
-            document.addEventListener("pointerup",   onUp, { once: true });
+            listen(document, "pointermove", onMove);
+            listen(document, "pointerup",   onUp, { once: true });
         });
     }
 
@@ -833,7 +866,7 @@
             return true;
         }
 
-        pageEl.addEventListener("pointerdown", ev => {
+        listen(pageEl, "pointerdown", ev => {
             if (ev.button !== 0) return;
             if (!isEmptyCanvasTarget(ev.target)) return;
             ev.preventDefault();
@@ -847,8 +880,8 @@
             startY = (ev.clientY - rect.top) / z;
             started = false; // becomes true once the user moves more than 3 px (CSS)
 
-            document.addEventListener("pointermove", onMarqueeMove);
-            document.addEventListener("pointerup",   onMarqueeUp, { once: true });
+            listen(document, "pointermove", onMarqueeMove);
+            listen(document, "pointerup",   onMarqueeUp, { once: true });
         });
 
         function ensureMarquee() {
@@ -900,11 +933,11 @@
                     e.preventDefault();
                     pageEl.removeEventListener("click", swallow, true);
                 };
-                pageEl.addEventListener("click", swallow, true);
+                listen(pageEl, "click", swallow, true);
                 // If the browser doesn't fire a click (drag was long enough to cancel it),
                 // remove the handler after a short window so it doesn't eat a legitimate
                 // later click. 100ms is well past Chrome/Firefox's click-synthesis delay.
-                setTimeout(() => {
+                later(() => {
                     if (!consumed) pageEl.removeEventListener("click", swallow, true);
                 }, 100);
             }
@@ -943,7 +976,7 @@
     function setupOutsideClick() {
         if (setupOutsideClick._installed) return;
         setupOutsideClick._installed = true;
-        document.addEventListener("pointerdown", ev => {
+        listen(document, "pointerdown", ev => {
             // If the click hits an open dropdown or context menu, let its own handler run.
             let el = ev.target;
             while (el) {
@@ -958,16 +991,16 @@
             const refs = Array.from(openDropdowns);
             openDropdowns.clear();
             refs.forEach(ref => ref.invokeMethodAsync("CloseFromOutside").catch(() => {}));
-        }, true);
+        }, true, true);
     }
 
     // ───── 3. Theme toggle ──────────────────────────────────────────────────────
     function setTheme(theme) {
-        document.documentElement.setAttribute("data-theme", theme || "light");
+        root.setAttribute("data-theme", theme || "light");
     }
 
     function getTheme() {
-        return document.documentElement.getAttribute("data-theme") || "light";
+        return root.getAttribute("data-theme") || "light";
     }
 
     // Binds resize handles (.handle.nw, .n, .ne, .e, .se, .s, .sw, .w) inside an element.
@@ -979,11 +1012,11 @@
             const dir = (h.className.match(/handle\s+(nw|n|ne|e|se|s|sw|w)/) || [])[1];
             if (!dir) return;
             h.dataset.omniHandleBound = "1";
-            h.addEventListener("pointerdown", ev => {
+            listen(h, "pointerdown", ev => {
                 ev.stopPropagation();
                 if (ev.button !== 0) return;
-                if (opts.locked) return;
-                startElementResize(ev, element, dir, opts);
+                if ((elementOptions.get(element) || opts).locked) return;
+                startElementResize(ev, element, dir, elementOptions.get(element) || opts);
             });
         });
     }
@@ -1026,7 +1059,7 @@
         return { left, right };
     }
     function bootstrapSplitterWidths() {
-        const workspace = document.querySelector(".workspace");
+        const workspace = root.querySelector(".workspace");
         if (!workspace) return;
         const saved = readSplitterStorage();
         if (saved && Number.isFinite(saved.left) && Number.isFinite(saved.right)) {
@@ -1035,18 +1068,18 @@
     }
     // Restore persisted widths before the first paint — even if delegation runs later.
     if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", bootstrapSplitterWidths, { once: true });
+        listen(document, "DOMContentLoaded", bootstrapSplitterWidths, { once: true });
     } else {
         bootstrapSplitterWidths();
     }
     // Delegated splitter drag — works for any .split-handle that exists or appears later
     // (Blazor re-renders the panels often). Single document-level listener, idempotent.
-    if (!document.body.dataset.omniSplitterBound) {
-        document.body.dataset.omniSplitterBound = "1";
-        document.addEventListener("pointerdown", ev => {
+    if (!root.dataset.omniSplitterBound) {
+        root.dataset.omniSplitterBound = "1";
+        listen(document, "pointerdown", ev => {
             const handle = ev.target?.closest?.(".split-handle");
             if (!handle || ev.button !== 0) return;
-            const workspace = document.querySelector(".workspace");
+            const workspace = root.querySelector(".workspace");
             if (!workspace) return;
             ev.preventDefault();
             ev.stopPropagation();
@@ -1055,7 +1088,7 @@
             const startX = ev.clientX;
             const maxPx = window.innerWidth * SPLITTER_MAX_PCT;
             handle.classList.add("is-dragging");
-            document.body.classList.add("is-splitting");
+            root.classList.add("is-splitting");
 
             // Capture pointer so we still receive move events even when the cursor escapes
             // the thin handle hot-zone (common when dragging fast).
@@ -1079,20 +1112,20 @@
                 document.removeEventListener("pointerup", onUp);
                 document.removeEventListener("pointercancel", onUp);
                 handle.classList.remove("is-dragging");
-                document.body.classList.remove("is-splitting");
+                root.classList.remove("is-splitting");
                 try { handle.releasePointerCapture(ev.pointerId); } catch { /* ignore */ }
                 writeSplitterStorage(currentSplitterWidths(workspace));
             };
-            document.addEventListener("pointermove", onMove);
-            document.addEventListener("pointerup", onUp, { once: true });
-            document.addEventListener("pointercancel", onUp, { once: true });
+            listen(document, "pointermove", onMove);
+            listen(document, "pointerup", onUp, { once: true });
+            listen(document, "pointercancel", onUp, { once: true });
         });
 
         // Double-click resets the involved side to its default — matches VS Code / GitLens UX.
-        document.addEventListener("dblclick", ev => {
+        listen(document, "dblclick", ev => {
             const handle = ev.target?.closest?.(".split-handle");
             if (!handle) return;
-            const workspace = document.querySelector(".workspace");
+            const workspace = root.querySelector(".workspace");
             if (!workspace) return;
             const side = handle.classList.contains("left") ? "left" : "right";
             const cur = currentSplitterWidths(workspace);
@@ -1113,10 +1146,10 @@
     // Convention: a "collapsible header" is any element with class `.tb-group-h`,
     // `.prop-section-head`, `.outline-section-head`, OR `.ds-source-node`. Adding the class
     // `is-collapsed` to the header hides every sibling up to the next header (CSS rule below).
-    if (!document.body.dataset.omniCollapsibleBound) {
-        document.body.dataset.omniCollapsibleBound = "1";
+    if (!root.dataset.omniCollapsibleBound) {
+        root.dataset.omniCollapsibleBound = "1";
         const COLLAPSE_SELECTORS = [".tb-group-h", ".prop-section-head", ".outline-section-head", ".ds-source-node"];
-        document.addEventListener("click", ev => {
+        listen(document, "click", ev => {
             // Don't swallow clicks on inner controls (buttons, inputs) inside the header.
             const interactive = ev.target?.closest?.("input, select, button:not(.collapse-toggle), textarea, a");
             if (interactive) {
@@ -1159,7 +1192,7 @@
     function trimNum(v) { return String(Math.round(v * 100) / 100); }
 
     function cssVarValue(name, fallback) {
-        const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+        const v = getComputedStyle(root).getPropertyValue(name).trim();
         return v || fallback;
     }
 
@@ -1182,7 +1215,7 @@
             st.raf = requestAnimationFrame(() => { st.raf = 0; drawAll(); });
         }
 
-        function pageEl() { return document.getElementById("designerPage"); }
+        function pageEl() { return root.querySelector("[data-designer-page]"); }
         function pageRect() { const p = pageEl(); return p ? p.getBoundingClientRect() : null; }
         function pxPerMm() { return RULER_BASE_MM * getCanvasZoom(); }
 
@@ -1205,13 +1238,13 @@
             else g.el.style.top = px + "px";
         }
         function bindGuide(g) {
-            g.el.addEventListener("pointerdown", ev => {
+            listen(g.el, "pointerdown", ev => {
                 if (ev.button !== 0) return;
                 ev.preventDefault();
                 ev.stopPropagation(); // keep the page marquee from starting
                 startGuideDrag(g, ev);
             });
-            g.el.addEventListener("dblclick", ev => { ev.stopPropagation(); removeGuide(g); schedule(); });
+            listen(g.el, "dblclick", ev => { ev.stopPropagation(); removeGuide(g); schedule(); });
         }
         // Self-healing render: recreates a guide div only if Blazor's re-render removed it.
         function renderGuides() {
@@ -1255,8 +1288,8 @@
                 if (kill) removeGuide(g);
                 schedule();
             };
-            document.addEventListener("pointermove", onMove);
-            document.addEventListener("pointerup", onUp, { once: true });
+            listen(document, "pointermove", onMove);
+            listen(document, "pointerup", onUp, { once: true });
         }
         // Pointer-down on a ruler creates a guide (perpendicular axis) and starts dragging it.
         // A plain click (no drag) drops it at the clicked coordinate.
@@ -1275,7 +1308,7 @@
             if (!st.tip) {
                 st.tip = document.createElement("div");
                 st.tip.className = "omni-guide-tip";
-                document.body.appendChild(st.tip);
+                root.appendChild(st.tip);
             }
             const u = RULER_UNITS[st.unit] || RULER_UNITS.cm;
             st.tip.textContent = u.label(g.mm) + " " + u.abbr;
@@ -1287,7 +1320,7 @@
 
         // ── Drawing ─────────────────────────────────────────────────────────────
         function selectionSpan(isH) {
-            const els = document.querySelectorAll("#designerPage .el.is-selected");
+            const els = root.querySelectorAll("[data-designer-page] .el.is-selected");
             if (!els.length) return null;
             let lo = Infinity, hi = -Infinity;
             els.forEach(el => {
@@ -1403,12 +1436,12 @@
         st.onHDown = e => beginGuideCreate("v", e); // horizontal ruler → vertical guide
         st.onVDown = e => beginGuideCreate("h", e); // vertical ruler → horizontal guide
 
-        scrollEl.addEventListener("scroll", st.onScroll, { passive: true });
-        scrollEl.addEventListener("pointermove", st.onMove, { passive: true });
-        scrollEl.addEventListener("pointerleave", st.onLeave, { passive: true });
-        window.addEventListener("resize", st.onWinResize, { passive: true });
-        if (hCanvas) { hCanvas.addEventListener("pointerdown", st.onHDown); hCanvas.style.cursor = "ew-resize"; }
-        if (vCanvas) { vCanvas.addEventListener("pointerdown", st.onVDown); vCanvas.style.cursor = "ns-resize"; }
+        listen(scrollEl, "scroll", st.onScroll, { passive: true });
+        listen(scrollEl, "pointermove", st.onMove, { passive: true });
+        listen(scrollEl, "pointerleave", st.onLeave, { passive: true });
+        listen(window, "resize", st.onWinResize, { passive: true });
+        if (hCanvas) { listen(hCanvas, "pointerdown", st.onHDown); hCanvas.style.cursor = "ew-resize"; }
+        if (vCanvas) { listen(vCanvas, "pointerdown", st.onVDown); vCanvas.style.cursor = "ns-resize"; }
         if (typeof ResizeObserver !== "undefined") {
             st.ro = new ResizeObserver(() => schedule());
             st.ro.observe(scrollEl);
@@ -1438,18 +1471,31 @@
     }
 
     // ───── 4. Public API ────────────────────────────────────────────────────────
-    window.omniDesigner = {
+    return {
+        dispose() {
+            lifetime.abort();
+            teardownRulers();
+            for (const observer of observers.values()) observer.disconnect();
+            removedNodes.disconnect();
+            for (const controller of elementLifetimes.values()) controller.abort();
+            elementLifetimes.clear();
+            for (const timer of timers) clearTimeout(timer);
+            observers.clear(); timers.clear(); openDropdowns.clear();
+            state.active = null; state.dotnetRef = null;
+        },
+        openFile() { root.querySelector("[data-designer-open]")?.click(); },
         register(dotnetRef) { state.dotnetRef = dotnetRef; },
         unregister() { state.dotnetRef = null; },
 
         attachElement(element, options) {
             if (!element) return;
             const opts = options || { snap: true, snapMm: 1, locked: false };
+            elementOptions.set(element, opts);
             // Element-level pointerdown: idempotent — guard with a dataset flag so re-calls
             // (after Blazor re-renders the element subtree) don't stack duplicate listeners.
             if (!element.dataset.omniMoveBound) {
                 element.dataset.omniMoveBound = "1";
-                element.addEventListener("pointerdown", ev => {
+                listen(element, "pointerdown", ev => {
                     if (ev.target.classList?.contains("handle")) return;
                     if (ev.button !== 0) return;
                     // Shift- or Ctrl/Cmd-click toggles multi-selection (industry standard).
@@ -1461,8 +1507,8 @@
                             .catch(err => console.warn("[designer] shift/ctrl-click failed", err));
                         return;
                     }
-                    if (opts.locked) return; // locked elements ignore drag
-                    startElementMove(ev, element, opts);
+                    if ((elementOptions.get(element) || opts).locked) return; // locked elements ignore drag
+                    startElementMove(ev, element, elementOptions.get(element) || opts);
                 });
             }
             // Handles only exist while the element is selected — Blazor creates them on demand.
@@ -1473,6 +1519,7 @@
                 element.dataset.omniHandleObserver = "1";
                 const mo = new MutationObserver(() => bindHandles(element, opts));
                 mo.observe(element, { childList: true, subtree: true });
+                observers.set(element, mo);
             }
         },
 
@@ -1491,6 +1538,12 @@
             openDropdowns.add(dotnetRef);
         },
 
+        positionContextMenu(menu, x, y) {
+            const bounds = menu.getBoundingClientRect();
+            menu.style.left = Math.max(8, Math.min(x, window.innerWidth - bounds.width - 8)) + "px";
+            menu.style.top = Math.max(8, Math.min(y, window.innerHeight - bounds.height - 8)) + "px";
+        },
+
         setTheme,
         getTheme,
         toggleTheme() {
@@ -1502,6 +1555,40 @@
         // Focus shim — needed so global keyboard shortcuts work inside WebView.
         focus(rootEl) { rootEl?.focus?.(); },
     };
+    }
+    function rootOf(element) { return element?.closest?.(".report-designer") || null; }
+    function resolve(args) {
+        for (const arg of args) { const root = rootOf(arg); if (root) return root; }
+        const roots = document.querySelectorAll(".report-designer");
+        if (roots.length === 1) return roots[0];
+        throw new Error("An explicit designer root is required.");
+    }
+    function instance(root) {
+        let value = instances.get(root);
+        if (!value) { value = createInstance(root); instances.set(root, value); }
+        return value;
+    }
+    const scoped = new Set(["setTheme", "getTheme", "toggleTheme", "setSnap", "setRulerUnit", "refreshRulers", "detachRulers", "registerOutsideClick"]);
+    const api = {
+        register(root, reference) {
+            if (!reference) { reference = root; root = resolve([]); }
+            instance(rootOf(root) || root).register(reference);
+        },
+        unregister(root) {
+            root = rootOf(root) || root;
+            if (!root) return;
+            instances.get(root)?.dispose();
+            instances.delete(root);
+        }
+    };
+    for (const method of ["attachElement", "attachToolbox", "attachField", "attachDropZone", "attachBandResize", "attachPageMarquee", "attachRulers", "focus", "openFile", "positionContextMenu", ...scoped]) {
+        api[method] = (...args) => {
+            const root = resolve(args);
+            if (scoped.has(method) && rootOf(args.at(-1))) args.pop();
+            return instance(root)[method](...args);
+        };
+    }
+    window.omniDesigner = api;
 })();
 
 // Auto-load the print sidecar module (designer-print.js) so hosts only need to

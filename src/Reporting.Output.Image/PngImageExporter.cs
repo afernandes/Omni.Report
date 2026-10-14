@@ -49,6 +49,14 @@ public sealed class PngImageExporter : IReportExporter
     public void ExportPages(RenderedReport report, Func<int, Stream> createOutput,
         CancellationToken cancellationToken = default)
     {
+        using var operation = Reporting.Diagnostics.ReportTelemetry.Start("export", cancellationToken);
+        WritePages(report, createOutput, cancellationToken);
+        operation.Complete();
+    }
+
+    private void WritePages(RenderedReport report, Func<int, Stream> createOutput,
+        CancellationToken cancellationToken)
+    {
         ArgumentNullException.ThrowIfNull(report);
         ArgumentNullException.ThrowIfNull(createOutput);
         cancellationToken.ThrowIfCancellationRequested();
@@ -92,6 +100,13 @@ public sealed class PngImageExporter : IReportExporter
     }
 
     private void ExportCore(RenderedReport report, Stream output, CancellationToken cancellationToken)
+    {
+        using var operation = Reporting.Diagnostics.ReportTelemetry.Start("export", cancellationToken);
+        WriteReport(report, output, cancellationToken);
+        operation.Complete();
+    }
+
+    private void WriteReport(RenderedReport report, Stream output, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(report);
         ArgumentNullException.ThrowIfNull(output);

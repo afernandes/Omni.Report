@@ -9,7 +9,7 @@ namespace Reporting.Rendering.Skia;
 /// both <see cref="SkiaRenderingContext"/> (bitmap-backed pages) and the PDF exporter
 /// (vector-native pages via <see cref="SKDocument"/>).
 /// </summary>
-public static class SkiaPrimitiveRenderer
+public static partial class SkiaPrimitiveRenderer
 {
     public static void DrawText(SKCanvas canvas, string text, Rectangle bounds, TextStyle style, float dpi)
         => DrawText(canvas, text, bounds, style, dpi, null);
@@ -65,7 +65,7 @@ public static class SkiaPrimitiveRenderer
                 float xLine = style.HorizontalAlignment switch
                 {
                     HorizontalAlignment.Center => bounds.X.Px(dpi) + (bounds.Width.Px(dpi) - lineWidth) / 2f,
-                    HorizontalAlignment.Right  => bounds.X.Px(dpi) + bounds.Width.Px(dpi) - lineWidth,
+                    HorizontalAlignment.Right => bounds.X.Px(dpi) + bounds.Width.Px(dpi) - lineWidth,
                     _ => bounds.X.Px(dpi),
                 };
 
@@ -80,9 +80,7 @@ public static class SkiaPrimitiveRenderer
                         ink.Offset(cursor, baselineY);
                         if (!ink.IsEmpty) TrackBounds(track, ink, paint);
                     }
-                    // SKTextAlign.Left preserva o comportamento: o alinhamento do elemento ja foi
-                    // resolvido em `cursor` acima, e a sobrecarga antiga era left-aligned por definição.
-                    canvas.DrawText(run.Text, cursor, baselineY, SKTextAlign.Left, run.Font, paint);
+                    DrawUnicodeText(canvas, run.Text, cursor, baselineY, run.Font, paint);
                     if (decoPaint is not null)
                     {
                         DrawTextDecorations(canvas, decoPaint, run.Font, cursor, baselineY, runWidth, style.Font.Style, track);
@@ -217,8 +215,6 @@ public static class SkiaPrimitiveRenderer
         }
         return runs;
     }
-
-    private readonly record struct TextRun(string Text, SKFont Font);
 
     public static void DrawLine(SKCanvas canvas, Point from, Point to, PenStyle pen, float dpi)
         => DrawLine(canvas, from, to, pen, dpi, null);
@@ -385,18 +381,18 @@ public static class SkiaPrimitiveRenderer
 
     private static SKPoint GradientStart(BackgroundGradientType kind, SKRect r) => kind switch
     {
-        BackgroundGradientType.LeftRight     => new SKPoint(r.Left, r.MidY),
-        BackgroundGradientType.DiagonalLeft  => new SKPoint(r.Left, r.Top),
+        BackgroundGradientType.LeftRight => new SKPoint(r.Left, r.MidY),
+        BackgroundGradientType.DiagonalLeft => new SKPoint(r.Left, r.Top),
         BackgroundGradientType.DiagonalRight => new SKPoint(r.Right, r.Top),
-        _                                    => new SKPoint(r.MidX, r.Top), // TopBottom + fallback
+        _ => new SKPoint(r.MidX, r.Top), // TopBottom + fallback
     };
 
     private static SKPoint GradientEnd(BackgroundGradientType kind, SKRect r) => kind switch
     {
-        BackgroundGradientType.LeftRight     => new SKPoint(r.Right, r.MidY),
-        BackgroundGradientType.DiagonalLeft  => new SKPoint(r.Right, r.Bottom),
+        BackgroundGradientType.LeftRight => new SKPoint(r.Right, r.MidY),
+        BackgroundGradientType.DiagonalLeft => new SKPoint(r.Right, r.Bottom),
         BackgroundGradientType.DiagonalRight => new SKPoint(r.Left, r.Bottom),
-        _                                    => new SKPoint(r.MidX, r.Bottom), // TopBottom + fallback
+        _ => new SKPoint(r.MidX, r.Bottom), // TopBottom + fallback
     };
 
     /// <summary>Applies <paramref name="clip"/> (if any) to the canvas and returns the save-count to restore

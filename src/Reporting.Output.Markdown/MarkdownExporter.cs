@@ -32,6 +32,13 @@ public sealed class MarkdownExporter : IReportExporter
 
     public void Export(RenderedReport report, Stream output)
     {
+        using var operation = Reporting.Diagnostics.ReportTelemetry.Start("export");
+        ExportCore(report, output);
+        operation.Complete();
+    }
+
+    private void ExportCore(RenderedReport report, Stream output)
+    {
         ArgumentNullException.ThrowIfNull(report);
         ArgumentNullException.ThrowIfNull(output);
 
@@ -52,7 +59,7 @@ public sealed class MarkdownExporter : IReportExporter
             writer.Write(EscapeYaml(title));
             writer.Write(_options.LineEnding);
             writer.Write("generated: ");
-            writer.Write(DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture));
+            writer.Write(DateTimeOffset.UtcNow.ToString("O", CultureInfo.InvariantCulture));
             writer.Write(_options.LineEnding);
             writer.Write("---");
             writer.Write(_options.LineEnding);

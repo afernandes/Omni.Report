@@ -1,3 +1,4 @@
+using Reporting.Common;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using System.Globalization;
@@ -10,7 +11,7 @@ namespace Reporting.Expressions;
 /// current row, plus all rows of the current group and report scope so that <see cref="EvaluateAggregate"/>
 /// can compute sums/averages/etc. without re-walking the data source.
 /// </summary>
-public sealed class ReportExpressionContext : IReportExpressionContext, INamedGroupExpressionContext
+public sealed partial class ReportExpressionContext : IReportExpressionContext, INamedGroupExpressionContext
 {
     private readonly ExpressionEvaluator _evaluator;
     private readonly BoundedCache<string, bool> _aggregateEligibility = new(256, StringComparer.Ordinal);
@@ -165,6 +166,23 @@ public sealed class ReportExpressionContext : IReportExpressionContext, INamedGr
         _groups.Add(new GroupExpressionScope(name, key));
         _selectedGroup = null;
         GroupKey = key;
+    }
+
+    /// <summary>Replaces the selected group's rows for evaluation of a complete group instance.
+    /// Use on a planning context before evaluating group filters, sorts or group variables.</summary>
+    public void PrimeGroupScope(IEnumerable<IEnumerable<KeyValuePair<string, object?>>> rows)
+    {
+        ArgumentNullException.ThrowIfNull(rows);
+        var target = CurrentGroupRows;
+        _fieldAggregates.Remove(target);
+        target.Clear();
+        foreach (var row in rows)
+        {
+            CancellationToken.ThrowIfCancellationRequested();
+            var snapshot = new DictionaryLookup();
+            foreach (var pair in row) snapshot.Set(pair.Key, pair.Value);
+            target.Add(snapshot);
+        }
     }
 
     /// <summary>Closes only the innermost group, preserving its ancestors' accumulated rows.</summary>

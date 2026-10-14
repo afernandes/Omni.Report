@@ -12,9 +12,3 @@
      aria-hidden="true">
     @((MarkupString)IconCatalog.GetPath(Name))
 </svg>
-
-@code {
-    [Parameter, EditorRequired] public string Name { get; set; } = default!;
-    [Parameter] public int Size { get; set; } = 14;
-    [Parameter] public string CssClass { get; set; } = "icon";
-}
