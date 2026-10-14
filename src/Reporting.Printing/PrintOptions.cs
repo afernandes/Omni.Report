@@ -26,11 +26,3 @@ public sealed record PrintOptions(string PrinterName)
     /// <summary>Document title for the spool entry (shown in the print queue UI).</summary>
     public string? DocumentName { get; init; }
 }
-
-/// <summary>Outcome of a print operation.</summary>
-public sealed record PrintResult(
-    bool Succeeded,
-    int PagesPrinted,
-    string? OutputPath = null,
-    string? ErrorMessage = null,
-    Exception? Exception = null);

@@ -19,8 +19,11 @@ public sealed class AuditPaginationTests
         var unused = new AuditCountingSource(new EnumerableDataSource<Venda>("NaoUsada", []), true);
         var registry = new DataSourceRegistry(); registry.Register(source); registry.Register(unused);
         var child = TestData.GroupedReport() with { Groups = EquatableArray<GroupBand>.Empty };
-        var parent = child with { Detail = new DetailBand(30.Mm(), EquatableArray.Create<ReportElement>(new SubreportElement
-            { Bounds = new Rectangle(0.Mm(), 0.Mm(), 100.Mm(), 30.Mm()), InlineDefinition = child })) };
+        var parent = child with
+        {
+            Detail = new DetailBand(30.Mm(), EquatableArray.Create<ReportElement>(new SubreportElement
+            { Bounds = new Rectangle(0.Mm(), 0.Mm(), 100.Mm(), 30.Mm()), InlineDefinition = child }))
+        };
         var rendered = await new ReportPaginator().PaginateAsync(new PaginationRequest { Definition = parent, DataSources = registry });
         source.Reads.Should().Be(1);
         unused.Reads.Should().Be(0);
@@ -52,7 +55,7 @@ public sealed class AuditPaginationTests
         {
             Groups = EquatableArray<GroupBand>.Empty,
             Detail = new DetailBand(6.Mm(), EquatableArray.Create<ReportElement>(Text("{Fields.Produto}")))
-                { SortExpressions = EquatableArray.Create(new Reporting.Data.SortDescriptor("Fields.Total")) }
+            { SortExpressions = EquatableArray.Create(new Reporting.Data.SortDescriptor("Fields.Total")) }
         };
         var rows = Enumerable.Range(0, 40).Select(i => new Venda("A", "P" + i, 1m)).ToArray();
         var rendered = await new ReportPaginator().PaginateAsync(TestData.BuildRequest(definition, rows));
@@ -65,19 +68,20 @@ public sealed class AuditPaginationTests
         {
             Groups = EquatableArray<GroupBand>.Empty,
             Detail = new DetailBand(100.Mm(), EquatableArray.Create<ReportElement>(new RectangleElement
-                { Bounds = new Rectangle(0.Mm(), 0.Mm(), 100.Mm(), 100.Mm()), Children = EquatableArray.Create<ReportElement>(Text("{Page.Total}")) }))
+            { Bounds = new Rectangle(0.Mm(), 0.Mm(), 100.Mm(), 100.Mm()), Children = EquatableArray.Create<ReportElement>(Text("{Page.Total}")) }))
         };
         var rendered = await new ReportPaginator().PaginateAsync(TestData.BuildRequest(definition, TestData.ManyRows(8)));
         rendered.PageCount.Should().BeGreaterThan(1);
         Texts(rendered).Should().OnlyContain(text => text == rendered.PageCount.ToString());
     }
     [Fact]
-    public async Task PaginateAsync_PropriedadeDeGrupoNaoSuportada_EmiteDiagnosticoExplicito()
+    public async Task PaginateAsync_FiltroDeGrupoComKeepTogether_NaoEmiteDiagnosticoDeRecursoAusente()
     {
         var definition = TestData.GroupedReport();
         definition = definition with { Groups = EquatableArray.Create(definition.Groups[0] with { FilterExpression = "false", KeepTogether = true }) };
         var rendered = await new ReportPaginator().PaginateAsync(TestData.BuildRequest(definition, TestData.ThreeRows()));
-        rendered.Diagnostics.Should().HaveCount(2).And.OnlyContain(d => d.Code == "ORL024");
+        rendered.Diagnostics.Should().BeEmpty();
+        Texts(rendered).Should().BeEmpty();
     }
     [Fact]
     public async Task ReadAsync_ViewsDePaisConcorrentes_IsolaFiltroDeCadaEnumeracao()
@@ -113,7 +117,8 @@ public sealed class AuditPaginationTests
         var sourceRequest = TestData.BuildRequest(definition, TestData.ThreeRows());
         var request = new PaginationRequest
         {
-            Definition = definition, DataSources = sourceRequest.DataSources,
+            Definition = definition,
+            DataSources = sourceRequest.DataSources,
             CodeFunctionResolver = (_, _) => { cancellation.Cancel(); return 1; }
         };
         var action = () => new ReportPaginator().PaginateAsync(request, cancellation.Token);
@@ -153,8 +158,11 @@ public sealed class AuditPaginationTests
     public async Task PaginateAsync_ExpressaoRetornaObjeto_NaoRetemGrafoNoValorTabular()
     {
         var graph = new object();
-        var definition = TestData.GroupedReport() with { Groups = EquatableArray<GroupBand>.Empty,
-            Detail = new DetailBand(6.Mm(), EquatableArray.Create<ReportElement>(Text("Code.Objeto()"))) };
+        var definition = TestData.GroupedReport() with
+        {
+            Groups = EquatableArray<GroupBand>.Empty,
+            Detail = new DetailBand(6.Mm(), EquatableArray.Create<ReportElement>(Text("Code.Objeto()")))
+        };
         var source = TestData.BuildRequest(definition, TestData.ThreeRows());
         var rendered = await new ReportPaginator().PaginateAsync(new PaginationRequest { Definition = definition, DataSources = source.DataSources, CodeFunctionResolver = (_, _) => graph });
         rendered.Pages.SelectMany(page => page.Primitives).OfType<DrawTextPrimitive>().Should().OnlyContain(text => text.SemanticValue == null);

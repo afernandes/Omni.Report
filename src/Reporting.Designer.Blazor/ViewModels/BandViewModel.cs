@@ -6,54 +6,6 @@ using Reporting.Geometry;
 
 namespace Reporting.Designer.Blazor.ViewModels;
 
-public enum DesignerBandKind
-{
-    ReportHeader,
-    PageHeader,
-    GroupHeader,
-    Detail,
-    /// <summary>Sub-detail (DevExpress DetailReportBand / FastReport sub-band). Visually nested
-    /// under the Detail, fires once per child row of <see cref="BandViewModel.DataMember"/>.</summary>
-    SubDetail,
-    GroupFooter,
-    PageFooter,
-    ReportFooter,
-}
-
-/// <summary>Mutable wrapper around a <see cref="Reporting.Data.SortDescriptor"/> — one row
-/// in the PropertyGrid sort-expression list. Expression + direction toggle.</summary>
-public sealed class SortDescriptorRule : Notifying
-{
-    private string _expression = string.Empty;
-    public string Expression { get => _expression; set => Set(ref _expression, value); }
-
-    private Reporting.Data.SortDirection _direction = Reporting.Data.SortDirection.Ascending;
-    public Reporting.Data.SortDirection Direction { get => _direction; set => Set(ref _direction, value); }
-
-    internal Reporting.Data.SortDescriptor ToDescriptor() => new(Expression, Direction);
-
-    internal static SortDescriptorRule From(Reporting.Data.SortDescriptor d) =>
-        new() { Expression = d.Expression, Direction = d.Direction };
-}
-
-/// <summary>Mutable wrapper around a group-scoped <see cref="Reporting.Parameters.ReportVariable"/>.
-/// The scope is fixed to <see cref="Reporting.Parameters.VariableScope.Group"/> — group-level
-/// variables are evaluated once per group instance.</summary>
-public sealed class GroupVariableRule : Notifying
-{
-    private string _name = string.Empty;
-    public string Name { get => _name; set => Set(ref _name, value); }
-
-    private string _expression = string.Empty;
-    public string Expression { get => _expression; set => Set(ref _expression, value); }
-
-    internal Reporting.Parameters.ReportVariable ToVariable() =>
-        new(Name, Expression, Reporting.Parameters.VariableScope.Group);
-
-    internal static GroupVariableRule From(Reporting.Parameters.ReportVariable v) =>
-        new() { Name = v.Name, Expression = v.Expression };
-}
-
 /// <summary>Mutable wrapper around a report band — owns a list of <see cref="ElementViewModel"/>.</summary>
 public sealed class BandViewModel : Notifying
 {
@@ -249,14 +201,14 @@ public sealed class BandViewModel : Notifying
     public string DisplayLabel => Kind switch
     {
         DesignerBandKind.ReportHeader => "Report Header",
-        DesignerBandKind.PageHeader   => "Page Header",
-        DesignerBandKind.GroupHeader  => "Group Header",
-        DesignerBandKind.Detail       => "Detail",
-        DesignerBandKind.SubDetail    => string.IsNullOrEmpty(DataMember)
+        DesignerBandKind.PageHeader => "Page Header",
+        DesignerBandKind.GroupHeader => "Group Header",
+        DesignerBandKind.Detail => "Detail",
+        DesignerBandKind.SubDetail => string.IsNullOrEmpty(DataMember)
                                             ? "Sub-Detail"
                                             : $"↳ Sub-Detail · {DataMember}",
-        DesignerBandKind.GroupFooter  => "Group Footer",
-        DesignerBandKind.PageFooter   => "Page Footer",
+        DesignerBandKind.GroupFooter => "Group Footer",
+        DesignerBandKind.PageFooter => "Page Footer",
         DesignerBandKind.ReportFooter => "Report Footer",
         _ => Kind.ToString(),
     };
@@ -266,12 +218,12 @@ public sealed class BandViewModel : Notifying
     public string ShortCode => Kind switch
     {
         DesignerBandKind.ReportHeader => "RH",
-        DesignerBandKind.PageHeader   => "PH",
-        DesignerBandKind.GroupHeader  => "GH",
-        DesignerBandKind.Detail       => "DT",
-        DesignerBandKind.SubDetail    => "SD",
-        DesignerBandKind.GroupFooter  => "GF",
-        DesignerBandKind.PageFooter   => "PF",
+        DesignerBandKind.PageHeader => "PH",
+        DesignerBandKind.GroupHeader => "GH",
+        DesignerBandKind.Detail => "DT",
+        DesignerBandKind.SubDetail => "SD",
+        DesignerBandKind.GroupFooter => "GF",
+        DesignerBandKind.PageFooter => "PF",
         DesignerBandKind.ReportFooter => "RF",
         _ => Kind.ToString()[..Math.Min(2, Kind.ToString().Length)].ToUpperInvariant(),
     };
@@ -280,11 +232,11 @@ public sealed class BandViewModel : Notifying
     public string ToneClass => Kind switch
     {
         DesignerBandKind.ReportHeader => "t-rh",
-        DesignerBandKind.PageHeader   => "t-ph",
-        DesignerBandKind.GroupHeader  => "t-gh",
-        DesignerBandKind.Detail       => "t-d",
-        DesignerBandKind.GroupFooter  => "t-gf",
-        DesignerBandKind.PageFooter   => "t-pf",
+        DesignerBandKind.PageHeader => "t-ph",
+        DesignerBandKind.GroupHeader => "t-gh",
+        DesignerBandKind.Detail => "t-d",
+        DesignerBandKind.GroupFooter => "t-gf",
+        DesignerBandKind.PageFooter => "t-pf",
         DesignerBandKind.ReportFooter => "t-rf",
         _ => string.Empty,
     };

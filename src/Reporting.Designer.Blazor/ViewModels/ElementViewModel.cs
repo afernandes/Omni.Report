@@ -10,188 +10,6 @@ using Reporting.Styling;
 
 namespace Reporting.Designer.Blazor.ViewModels;
 
-/// <summary>A single conditional formatting rule on an element. Mutable wrapper around
-/// <see cref="ConditionalFormat"/>.</summary>
-public sealed class ConditionalFormatRule : Notifying
-{
-    private string _condition = "Fields.Total > 1000";
-    public string Condition { get => _condition; set => Set(ref _condition, value); }
-
-    private Color? _foreColor;
-    public Color? ForeColor { get => _foreColor; set => Set(ref _foreColor, value); }
-
-    private Color? _backColor;
-    public Color? BackColor { get => _backColor; set => Set(ref _backColor, value); }
-
-    private Color? _backColorEnd;
-    /// <summary>Gradient end colour for the conditional fill (start = <see cref="BackColor"/>).</summary>
-    public Color? BackColorEnd { get => _backColorEnd; set => Set(ref _backColorEnd, value); }
-
-    private BackgroundGradientType _backgroundGradient = BackgroundGradientType.None;
-    /// <summary>Conditional fill gradient direction (None = solid). StyleResolver.Merge applies it on match.</summary>
-    public BackgroundGradientType BackgroundGradient { get => _backgroundGradient; set => Set(ref _backgroundGradient, value); }
-
-    private bool _bold;
-    public bool Bold { get => _bold; set => Set(ref _bold, value); }
-
-    private bool _italic;
-    public bool Italic { get => _italic; set => Set(ref _italic, value); }
-
-    internal ConditionalFormat ToConditionalFormat()
-    {
-        var fontStyle = FontStyle.Regular;
-        if (Bold) fontStyle |= FontStyle.Bold;
-        if (Italic) fontStyle |= FontStyle.Italic;
-        var style = new Style(
-            Font: fontStyle == FontStyle.Regular ? null : new Font("Arial", 10, fontStyle),
-            ForeColor: ForeColor,
-            BackColor: BackColor,
-            BackColorEnd: BackColorEnd,
-            BackgroundGradient: BackgroundGradient);
-        return new ConditionalFormat(Condition, style);
-    }
-
-    internal static ConditionalFormatRule From(ConditionalFormat cf)
-    {
-        var rule = new ConditionalFormatRule
-        {
-            Condition = cf.Condition,
-            ForeColor = cf.Style.ForeColor,
-            BackColor = cf.Style.BackColor,
-            BackColorEnd = cf.Style.BackColorEnd,
-            BackgroundGradient = cf.Style.BackgroundGradient,
-        };
-        if (cf.Style.Font is { } f)
-        {
-            rule.Bold = (f.Style & FontStyle.Bold) != 0;
-            rule.Italic = (f.Style & FontStyle.Italic) != 0;
-        }
-        return rule;
-    }
-}
-
-// Toolbox presentation lives next to the value via [ToolboxElement]; the ElementToolbox reflects over
-// these (ToolboxCatalog) so a new annotated kind appears in the palette with no markup edits.
-public enum DesignerElementKind
-{
-    [ToolboxElement("Básicos", "Label", "hash", "Texto literal", Hotkey = "L", Draggable = true, DefaultText = "Texto")]
-    Label,
-    [ToolboxElement("Básicos", "TextBox", "type", "Expressão / template", Hotkey = "T", Draggable = true, DefaultExpression = "{Fields.X}")]
-    TextBox,
-    [ToolboxElement("Básicos", "Line", "minus", "Linha", Draggable = true, DefaultWidthMm = 50, DefaultHeightMm = 0)]
-    Line,
-    [ToolboxElement("Básicos", "Rectangle", "square", "Retângulo", Draggable = true)]
-    Rectangle,
-    [ToolboxElement("Básicos", "Ellipse", "circle", "Elipse", Draggable = true)]
-    Ellipse,
-    [ToolboxElement("Básicos", "Picture", "image", "Imagem", Draggable = true)]
-    Image,
-    [ToolboxElement("Básicos", "Barcode", "barcode", "Código de barras", Draggable = true, DefaultWidthMm = 50, DefaultHeightMm = 15, DefaultExpression = "1234567890")]
-    Barcode,
-    [ToolboxElement("Básicos", "QR Code", "qr-code", "QR Code", Draggable = true, DefaultWidthMm = 25, DefaultHeightMm = 25, DefaultExpression = "https://example.com")]
-    QrCode,
-    [ToolboxElement("Gráficos", "Chart", "bar-chart-2", "Gráfico (barras/linhas/pizza)", DefaultWidthMm = 80, DefaultHeightMm = 55)]
-    Chart,
-    [ToolboxElement("Dados", "Table", "table", "Tabela bandada", DefaultWidthMm = 120, DefaultHeightMm = 30, PreviewLabel = "▦ Tabela")]
-    Tablix,
-    [ToolboxElement("Gráficos", "Gauge", "gauge", "Medidor", DefaultWidthMm = 50, DefaultHeightMm = 40, PreviewLabel = "◷ Medidor")]
-    Gauge,
-    [ToolboxElement("Avançados", "Data Bar", "bar-chart-3", "Barra de dados proporcional", PreviewLabel = "▬ Barra de dados")]
-    DataBar,
-    [ToolboxElement("Gráficos", "Sparkline", "trending-up", "Mini-gráfico", DefaultWidthMm = 40, DefaultHeightMm = 15, PreviewLabel = "∿ Mini-gráfico")]
-    Sparkline,
-    [ToolboxElement("Avançados", "Indicator", "locate", "Indicador KPI (seta / forma / rating)", DefaultWidthMm = 14, DefaultHeightMm = 14, PreviewLabel = "◆ Indicador")]
-    Indicator,
-    [ToolboxElement("Gráficos", "Map", "map", "Mapa", DefaultWidthMm = 80, DefaultHeightMm = 60, PreviewLabel = "🗺 Mapa")]
-    Map,
-    [ToolboxElement("Avançados", "Subreport", "files", "Sub-relatório embutido (referência a outro report)", PreviewLabel = "📄 Sub-relatório")]
-    Subreport,
-    [ToolboxElement("Avançados", "Code", "code", "Bloco de código C#/VB (Code.Metodo) — via Roslyn opt-in", PreviewLabel = "{ } Código")]
-    Code,
-}
-
-/// <summary>
-/// Mutable wrapper around a <see cref="DrillthroughParameter"/>. Exposed as a row in the
-/// Action editor's parameter table: Name + Value expression + Omit toggle.
-/// </summary>
-public sealed class DrillthroughParameterRule : Notifying
-{
-    private string _name = string.Empty;
-    public string Name { get => _name; set => Set(ref _name, value); }
-
-    private string _value = string.Empty;
-    /// <summary>Expression evaluated in the SOURCE report's context; the result is passed
-    /// to the target report under <see cref="Name"/>.</summary>
-    public string Value { get => _value; set => Set(ref _value, value); }
-
-    private bool _omit;
-    /// <summary>When true, the parameter is not passed at all — matches RDL <c>&lt;Omit&gt;</c>.</summary>
-    public bool Omit { get => _omit; set => Set(ref _omit, value); }
-
-    internal DrillthroughParameter ToCoreParameter() => new(Name, Value, Omit);
-
-    internal static DrillthroughParameterRule From(DrillthroughParameter p) =>
-        new() { Name = p.Name, Value = p.Value, Omit = p.Omit };
-}
-
-/// <summary>Mutable wrapper around a chart <see cref="ChartSeries"/> — one row in the chart
-/// editor: name + category/value expressions + optional colour.</summary>
-public sealed class ChartSeriesRule : Notifying
-{
-    private string _name = "Série 1";
-    public string Name { get => _name; set => Set(ref _name, value); }
-
-    private string _categoryExpression = "Fields.Categoria";
-    public string CategoryExpression { get => _categoryExpression; set => Set(ref _categoryExpression, value); }
-
-    private string _valueExpression = "Fields.Valor";
-    public string ValueExpression { get => _valueExpression; set => Set(ref _valueExpression, value); }
-
-    private Color? _color;
-    public Color? Color { get => _color; set => Set(ref _color, value); }
-
-    /// <summary>Series colour as a <c>#RRGGBB</c> hex string, for the PropertyGrid colour picker.
-    /// Null model colour surfaces a sensible default; an unparseable value is ignored.</summary>
-    public string ColorHex
-    {
-        get => _color?.ToHex() ?? "#4F46E5";
-        set { try { Color = Reporting.Styling.Color.FromHex(value); } catch (FormatException) { } }
-    }
-
-    private string _sizeExpression = string.Empty;
-    /// <summary>Bubble marker size expression — used when the chart kind is <c>Bubble</c>.</summary>
-    public string SizeExpression { get => _sizeExpression; set => Set(ref _sizeExpression, value); }
-
-    private string _highExpression = string.Empty;
-    /// <summary>Stock high expression — used when the chart kind is <c>Stock</c>.</summary>
-    public string HighExpression { get => _highExpression; set => Set(ref _highExpression, value); }
-
-    private string _lowExpression = string.Empty;
-    /// <summary>Stock low expression — used when the chart kind is <c>Stock</c>.</summary>
-    public string LowExpression { get => _lowExpression; set => Set(ref _lowExpression, value); }
-
-    internal ChartSeries ToSeries() => new(Name, CategoryExpression, ValueExpression, Color,
-        SizeExpression: string.IsNullOrWhiteSpace(SizeExpression) ? null : SizeExpression,
-        HighExpression: string.IsNullOrWhiteSpace(HighExpression) ? null : HighExpression,
-        LowExpression: string.IsNullOrWhiteSpace(LowExpression) ? null : LowExpression);
-
-    internal static ChartSeriesRule From(ChartSeries s) => new()
-    {
-        Name = s.Name,
-        CategoryExpression = s.CategoryExpression,
-        ValueExpression = s.ValueExpression,
-        Color = s.Color,
-        SizeExpression = s.SizeExpression ?? string.Empty,
-        HighExpression = s.HighExpression ?? string.Empty,
-        LowExpression = s.LowExpression ?? string.Empty,
-    };
-}
-
-/// <summary>One Tablix column in the designer editor — a header label + a per-row detail
-/// expression + an optional relative width (weight). A width of <c>0</c> means "equal share";
-/// when at least one column has a positive weight, the renderer distributes width proportionally.</summary>
-public sealed record TablixColumnView(string Header, string Expression, double Width = 0);
-
 /// <summary>
 /// Mutable wrapper around a <see cref="ReportElement"/>. The canvas binds to these and
 /// the property grid edits them. <see cref="ToElement"/> materializes back to the immutable
@@ -1026,9 +844,9 @@ public sealed class ElementViewModel : Notifying
     public ReportElement ToElement()
     {
         var fontStyle = FontStyle.Regular;
-        if (IsBold)          fontStyle |= FontStyle.Bold;
-        if (IsItalic)        fontStyle |= FontStyle.Italic;
-        if (IsUnderline)     fontStyle |= FontStyle.Underline;
+        if (IsBold) fontStyle |= FontStyle.Bold;
+        if (IsItalic) fontStyle |= FontStyle.Italic;
+        if (IsUnderline) fontStyle |= FontStyle.Underline;
         if (IsStrikethrough) fontStyle |= FontStyle.Strikeout;
         var style = new Style(
             // null = "inherit from the named style / theme". Only write a literal when the author actually set
@@ -1128,19 +946,43 @@ public sealed class ElementViewModel : Notifying
             Name = Name,
             Text = Text,
             Expression = Expression,
-            X = X, Y = Y, Width = Width, Height = Height,
-            IsBold = IsBold, IsItalic = IsItalic, IsUnderline = IsUnderline, IsStrikethrough = IsStrikethrough,
-            FontFamily = FontFamily, FontSize = FontSize,
-            ForeColor = ForeColor, FillColor = FillColor, BackColor = BackColor,
-            BackColorEnd = BackColorEnd, BackgroundGradient = BackgroundGradient, BasedOn = BasedOn,
-            HorizontalAlignment = HorizontalAlignment, VerticalAlignment = VerticalAlignment,
-            WordWrap = WordWrap, Padding = Padding, Border = Border, Format = Format,
-            IsVisible = IsVisible, VisibleExpr = VisibleExpr, CanGrow = CanGrow, CanShrink = CanShrink, KeepTogether = KeepTogether,
-            IsLocked = IsLocked, CornerRadiusMm = CornerRadiusMm,
+            X = X,
+            Y = Y,
+            Width = Width,
+            Height = Height,
+            IsBold = IsBold,
+            IsItalic = IsItalic,
+            IsUnderline = IsUnderline,
+            IsStrikethrough = IsStrikethrough,
+            FontFamily = FontFamily,
+            FontSize = FontSize,
+            ForeColor = ForeColor,
+            FillColor = FillColor,
+            BackColor = BackColor,
+            BackColorEnd = BackColorEnd,
+            BackgroundGradient = BackgroundGradient,
+            BasedOn = BasedOn,
+            HorizontalAlignment = HorizontalAlignment,
+            VerticalAlignment = VerticalAlignment,
+            WordWrap = WordWrap,
+            Padding = Padding,
+            Border = Border,
+            Format = Format,
+            IsVisible = IsVisible,
+            VisibleExpr = VisibleExpr,
+            CanGrow = CanGrow,
+            CanShrink = CanShrink,
+            KeepTogether = KeepTogether,
+            IsLocked = IsLocked,
+            CornerRadiusMm = CornerRadiusMm,
             InlineImageData = InlineImageData is null ? null : (byte[])InlineImageData.Clone(),
-            Symbology = Symbology, QrEcc = QrEcc, BarcodeShowText = BarcodeShowText,
+            Symbology = Symbology,
+            QrEcc = QrEcc,
+            BarcodeShowText = BarcodeShowText,
             LineDir = LineDir,
-            ImageSizing = ImageSizing, ImagePath = ImagePath, ImageExpression = ImageExpression,
+            ImageSizing = ImageSizing,
+            ImagePath = ImagePath,
+            ImageExpression = ImageExpression,
         };
         c._textRuns = _textRuns; // EquatableArray is immutable → safe to share on clone
         foreach (var child in Children) // deep-clone container children (fresh ids) so paste duplicates the whole subtree

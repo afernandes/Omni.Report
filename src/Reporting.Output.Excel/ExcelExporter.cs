@@ -29,6 +29,13 @@ public sealed class ExcelExporter : IReportExporter
 
     public void Export(RenderedReport report, Stream output)
     {
+        using var operation = Reporting.Diagnostics.ReportTelemetry.Start("export");
+        WriteReport(report, output);
+        operation.Complete();
+    }
+
+    private void WriteReport(RenderedReport report, Stream output)
+    {
         ArgumentNullException.ThrowIfNull(report);
         ArgumentNullException.ThrowIfNull(output);
 

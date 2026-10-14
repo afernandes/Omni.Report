@@ -70,11 +70,13 @@ internal sealed class ImageRasterizer
 
     internal void Draw(SKCanvas canvas, RenderedPage page, CancellationToken cancellationToken)
     {
+        using var operation = Reporting.Diagnostics.ReportTelemetry.Start("render", cancellationToken);
         cancellationToken.ThrowIfCancellationRequested();
         foreach (var primitive in page.Primitives)
         {
             cancellationToken.ThrowIfCancellationRequested();
             RegionRasterizer.Replay(canvas, primitive, Dpi);
         }
+        operation.Complete();
     }
 }

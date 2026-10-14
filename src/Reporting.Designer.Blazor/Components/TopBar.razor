@@ -178,7 +178,7 @@
     <div class="topbar-right">
         <label class="icon-btn" type="button" title="Abrir .repx (Ctrl+O)" style="cursor:pointer;">
             <Icon Name="folder-open" Size="16" />
-            <InputFile id="__designer_open_repx" style="display:none" OnChange="OnLoadFile" accept=".repx" />
+            <InputFile data-designer-open="true" style="display:none" OnChange="OnLoadFile" accept=".repx" />
         </label>
         <button class="icon-btn" type="button" title="Salvar (Ctrl+S)" @onclick="OnSaveClicked"><Icon Name="save" Size="16" /></button>
         <button class="icon-btn" type="button" title="Validar relatório" @onclick="@(() => OnMenuCommand.InvokeAsync("report.validate"))"><Icon Name="shield-check" Size="16" /></button>
@@ -196,23 +196,3 @@
         <button class="icon-btn" type="button" title="Configuração de página" @onclick="@(() => OnMenuCommand.InvokeAsync("report.pagesetup"))"><Icon Name="settings" Size="16" /></button>
     </div>
 </header>
-
-@code {
-    [Parameter] public string? DocumentName { get; set; }
-    [Parameter] public bool IsDarkTheme { get; set; }
-    [Parameter] public EventCallback OnToggleTheme { get; set; }
-    [Parameter] public EventCallback OnOpenPalette { get; set; }
-    [Parameter] public EventCallback OnSave { get; set; }
-    [Parameter] public EventCallback<InputFileChangeEventArgs> OnLoad { get; set; }
-    [Parameter] public EventCallback<InputFileChangeEventArgs> OnLoadRdl { get; set; }
-    [Parameter] public EventCallback<string> OnMenuCommand { get; set; }
-
-    private Task OnToggleThemeClicked() => OnToggleTheme.InvokeAsync();
-    private Task OnOpenPaletteClicked() => OnOpenPalette.InvokeAsync();
-    private Task OnSaveClicked()        => OnSave.InvokeAsync();
-    private Task OnLoadFile(InputFileChangeEventArgs e) => OnLoad.InvokeAsync(e);
-    private Task OnLoadRdlFile(InputFileChangeEventArgs e) => OnLoadRdl.InvokeAsync(e);
-    // A managed handler is required for the @onclick:stopPropagation modifier to take effect (the label's
-    // real work — opening the file dialog — happens via its wrapped <InputFile>, natively).
-    private void NoOp() { }
-}

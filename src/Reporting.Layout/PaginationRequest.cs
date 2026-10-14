@@ -6,6 +6,9 @@ namespace Reporting.Layout;
 /// <summary>Inputs required to paginate a <c>ReportDefinition</c>.</summary>
 public sealed class PaginationRequest
 {
+    /// <summary>Optional budgets for provider reads and layout work across the entire execution.</summary>
+    public PaginationLimits? Limits { get; init; }
+
     /// <summary>The report to render. Required.</summary>
     public required ReportDefinition Definition { get; init; }
 
@@ -47,9 +50,3 @@ public sealed class PaginationRequest
     /// report that references itself. Public callers always start at the default (0).</summary>
     internal int SubreportDepth { get; init; }
 }
-
-/// <summary>A single Web-Mercator tile the engine needs to draw a <see cref="Reporting.Elements.MapElement"/>
-/// basemap. <see cref="Basemap"/> is the element's configured provider/URL-template (e.g.
-/// <c>"https://tile.openstreetmap.org/{z}/{x}/{y}.png"</c>); <see cref="Z"/>/<see cref="X"/>/<see cref="Y"/>
-/// are the standard slippy-map tile coordinates. The resolver turns this into image bytes.</summary>
-public readonly record struct MapTileRequest(string Basemap, int Z, int X, int Y);

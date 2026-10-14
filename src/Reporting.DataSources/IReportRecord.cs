@@ -18,18 +18,3 @@ public interface IReportRecord
     /// <summary>Materializes a key/value snapshot of the record (used to push into the expression context).</summary>
     IEnumerable<KeyValuePair<string, object?>> ToKeyValuePairs();
 }
-
-/// <summary>Static schema for a tabular data source.</summary>
-public interface IReportRecordSchema
-{
-    /// <summary>Field ordinals in iteration order.</summary>
-    IReadOnlyList<ReportField> Fields { get; }
-
-    /// <summary>Returns the ordinal of <paramref name="name"/>, or <c>-1</c> if absent.</summary>
-    int IndexOf(string name);
-}
-
-/// <param name="Name">Column name as the source reports it. Expressions address the field by this.</param>
-/// <param name="Type">CLR type of the values. Provider-native types with no CLR equivalent surface as
-/// <see cref="object"/>.</param>
-public sealed record ReportField(string Name, Type Type);

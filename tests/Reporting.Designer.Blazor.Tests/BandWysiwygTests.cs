@@ -39,7 +39,7 @@ public class BandWysiwygTests : BunitContext
 
         var cut = Render<BandCanvas>(p => p.Add(c => c.Report, vm));
 
-        var page = cut.Find("#designerPage");
+        var page = cut.Find("[data-designer-page]");
         var style = page.GetAttribute("style") ?? string.Empty;
         // 10mm × 3.43px/mm ≈ 34.3px — the padding shorthand should carry that number.
         // We accept any 34.xx value to absorb ratio rounding.
@@ -66,7 +66,7 @@ public class BandWysiwygTests : BunitContext
         vm.AddBand(new BandViewModel(DesignerBandKind.Detail, Unit.FromMm(10)));
 
         var cut = Render<BandCanvas>(p => p.Add(c => c.Report, vm));
-        var page = cut.Find("#designerPage");
+        var page = cut.Find("[data-designer-page]");
         var style = page.GetAttribute("style") ?? string.Empty;
         // 25mm at 3.43px/mm ≈ 85.71px — assertion stays loose to survive small ratio drift.
         style.Should().MatchRegex(@"padding:(8[0-9]|9[0-9])");

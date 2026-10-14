@@ -21,4 +21,5 @@
     <PackageReference Include="NCalcSync" />
   </ItemGroup>
 
+  <ItemGroup><InternalsVisibleTo Include="Reporting.Layout" /></ItemGroup>
 </Project>

@@ -241,247 +241,247 @@ internal sealed class BandRenderer
             element.Bounds.Width,
             element.Bounds.Height);
 
-            var effectiveStyle = ResolveEffectiveStyle(element, ctx);
-            var style = BuildTextStyle(effectiveStyle);
+        var effectiveStyle = ResolveEffectiveStyle(element, ctx);
+        var style = BuildTextStyle(effectiveStyle);
 
-            // Style.BackColor paints as a background fill behind the element (previously dropped everywhere
-            // except Tablix cells). Emitted before the content so text/image draws on top; its bounds are
-            // patched below if the element grows (CanGrow), so the fill always matches the final size.
-            int bgIndex = -1;
-            // BackColor (start) → BackColorEnd (end) along BackgroundGradient; BackgroundBrush centralises the
-            // null-start fallback so an imported gradient without a BackgroundColor still paints.
-            if (StyleResolver.BackgroundBrush(effectiveStyle) is { } bgBrush)
+        // Style.BackColor paints as a background fill behind the element (previously dropped everywhere
+        // except Tablix cells). Emitted before the content so text/image draws on top; its bounds are
+        // patched below if the element grows (CanGrow), so the fill always matches the final size.
+        int bgIndex = -1;
+        // BackColor (start) → BackColorEnd (end) along BackgroundGradient; BackgroundBrush centralises the
+        // null-start fallback so an imported gradient without a BackgroundColor still paints.
+        if (StyleResolver.BackgroundBrush(effectiveStyle) is { } bgBrush)
+        {
+            bgIndex = primitives.Count;
+            primitives.Add(new DrawRectanglePrimitive
             {
-                bgIndex = primitives.Count;
-                primitives.Add(new DrawRectanglePrimitive
+                Bounds = elementBounds,
+                SourceElementId = element.Id,
+                Fill = bgBrush,
+            });
+        }
+
+        // Style.BackgroundImage paints behind the content (on top of any BackColor), stretched to bounds.
+        // Like BackColor, it sits before linkFrom so it gets no Action/link, and is grown with CanGrow below.
+        int bgImageIndex = -1;
+        if (effectiveStyle.BackgroundImage is { } bgImage)
+        {
+            var bgBytes = ResolveBackgroundBytes(bgImage, ctx);
+            if (bgBytes.Count > 0)
+            {
+                bgImageIndex = primitives.Count;
+                primitives.Add(new DrawImagePrimitive
                 {
                     Bounds = elementBounds,
                     SourceElementId = element.Id,
-                    Fill = bgBrush,
+                    Data = bgBytes,
+                    Sizing = ImageSizing.Stretch,
                 });
             }
+        }
 
-            // Style.BackgroundImage paints behind the content (on top of any BackColor), stretched to bounds.
-            // Like BackColor, it sits before linkFrom so it gets no Action/link, and is grown with CanGrow below.
-            int bgImageIndex = -1;
-            if (effectiveStyle.BackgroundImage is { } bgImage)
-            {
-                var bgBytes = ResolveBackgroundBytes(bgImage, ctx);
-                if (bgBytes.Count > 0)
+        int linkFrom = primitives.Count;
+        // Upper bound for THIS element's Action/Bookmark/DocMapLabel propagation. A container rectangle
+        // appends its children's primitives to the same list, but each child already ran its own tail
+        // during recursion — so the parent's tail must stop before them, or it would clobber/leak the
+        // rect's link onto every child. The rect arm sets this to its pre-children count; -1 = "all".
+        int linkTo = -1;
+        switch (element)
+        {
+            case LabelElement lbl:
+                primitives.Add(EmitText(lbl.Text, elementBounds, style, lbl.Id));
+                RecordReportItem(lbl, lbl.Text, ctx);
+                actualHeight = MaxHeight(actualHeight, elementBounds, bandOrigin, growsTo: null);
+                break;
+
+            case TextBoxElement tb:
+                var resolved = ResolveTextBoxValue(tb, ctx, effectiveStyle.Format);
+                var text = resolved.Text;
+                var rendered = EmitText(text, elementBounds, style, tb.Id, tb.CanGrow, tb.CanShrink) with { SemanticValue = resolved.Value is string or char or bool or byte or sbyte or short or ushort or int or uint or long or ulong or float or double or decimal or DateTime or DateTimeOffset or Guid ? resolved.Value : null };
+                primitives.Add(rendered);
+                // Grow/shrink the background fill to the textbox's final height so it never clips.
+                if (bgIndex >= 0 && rendered.Bounds.Height != elementBounds.Height)
                 {
-                    bgImageIndex = primitives.Count;
+                    primitives[bgIndex] = ((DrawRectanglePrimitive)primitives[bgIndex]) with { Bounds = rendered.Bounds };
+                }
+                if (bgImageIndex >= 0 && rendered.Bounds.Height != elementBounds.Height)
+                {
+                    primitives[bgImageIndex] = ((DrawImagePrimitive)primitives[bgImageIndex]) with { Bounds = rendered.Bounds };
+                }
+                // Publish this text box's value for ReportItems!Name.Value lookups in later bands.
+                RecordReportItem(tb, text, ctx);
+                actualHeight = MaxHeight(actualHeight, rendered.Bounds, bandOrigin, growsTo: tb.CanGrow ? rendered.Bounds : null);
+                break;
+
+            case LineElement line:
+                primitives.Add(EmitLine(line, elementBounds));
+                actualHeight = MaxHeight(actualHeight, elementBounds, bandOrigin, null);
+                break;
+
+            case RectangleElement rect:
+                primitives.Add(new DrawRectanglePrimitive
+                {
+                    Bounds = elementBounds,
+                    SourceElementId = rect.Id,
+                    Pen = ResolveBorderPen(rect),
+                    Fill = rect.FillColor is { } c ? new BrushStyle(c) : null,
+                });
+                actualHeight = MaxHeight(actualHeight, elementBounds, bandOrigin, null);
+                // The rect owns ONLY its fill for link/bookmark purposes — children below get their own.
+                linkTo = primitives.Count;
+                int clipFrom = primitives.Count;
+                // Container: draw children ON TOP of the fill (z-order by construction), positioned
+                // RELATIVE to this rectangle's top-left.
+                foreach (var child in rect.Children)
+                {
+                    actualHeight = RenderElement(child, new Point(elementBounds.X, elementBounds.Y),
+                                                 bandOrigin, primitives, ctx, actualHeight);
+                }
+                // Clip every child primitive to this rectangle so overflow is cut. For a rect nested in a
+                // rect, intersect with the inner clip already set so the tighter of the two wins. The corner
+                // radius rounds the clip for a DIRECT child; on a nested intersection the rounded-rect∩rect
+                // shape is ill-defined, so fall back to a square clip (radius 0) — a minor visual edge.
+                for (int i = clipFrom; i < primitives.Count; i++)
+                {
+                    var existing = primitives[i].ClipBounds;
+                    var clip = existing is { } e ? IntersectRect(e, elementBounds) : elementBounds;
+                    var radius = existing is null ? rect.CornerRadius : Unit.Zero;
+                    primitives[i] = primitives[i] with { ClipBounds = clip, ClipCornerRadius = radius };
+                }
+                break;
+
+            case EllipseElement ellipse:
+                primitives.Add(new DrawEllipsePrimitive
+                {
+                    Bounds = elementBounds,
+                    SourceElementId = ellipse.Id,
+                    Pen = ResolveBorderPen(ellipse),
+                    Fill = ellipse.FillColor is { } cf ? new BrushStyle(cf) : null,
+                });
+                actualHeight = MaxHeight(actualHeight, elementBounds, bandOrigin, null);
+                break;
+
+            case ImageElement image:
+                var bytes = ResolveImageBytes(image, ctx);
+                if (bytes.Count > 0)
+                {
                     primitives.Add(new DrawImagePrimitive
                     {
                         Bounds = elementBounds,
-                        SourceElementId = element.Id,
-                        Data = bgBytes,
-                        Sizing = ImageSizing.Stretch,
+                        SourceElementId = image.Id,
+                        Data = bytes,
+                        Sizing = image.Sizing,
                     });
                 }
-            }
+                actualHeight = MaxHeight(actualHeight, elementBounds, bandOrigin, null);
+                break;
 
-            int linkFrom = primitives.Count;
-            // Upper bound for THIS element's Action/Bookmark/DocMapLabel propagation. A container rectangle
-            // appends its children's primitives to the same list, but each child already ran its own tail
-            // during recursion — so the parent's tail must stop before them, or it would clobber/leak the
-            // rect's link onto every child. The rect arm sets this to its pre-children count; -1 = "all".
-            int linkTo = -1;
-            switch (element)
-            {
-                case LabelElement lbl:
-                    primitives.Add(EmitText(lbl.Text, elementBounds, style, lbl.Id));
-                    RecordReportItem(lbl, lbl.Text, ctx);
-                    actualHeight = MaxHeight(actualHeight, elementBounds, bandOrigin, growsTo: null);
-                    break;
-
-                case TextBoxElement tb:
-                    var resolved = ResolveTextBoxValue(tb, ctx, effectiveStyle.Format);
-                    var text = resolved.Text;
-                    var rendered = EmitText(text, elementBounds, style, tb.Id, tb.CanGrow, tb.CanShrink) with { SemanticValue = resolved.Value is string or char or bool or byte or sbyte or short or ushort or int or uint or long or ulong or float or double or decimal or DateTime or DateTimeOffset or Guid ? resolved.Value : null };
-                    primitives.Add(rendered);
-                    // Grow/shrink the background fill to the textbox's final height so it never clips.
-                    if (bgIndex >= 0 && rendered.Bounds.Height != elementBounds.Height)
-                    {
-                        primitives[bgIndex] = ((DrawRectanglePrimitive)primitives[bgIndex]) with { Bounds = rendered.Bounds };
-                    }
-                    if (bgImageIndex >= 0 && rendered.Bounds.Height != elementBounds.Height)
-                    {
-                        primitives[bgImageIndex] = ((DrawImagePrimitive)primitives[bgImageIndex]) with { Bounds = rendered.Bounds };
-                    }
-                    // Publish this text box's value for ReportItems!Name.Value lookups in later bands.
-                    RecordReportItem(tb, text, ctx);
-                    actualHeight = MaxHeight(actualHeight, rendered.Bounds, bandOrigin, growsTo: tb.CanGrow ? rendered.Bounds : null);
-                    break;
-
-                case LineElement line:
-                    primitives.Add(EmitLine(line, elementBounds));
-                    actualHeight = MaxHeight(actualHeight, elementBounds, bandOrigin, null);
-                    break;
-
-                case RectangleElement rect:
-                    primitives.Add(new DrawRectanglePrimitive
-                    {
-                        Bounds = elementBounds,
-                        SourceElementId = rect.Id,
-                        Pen = ResolveBorderPen(rect),
-                        Fill = rect.FillColor is { } c ? new BrushStyle(c) : null,
-                    });
-                    actualHeight = MaxHeight(actualHeight, elementBounds, bandOrigin, null);
-                    // The rect owns ONLY its fill for link/bookmark purposes — children below get their own.
-                    linkTo = primitives.Count;
-                    int clipFrom = primitives.Count;
-                    // Container: draw children ON TOP of the fill (z-order by construction), positioned
-                    // RELATIVE to this rectangle's top-left.
-                    foreach (var child in rect.Children)
-                    {
-                        actualHeight = RenderElement(child, new Point(elementBounds.X, elementBounds.Y),
-                                                     bandOrigin, primitives, ctx, actualHeight);
-                    }
-                    // Clip every child primitive to this rectangle so overflow is cut. For a rect nested in a
-                    // rect, intersect with the inner clip already set so the tighter of the two wins. The corner
-                    // radius rounds the clip for a DIRECT child; on a nested intersection the rounded-rect∩rect
-                    // shape is ill-defined, so fall back to a square clip (radius 0) — a minor visual edge.
-                    for (int i = clipFrom; i < primitives.Count; i++)
-                    {
-                        var existing = primitives[i].ClipBounds;
-                        var clip = existing is { } e ? IntersectRect(e, elementBounds) : elementBounds;
-                        var radius = existing is null ? rect.CornerRadius : Unit.Zero;
-                        primitives[i] = primitives[i] with { ClipBounds = clip, ClipCornerRadius = radius };
-                    }
-                    break;
-
-                case EllipseElement ellipse:
-                    primitives.Add(new DrawEllipsePrimitive
-                    {
-                        Bounds = elementBounds,
-                        SourceElementId = ellipse.Id,
-                        Pen = ResolveBorderPen(ellipse),
-                        Fill = ellipse.FillColor is { } cf ? new BrushStyle(cf) : null,
-                    });
-                    actualHeight = MaxHeight(actualHeight, elementBounds, bandOrigin, null);
-                    break;
-
-                case ImageElement image:
-                    var bytes = ResolveImageBytes(image, ctx);
-                    if (bytes.Count > 0)
-                    {
-                        primitives.Add(new DrawImagePrimitive
-                        {
-                            Bounds = elementBounds,
-                            SourceElementId = image.Id,
-                            Data = bytes,
-                            Sizing = image.Sizing,
-                        });
-                    }
-                    actualHeight = MaxHeight(actualHeight, elementBounds, bandOrigin, null);
-                    break;
-
-                case BarcodeElement barcode:
-                    var bcValue = ResolveText(barcode.Expression, ctx);
-                    foreach (var p in BarcodeRenderer.Render(barcode, elementBounds, bcValue,
-                                                             style.ForeColor, style, out _))
-                    {
-                        primitives.Add(p with { IsVisual = true });
-                    }
-                    actualHeight = MaxHeight(actualHeight, elementBounds, bandOrigin, null);
-                    break;
-
-                case ChartElement chart:
-                    foreach (var p in ChartRenderer.Render(chart, elementBounds, ResolveRows(), _evaluator, ctx, out _))
-                    {
-                        primitives.Add(p with { IsVisual = true });
-                    }
-                    actualHeight = MaxHeight(actualHeight, elementBounds, bandOrigin, null);
-                    break;
-
-                case SparklineElement sparkline:
-                    foreach (var p in KpiRenderer.RenderSparkline(sparkline, elementBounds, ResolveRows(sparkline.DataSetName), _evaluator, ctx))
-                    {
-                        primitives.Add(p with { IsVisual = true });
-                    }
-                    actualHeight = MaxHeight(actualHeight, elementBounds, bandOrigin, null);
-                    break;
-
-                case IndicatorElement indicator:
-                    foreach (var p in KpiRenderer.RenderIndicator(indicator, elementBounds, _evaluator, ctx))
-                    {
-                        primitives.Add(p with { IsVisual = true });
-                    }
-                    actualHeight = MaxHeight(actualHeight, elementBounds, bandOrigin, null);
-                    break;
-
-                case DataBarElement dataBar:
-                    foreach (var p in KpiRenderer.RenderDataBar(dataBar, elementBounds, _evaluator, ctx))
-                    {
-                        primitives.Add(p with { IsVisual = true });
-                    }
-                    actualHeight = MaxHeight(actualHeight, elementBounds, bandOrigin, null);
-                    break;
-
-                case GaugeElement gauge:
-                    foreach (var p in KpiRenderer.RenderGauge(gauge, elementBounds, _evaluator, ctx))
-                    {
-                        primitives.Add(p with { IsVisual = true });
-                    }
-                    actualHeight = MaxHeight(actualHeight, elementBounds, bandOrigin, null);
-                    break;
-
-                case TablixElement tablix:
-                    var tablixPrims = TablixRenderer.Render(tablix, elementBounds, ResolveRows(tablix.DataSetName),
-                                                            _evaluator, _templates, ctx, _namedStyles, out var tablixHeight);
-                    foreach (var p in tablixPrims)
-                    {
-                        primitives.Add(p);
-                    }
-                    var tablixGrown = new Rectangle(elementBounds.X, elementBounds.Y, elementBounds.Width, tablixHeight);
-                    actualHeight = MaxHeight(actualHeight, tablixGrown, bandOrigin, tablixGrown);
-                    break;
-
-                case MapElement mapEl:
-                    foreach (var p in MapRenderer.Render(mapEl, elementBounds, ResolveRows(mapEl.DataSetName), _evaluator, ctx, _mapTileResolver))
-                    {
-                        primitives.Add(p with { IsVisual = true });
-                    }
-                    actualHeight = MaxHeight(actualHeight, elementBounds, bandOrigin, null);
-                    break;
-
-                case SubreportElement subreport when _renderSubreport is not null:
-                    foreach (var p in _renderSubreport(subreport, elementBounds, ctx))
-                    {
-                        primitives.Add(p);
-                    }
-                    actualHeight = MaxHeight(actualHeight, elementBounds, bandOrigin, null);
-                    break;
-            }
-
-            // Propagate the element's Action/Bookmark onto every primitive it just emitted, so
-            // interactivity-aware exporters (HTML) can wrap them in clickable links / anchors.
-            var linkTarget = ResolveLink(element, ctx);
-            // A document-map label is literal text (it may carry {expr} placeholders) — render
-            // it through the template engine only when it has any, never as a bare expression.
-            var docMapLabel = string.IsNullOrWhiteSpace(element.DocumentMapLabel) ? null
-                : TemplateRenderer.HasPlaceholders(element.DocumentMapLabel) ? _templates.Render(element.DocumentMapLabel, ctx)
-                : element.DocumentMapLabel;
-            // Bookmark wins as the anchor; a document-map entry without an explicit bookmark still
-            // needs one to link to, so synthesise "dm-<id>".
-            var bookmarkId = !string.IsNullOrWhiteSpace(element.Bookmark) ? "bm-" + element.Bookmark
-                : docMapLabel is not null ? "dm-" + element.Id
-                : null;
-            if (linkTarget is not null || bookmarkId is not null || docMapLabel is not null)
-            {
-                // Scope to THIS element's own primitives — a container rect's children (appended after
-                // linkTo during recursion) keep their own link/bookmark and never inherit the parent's.
-                int linkEnd = linkTo < 0 ? primitives.Count : linkTo;
-                for (int li = linkFrom; li < linkEnd; li++)
+            case BarcodeElement barcode:
+                var bcValue = ResolveText(barcode.Expression, ctx);
+                foreach (var p in BarcodeRenderer.Render(barcode, elementBounds, bcValue,
+                                                         style.ForeColor, style, out _))
                 {
-                    primitives[li] = primitives[li] with
-                    {
-                        LinkTarget = linkTarget ?? primitives[li].LinkTarget,
-                        BookmarkId = bookmarkId ?? primitives[li].BookmarkId,
-                        DocMapLabel = docMapLabel ?? primitives[li].DocMapLabel,
-                    };
+                    primitives.Add(p with { IsVisual = true });
                 }
+                actualHeight = MaxHeight(actualHeight, elementBounds, bandOrigin, null);
+                break;
+
+            case ChartElement chart:
+                foreach (var p in ChartRenderer.Render(chart, elementBounds, ResolveRows(), _evaluator, ctx, out _))
+                {
+                    primitives.Add(p with { IsVisual = true });
+                }
+                actualHeight = MaxHeight(actualHeight, elementBounds, bandOrigin, null);
+                break;
+
+            case SparklineElement sparkline:
+                foreach (var p in KpiRenderer.RenderSparkline(sparkline, elementBounds, ResolveRows(sparkline.DataSetName), _evaluator, ctx))
+                {
+                    primitives.Add(p with { IsVisual = true });
+                }
+                actualHeight = MaxHeight(actualHeight, elementBounds, bandOrigin, null);
+                break;
+
+            case IndicatorElement indicator:
+                foreach (var p in KpiRenderer.RenderIndicator(indicator, elementBounds, _evaluator, ctx))
+                {
+                    primitives.Add(p with { IsVisual = true });
+                }
+                actualHeight = MaxHeight(actualHeight, elementBounds, bandOrigin, null);
+                break;
+
+            case DataBarElement dataBar:
+                foreach (var p in KpiRenderer.RenderDataBar(dataBar, elementBounds, _evaluator, ctx))
+                {
+                    primitives.Add(p with { IsVisual = true });
+                }
+                actualHeight = MaxHeight(actualHeight, elementBounds, bandOrigin, null);
+                break;
+
+            case GaugeElement gauge:
+                foreach (var p in KpiRenderer.RenderGauge(gauge, elementBounds, _evaluator, ctx))
+                {
+                    primitives.Add(p with { IsVisual = true });
+                }
+                actualHeight = MaxHeight(actualHeight, elementBounds, bandOrigin, null);
+                break;
+
+            case TablixElement tablix:
+                var tablixPrims = TablixRenderer.Render(tablix, elementBounds, ResolveRows(tablix.DataSetName),
+                                                        _evaluator, _templates, ctx, _namedStyles, out var tablixHeight);
+                foreach (var p in tablixPrims)
+                {
+                    primitives.Add(p);
+                }
+                var tablixGrown = new Rectangle(elementBounds.X, elementBounds.Y, elementBounds.Width, tablixHeight);
+                actualHeight = MaxHeight(actualHeight, tablixGrown, bandOrigin, tablixGrown);
+                break;
+
+            case MapElement mapEl:
+                foreach (var p in MapRenderer.Render(mapEl, elementBounds, ResolveRows(mapEl.DataSetName), _evaluator, ctx, _mapTileResolver))
+                {
+                    primitives.Add(p with { IsVisual = true });
+                }
+                actualHeight = MaxHeight(actualHeight, elementBounds, bandOrigin, null);
+                break;
+
+            case SubreportElement subreport when _renderSubreport is not null:
+                foreach (var p in _renderSubreport(subreport, elementBounds, ctx))
+                {
+                    primitives.Add(p);
+                }
+                actualHeight = MaxHeight(actualHeight, elementBounds, bandOrigin, null);
+                break;
+        }
+
+        // Propagate the element's Action/Bookmark onto every primitive it just emitted, so
+        // interactivity-aware exporters (HTML) can wrap them in clickable links / anchors.
+        var linkTarget = ResolveLink(element, ctx);
+        // A document-map label is literal text (it may carry {expr} placeholders) — render
+        // it through the template engine only when it has any, never as a bare expression.
+        var docMapLabel = string.IsNullOrWhiteSpace(element.DocumentMapLabel) ? null
+            : TemplateRenderer.HasPlaceholders(element.DocumentMapLabel) ? _templates.Render(element.DocumentMapLabel, ctx)
+            : element.DocumentMapLabel;
+        // Bookmark wins as the anchor; a document-map entry without an explicit bookmark still
+        // needs one to link to, so synthesise "dm-<id>".
+        var bookmarkId = !string.IsNullOrWhiteSpace(element.Bookmark) ? "bm-" + element.Bookmark
+            : docMapLabel is not null ? "dm-" + element.Id
+            : null;
+        if (linkTarget is not null || bookmarkId is not null || docMapLabel is not null)
+        {
+            // Scope to THIS element's own primitives — a container rect's children (appended after
+            // linkTo during recursion) keep their own link/bookmark and never inherit the parent's.
+            int linkEnd = linkTo < 0 ? primitives.Count : linkTo;
+            for (int li = linkFrom; li < linkEnd; li++)
+            {
+                primitives[li] = primitives[li] with
+                {
+                    LinkTarget = linkTarget ?? primitives[li].LinkTarget,
+                    BookmarkId = bookmarkId ?? primitives[li].BookmarkId,
+                    DocMapLabel = docMapLabel ?? primitives[li].DocMapLabel,
+                };
             }
+        }
 
         return actualHeight;
     }
@@ -805,5 +805,3 @@ internal sealed class BandRenderer
         };
     }
 }
-
-internal readonly record struct BandLayout(List<LayoutPrimitive> Primitives, Unit Height);

@@ -87,12 +87,3 @@
         + Adicionar parâmetro
     </button>
 </div>
-
-@code {
-    [Parameter, EditorRequired] public IReadOnlyList<DesignerParameter> Parameters { get; set; } = default!;
-    [Parameter] public EventCallback OnAdd { get; set; }
-    [Parameter] public EventCallback<DesignerParameter> OnRemove { get; set; }
-
-    private static DesignerFieldType ParseType(string? v)
-        => Enum.TryParse<DesignerFieldType>(v, out var t) ? t : DesignerFieldType.Text;
-}

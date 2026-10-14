@@ -1,4 +1,4 @@
-namespace Reporting.Expressions;
+namespace Reporting.Common;
 
 internal sealed class BoundedCache<TKey, TValue>(int capacity, IEqualityComparer<TKey>? comparer = null) where TKey : notnull
 {

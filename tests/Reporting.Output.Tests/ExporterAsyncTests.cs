@@ -35,8 +35,16 @@ public class ExporterAsyncTests
         new TiffImageExporter(),
     };
 
+    // PDF equivalence is checked with an independent parser in ConcurrentTextExportTests.
+    // Equivalent ToUnicode maps may be written as individual entries or compact ranges.
+    public static TheoryData<IReportExporter> BinaryExporters() => new()
+    {
+        new PngImageExporter(),
+        new TiffImageExporter(),
+    };
+
     [Theory]
-    [MemberData(nameof(Exporters))]
+    [MemberData(nameof(BinaryExporters))]
     public async Task ExportAsync_produces_the_same_bytes_as_the_sync_path(IReportExporter exporter)
     {
         var report = await BigReportAsync();

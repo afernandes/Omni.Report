@@ -33,6 +33,13 @@ public sealed class TiffImageExporter : IReportExporter
 
     private void ExportCore(RenderedReport report, Stream output, CancellationToken cancellationToken)
     {
+        using var operation = Reporting.Diagnostics.ReportTelemetry.Start("export", cancellationToken);
+        WriteReport(report, output, cancellationToken);
+        operation.Complete();
+    }
+
+    private void WriteReport(RenderedReport report, Stream output, CancellationToken cancellationToken)
+    {
         ArgumentNullException.ThrowIfNull(report);
         ArgumentNullException.ThrowIfNull(output);
         cancellationToken.ThrowIfCancellationRequested();

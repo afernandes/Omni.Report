@@ -2,20 +2,6 @@ using System.Text;
 
 namespace Reporting.Barcode;
 
-/// <summary>QR error-correction level — higher = bigger symbol, more damage tolerance.</summary>
-public enum QrErrorCorrection
-{
-    /// <summary>~7% recovery. Smallest symbol; OK for clean printing.</summary>
-    Low,
-    /// <summary>~15% recovery. Default — balance between size and resilience.</summary>
-    Medium,
-    /// <summary>~25% recovery. Good for printed receipts that get crumpled.</summary>
-    Quartile,
-    /// <summary>~30% recovery. Use when embedding a logo or for severely
-    /// damaged printing surfaces.</summary>
-    High,
-}
-
 /// <summary>
 /// QR Code (model 2) encoder — versions 1 through 40, ECC levels L/M/Q/H, byte mode.
 /// Outputs a <c>bool[,]</c> module matrix (true = dark, false = light) plus a helper to
@@ -29,7 +15,7 @@ public enum QrErrorCorrection
 /// <see href="https://github.com/radzenhq/radzen-blazor">Radzen.Blazor</see>
 /// (<c>RadzenQREncoder</c>, MIT). See <c>ATTRIBUTION.md</c>.</para>
 /// </remarks>
-public static class QrEncoder
+public static partial class QrEncoder
 {
     /// <summary>Encodes a UTF-8 string into a QR module matrix. Picks the smallest
     /// version that fits the payload at the chosen ECC level.</summary>
@@ -223,8 +209,6 @@ public static class QrEncoder
         while (bytes.Count < dataCw) bytes.Add(pads[p++ & 1]);
         return bytes.ToArray();
     }
-
-    private sealed record Block(byte[] Data, byte[] Ec);
 
     private static List<Block> BuildBlocks(byte[] dataCwBytes, int ecPerBlock,
         int g1, int g1dcw, int g2, int g2dcw)
@@ -458,8 +442,10 @@ public static class QrEncoder
     {
         int ecl = ecc switch
         {
-            QrErrorCorrection.Low => 1, QrErrorCorrection.Medium => 0,
-            QrErrorCorrection.Quartile => 3, QrErrorCorrection.High => 2,
+            QrErrorCorrection.Low => 1,
+            QrErrorCorrection.Medium => 0,
+            QrErrorCorrection.Quartile => 3,
+            QrErrorCorrection.High => 2,
             _ => 0,
         };
         int data = (ecl << 3) | (mask & 7);
@@ -486,15 +472,6 @@ public static class QrEncoder
     private static void Set(bool[,] m, bool[,] res, int y, int x, bool v)
     {
         m[y, x] = v; res[y, x] = true;
-    }
-
-    private sealed class BitBuffer : List<int>
-    {
-        public int Length => Count;
-        public void AppendBits(int val, int len)
-        {
-            for (int i = len - 1; i >= 0; i--) Add((val >> i) & 1);
-        }
     }
 
     // ── Alignment pattern positions per version (ISO/IEC 18004). ───────────────
@@ -566,8 +543,10 @@ public static class QrEncoder
         if (ver is < 1 or > 40) throw new ArgumentOutOfRangeException(nameof(ver), "Version must be 1..40.");
         int eccIndex = ecc switch
         {
-            QrErrorCorrection.Low => 0, QrErrorCorrection.Medium => 1,
-            QrErrorCorrection.Quartile => 2, QrErrorCorrection.High => 3,
+            QrErrorCorrection.Low => 0,
+            QrErrorCorrection.Medium => 1,
+            QrErrorCorrection.Quartile => 2,
+            QrErrorCorrection.High => 3,
             _ => throw new ArgumentOutOfRangeException(nameof(ecc)),
         };
         var row = EcTable[ver - 1][eccIndex];

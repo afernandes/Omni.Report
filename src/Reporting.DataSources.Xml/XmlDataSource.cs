@@ -28,7 +28,7 @@ namespace Reporting.DataSources.Xml;
 /// becomes a <see cref="double"/> at runtime — making expressions like
 /// <c>Sum(Fields.total)</c> "just work".</para>
 /// </remarks>
-public sealed class XmlDataSource : IReportDataSource
+public sealed partial class XmlDataSource : IReportDataSource
 {
     private readonly XmlDataSourceOptions _opts;
     private readonly HttpClient? _httpClient;
@@ -108,13 +108,6 @@ public sealed class XmlDataSource : IReportDataSource
             await Task.Yield();
         }
     }
-
-    /// <summary>Discovered (or explicit) column metadata used by BuildRow to select values
-    /// correctly. For attributes <see cref="IsAttribute"/> is true and namespace is the
-    /// attribute namespace (usually empty); for elements it's the element's namespace URI
-    /// so <see cref="XPathNavigator.SelectChildren(string, string)"/> finds it again
-    /// without needing a prefix in the XPath.</summary>
-    private readonly record struct ColumnDescriptor(string Name, string NamespaceUri, bool IsAttribute);
 
     // ── Source loading ──────────────────────────────────────────────────────────
 
@@ -250,12 +243,5 @@ public sealed class XmlDataSource : IReportDataSource
         var fields = columnOrder.Select(c =>
             new ReportField(c, TypeInference.ConsolidateColumnType(typeCandidates[c]))).ToArray();
         return new ReportRecordSchema(fields);
-    }
-
-    private sealed class EmptyXmlSchema : IReportRecordSchema
-    {
-        public static readonly EmptyXmlSchema Instance = new();
-        public IReadOnlyList<ReportField> Fields { get; } = Array.Empty<ReportField>();
-        public int IndexOf(string name) => -1;
     }
 }

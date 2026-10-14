@@ -49,25 +49,3 @@ public sealed record ElementAction(
                DrillthroughReportName: reportName,
                DrillthroughParameters: new EquatableArray<DrillthroughParameter>(parameters));
 }
-
-/// <summary>Selects which action variant is active.</summary>
-public enum ActionKind
-{
-    /// <summary>URL or expression-producing-URL action.</summary>
-    Hyperlink,
-
-    /// <summary>Jump to another element by its <see cref="ReportElement.Bookmark"/> value.</summary>
-    BookmarkLink,
-
-    /// <summary>Open another report by name with parameter values.</summary>
-    DrillthroughReport,
-}
-
-/// <summary>Parameter passed to a drillthrough target report. Mirrors RDL
-/// <c>&lt;Parameter&gt;</c> inside <c>&lt;Drillthrough&gt;</c>.</summary>
-/// <param name="Name">Name of the parameter on the target report.</param>
-/// <param name="Value">Expression evaluated in the SOURCE report's context; the value is
-/// passed to the target report as the parameter's bound value.</param>
-/// <param name="Omit">If true, the parameter is not passed — useful for conditionally
-/// suppressing parameters (RDL <c>&lt;Omit&gt;</c>).</param>
-public sealed record DrillthroughParameter(string Name, string Value, bool Omit = false);

@@ -16,7 +16,7 @@ namespace Reporting.Layout.Internal;
 /// resolves. Aggregates fall back to the live context's scope: per-row chart values are the
 /// common case; whole-chart aggregates inside a series expression are a documented edge case.
 /// </remarks>
-internal sealed class RowScopedContext : IReportExpressionContext
+internal sealed partial class RowScopedContext : IReportExpressionContext
 {
     private readonly IReportExpressionContext _inner;
     private readonly RowLookup _fields;
@@ -64,23 +64,4 @@ internal sealed class RowScopedContext : IReportExpressionContext
     // ReportItems is a report-wide registry — delegate to the shared root context.
     public object? GetReportItem(string name) => _inner.GetReportItem(name);
     public void SetReportItem(string name, object? value) => _inner.SetReportItem(name, value);
-
-    /// <summary>Case-insensitive read-only view over one row's key/value pairs.</summary>
-    private sealed class RowLookup : IValueLookup
-    {
-        private readonly Dictionary<string, object?> _map;
-
-        public RowLookup(IReadOnlyList<KeyValuePair<string, object?>> row)
-        {
-            _map = new Dictionary<string, object?>(row.Count, StringComparer.OrdinalIgnoreCase);
-            foreach (var kv in row)
-            {
-                _map[kv.Key] = kv.Value;
-            }
-        }
-
-        public object? this[string key] => _map.TryGetValue(key, out var v) ? v : null;
-        public bool Contains(string key) => _map.ContainsKey(key);
-        public IEnumerable<string> Keys => _map.Keys;
-    }
 }

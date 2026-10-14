@@ -26,7 +26,7 @@ namespace Reporting.Serialization.Internal;
 /// remaining shape not yet covered and keeps its type on the hand-wired path. See
 /// docs/serialization-auto-wiring-design.md.
 /// </summary>
-internal static class ElementSerializationRegistry
+internal static partial class ElementSerializationRegistry
 {
     private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
     private static readonly PropertyInfo BoundsProp = typeof(ReportElement).GetProperty(nameof(ReportElement.Bounds))!;
@@ -39,19 +39,6 @@ internal static class ElementSerializationRegistry
         "Id", "Name", "Bounds", "Visible", "VisibleExpression", "Style", "ConditionalFormats",
         "PropertyExpressions", "Bookmark", "DocumentMapLabel", "Action", "ToggleItemId", "InitiallyHidden",
     };
-
-    /// <summary>One element-specific property, with its wire names (PascalCase for repx, camelCase for
-    /// repjson), its value on a default instance (for sparse omission), and whether it is required.</summary>
-    internal sealed class Member
-    {
-        public required PropertyInfo Prop { get; init; }
-        public required string XmlName { get; init; }
-        public required string JsonName { get; init; }
-        public required object? Default { get; init; }
-        public required bool Required { get; init; }
-    }
-
-    private sealed record Schema(string Tag, IReadOnlyList<Member> Members);
 
     // null = type is not auto-serializable (hand-wired, an unsupported member shape, or an envelope clash).
     private static readonly ConcurrentDictionary<Type, Schema?> _schemas = new();

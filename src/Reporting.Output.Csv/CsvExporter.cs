@@ -36,6 +36,13 @@ public sealed class CsvExporter : IReportExporter
 
     public void Export(RenderedReport report, Stream output)
     {
+        using var operation = Reporting.Diagnostics.ReportTelemetry.Start("export");
+        ExportCore(report, output);
+        operation.Complete();
+    }
+
+    private void ExportCore(RenderedReport report, Stream output)
+    {
         ArgumentNullException.ThrowIfNull(report);
         ArgumentNullException.ThrowIfNull(output);
 

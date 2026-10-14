@@ -49,20 +49,3 @@
 
     <div class="split-handle right" aria-hidden="true"></div>
 </aside>
-
-@code {
-    [Parameter, EditorRequired] public IReadOnlyList<DesignerDataSource> DataSources { get; set; } = default!;
-    [Parameter, EditorRequired] public IReadOnlyList<DesignerParameter>  Parameters  { get; set; } = default!;
-    [Parameter] public System.Collections.ObjectModel.ObservableCollection<DesignerRelation>? Relations { get; set; }
-    [Parameter] public EventCallback<DesignerElementKind> OnAdd { get; set; }
-    [Parameter] public EventCallback<ElementToolbox.SystemFieldDescriptor> OnAddSystemField { get; set; }
-    [Parameter] public EventCallback OnAddParameter { get; set; }
-    [Parameter] public EventCallback<DesignerParameter> OnRemoveParameter { get; set; }
-    [Parameter] public IReadOnlyList<DesignerVariable>? Variables { get; set; }
-    [Parameter] public EventCallback OnAddVariable { get; set; }
-    [Parameter] public EventCallback<DesignerVariable> OnRemoveVariable { get; set; }
-    [Parameter] public EventCallback OnAddDataSource { get; set; }
-    [Parameter] public EventCallback<DesignerDataSource> OnEditDataSource { get; set; }
-
-    private int _tab;
-}

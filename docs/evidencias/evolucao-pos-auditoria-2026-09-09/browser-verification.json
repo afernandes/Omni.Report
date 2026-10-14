@@ -1,0 +1,41 @@
+{
+  "date": "2026-09-09",
+  "host": "Blazor Server, http://localhost:5189",
+  "surface": "Codex in-app browser",
+  "viewportHeight": 720,
+  "simultaneousDesigners": 2,
+  "selectionIsolated": true,
+  "themes": [
+    "dark",
+    "light"
+  ],
+  "contextMenuClamped": {
+    "top": 189,
+    "bottom": 712
+  },
+  "lockViaMouse": true,
+  "undoLock": true,
+  "redoLock": true,
+  "lockedDragPrevented": true,
+  "unlockedDrag": {
+    "leftBefore": 34.31,
+    "topBefore": 17.16,
+    "topAfter": 47.98,
+    "leftAfter": 75.42
+  },
+  "mountDisposeCycles": 20,
+  "remainingDesignerPerCycle": 1,
+  "remainingElementsPerCycle": 1,
+  "remainingDesignerDragWorks": true,
+  "preview": {
+    "width": 794,
+    "pages": 1,
+    "height": 1123,
+    "loaded": true
+  },
+  "serverErrorsDuringFinalRun": 0,
+  "consoleRestartErrorsExcluded": true,
+  "heapSnapshotsCollected": false,
+  "evidenceKind": "Registro de observações dos eventos reais e leituras do DOM, não dump de heap",
+  "finalUnicodePlayerPreviewRechecked": true
+}

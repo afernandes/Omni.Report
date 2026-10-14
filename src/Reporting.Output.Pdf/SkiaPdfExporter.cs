@@ -43,6 +43,13 @@ public sealed class SkiaPdfExporter : IReportExporter
 
     private void ExportCore(RenderedReport report, Stream output, CancellationToken cancellationToken)
     {
+        using var operation = Reporting.Diagnostics.ReportTelemetry.Start("export", cancellationToken);
+        WriteReport(report, output, cancellationToken);
+        operation.Complete();
+    }
+
+    private void WriteReport(RenderedReport report, Stream output, CancellationToken cancellationToken)
+    {
         ArgumentNullException.ThrowIfNull(report);
         ArgumentNullException.ThrowIfNull(output);
 
@@ -54,8 +61,8 @@ public sealed class SkiaPdfExporter : IReportExporter
             Keywords = _options.Keywords ?? string.Empty,
             Producer = _options.Producer,
             Creator = _options.Creator ?? _options.Producer,
-            Creation = _options.CreationDate ?? DateTime.Now,
-            Modified = _options.CreationDate ?? DateTime.Now,
+            Creation = _options.CreationDate ?? DateTimeOffset.UtcNow.UtcDateTime,
+            Modified = _options.CreationDate ?? DateTimeOffset.UtcNow.UtcDateTime,
         };
 
         using var document = SKDocument.CreatePdf(output, metadata);

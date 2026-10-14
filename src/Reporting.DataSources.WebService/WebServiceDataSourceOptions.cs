@@ -56,12 +56,3 @@ public sealed class WebServiceDataSourceOptions
     /// on the HttpClient setting).</summary>
     public TimeSpan? Timeout { get; init; }
 }
-
-/// <summary>Response-format selector for <see cref="WebServiceDataSourceOptions.Format"/>.</summary>
-public enum WebServiceResponseFormat
-{
-    /// <summary>Sniff <c>Content-Type</c> header.</summary>
-    Auto,
-    Json,
-    Xml,
-}

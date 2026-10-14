@@ -291,6 +291,3 @@ public partial class ReportViewer : ComponentBase, IDisposable
         _pageImages.Clear();
     }
 }
-
-/// <summary>Arguments raised by <see cref="ReportViewer.OnExported"/>.</summary>
-public sealed record ReportExportEventArgs(string Extension, string FileName, byte[] Bytes);

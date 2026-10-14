@@ -72,7 +72,10 @@ public partial class PropertyGrid
         for (var i = 1; ; i++)
         {
             var n = $"Estilo {i}";
-            if (!existing.Contains(n)) return n;
+            if (!existing.Contains(n))
+            {
+                return n;
+            }
         }
     }
     /// <summary>Asks the host to open the rich expression editor. A null argument edits the element's
@@ -92,15 +95,24 @@ public partial class PropertyGrid
     {
         if (!ReferenceEquals(_subscribed, Element))
         {
-            if (_subscribed is not null) _subscribed.Changed -= StateHasChanged;
+            if (_subscribed is not null)
+            {
+                _subscribed.Changed -= StateHasChanged;
+            }
             _subscribed = Element;
-            if (_subscribed is not null) _subscribed.Changed += StateHasChanged;
+            if (_subscribed is not null)
+            {
+                _subscribed.Changed += StateHasChanged;
+            }
         }
     }
 
     public void Dispose()
     {
-        if (_subscribed is not null) _subscribed.Changed -= StateHasChanged;
+        if (_subscribed is not null)
+        {
+            _subscribed.Changed -= StateHasChanged;
+        }
     }
 
     private RenderFragment Row(string label, string value, Action<string?> setter) => builder =>
@@ -148,15 +160,21 @@ public partial class PropertyGrid
 
     private static Unit? ParseMm(string? raw)
     {
-        if (string.IsNullOrWhiteSpace(raw)) return null;
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            return null;
+        }
         return double.TryParse(raw, NumberStyles.Any, CultureInfo.InvariantCulture, out var mm)
-            ? Unit.FromMm(mm) : null;
+                    ? Unit.FromMm(mm) : null;
     }
 
     // ─── Image upload ──────────────────────────────────────────────────────────
     private async Task OnImageSelected(InputFileChangeEventArgs e)
     {
-        if (Element is null || e.File is null) return;
+        if (Element is null || e.File is null)
+        {
+            return;
+        }
         using var ms = new MemoryStream();
         await using var src = e.File.OpenReadStream(maxAllowedSize: 4 * 1024 * 1024);
         await src.CopyToAsync(ms);
@@ -177,7 +195,10 @@ public partial class PropertyGrid
 
     private static Color? TryColor(string? hex)
     {
-        if (string.IsNullOrEmpty(hex)) return null;
+        if (string.IsNullOrEmpty(hex))
+        {
+            return null;
+        }
         try { return Color.FromHex(hex); } catch { return null; }
     }
 
@@ -192,9 +213,18 @@ public partial class PropertyGrid
     private static int InteractionCount(ElementViewModel e)
     {
         int n = 0;
-        if (!string.IsNullOrWhiteSpace(e.Bookmark)) n++;
-        if (!string.IsNullOrWhiteSpace(e.DocumentMapLabel)) n++;
-        if (e.HasAction) n++;
+        if (!string.IsNullOrWhiteSpace(e.Bookmark))
+        {
+            n++;
+        }
+        if (!string.IsNullOrWhiteSpace(e.DocumentMapLabel))
+        {
+            n++;
+        }
+        if (e.HasAction)
+        {
+            n++;
+        }
         return n;
     }
 

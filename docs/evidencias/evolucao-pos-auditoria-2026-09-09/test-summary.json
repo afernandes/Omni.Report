@@ -1,0 +1,184 @@
+{
+  "suites": 25,
+  "total": 1980.0,
+  "passed": 1950.0,
+  "failed": 0.0,
+  "skipped": 30.0,
+  "results": [
+    {
+      "file": "ander_AVELL-AFN_2026-09-09_20_33_41_net10.0.trx",
+      "total": 19,
+      "passed": 19,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "ander_AVELL-AFN_2026-09-09_20_33_41_net10.0[1].trx",
+      "total": 106,
+      "passed": 106,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "ander_AVELL-AFN_2026-09-09_20_33_41_net10.0[2].trx",
+      "total": 9,
+      "passed": 9,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "ander_AVELL-AFN_2026-09-09_20_33_41_net10.0[3].trx",
+      "total": 145,
+      "passed": 145,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "ander_AVELL-AFN_2026-09-09_20_33_43_net10.0.trx",
+      "total": 37,
+      "passed": 37,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "ander_AVELL-AFN_2026-09-09_20_33_43_net10.0[1].trx",
+      "total": 4,
+      "passed": 4,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "ander_AVELL-AFN_2026-09-09_20_33_45_net10.0.trx",
+      "total": 20,
+      "passed": 20,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "ander_AVELL-AFN_2026-09-09_20_33_45_net10.0[1].trx",
+      "total": 25,
+      "passed": 25,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "ander_AVELL-AFN_2026-09-09_20_33_46_net10.0.trx",
+      "total": 357,
+      "passed": 357,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "ander_AVELL-AFN_2026-09-09_20_33_47_net10.0.trx",
+      "total": 182,
+      "passed": 182,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "ander_AVELL-AFN_2026-09-09_20_33_49_net10.0.trx",
+      "total": 21,
+      "passed": 21,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "ander_AVELL-AFN_2026-09-09_20_33_50_net10.0.trx",
+      "total": 11,
+      "passed": 11,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "ander_AVELL-AFN_2026-09-09_20_33_50_net10.0[1].trx",
+      "total": 7,
+      "passed": 7,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "ander_AVELL-AFN_2026-09-09_20_33_51_net10.0.trx",
+      "total": 192,
+      "passed": 192,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "ander_AVELL-AFN_2026-09-09_20_33_52_net10.0.trx",
+      "total": 15,
+      "passed": 15,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "ander_AVELL-AFN_2026-09-09_20_33_53_net10.0.trx",
+      "total": 30,
+      "passed": 0,
+      "failed": 0,
+      "skipped": 30
+    },
+    {
+      "file": "ander_AVELL-AFN_2026-09-09_20_33_54_net10.0.trx",
+      "total": 69,
+      "passed": 69,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "ander_AVELL-AFN_2026-09-09_20_33_55_net10.0.trx",
+      "total": 44,
+      "passed": 44,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "ander_AVELL-AFN_2026-09-09_20_33_55_net10.0[1].trx",
+      "total": 17,
+      "passed": 17,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "ander_AVELL-AFN_2026-09-09_20_33_55_net10.0[2].trx",
+      "total": 18,
+      "passed": 18,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "ander_AVELL-AFN_2026-09-09_20_33_57_net10.0.trx",
+      "total": 34,
+      "passed": 34,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "ander_AVELL-AFN_2026-09-09_20_33_57_net10.0[1].trx",
+      "total": 86,
+      "passed": 86,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "ander_AVELL-AFN_2026-09-09_20_33_58_net10.0.trx",
+      "total": 500,
+      "passed": 500,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "ander_AVELL-AFN_2026-09-09_20_33_58_net10.0[1].trx",
+      "total": 19,
+      "passed": 19,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "ander_AVELL-AFN_2026-09-09_20_34_00_net10.0.trx",
+      "total": 13,
+      "passed": 13,
+      "failed": 0,
+      "skipped": 0
+    }
+  ]
+}

@@ -12,4 +12,8 @@
     <NoWarn>$(NoWarn.Replace(';CS1591','').Replace('CS1591',''))</NoWarn>
   </PropertyGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Reporting.Expressions" />
+    <InternalsVisibleTo Include="Reporting.Layout" />
+  </ItemGroup>
 </Project>

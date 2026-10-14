@@ -32,8 +32,8 @@ public class ParameterPromptDialogTests : Bunit.BunitContext
             new DesignerParameter("visivel", DesignerFieldType.Text, "x"),
             new DesignerParameter("oculto", DesignerFieldType.Text, "y") { Hidden = true },
         });
-        cut.FindAll("#pp-visivel").Should().HaveCount(1);
-        cut.FindAll("#pp-oculto").Should().BeEmpty("hidden params are driven by default/query, never prompted");
+        cut.FindAll("[id$='-visivel']").Should().HaveCount(1);
+        cut.FindAll("[id$='-oculto']").Should().BeEmpty("hidden params are driven by default/query, never prompted");
     }
 
     [Fact]
@@ -45,19 +45,19 @@ public class ParameterPromptDialogTests : Bunit.BunitContext
             new DesignerParameter("d", DesignerFieldType.Date) { Required = false },
             new DesignerParameter("t", DesignerFieldType.Text) { Required = false },
         });
-        cut.Find("input#pp-n").GetAttribute("type").Should().Be("number");
-        cut.Find("input#pp-d").GetAttribute("type").Should().Be("date");
-        cut.Find("input#pp-t").GetAttribute("type").Should().Be("text");
+        cut.Find("input[id$='-n']").GetAttribute("type").Should().Be("number");
+        cut.Find("input[id$='-d']").GetAttribute("type").Should().Be("date");
+        cut.Find("input[id$='-t']").GetAttribute("type").Should().Be("text");
     }
 
     [Fact]
     public void Static_available_values_render_a_dropdown_with_none_only_when_optional()
     {
         var required = new[] { new DesignerParameter("s", DesignerFieldType.Text, "A") { Required = true, AvailableValuesText = "A|Ativo\nB|Baixado" } };
-        Open(required).Find("select#pp-s").QuerySelectorAll("option").Length.Should().Be(2, "required → no (nenhum) option");
+        Open(required).Find("select[id$='-s']").QuerySelectorAll("option").Length.Should().Be(2, "required → no (nenhum) option");
 
         var optional = new[] { new DesignerParameter("s", DesignerFieldType.Text, "A") { Required = false, AvailableValuesText = "A|Ativo\nB|Baixado" } };
-        Open(optional).Find("select#pp-s").QuerySelectorAll("option").Length.Should().Be(3, "optional → adds (nenhum)");
+        Open(optional).Find("select[id$='-s']").QuerySelectorAll("option").Length.Should().Be(3, "optional → adds (nenhum)");
     }
 
     [Fact]
@@ -156,7 +156,7 @@ public class ParameterPromptDialogTests : Bunit.BunitContext
             .Add(x => x.ResolveOptions, resolve));
 
         calls.Clear(); // ignore the on-open resolution; focus on the parent change
-        cut.Find("select#pp-estado").Change("PR");
+        cut.Find("select[id$='-estado']").Change("PR");
 
         // The child is re-resolved with the NEW parent value (no DOM re-query — we assert the resolver spy).
         calls.Should().Contain(c => c.Param == "cidade" && c.Estado == "PR");
@@ -176,7 +176,7 @@ public class ParameterPromptDialogTests : Bunit.BunitContext
             .Add(x => x.OnConfirmed, (Action<(IReadOnlyDictionary<string, string?>, bool)>)(r => got = r)));
 
         // Switch to PR → "Porto Alegre" is no longer a valid option, so the child pick is dropped.
-        cut.Find("select#pp-estado").Change("PR");
+        cut.Find("select[id$='-estado']").Change("PR");
         cut.FindAll("button").First(b => b.TextContent.Contains("Executar")).Click();
 
         got.Should().NotBeNull();
@@ -195,8 +195,8 @@ public class ParameterPromptDialogTests : Bunit.BunitContext
             .Add(x => x.ResolveOptions, resolve));
 
         // It must still be a validated <select> (not a free-text <input> that would accept arbitrary values).
-        cut.FindAll("select#pp-cidade").Should().HaveCount(1, "a query-driven param always renders a dropdown");
-        cut.FindAll("input#pp-cidade").Should().BeEmpty();
+        cut.FindAll("select[id$='-cidade']").Should().HaveCount(1, "a query-driven param always renders a dropdown");
+        cut.FindAll("input[id$='-cidade']").Should().BeEmpty();
         cut.Markup.Should().Contain("defina \"estado\" primeiro");
     }
 
@@ -241,7 +241,7 @@ public class ParameterPromptDialogTests : Bunit.BunitContext
 
         calls.Clear();
         // Change estado to PR → cidade empties (Porto Alegre invalid → cleared) → bairro must re-resolve too.
-        cut.Find("select#pp-estado").Change("PR");
+        cut.Find("select[id$='-estado']").Change("PR");
 
         calls.Should().Contain(c => c.Param == "bairro", "the grandchild re-resolves when the grandparent changes");
     }

@@ -19,9 +19,17 @@ internal sealed class PageAccumulator
     private readonly Unit _columnSpacing;
     private int _currentColumn;
     private Unit _columnTop;
+    private readonly PaginationBudget? _budget;
+    private readonly Action<RenderedPage>? _sink;
+    private readonly Unit? _measurementLimit;
+    private readonly CancellationToken _cancellationToken;
 
-    public PageAccumulator(PageSetup setup)
+    public PageAccumulator(PageSetup setup, PaginationBudget? budget = null, CancellationToken cancellationToken = default, Action<RenderedPage>? sink = null, Unit? measurementLimit = null)
     {
+        _measurementLimit = measurementLimit;
+        _sink = sink;
+        _budget = budget;
+        _cancellationToken = cancellationToken;
         _setup = setup;
         // Continuous (thermal roll) paper never snakes — force a single column.
         _columnCount = setup.IsContinuous ? 1 : Math.Max(1, setup.Columns);
@@ -80,23 +88,40 @@ internal sealed class PageAccumulator
 
     public void Emit(IEnumerable<LayoutPrimitive> primitives, Unit consumedHeight)
     {
-        _current.AddRange(primitives);
+        if (_measurementLimit is { } maximum && CurrentY + consumedHeight > maximum)
+            throw new GroupMeasureOverflowException();
+        AddPrimitives(primitives);
         CurrentY += consumedHeight;
     }
 
     public void EmitFixed(IEnumerable<LayoutPrimitive> primitives)
     {
         // Fixed-position primitives (page footer drawn at bottom): doesn't advance Y.
-        _current.AddRange(primitives);
+        AddPrimitives(primitives);
+    }
+
+    private void AddPrimitives(IEnumerable<LayoutPrimitive> primitives)
+    {
+        foreach (var primitive in primitives)
+        {
+            _cancellationToken.ThrowIfCancellationRequested();
+            _budget?.Primitive();
+            _current.Add(primitive);
+        }
     }
 
     /// <summary>Closes the current page and resets to a new one.</summary>
     public void Flush()
     {
-        _pages.Add(new RenderedPage(
+        _cancellationToken.ThrowIfCancellationRequested();
+        _budget?.Page();
+        var completed = new RenderedPage(
             PageNumber,
             _setup,
-            new EquatableArray<LayoutPrimitive>(_current.ToArray())));
+            new EquatableArray<LayoutPrimitive>(_current.ToArray()));
+        if (_sink is null) _pages.Add(completed);
+        else _sink(completed);
+        Reporting.Diagnostics.ReportTelemetry.RecordPage();
         _current.Clear();
         PageNumber++;
         CurrentY = _setup.Margins.Top;

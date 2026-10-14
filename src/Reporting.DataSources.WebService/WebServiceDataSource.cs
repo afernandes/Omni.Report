@@ -22,7 +22,7 @@ namespace Reporting.DataSources.WebService;
 /// matches the content type. This means every JSON/XML feature (root paths, namespaces,
 /// schema inference, type coercion) is automatically available without duplication.</para>
 /// </remarks>
-public sealed class WebServiceDataSource : IReportDataSource
+public sealed partial class WebServiceDataSource : IReportDataSource
 {
     private readonly WebServiceDataSourceOptions _opts;
     private readonly HttpClient? _httpClient;
@@ -147,12 +147,5 @@ public sealed class WebServiceDataSource : IReportDataSource
         if (contentType.Contains("json")) return WebServiceResponseFormat.Json;
         if (contentType.Contains("xml")) return WebServiceResponseFormat.Xml;
         return WebServiceResponseFormat.Auto;
-    }
-
-    private sealed class EmptySchema : IReportRecordSchema
-    {
-        public static readonly EmptySchema Instance = new();
-        public IReadOnlyList<ReportField> Fields { get; } = Array.Empty<ReportField>();
-        public int IndexOf(string name) => -1;
     }
 }

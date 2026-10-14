@@ -1,0 +1,184 @@
+using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Forms;
+using Microsoft.AspNetCore.Components.Web;
+using Microsoft.JSInterop;
+using Reporting;
+using Reporting.Bands;
+using Reporting.Common;
+using Reporting.Elements;
+using Reporting.Geometry;
+using Reporting.Paper;
+using Reporting.Styling;
+using Reporting.Designer.Blazor;
+using Reporting.Designer.Blazor.Components;
+using Reporting.Designer.Blazor.Icons;
+using Reporting.Designer.Blazor.ViewModels;
+using Reporting.Output.Pdf;
+using Reporting.Output.Excel;
+using Reporting.Printing;
+namespace Reporting.Designer.Blazor.Components;
+
+public partial class ParameterPromptDialog
+{
+    private readonly string _inputPrefix = "pp-" + Guid.NewGuid().ToString("N");
+    [Parameter] public bool Visible { get; set; }
+    [Parameter] public IReadOnlyList<DesignerParameter> Parameters { get; set; } = Array.Empty<DesignerParameter>();
+    /// <summary>Per-session cache of previously-entered values, keyed by parameter name.
+    /// Pre-populated into the inputs when the dialog opens.</summary>
+    [Parameter] public IReadOnlyDictionary<string, string?>? InitialValues { get; set; }
+    [Parameter] public EventCallback<(IReadOnlyDictionary<string, string?> Values, bool Remember)> OnConfirmed { get; set; }
+    [Parameter] public EventCallback OnCancelled { get; set; }
+
+    /// <summary>Host hook that resolves a parameter's query-driven / cascading domain. Given the parameter and
+    /// the values entered so far, returns the available (Value, Label) options. Null = static options only
+    /// (e.g. no data connection). Powers SSRS-style dependent parameters (Estado→Cidade) in the preview prompt.</summary>
+    [Parameter] public Func<DesignerParameter, IReadOnlyDictionary<string, string?>, Task<IReadOnlyList<Reporting.Parameters.ParameterValue>>>? ResolveOptions { get; set; }
+
+    // RDL Hidden parameters are driven by default/query, not prompted to the user.
+    private IReadOnlyList<DesignerParameter> Prompted => Parameters.Where(p => !p.Hidden).ToList();
+
+    // SSRS blocks a run until every required (non-nullable) prompted parameter has a value. We mirror that:
+    // a required field that is blank disables "Executar" and is flagged.
+    private bool IsMissing(DesignerParameter p) => p.Required && string.IsNullOrWhiteSpace(_values.GetValueOrDefault(p.Name));
+    private bool HasMissingRequired => Prompted.Any(IsMissing);
+
+    private readonly Dictionary<string, string?> _values = new(StringComparer.Ordinal);
+    private bool _remember = true;
+    private bool _initialized;
+
+    // Query-driven / cascading options resolved via the host (ResolveOptions), keyed by parameter name. A
+    // per-parameter generation counter drops stale async results when a parent value changes in quick succession.
+    private readonly Dictionary<string, IReadOnlyList<(string Value, string Label)>> _resolvedOptions = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, int> _resolveGeneration = new(StringComparer.Ordinal);
+
+    // Parses the editor's static "value" / "value|label" lines into dropdown options (blanks skipped).
+    private static IReadOnlyList<(string Value, string Label)> ParseAvailable(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return Array.Empty<(string, string)>();
+        }
+        var list = new List<(string, string)>();
+        foreach (var raw in text.Replace("\r\n", "\n").Split('\n'))
+        {
+            var line = raw.Trim();
+            if (line.Length == 0) { continue; }
+            int bar = line.IndexOf('|');
+            var value = (bar >= 0 ? line[..bar] : line).Trim();
+            if (value.Length == 0) { continue; } // skip "|orphan" lines with no value
+            var label = bar >= 0 ? line[(bar + 1)..].Trim() : string.Empty;
+            list.Add((value, label.Length > 0 ? label : value)); // empty label → show the value
+        }
+        return list;
+    }
+
+    // The dropdown options for a parameter: the resolved query-driven / cascading domain when the parameter
+    // draws from a dataset (ResolveAsync already folds in any static values), else the static "value|label" lines.
+    private IReadOnlyList<(string Value, string Label)> OptionsFor(DesignerParameter p)
+        => !string.IsNullOrWhiteSpace(p.AvailableValuesDataSet) && ResolveOptions is not null
+            ? _resolvedOptions.GetValueOrDefault(p.Name) ?? Array.Empty<(string, string)>()
+            : ParseAvailable(p.AvailableValuesText);
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Visible && !_initialized)
+        {
+            _initialized = true; // set BEFORE any await so a Blazor re-entry during resolution doesn't re-seed
+            // Seed each field with the previous value (if cached) or the parameter's default.
+            foreach (var p in Parameters)
+            {
+                if (InitialValues is not null && InitialValues.TryGetValue(p.Name, out var prior))
+                {
+                    _values[p.Name] = prior;
+                }
+                else
+                {
+                    _values[p.Name] = p.DefaultValue;
+                }
+            }
+            // Now that every value is seeded, resolve query-driven / cascading domains (a child cascades off
+            // the parent's seeded value). Failures degrade silently to static/empty options.
+            foreach (var p in Prompted)
+            {
+                await ResolveFor(p);
+            }
+            StateHasChanged();
+        }
+        else if (!Visible)
+        {
+            _initialized = false;
+            _resolvedOptions.Clear();
+            _resolveGeneration.Clear();
+        }
+    }
+
+    // Resolves (or re-resolves) a parameter's query-driven options through the host. Returns true only when
+    // THIS resolution won (its result was applied) — a stale/superseded or no-op resolution returns false so
+    // the caller doesn't validate the dependent's value against an out-of-date domain.
+    private async Task<bool> ResolveFor(DesignerParameter p)
+    {
+        if (ResolveOptions is null || string.IsNullOrWhiteSpace(p.AvailableValuesDataSet))
+        {
+            return false;
+        }
+        var gen = _resolveGeneration.GetValueOrDefault(p.Name) + 1;
+        _resolveGeneration[p.Name] = gen;
+        try
+        {
+            var options = await ResolveOptions(p, new Dictionary<string, string?>(_values, StringComparer.Ordinal));
+            if (_resolveGeneration.GetValueOrDefault(p.Name) != gen)
+            {
+                return false; // a newer resolution superseded this one (parent changed again) — it owns validation
+            }
+            _resolvedOptions[p.Name] = options.Select(o => (o.Value, o.Label ?? o.Value)).ToList();
+            return true;
+        }
+        catch
+        {
+            // No data connection / dataset error → keep existing options; the dropdown degrades gracefully.
+            return false;
+        }
+    }
+
+    // A value changed: store it and cascade to dependents.
+    private async Task OnParamValueChanged(string name, string? value)
+    {
+        _values[name] = value;
+        await CascadeFrom(name);
+        StateHasChanged();
+    }
+
+    // Re-resolve every parameter that cascades off `parentName`; if a dependent's chosen value falls outside its
+    // freshly-resolved domain, clear it and recurse (a cleared value is itself a change ITS dependents follow,
+    // so multi-level chains Estado→Cidade→Bairro stay consistent). Only the winning resolution validates, so a
+    // superseded out-of-order async result can't null the value a newer resolution already settled.
+    private async Task CascadeFrom(string parentName)
+    {
+        foreach (var child in Prompted.Where(c => string.Equals(c.AvailableValuesDependsOn, parentName, StringComparison.Ordinal)))
+        {
+            if (!await ResolveFor(child))
+            {
+                continue; // nothing resolved, or superseded — don't validate against a stale/absent domain
+            }
+            var options = _resolvedOptions.GetValueOrDefault(child.Name);
+            if (options is not null
+                && _values.TryGetValue(child.Name, out var current) && !string.IsNullOrEmpty(current)
+                && !options.Any(o => string.Equals(o.Value, current, StringComparison.Ordinal)))
+            {
+                _values[child.Name] = null;        // the dependent's old pick is no longer valid under the new parent
+                await CascadeFrom(child.Name);      // and the now-cleared child cascades to its own dependents
+            }
+        }
+    }
+
+    private async Task OnConfirm()
+    {
+        if (HasMissingRequired) { return; } // guard: the button is disabled, but never confirm a missing-required state
+        await OnConfirmed.InvokeAsync((new Dictionary<string, string?>(_values), _remember));
+    }
+
+    private async Task OnCancel()
+    {
+        await OnCancelled.InvokeAsync();
+    }
+}

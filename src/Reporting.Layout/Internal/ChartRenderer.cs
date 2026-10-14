@@ -21,7 +21,7 @@ namespace Reporting.Layout.Internal;
 /// to raw detail rows (e.g. category = month, value = total) behaves like an implicit group-by —
 /// the natural expectation for a summary chart. Rows are read once and evaluated per series.
 /// </remarks>
-internal static class ChartRenderer
+internal static partial class ChartRenderer
 {
     // Categorical palette used when a series declares no explicit colour. Tuned to read well on
     // white paper and stay distinguishable in grayscale print.
@@ -122,26 +122,6 @@ internal static class ChartRenderer
 
         emitted = list.Count > 0;
         return list;
-    }
-
-    // ─── Data ──────────────────────────────────────────────────────────────────────
-
-    private sealed class SeriesData
-    {
-        public required string Name { get; init; }
-        public required Color Color { get; init; }
-        public List<double> Values { get; } = []; // aligned to ChartData.Categories
-        public List<double> Sizes { get; } = [];  // bubble radius input (summed per category)
-        public List<double> Highs { get; } = [];  // stock high (max per category)
-        public List<double> Lows { get; } = [];   // stock low (min per category)
-    }
-
-    private sealed class ChartData
-    {
-        public List<string> Categories { get; } = [];
-        public List<SeriesData> Series { get; } = [];
-        public double MaxValue { get; set; }
-        public double MinValue { get; set; }
     }
 
     private static ChartData BuildData(
