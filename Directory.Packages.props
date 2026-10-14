@@ -85,6 +85,12 @@
     <PackageVersion Include="SQLitePCLRaw.core" Version="3.0.3" />
     <PackageVersion Include="Npgsql" Version="10.0.3" />
     <PackageVersion Include="Microsoft.Data.SqlClient" Version="7.0.2" />
+    <!-- Transitivo do Microsoft.Data.SqlClient (que traz a 9.0.13), pinado na versão corrigida:
+         System.Security.Cryptography.Pkcs <= 10.0.12 / <= 9.0.20 tem GHSA-846f-f764-76mx (ALTA) e
+         GHSA-2fmv-rv2c-59x7 (moderada), ambos negação de serviço, publicados em 13/10/2026. Sem o pin o
+         gate de auditoria transforma o advisory em erro de build em todo projeto que referencia o
+         conector SQL Server. -->
+    <PackageVersion Include="System.Security.Cryptography.Pkcs" Version="10.0.13" />
     <PackageVersion Include="MySqlConnector" Version="2.6.2" />
   </ItemGroup>
 
