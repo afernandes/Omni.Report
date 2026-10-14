@@ -1,6 +1,6 @@
 # Evolução após a auditoria — 09/09/2026
 
-Base: `88f7c0cca5cca927dd29fd859c0b5c93888c2dbb`, merge do PR #260. Implementação na branch `codex/remaining-audit-recommendations`. Esta entrega implementa as seis recomendações posteriores a F01–F27. As alterações desta rodada ainda não foram publicadas nem incorporadas à main.
+Base: `88f7c0cca5cca927dd29fd859c0b5c93888c2dbb`, merge do PR #260. Implementação na branch `codex/remaining-audit-recommendations`. Esta entrega implementa as seis recomendações posteriores a F01–F27. Incorporada à main pelo PR #270.
 
 ## Entregas e evidências
 
