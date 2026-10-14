@@ -42,10 +42,18 @@ updates:
           - "Verify.*"
           - "bunit*"
           - "coverlet.*"
+      # O SkiaSharp gerenciado só aceita o libSkiaSharp nativo da MESMA milestone (4.153 exige nativo
+      # [153, 154)). No Windows o nativo chega como dependência transitiva do próprio SkiaSharp, na
+      # versão certa; no Linux ele vem do SkiaSharp.NativeAssets.Linux pinado aqui. Subir só o gerenciado
+      # passa no Windows e derruba toda renderização no Linux com TypeInitializationException.
+      skiasharp:
+        patterns:
+          - "SkiaSharp*"
       # Todo o resto, agrupado para caber num PR por semana.
       outros:
         patterns: ["*"]
         exclude-patterns:
+          - "SkiaSharp*"
           - "Microsoft.*"
           - "System.*"
           - "xunit*"
