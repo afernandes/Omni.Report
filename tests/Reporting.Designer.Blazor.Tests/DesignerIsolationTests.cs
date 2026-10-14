@@ -33,6 +33,36 @@ public sealed class DesignerIsolationTests : BunitContext
     }
 
     [Fact]
+    public void ElementSnapshotCommand_SomenteBloqueio_PreservaInstanciasEBloqueioDosFilhos()
+    {
+        var container = ElementViewModel.FromElement(new Reporting.Elements.RectangleElement
+        {
+            Id = "rect",
+            Bounds = new(Reporting.Geometry.Unit.Zero, Reporting.Geometry.Unit.Zero,
+                Reporting.Geometry.Unit.FromMm(100), Reporting.Geometry.Unit.FromMm(60)),
+            Children = Reporting.Common.EquatableArray.Create<Reporting.Elements.ReportElement>(
+                new Reporting.Elements.LabelElement
+                {
+                    Id = "filho",
+                    Text = "Filho",
+                    Bounds = new(Reporting.Geometry.Unit.Zero, Reporting.Geometry.Unit.Zero,
+                        Reporting.Geometry.Unit.FromMm(40), Reporting.Geometry.Unit.FromMm(6)),
+                })
+        });
+        var filho = container.Children.Single();
+        filho.IsLocked = true;
+        var snapshot = container.ToElement();
+        var command = new ElementSnapshotCommand(container, snapshot, snapshot, beforeLocked: false, afterLocked: true);
+
+        command.Execute();
+        command.Undo();
+
+        container.IsLocked.Should().BeFalse();
+        container.Children.Single().Should().BeSameAs(filho);
+        filho.IsLocked.Should().BeTrue();
+    }
+
+    [Fact]
     public void Open_MenusEmCoordenadoresDiferentes_NaoFechaOutraInstancia()
     {
         JSInterop.Mode = JSRuntimeMode.Loose;

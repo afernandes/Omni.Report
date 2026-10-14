@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using Reporting.Geometry;
 using Reporting.Layout.Primitives;
@@ -22,7 +23,14 @@ internal static class PreparedPageSerializer
             for (int i = 0; i < primitives.Length; i++)
                 info.PolymorphismOptions.DerivedTypes.Add(new JsonDerivedType(primitives[i], i));
         });
-        var options = new JsonSerializerOptions { TypeInfoResolver = resolver };
+        // Um campo float/double com NaN ou infinito pagina normalmente e vira SemanticValue; o JSON estrito
+        // rejeitaria esse valor e abortaria o documento preparado inteiro. O formato é interno e temporário,
+        // então aceitar os literais nomeados não cria problema de interoperabilidade.
+        var options = new JsonSerializerOptions
+        {
+            TypeInfoResolver = resolver,
+            NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals
+        };
         options.Converters.Add(new PreparedArrayConverter<LayoutPrimitive>());
         options.Converters.Add(new PreparedArrayConverter<Point>());
         options.Converters.Add(new PreparedBytesConverter());

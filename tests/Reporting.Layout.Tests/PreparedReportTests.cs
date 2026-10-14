@@ -92,6 +92,32 @@ public sealed class PreparedReportTests
         prepared.StorageBytes.Should().BeGreaterThan(0);
     }
 
+    public sealed record Medicao(double Valor);
+
+    [Fact]
+    public async Task PrepareAsync_CampoDoubleNaoFinito_PreservaValorSemantico()
+    {
+        var definition = ReportDefinition.Empty("Medicoes") with
+        {
+            DataSources = EquatableArray.Create(new Reporting.Data.DataSourceDefinition("Medicoes")),
+            Detail = new DetailBand(6.Mm(), EquatableArray.Create<ReportElement>(new TextBoxElement
+            {
+                Bounds = new(0.Mm(), 0.Mm(), 100.Mm(), 6.Mm()),
+                Expression = "Fields.Valor"
+            }))
+        };
+        var registry = new Reporting.DataSources.DataSourceRegistry();
+        registry.Register(new Reporting.DataSources.Enumerable.EnumerableDataSource<Medicao>("Medicoes",
+            [new(double.NaN), new(double.PositiveInfinity), new(double.NegativeInfinity)]));
+        var request = new PaginationRequest { Definition = definition, DataSources = registry };
+
+        using var prepared = await new ReportPaginator().PrepareAsync(request);
+
+        var valores = prepared.GetPage(0).Primitives.OfType<Reporting.Layout.Primitives.DrawTextPrimitive>()
+            .Select(p => p.SemanticValue).OfType<double>().ToList();
+        valores.Should().Equal(double.NaN, double.PositiveInfinity, double.NegativeInfinity);
+    }
+
     [Fact]
     public async Task PrepareAsync_LimiteDeArmazenamento_RemoveArquivoParcial()
     {
