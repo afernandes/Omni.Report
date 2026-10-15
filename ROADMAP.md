@@ -87,7 +87,7 @@ Os problemas que restam são de cinco tipos:
 | 5 | Export RDL perde `ToggleItem` e `InitiallyHidden` (perda conhecida, registrada na rede de paridade) | Perda de dados | P | ✅ | R2 #12 |
 | 6 | Designer: desfazer uma inserção deixa o elemento removido **selecionado e editável** — **✔ FEITO (#277)** | Bug | P | 🧪 | novo |
 | 7 | Exportação no Designer: menu fixo divergente do registro, falha silenciosa, cliques perdidos | Bug | P | 🧪 | novo |
-| 8 | Documentação afirma o que não é mais verdade (README, badges, evidências não versionadas) | Doc | P | ✅ | novo |
+| 8 | Documentação afirma o que não é mais verdade (README, badges, evidências não versionadas) — **✔ FEITO (#281)** | Doc | P | ✅ | novo |
 
 ### P1 — Arquitetura e decisões antes do 1.0
 
@@ -160,6 +160,9 @@ Os problemas que restam são de cinco tipos:
 | 53 | RTL e `WritingMode` | i18n | G | ✅ | R2 #41 |
 | 54 | Tagged PDF / acessibilidade | A11y | G | ✅ | R2 #42 |
 | 55 | Exporters RTF / ODT / PPTX | Feature | G | ✅ | R2 #43 |
+| 56 | Várias regiões de dados na raiz (N-DetailBands / List) | Feature | G | 🔍 | README |
+| 57 | `ReportSections` do RDL 2016 (seções com `PageSetup` próprio) | RDL | G | 🔍 | README |
+| 58 | Fontes e datasets compartilhados (`.rds`/`.rsd`) | RDL | M | 🔍 | README |
 
 ---
 
@@ -392,6 +395,16 @@ para este arquivo.
 
 **Pronto quando:** nenhum número ou status do README é estático, e toda evidência citada como prova é acessível
 a quem clona o repositório.
+
+**FEITO (#281).** Badge de CI trocado pelo status real do GitHub Actions; os badges fixos de testes e cobertura
+saíram (não havia fonte que os mantivesse verdadeiros). A seção da auditoria no README e o `CHANGELOG` deixaram de
+citar o `ORL024` como atual e passaram a apontar o `ORL025`; contagens corrigidas no README e no guia do
+desenvolvedor. As três auditorias ganharam um aviso de que `artifacts/` é local e não acompanha o repositório (a
+alternativa, versionar gigabytes de evidência, não se paga). A lista "Roadmap (diferido)" do README virou um
+ponteiro para este arquivo, e seus itens ainda pendentes entraram aqui como 56–58; o canvas "placeholder" que ela
+citava já desenha uma amostra representativa (a norma do SSRS) e os mapas detalhados já são registráveis pelo host,
+então não viraram itens. Achado de passagem: o `[Unreleased]` do `CHANGELOG` parava no #234 — as entregas do #229 ao
+#280 foram registradas, e sem isso o próximo release publicaria notas incompletas.
 
 ---
 
@@ -903,6 +916,23 @@ Validar com veraPDF (PDF/UA).
 
 ---
 
+### 56. Várias regiões de dados na raiz (N-DetailBands / List) 🔍
+
+Hoje o relatório tem uma banda Detail ligada a uma fonte; RDL permite várias regiões de dados (`List`, `Tablix`)
+lado a lado no corpo. Toca o núcleo da paginação. Registrado antes só no README.
+
+### 57. `ReportSections` do RDL 2016 🔍
+
+Várias seções, cada uma com `PageSetup` próprio (capa em retrato, anexo em paisagem). O export já escreve a
+estrutura `ReportSections` com uma única seção, para validar no XSD.
+
+### 58. Fontes e datasets compartilhados (`.rds`/`.rsd`) 🔍
+
+Referências a fontes de dados e datasets externos ao `.rdl`, comuns em servidores SSRS. Hoje o importador só lê o
+que está embutido no relatório.
+
+---
+
 ## Sequenciamento sugerido
 
 **Sprint 1 — Saída correta (P0).** Itens 6, 7, 8 (P, impacto imediato e visível), depois 1 (o maior ganho
@@ -971,6 +1001,7 @@ movimento de arquivos, e 31. O restante do item 26 (`designer.js`, `ElementViewM
 | Seis recomendações pós-auditoria + F28 | Preview sob demanda, limites, F24/F25, cache limitado, isolamento do designer, telemetria, um tipo por arquivo | #270 |
 | Advisories do `System.Security.Cryptography.Pkcs` | Pin na 10.0.13 | #271 |
 | Item 6 — elemento-fantasma selecionado após desfazer | Seleção podada a cada mudança do histórico | #277 |
+| Item 8 — documentação desatualizada | README, badges, CHANGELOG e aviso de evidências locais | #281 |
 
 **Lições que valem para os próximos itens:**
 

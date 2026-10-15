@@ -1,11 +1,9 @@
 # OmniReport
 
-[![CI](https://img.shields.io/badge/CI-passing-brightgreen)](.github/workflows/ci.yml)
+[![CI](https://github.com/afernandes/Omni.Report/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/afernandes/Omni.Report/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![.NET](https://img.shields.io/badge/.NET-10.0-blueviolet)](https://dotnet.microsoft.com/)
 [![NuGet](https://img.shields.io/nuget/v/AndersonN.Omni.Report.Core.svg)](https://www.nuget.org/packages/AndersonN.Omni.Report.Core)
-[![Tests](https://img.shields.io/badge/tests-1000%2B%20passing-success)](#)
-[![Coverage](https://img.shields.io/badge/core%20coverage-≥80%25-success)](#)
 [![RDL](https://img.shields.io/badge/RDL%20compat-~85%25-success)](docs/rdl-spec-compliance.md)
 
 **Motor profissional de relatórios bandados para .NET 10**, com **três modalidades de autoria**
@@ -22,20 +20,19 @@ Equivalente em capacidade a Crystal Reports / SSRS / FastReport, original, MIT, 
 em cenários brasileiros (PDV, NFC-e, DANFE, ABNT NBR 5891). Veja a
 [comparação detalhada](docs/comparison.md) com o RDL oficial e outras engines.
 
-## Correções da auditoria F01–F27
+## Qualidade e auditoria
 
-As correções e a evidência de validação estão em [correções F01–F27](docs/correcoes-f01-f27-2026-09-08.md).
-O designer mantém dados, parâmetros, histórico e preview por documento. Segredos exigem um resolver
-explicitamente autorizado pelo host; falhas de conexão retornam mensagens públicas sem detalhes do provedor.
+A auditoria técnica de 05/09/2026 e suas correções estão em [auditoria](docs/auditoria-tecnica-2026-09-05.md),
+[correções F01–F27](docs/correcoes-f01-f27-2026-09-08.md) e [evolução pós-auditoria](docs/evolucao-pos-auditoria-2026-09-09.md);
+o que ainda falta, priorizado, está no [`ROADMAP.md`](ROADMAP.md).
 
 XLSX/CSV preservam valores escalares e identificadores. XLSX não deduz fórmulas pelo texto de totais;
 `EmitFormulas` exige opt-in e metadados explícitos. Decimais além da precisão numérica do Excel são
 exportados como texto. A inferência de JSON/XML usa `decimal` para valores fracionários.
 
-`GroupBand.FilterExpression`, `SortExpressions` e a garantia integral de `KeepTogether` ainda têm
-limitações: `RenderedReport.Diagnostics` emite `ORL024`, exibido pelo designer no preview. O host deve
-avaliar os diagnósticos antes de aceitar a saída. Isso não implica implementação integral dessas três propriedades.
-Subdetails aplicam filtro, ordenação e mensagem de ausência de linhas; variáveis têm avaliação por escopo e dependências.
+Conteúdo que o modelo aceita mas o renderizador ainda não desenha é reportado em `RenderedReport.Diagnostics`
+(exibido pelo designer no preview) em vez de sumir da saída — hoje, `ORL025` para `RowSpan` e linhas-modelo extras
+do Tablix. O host deve avaliar os diagnósticos antes de aceitar a saída.
 
 ## Galeria
 
@@ -398,8 +395,8 @@ dotnet run --project samples/Reporting.Samples.MauiHybrid -f net10.0-windows10.0
 ## Status
 
 A v0.1.0 entregou as 11 etapas do roteiro original (17 bibliotecas, 375 testes). Desde então o
-projeto **mais que dobrou**: hoje são **38 bibliotecas** em `src/`, **1000+ testes** verdes (23
-projetos de teste) e cobertura ≥ 80% no núcleo. Conformidade com a especificação RDL da Microsoft
+projeto **mais que dobrou**: hoje são **39 bibliotecas** em `src/` e **mais de 1.900 testes** em 25 projetos de
+teste (o estado real de cada commit está no badge de CI acima). Conformidade com a especificação RDL da Microsoft
 em **~85%** (importador `.rdl` em ~80%) — veja [`docs/rdl-spec-compliance.md`](docs/rdl-spec-compliance.md).
 
 **Adicionado após a v0.1.0:**
@@ -423,18 +420,11 @@ em **~85%** (importador `.rdl` em ~80%) — veja [`docs/rdl-spec-compliance.md`]
 Veja [CHANGELOG.md](CHANGELOG.md) para o histórico, [docs/](docs/) para guias por área e a
 matriz completa de conformidade RDL em [`docs/rdl-spec-compliance.md`](docs/rdl-spec-compliance.md).
 
-### Roadmap (diferido — decisão de produto)
+### Roadmap
 
-A saída é sempre um **relatório estático** (sem interatividade/drill-down em runtime). Itens grandes
-registrados como follow-up, com a razão honesta de cada um, em
-[`docs/rdl-spec-compliance.md`](docs/rdl-spec-compliance.md):
-
-- **N-DetailBands / List** — múltiplas regiões de dados no nível raiz (toca o núcleo da paginação).
-- **ReportSections** (RDL 2016) — múltiplas seções com `PageSetup` por seção.
-- **`.rds`** — shared data sources / datasets externos.
-- **Canvas WYSIWYG real no Designer** — render real (hoje placeholder) de Chart/Gauge/Tablix no canvas.
-- **`Reporting.Maps`** — shapes embutidos cobrem um contorno simplificado do Brasil; conjuntos
-  detalhados registráveis pelo host via `MapShapeRegistry.Register(nome, geoJson)`.
+A saída é sempre um **relatório estático** (sem interatividade/drill-down em runtime). O que falta — defeitos,
+arquitetura, Designer, organização e features, em ordem de prioridade e com o estado de cada item — está em
+[`ROADMAP.md`](ROADMAP.md).
 
 ## Documentação
 
