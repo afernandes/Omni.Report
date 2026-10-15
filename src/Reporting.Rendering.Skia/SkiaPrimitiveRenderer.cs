@@ -12,9 +12,56 @@ namespace Reporting.Rendering.Skia;
 public static partial class SkiaPrimitiveRenderer
 {
     public static void DrawText(SKCanvas canvas, string text, Rectangle bounds, TextStyle style, float dpi)
-        => DrawText(canvas, text, bounds, style, dpi, null);
+        => DrawText(canvas, text, bounds, style, dpi, null, null);
+
+    /// <summary>Draws text exactly like <see cref="DrawText(SKCanvas, string, Rectangle, TextStyle, float)"/>, but
+    /// passes every typeface it resolves — the style's font and any per-character fallback — through
+    /// <paramref name="substituteTypeface"/> before drawing with it.</summary>
+    /// <remarks>The substitute returns the typeface to draw with in place of the one resolved, or the same
+    /// instance to keep it. The replacement must cover the same characters with the same metrics: line breaks
+    /// and alignment are computed with it, so a font with different advances moves the text. The PDF exporter
+    /// uses this to draw with font subsets, collected beforehand through <see cref="CollectTypefaceUsage"/>.</remarks>
+    public static void DrawText(SKCanvas canvas, string text, Rectangle bounds, TextStyle style, float dpi,
+        Func<SKTypeface, SKTypeface>? substituteTypeface)
+        => DrawText(canvas, text, bounds, style, dpi, null, substituteTypeface);
 
     internal static void DrawText(SKCanvas canvas, string text, Rectangle bounds, TextStyle style, float dpi, Action<SKRect>? track)
+        => DrawText(canvas, text, bounds, style, dpi, track, null);
+
+    /// <summary>Reports, for each character <see cref="DrawText(SKCanvas, string, Rectangle, TextStyle, float)"/>
+    /// would draw from <paramref name="text"/>, the typeface it would draw that character with — the font's own
+    /// typeface, or the fallback found for a character it lacks.</summary>
+    /// <remarks>Shares the per-character decision with <c>DrawText</c> instead of re-implementing it, so a caller
+    /// that prepares typefaces ahead of drawing (the PDF exporter's font subsets) cannot miss one the renderer
+    /// later reaches for. Line breaks are not reported: <c>DrawText</c> splits on them and never draws them.</remarks>
+    /// <param name="text">The text, as a <c>DrawText</c> call would receive it.</param>
+    /// <param name="font">The font the text is styled with. Its size is irrelevant to coverage.</param>
+    /// <param name="use">Called once per drawn character with the typeface and the Unicode codepoint.</param>
+    public static void CollectTypefaceUsage(string text, Reporting.Styling.Font font, Action<SKTypeface, int> use)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        ArgumentNullException.ThrowIfNull(font);
+        ArgumentNullException.ThrowIfNull(use);
+        if (text.Length == 0)
+        {
+            return;
+        }
+        using var primary = CreateFont(font, 72f, null);
+        foreach (var hardLine in text.Split('\n'))
+        {
+            var line = hardLine.TrimEnd('\r');
+            int i = 0;
+            while (i < line.Length)
+            {
+                int codepoint = ReadCodepoint(line, i, out int charsConsumed);
+                use(ResolveTypeface(primary, codepoint, null), codepoint);
+                i += charsConsumed;
+            }
+        }
+    }
+
+    private static void DrawText(SKCanvas canvas, string text, Rectangle bounds, TextStyle style, float dpi,
+        Action<SKRect>? track, Func<SKTypeface, SKTypeface>? substituteTypeface)
     {
         ArgumentNullException.ThrowIfNull(canvas);
         ArgumentNullException.ThrowIfNull(style);
@@ -22,7 +69,7 @@ public static partial class SkiaPrimitiveRenderer
         {
             return;
         }
-        using var font = CreateFont(style.Font, dpi);
+        using var font = CreateFont(style.Font, dpi, substituteTypeface);
         using var paint = new SKPaint
         {
             Color = style.ForeColor.ToSKColor(),
@@ -54,7 +101,7 @@ public static partial class SkiaPrimitiveRenderer
         {
             for (int i = 0; i < lines.Count; i++)
             {
-                var runs = BuildTextRuns(lines[i], font, fallbackFonts);
+                var runs = BuildTextRuns(lines[i], font, fallbackFonts, substituteTypeface);
 
                 // Sum every run's width so alignment math respects emoji being slightly
                 // wider than letters. Otherwise centered/right-aligned text drifts when
@@ -136,7 +183,10 @@ public static partial class SkiaPrimitiveRenderer
     /// <param name="primary">The user's chosen font. Always owns its typeface — never disposed here.</param>
     /// <param name="cache">Per-typeface SKFont cache. Filled lazily as new fallbacks are needed;
     /// the caller disposes everything in <c>finally</c>.</param>
-    private static List<TextRun> BuildTextRuns(string line, SKFont primary, Dictionary<SKTypeface, SKFont> cache)
+    /// <param name="substituteTypeface">Optional replacement applied to each fallback typeface (the primary
+    /// font arrives already substituted).</param>
+    private static List<TextRun> BuildTextRuns(string line, SKFont primary, Dictionary<SKTypeface, SKFont> cache,
+        Func<SKTypeface, SKTypeface>? substituteTypeface)
     {
         var runs = new List<TextRun>(2); // most lines are 1–2 runs
         if (line.Length == 0) return runs;
@@ -148,38 +198,8 @@ public static partial class SkiaPrimitiveRenderer
         int i = 0;
         while (i < line.Length)
         {
-            // Decode one codepoint, handling surrogate pairs (emoji, CJK supplementary plane).
-            int codepoint;
-            int charsConsumed;
-            if (char.IsHighSurrogate(line[i]) && i + 1 < line.Length && char.IsLowSurrogate(line[i + 1]))
-            {
-                codepoint = char.ConvertToUtf32(line[i], line[i + 1]);
-                charsConsumed = 2;
-            }
-            else
-            {
-                codepoint = line[i];
-                charsConsumed = 1;
-            }
-
-            // Pick the typeface for this codepoint: primary when it has the glyph,
-            // otherwise ask the OS font manager for any typeface that does. Returning
-            // null (no system font has the codepoint) falls back to primary so we
-            // render *something* rather than crashing.
-            // A consulta de cobertura passou de SKTypeface para SKFont no SkiaSharp 4. Usamos o próprio
-            // `primary`, que já é um SKFont sobre esta typeface — cobertura não depende do tamanho, então
-            // ele responde a mesma pergunta sem custo nenhum. Criar um SKFont efêmero aqui alocaria um
-            // objeto NATIVO POR CARACTERE: este laço roda por codepoint de cada linha, de cada banda, de
-            // cada página.
-            SKTypeface typeface;
-            if (primary.GetGlyph(codepoint) != 0)
-            {
-                typeface = primaryTypeface;
-            }
-            else
-            {
-                typeface = SKFontManager.Default.MatchCharacter(codepoint) ?? primaryTypeface;
-            }
+            int codepoint = ReadCodepoint(line, i, out int charsConsumed);
+            var typeface = ResolveTypeface(primary, codepoint, substituteTypeface);
 
             // Resolve to an SKFont — primary uses the caller-owned font; fallbacks live
             // in the cache so we don't recreate one per character.
@@ -457,9 +477,16 @@ public static partial class SkiaPrimitiveRenderer
     }
 
     internal static SKFont CreateFont(Reporting.Styling.Font font, float dpi)
+        => CreateFont(font, dpi, null);
+
+    private static SKFont CreateFont(Reporting.Styling.Font font, float dpi, Func<SKTypeface, SKTypeface>? substituteTypeface)
     {
         var typeface = SKTypeface.FromFamilyName(font.Family, font.Style.ToSKFontStyle())
                        ?? SKTypeface.Default;
+        if (substituteTypeface is not null)
+        {
+            typeface = substituteTypeface(typeface);
+        }
         return new SKFont(typeface, (float)font.Size * dpi / 72f);
     }
 

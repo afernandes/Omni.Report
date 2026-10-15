@@ -65,6 +65,10 @@ public sealed class SkiaPdfExporter : IReportExporter
             Modified = _options.CreationDate ?? DateTimeOffset.UtcNow.UtcDateTime,
         };
 
+        // Declared before the document so it is disposed after it: the subset typefaces must outlive Close().
+        using var fonts = _options.SubsetFonts ? PdfFontSubsetter.Create(report, PdfDpi, cancellationToken) : null;
+        Func<SKTypeface, SKTypeface>? substituteTypeface = fonts is null ? null : fonts.Substitute;
+
         using var document = SKDocument.CreatePdf(output, metadata);
         if (document is null)
         {
@@ -83,20 +87,20 @@ public sealed class SkiaPdfExporter : IReportExporter
             canvas.Clear(SKColors.White);
             foreach (var primitive in page.Primitives)
             {
-                Replay(canvas, primitive);
+                Replay(canvas, primitive, substituteTypeface);
             }
             document.EndPage();
         }
         document.Close();
     }
 
-    private static void Replay(SKCanvas canvas, LayoutPrimitive primitive)
+    private static void Replay(SKCanvas canvas, LayoutPrimitive primitive, Func<SKTypeface, SKTypeface>? substituteTypeface)
     {
         var clip = SkiaPrimitiveRenderer.BeginClip(canvas, primitive.ClipBounds, primitive.ClipCornerRadius, PdfDpi);
         switch (primitive)
         {
             case DrawTextPrimitive t:
-                SkiaPrimitiveRenderer.DrawText(canvas, t.Text, t.Bounds, t.Style, PdfDpi);
+                SkiaPrimitiveRenderer.DrawText(canvas, t.Text, t.Bounds, t.Style, PdfDpi, substituteTypeface);
                 break;
             case DrawLinePrimitive l:
                 SkiaPrimitiveRenderer.DrawLine(canvas, l.From, l.To, l.Pen, PdfDpi);
