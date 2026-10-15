@@ -4,14 +4,22 @@
 // the Expression Editor full-fledged syntax highlighting, IntelliSense and bracket
 // matching for the OmniReport expression language.
 //
-// Loads Monaco lazily from CDN on first use. The first call to `mount` blocks
-// until Monaco is ready; subsequent calls reuse the loaded module.
+// Loads Monaco lazily on first use — from the copy packaged with the Designer (wwwroot/lib/monaco, refreshed by
+// tools/update-monaco.ps1) unless the host configured another base URL (MonacoOptions). Packaged by default so the
+// editor works offline and under a CSP that allows only 'self'. The first call to `mount` blocks until Monaco is
+// ready; subsequent calls reuse the loaded module. A load that fails or takes too long REJECTS, so the Blazor
+// component can fall back to a plain textarea instead of leaving an empty box.
 
 (function () {
     "use strict";
 
-    const MONACO_VERSION = "0.45.0";
-    const MONACO_BASE = `https://cdn.jsdelivr.net/npm/monaco-editor@${MONACO_VERSION}/min/vs`;
+    // Resolved from this script's own URL, so it follows whatever base path the host serves the package under.
+    // `currentScript` only exists while the script first runs, hence the capture here.
+    const DEFAULT_MONACO_BASE = new URL("../lib/monaco/vs",
+        document.currentScript?.src ?? new URL("_content/Reporting.Designer.Blazor/js/", document.baseURI)).href;
+    // A base URL on an unreachable host (offline, firewall) can leave the request pending for a long time; give up
+    // and let the caller fall back rather than showing an empty editor indefinitely.
+    const LOAD_TIMEOUT_MS = 15000;
 
     let loaderPromise = null;
     let languageRegistered = false;
@@ -143,22 +151,37 @@
         document.head.appendChild(style);
     }
 
-    function loadMonaco() {
+    function loadMonaco(baseUrl) {
         injectGlobalStyles();
         if (loaderPromise) return loaderPromise;
+        // Absolute: the AMD loader and the worker both resolve module paths against it.
+        const MONACO_BASE = new URL(baseUrl || DEFAULT_MONACO_BASE, document.baseURI).href.replace(/\/+$/, "");
         loaderPromise = new Promise((resolve, reject) => {
-            // Load AMD loader.js once.
-            if (window.require && window.require.config) {
+            if (window.monaco?.editor) {
+                registerOmniReportLanguage();
                 resolve();
                 return;
             }
-            const script = document.createElement("script");
-            script.src = `${MONACO_BASE}/loader.js`;
-            script.onload = () => {
+            // A failed load is not cached: the next editor that opens tries again (the network may be back).
+            const fail = (error) => {
+                clearTimeout(timer);
+                loaderPromise = null;
+                reject(error);
+            };
+            const timer = setTimeout(
+                () => fail(new Error(`Monaco não carregou em ${LOAD_TIMEOUT_MS / 1000}s a partir de ${MONACO_BASE}.`)),
+                LOAD_TIMEOUT_MS);
+            const loadEditor = () => {
                 window.require.config({ paths: { vs: MONACO_BASE } });
-                // Workaround so monaco's web workers load over HTTP (cross-origin).
+                // A worker must be same-origin. The packaged copy is, so the worker script loads directly (CSP
+                // `worker-src 'self'`); a base on another origin (a CDN) needs the data: bootstrap that imports it,
+                // which in turn needs `worker-src data:`.
+                const sameOrigin = new URL(MONACO_BASE).origin === window.location.origin;
                 window.MonacoEnvironment = {
                     getWorkerUrl: function () {
+                        if (sameOrigin) {
+                            return `${MONACO_BASE}/base/worker/workerMain.js`;
+                        }
                         return `data:text/javascript;charset=utf-8,${encodeURIComponent(`
                             self.MonacoEnvironment = { baseUrl: '${MONACO_BASE}/' };
                             importScripts('${MONACO_BASE}/base/worker/workerMain.js');
@@ -166,11 +189,23 @@
                     },
                 };
                 window.require(["vs/editor/editor.main"], () => {
+                    clearTimeout(timer);
                     registerOmniReportLanguage();
                     resolve();
-                });
+                }, (error) => fail(new Error(`Falha ao carregar o Monaco de ${MONACO_BASE}: ${error}`)));
             };
-            script.onerror = () => reject(new Error("Failed to load Monaco from CDN."));
+            // The AMD loader survives a failed attempt (its script loaded, the editor did not): reuse it.
+            if (window.require?.config) {
+                loadEditor();
+                return;
+            }
+            const script = document.createElement("script");
+            script.src = `${MONACO_BASE}/loader.js`;
+            script.onload = loadEditor;
+            script.onerror = () => {
+                script.remove();
+                fail(new Error(`Falha ao carregar o Monaco de ${MONACO_BASE}.`));
+            };
             document.head.appendChild(script);
         });
         return loaderPromise;
@@ -369,8 +404,8 @@
 
     // ─── Public API ───────────────────────────────────────────────────────────────
     async function mount(opts) {
-        const { domId, initialValue, theme, language, completions, dotnetRef } = opts;
-        await loadMonaco();
+        const { domId, initialValue, theme, language, completions, dotnetRef, baseUrl } = opts;
+        await loadMonaco(baseUrl);
 
         const host = document.getElementById(domId);
         if (!host) throw new Error(`Monaco mount: #${domId} not in DOM`);

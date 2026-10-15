@@ -15,3 +15,9 @@
 *.nupkg binary
 *.snupkg binary
 *.db    binary
+
+# Fontes — sem normalização de fim de linha
+*.ttf   binary
+
+# Monaco minificado e empacotado (tools/update-monaco.ps1): fora das estatísticas de linguagem e dos diffs.
+src/Reporting.Designer.Blazor/wwwroot/lib/monaco/** linguist-vendored -diff

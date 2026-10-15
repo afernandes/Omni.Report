@@ -12,6 +12,7 @@ using Reporting.Styling;
 using Reporting.Designer.Blazor;
 using Reporting.Designer.Blazor.Components;
 using Reporting.Designer.Blazor.Icons;
+using Reporting.Designer.Blazor.Services;
 using Reporting.Designer.Blazor.ViewModels;
 using Reporting.Output.Excel;
 using Reporting.Printing;
@@ -42,8 +43,16 @@ public partial class MonacoEditor
     /// back via SetValue — Monaco owns the source of truth while mounted.</summary>
     [Parameter] public EventCallback<string> OnValueChanged { get; set; }
 
+    /// <summary>Accessible name of the editor, read by screen readers (e.g. "Expressão", "Consulta SQL").</summary>
+    [Parameter] public string Label { get; set; } = "Editor de código";
+
     private DotNetObjectReference<MonacoEditor>? _selfRef;
     private bool _mounted;
+
+    // Monaco did not load (offline host with a remote MonacoOptions.BaseUrl, blocked script, timeout): the editor
+    // becomes a plain text box so the expression stays editable. The value then lives here instead of in Monaco.
+    private bool _fallback;
+    private string _fallbackValue = string.Empty;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -61,6 +70,8 @@ public partial class MonacoEditor
                     language = Language,
                     completions = Completions,
                     dotnetRef = _selfRef,
+                    // null = the copy packaged with the Designer (resolved by monaco-host.js).
+                    baseUrl = (Services.GetService(typeof(MonacoOptions)) as MonacoOptions)?.BaseUrl,
                 });
             }
             catch (JSException ex)
@@ -68,6 +79,9 @@ public partial class MonacoEditor
                 var logger = Services.GetService(typeof(Microsoft.Extensions.Logging.ILogger<MonacoEditor>))
                     as Microsoft.Extensions.Logging.ILogger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance;
                 Reporting.Designer.Blazor.Services.DesignerLog.MonacoMountFailed(logger, ex);
+                _fallbackValue = InitialValue;
+                _fallback = true;
+                StateHasChanged();
             }
             catch (InvalidOperationException) { /* pre-render */ }
         }
@@ -79,25 +93,49 @@ public partial class MonacoEditor
 
     public async Task<string?> GetValueAsync()
     {
+        if (_fallback)
+        {
+            return _fallbackValue;
+        }
         try { return await Js.InvokeAsync<string?>("omniMonaco.getValue", DomId); }
         catch { return null; }
     }
 
     public async Task SetValueAsync(string value)
     {
+        if (_fallback)
+        {
+            await SetFallbackValueAsync(value);
+            return;
+        }
         try { await Js.InvokeVoidAsync("omniMonaco.setValue", DomId, value); }
         catch { }
     }
 
+    /// <summary>Inserts at the cursor; in the plain-text fallback, which does not track the cursor, appends.</summary>
     public async Task InsertAsync(string text)
     {
+        if (_fallback)
+        {
+            await SetFallbackValueAsync(_fallbackValue + text);
+            return;
+        }
         try { await Js.InvokeVoidAsync("omniMonaco.insertAtCursor", DomId, text); }
         catch { }
     }
 
+    private Task OnFallbackInput(ChangeEventArgs e) => SetFallbackValueAsync(e.Value?.ToString() ?? string.Empty);
+
+    // Same notification Monaco gives through OnEditorValueChanged, so the hosting dialog cannot tell the difference.
+    private Task SetFallbackValueAsync(string value)
+    {
+        _fallbackValue = value;
+        return OnValueChanged.HasDelegate ? OnValueChanged.InvokeAsync(value) : Task.CompletedTask;
+    }
+
     public async ValueTask DisposeAsync()
     {
-        if (_mounted)
+        if (_mounted && !_fallback)
         {
             try { await Js.InvokeVoidAsync("omniMonaco.unmount", DomId); }
             catch { }
