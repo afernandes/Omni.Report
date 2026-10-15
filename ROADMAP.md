@@ -81,13 +81,14 @@ Os problemas que restam são de cinco tipos:
 |---|---|---|---|---|---|
 | 1 | PDF embute as fontes **inteiras** — sem subsetting real (1 página = 1,1 MB) — **✔ FEITO (#278)** | Fidelidade/Perf | M | 🧪 | R2 #23 reaberto |
 | 2 | `RowSpan` aceito, persistido e **ignorado** pelo renderer do Tablix — **✔ FEITO (#274)** | Fidelidade | M | ✅ | R2 #36 |
+| 2a | Matriz: células de corpo além da primeira ignoradas **sem** o aviso `ORL025` | Fidelidade | P | ✅ | item 2 |
 | 3 | `Style.Border` não desenhada em Label/TextBox/Image; grade do Tablix com cor fixa — **✔ FEITO (#275)** (grade: ver 3a) | Fidelidade | M | ✅ | R2 #21a |
 | 3a | Grade do Tablix com cor e espessura fixas, sem relação com o estilo | Fidelidade | M | ✅ | item 3 |
 | 4 | `CornerRadius` descartado em retângulo sem filhos — **✔ FEITO (#275)** | Fidelidade | P | ✅ | R2 #21b |
 | 5 | Export RDL perde `ToggleItem` e `InitiallyHidden` (perda conhecida, registrada na rede de paridade) — **✔ FEITO (#276)** | Perda de dados | P | ✅ | R2 #12 |
 | 6 | Designer: desfazer uma inserção deixa o elemento removido **selecionado e editável** — **✔ FEITO (#277)** | Bug | P | 🧪 | novo |
 | 7 | Exportação no Designer: menu fixo divergente do registro, falha silenciosa, cliques perdidos — **✔ FEITO (#280)** | Bug | P | 🧪 | novo |
-| 8 | Documentação afirma o que não é mais verdade (README, badges, evidências não versionadas) | Doc | P | ✅ | novo |
+| 8 | Documentação afirma o que não é mais verdade (README, badges, evidências não versionadas) — **✔ FEITO (#281)** | Doc | P | ✅ | novo |
 
 ### P1 — Arquitetura e decisões antes do 1.0
 
@@ -160,6 +161,9 @@ Os problemas que restam são de cinco tipos:
 | 53 | RTL e `WritingMode` | i18n | G | ✅ | R2 #41 |
 | 54 | Tagged PDF / acessibilidade | A11y | G | ✅ | R2 #42 |
 | 55 | Exporters RTF / ODT / PPTX | Feature | G | ✅ | R2 #43 |
+| 56 | Várias regiões de dados na raiz (N-DetailBands / List) | Feature | G | 🔍 | README |
+| 57 | `ReportSections` do RDL 2016 (seções com `PageSetup` próprio) | RDL | G | 🔍 | README |
+| 58 | Fontes e datasets compartilhados (`.rds`/`.rsd`) | RDL | M | 🔍 | README |
 
 ---
 
@@ -269,6 +273,20 @@ também nunca eram desenhadas.
 (`ReportPaginator.Diagnostics.cs`). O Designer já exibe os diagnósticos no preview. Verificado por
 `TablixRowDiagnosticsTests` (4 casos, incluindo o negativo — tabela válida não gera ruído) e por sabotagem: sem a
 inspeção, os 3 casos positivos falham. Quando o item 49 entrar, o `RowSpan` ganha onde atuar e o diagnóstico sai.
+
+---
+
+### 2a. Matriz: células de corpo além da primeira ignoradas sem aviso ✅
+
+**O problema.** O `ORL025` do item 2 cobre a tabela plana, não a matriz. O `TablixRenderer` da matriz lê o canto
+e **só a primeira** `TextBoxElement` de corpo (`RowIndex >= 1 && ColumnIndex >= 1`, `body ??= tb`); uma segunda
+medida, ou qualquer outra célula de corpo, é descartada — e `InspectLimitations` pula a matriz (`!isMatrix`), então
+um resultado sem diagnósticos não garante que nada sumiu. Apontado na revisão do #281.
+
+**Ação.** Emitir `ORL025` (`Tablix[nome].MatrixBody`) quando a matriz tiver mais de uma célula de corpo com
+conteúdo, com teste positivo e negativo nos três modos. Várias medidas por interseção são o item 49.
+
+**Pronto quando:** uma matriz com duas células de corpo gera o diagnóstico; a matriz de uma célula não gera ruído.
 
 ---
 
@@ -448,6 +466,16 @@ para este arquivo.
 **Pronto quando:** nenhum número ou status do README é estático, e toda evidência citada como prova é acessível
 a quem clona o repositório.
 
+**FEITO (#281).** Badge de CI trocado pelo status real do GitHub Actions; os badges fixos de testes e cobertura
+saíram (não havia fonte que os mantivesse verdadeiros). A seção da auditoria no README e o `CHANGELOG` deixaram de
+citar o `ORL024` como atual e passaram a apontar o `ORL025`; contagens corrigidas no README e no guia do
+desenvolvedor. As três auditorias ganharam um aviso de que `artifacts/` é local e não acompanha o repositório (a
+alternativa, versionar gigabytes de evidência, não se paga). A lista "Roadmap (diferido)" do README virou um
+ponteiro para este arquivo, e seus itens ainda pendentes entraram aqui como 56–58; o canvas "placeholder" que ela
+citava já desenha uma amostra representativa (a norma do SSRS) e os mapas detalhados já são registráveis pelo host,
+então não viraram itens. Achado de passagem: o `[Unreleased]` do `CHANGELOG` parava no #234 — as entregas do #229 ao
+#280 foram registradas, e sem isso o próximo release publicaria notas incompletas.
+
 ---
 
 ## P1 — Arquitetura e decisões antes do 1.0
@@ -476,8 +504,10 @@ um exporter como os outros. Opcional: `[TypeForwardedTo]` por uma versão para s
 **Pronto quando:** `dotnet list package --include-transitive` do `Output.Csv` não mostra SkiaSharp.
 
 **FEITO (#282).** Novo pacote `Reporting.Output` (namespace `Reporting.Output`), dependendo só de Core e Layout, com
-`IReportExporter`, `ExportWarning`, `ExportWarningHandler` e as extensões. Os nove exportadores sem Skia passaram a
-referenciar só o contrato, e o critério foi conferido: o `Output.Csv` não traz mais SkiaSharp. Não usei
+`IReportExporter`, `ExportWarning`, `ExportWarningHandler` e as extensões. Todos os exportadores passaram a
+referenciar o contrato em vez do pacote PDF, mas só **CSV, JSON, XML, Markdown e Excel** ficaram sem Skia — o
+critério foi conferido no `Output.Csv`. SVG, Image e PDF desenham com o Skia e continuam dependendo dele; **HTML o
+herda pelo SVG e DOCX pelo Image**, então esses cinco formatos ainda exigem os binários nativos no deploy. Não usei
 `[TypeForwardedTo]`: o encaminhamento só preserva o tipo se o namespace continuar `Reporting.Output.Pdf`, o que
 deixaria o contrato com o nome errado para sempre — pré-1.0, a quebra explícita custa menos. Ela está nas supressões
 do Package Validation (todas decorrentes da mudança do tipo) e no CHANGELOG, com a migração. O pacote nasceu com a
@@ -989,6 +1019,23 @@ Validar com veraPDF (PDF/UA).
 
 ---
 
+### 56. Várias regiões de dados na raiz (N-DetailBands / List) 🔍
+
+Hoje o relatório tem uma banda Detail ligada a uma fonte; RDL permite várias regiões de dados (`List`, `Tablix`)
+lado a lado no corpo. Toca o núcleo da paginação. Registrado antes só no README.
+
+### 57. `ReportSections` do RDL 2016 🔍
+
+Várias seções, cada uma com `PageSetup` próprio (capa em retrato, anexo em paisagem). O export já escreve a
+estrutura `ReportSections` com uma única seção, para validar no XSD.
+
+### 58. Fontes e datasets compartilhados (`.rds`/`.rsd`) 🔍
+
+Referências a fontes de dados e datasets externos ao `.rdl`, comuns em servidores SSRS. Hoje o importador só lê o
+que está embutido no relatório.
+
+---
+
 ## Sequenciamento sugerido
 
 **Sprint 1 — Saída correta (P0).** Itens 6, 7, 8 (P, impacto imediato e visível), depois 1 (o maior ganho
@@ -1063,7 +1110,8 @@ movimento de arquivos, e 31. O restante do item 26 (`designer.js`, `ElementViewM
 | Item 12 — Designer sem `ILogger` | Eventos `[LoggerMessage]` sem conteúdo do relatório | #283 |
 | Itens 16 e 17 — paleta e menus incompletos, atalhos anunciados sem tratador | Registro único de comandos; Validar e Atalhos reais | #284 |
 | Item 7 — exportação no Designer sem registro, sem erro visível e com cliques perdidos | Menu do registro, alerta de falha, estado ocupado | #280 |
-| Item 9 — contrato de exportação no pacote PDF | Pacote `Reporting.Output`; exportadores sem SkiaSharp | #282 |
+| Item 8 — documentação desatualizada | README, badges, CHANGELOG e aviso de evidências locais | #281 |
+| Item 9 — contrato de exportação no pacote PDF | Pacote `Reporting.Output`; CSV/JSON/XML/Markdown/Excel sem SkiaSharp | #282 |
 
 **Lições que valem para os próximos itens:**
 

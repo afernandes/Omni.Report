@@ -35,7 +35,7 @@ Para **estender, integrar ou contribuir** com o OmniReport. Para usar a engine, 
 
 ## 2. Mapa de projetos
 
-`src/` (38 bibliotecas). Núcleo sem dependências de plataforma:
+`src/` (39 bibliotecas). Núcleo sem dependências de plataforma:
 
 | Projeto | Responsabilidade |
 |---|---|
@@ -169,7 +169,7 @@ container.
 
 ```powershell
 dotnet build OmniReport.slnx -c Release      # projetos de produção: TreatWarningsAsErrors (sem warnings!)
-dotnet test  OmniReport.slnx                 # 23 projetos de teste, 1000+ casos
+dotnet test  OmniReport.slnx                 # 25 projetos de teste, mais de 1.900 casos
 ```
 
 - **Conventional Commits**; `main` + feature branches (veja `CONTRIBUTING.md`).

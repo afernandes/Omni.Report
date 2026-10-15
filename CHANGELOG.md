@@ -7,7 +7,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-225 PRs desde a 0.1.1. A linha condutora foi **interoperabilidade com SSRS/RDL** — ler, editar e
+Desde a 0.1.1, a linha condutora foi **interoperabilidade com SSRS/RDL** — ler, editar e
 gravar `.rdl` — e a regra de que toda feature chega igual nos **três modos de autoria** (code-first,
 API de baixo nível e Designer), com serialização e testes junto. As entradas abaixo são agrupadas por
 área em vez de uma por commit; o número entre parênteses é o PR.
@@ -17,9 +17,33 @@ API de baixo nível e Designer), com serialização e testes junto. As entradas 
 - **`IReportExporter`, `ExportWarning`, `ExportWarningHandler` e `ReportExporterExtensions` saíram do pacote
   `Reporting.Output.Pdf` para o novo pacote `Reporting.Output`, namespace `Reporting.Output`.** O contrato morava no
   pacote PDF, que depende do SkiaSharp: exportar CSV, JSON, XML, Markdown ou Excel arrastava os binários nativos do
-  Skia. Migração: troque `using Reporting.Output.Pdf;` por `using Reporting.Output;` onde só o contrato é usado
-  (`SkiaPdfExporter` e `PdfExportOptions` continuam em `Reporting.Output.Pdf`); quem referencia o pacote PDF recebe
-  `Reporting.Output` transitivamente.
+  Skia. SVG, PNG e PDF continuam com o Skia, e HTML (via SVG) e DOCX (via Image) também. Migração: troque
+  `using Reporting.Output.Pdf;` por `using Reporting.Output;` onde só o contrato é usado (`SkiaPdfExporter` e
+  `PdfExportOptions` continuam em `Reporting.Output.Pdf`); quem referencia o pacote PDF recebe `Reporting.Output`
+  transitivamente.
+
+### Pós-auditoria e roadmap (2026-09 a 2026-10)
+
+- **Execução e memória:** documento preparado em arquivo temporário (`PrepareAsync`), emissão progressiva de
+  páginas (`StreamPagesAsync`), `PaginationLimits` opcionais, preview do designer sob demanda com cache de três
+  páginas, cache limitado de caminhos de propriedade e telemetria `Activity`/`Meter` por fase (#270).
+- **Saída correta:** a borda (`Style.Border`) passa a ser desenhada em qualquer elemento e em cada fatia de um Tablix
+  que pagina; `CornerRadius` chega a retângulos sem filhos em PDF, SVG, PNG, GDI e ESC/POS (#275). `RowSpan` e
+  linhas-modelo extras da tabela plana, que o renderizador não desenha, passam a gerar o diagnóstico `ORL025` em vez
+  de sumir (#274, #279). O aviso não recupera o conteúdo, e a matriz ainda descarta células de corpo além da
+  primeira sem avisar (ROADMAP, item 2a).
+- **RDL:** o export preserva drill-down — `ToggleItem`, estado inicial e visibilidade condicional — e resolve
+  referências por bookmark para o nome exportado (#276).
+- **Designer:** desfazer/refazer não deixa elemento fora do documento selecionado (#277); o menu de exportação
+  lista o que o host registrou, falhas de preview e exportação aparecem num alerta, e a exportação recusa cliques
+  enquanto roda (#280).
+- **Dependências:** SkiaSharp 4 (#253, #269), NCalc 7 (#254), varredura de NuGets e actions (#249, #264, #268,
+  #272) e pins de segurança para SSH.NET (#247) e `System.Security.Cryptography.Pkcs` (#271).
+- **Qualidade e processo:** CI Linux cobrindo todos os projetos cross-platform, Dependabot, CodeQL e auditoria de
+  vulnerabilidades (#232); golden files (#233); gate de breaking change com Package Validation (#235); XML docs
+  obrigatórios no núcleo (#236, #247); contrato de integração contra SQL Server, PostgreSQL e MySQL reais, que achou
+  e corrigiu cancelamento ignorado no `AdoNetDataSource` (#237); benchmarks (#229, #243); teste de embutimento de
+  fontes no PDF (#248); roadmap re-verificado (#273).
 
 ### Correções da auditoria F01–F27 (2026-09-08)
 
@@ -34,8 +58,8 @@ API de baixo nível e Designer), com serialização e testes junto. As entradas 
   restauração da ordem no undo e proteção contra preview assíncrono de um documento anterior.
 - Impressão: seleção de páginas, cópias ESC/POS, ownership do transporte, descarte ADO.NET em falha e
   compilação real Android com gate próprio no CI.
-- F24: filtro/ordenação/NoRows em subdetails e variáveis de grupo implementados; propriedades de grupo
-  ainda sem suporte integral geram diagnóstico `ORL024` no resultado e aviso no designer.
+- F24: filtro/ordenação/NoRows em subdetails e variáveis de grupo implementados; filtro, ordenação e
+  `KeepTogether` de grupo completados em seguida (#270), o que eliminou o diagnóstico `ORL024`.
 - Mantidas as correções anteriores de progresso de paginação, exportação raster, totais de grupos,
   canvas contínuo e replay de primitivas (F01/F03/F04/F13/F15).
 

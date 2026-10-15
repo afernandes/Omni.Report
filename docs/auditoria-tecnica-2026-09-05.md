@@ -1,5 +1,12 @@
 # Auditoria técnica profunda do OmniReport — 05/09/2026
 
+> **Evidências locais.** Os caminhos `artifacts/...` citados neste documento ficam na máquina onde a rodada foi
+> executada: a pasta está no `.gitignore` e não acompanha o repositório. As evidências versionadas estão em
+> `docs/evidencias/`. Da seção de reprodução, só o build, os testes (com cobertura) e o build Android rodam a partir
+> de um clone; as métricas (`Metrics`, `js-metrics`), o `Harness` (repros, memória, benchmark, retenção, impressão)
+> e os scripts auxiliares vivem em `artifacts/auditoria-2026-09-05/` e **não** acompanham o repositório — esses
+> ensaios não são repetíveis só com os comandos listados.
+
 > **Evolução posterior — 09/09/2026.** As seis recomendações após o PR #260 receberam implementação: preview por demanda, limites de execução, semânticas de grupo de F24, documento preparado/emissão de páginas de F25, cache limitado, isolamento do designer, organização de F28 e telemetria. Resultados atuais, contratos e verificações ainda abertas estão em [Evolução pós-auditoria](evolucao-pos-auditoria-2026-09-09.md). O diagnóstico ORL024 foi removido para as semânticas agora implementadas; a materialização das fontes permanece. Esta rodada foi incorporada à main pelo PR #270. As atualizações anteriores e o corpo abaixo preservam o histórico.
 
 > **Atualização posterior — tratamento de F01 a F27 em 08/09/2026.** A rodada atual aprovou 1.919 testes, com 0 falhas e 30 integrações ignoradas; builds Release da solução e do Android real sem avisos/erros. A situação de cada item, alterações de contrato, reprodução e limitações estão em [Correções F01–F27](correcoes-f01-f27-2026-09-08.md). F24 inclui diagnósticos ORL024 para três semânticas de grupo ainda não suportadas; F25 reduz releituras e agregações repetidas, mas mantém materialização. Os achados e números do corpo original abaixo são históricos.
