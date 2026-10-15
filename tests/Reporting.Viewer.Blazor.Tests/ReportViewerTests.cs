@@ -47,6 +47,24 @@ public class ReportViewerTests : Bunit.BunitContext
     }
 
     [Fact]
+    public void Renders_xlsx_button_whatever_the_casing_of_the_registered_format()
+    {
+        // The Designer's registry matches formats ignoring case; the Viewer must find the same registrations.
+        Services.AddSingleton<Reporting.Output.IReportExporter>(new UpperCaseXlsxExporter());
+        var cut = Render<ReportViewer>(p => p.Add(v => v.Report, BuildSampleReport()));
+
+        cut.FindAll("button[title='Exportar XLSX']").Should().ContainSingle();
+    }
+
+    private sealed class UpperCaseXlsxExporter : Reporting.Output.IReportExporter
+    {
+        public string Format => "XLSX";
+        public string FileExtension => ".xlsx";
+        public string ContentType => "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+        public void Export(RenderedReport report, Stream output) => output.WriteByte(0);
+    }
+
+    [Fact]
     public void Renders_xlsx_button_when_the_host_registers_the_exporter()
     {
         Services.AddSingleton<Reporting.Output.IReportExporter>(new Reporting.Output.Excel.ExcelExporter());

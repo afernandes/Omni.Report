@@ -167,7 +167,8 @@ public partial class ReportViewer : ComponentBase, IDisposable
     // AddOmniReportExporters()): the Viewer does not reference ClosedXML, and the button only shows when a host
     // registered the format.
     private IReportExporter? XlsxExporter => _xlsxExporter ??= ((IEnumerable<IReportExporter>?)Services
-        .GetService(typeof(IEnumerable<IReportExporter>)))?.FirstOrDefault(e => e.Format == "xlsx");
+        .GetService(typeof(IEnumerable<IReportExporter>)))?
+        .FirstOrDefault(e => string.Equals(e.Format, "xlsx", StringComparison.OrdinalIgnoreCase));
     private IReportExporter? _xlsxExporter;
 
     private async Task ExportXlsxAsync()
