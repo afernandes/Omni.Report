@@ -46,6 +46,13 @@ internal static class PrintingReplayFixture
             Fill = new BrushStyle(Color.Black),
         });
 
+    internal static RenderedPage RoundedRectanglePage(bool rounded) => Page(new DrawRectanglePrimitive
+    {
+        Bounds = Bounds,
+        Fill = new BrushStyle(Color.Black),
+        CornerRadius = rounded ? new Unit(250) : Unit.Zero,
+    });
+
     private static byte[] BlackImage()
     {
         using var bitmap = new SKBitmap(2, 2);

@@ -44,6 +44,25 @@ public sealed class PrintingReplayTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public void PlayPage_RetanguloComCornerRadius_ArredondaOsCantosNoGdi(bool rounded)
+    {
+        using var bitmap = new System.Drawing.Bitmap(203, 203);
+        bitmap.SetResolution(203, 203);
+        using var graphics = System.Drawing.Graphics.FromImage(bitmap);
+        graphics.Clear(System.Drawing.Color.White);
+        using var context = new GdiRenderingContext(graphics);
+
+        RenderedReportPlayer.PlayPage(PrintingReplayFixture.RoundedRectanglePage(rounded), context);
+        graphics.Flush();
+
+        bitmap.GetPixel(101, 101).R.Should().Be(0, "the interior is filled either way");
+        bitmap.GetPixel(4, 4).R.Should().Be(rounded ? (byte)255 : (byte)0,
+            "a 250-mil radius leaves the corner pixel outside the shape");
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void PlayPage_ClipRetangularOuArredondado_PreservaRecorteEPrimitivaSeguinteNoGdi(bool rounded)
     {
         using var bitmap = new System.Drawing.Bitmap(203, 203);

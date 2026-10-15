@@ -123,6 +123,10 @@ public sealed class XmlExporter : IReportExporter
                 {
                     writer.WriteAttributeString("fillColor", FormatColor(r.Fill.Color));
                 }
+                if (r.CornerRadius > Unit.Zero)
+                {
+                    WriteUnitAttr(writer, "cornerRadius", r.CornerRadius);
+                }
                 writer.WriteEndElement();
                 break;
             case DrawEllipsePrimitive e:

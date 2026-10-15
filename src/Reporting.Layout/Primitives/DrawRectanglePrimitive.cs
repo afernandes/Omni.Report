@@ -12,4 +12,8 @@ public sealed record DrawRectanglePrimitive : LayoutPrimitive
 
     /// <summary>Interior fill. Null leaves the interior untouched, showing whatever is beneath.</summary>
     public BrushStyle? Fill { get; init; }
+
+    /// <summary>Radius of the four corners; <see cref="Unit.Zero"/> draws square corners. Backends cap it at half
+    /// the shorter side.</summary>
+    public Unit CornerRadius { get; init; } = Unit.Zero;
 }

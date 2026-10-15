@@ -258,6 +258,7 @@ internal sealed class BandRenderer
                 Bounds = elementBounds,
                 SourceElementId = element.Id,
                 Fill = bgBrush,
+                CornerRadius = element is RectangleElement rounded ? rounded.CornerRadius : Unit.Zero,
             });
         }
 
@@ -286,6 +287,8 @@ internal sealed class BandRenderer
         // during recursion — so the parent's tail must stop before them, or it would clobber/leak the
         // rect's link onto every child. The rect arm sets this to its pre-children count; -1 = "all".
         int linkTo = -1;
+        // Where Style.Border is drawn: the element's box, or its final size when it grows/shrinks (TextBox, Tablix).
+        var borderBounds = elementBounds;
         switch (element)
         {
             case LabelElement lbl:
@@ -308,6 +311,7 @@ internal sealed class BandRenderer
                 {
                     primitives[bgImageIndex] = ((DrawImagePrimitive)primitives[bgImageIndex]) with { Bounds = rendered.Bounds };
                 }
+                borderBounds = rendered.Bounds;
                 // Publish this text box's value for ReportItems!Name.Value lookups in later bands.
                 RecordReportItem(tb, text, ctx);
                 actualHeight = MaxHeight(actualHeight, rendered.Bounds, bandOrigin, growsTo: tb.CanGrow ? rendered.Bounds : null);
@@ -319,13 +323,21 @@ internal sealed class BandRenderer
                 break;
 
             case RectangleElement rect:
+                // A uniform border strokes the rectangle itself, which keeps its rounded corners; per-side borders
+                // become one line per visible side (square corners — a rounded outline cannot vary by side).
+                bool uniformBorder = IsUniform(effectiveStyle.Border);
                 primitives.Add(new DrawRectanglePrimitive
                 {
                     Bounds = elementBounds,
                     SourceElementId = rect.Id,
-                    Pen = ResolveBorderPen(rect),
+                    Pen = uniformBorder ? PenStyle.FromBorderSide(effectiveStyle.Border!.Top) : null,
                     Fill = rect.FillColor is { } c ? new BrushStyle(c) : null,
+                    CornerRadius = rect.CornerRadius,
                 });
+                if (!uniformBorder)
+                {
+                    EmitBorder(primitives, effectiveStyle.Border, elementBounds, rect.Id);
+                }
                 actualHeight = MaxHeight(actualHeight, elementBounds, bandOrigin, null);
                 // The rect owns ONLY its fill for link/bookmark purposes — children below get their own.
                 linkTo = primitives.Count;
@@ -355,7 +367,7 @@ internal sealed class BandRenderer
                 {
                     Bounds = elementBounds,
                     SourceElementId = ellipse.Id,
-                    Pen = ResolveBorderPen(ellipse),
+                    Pen = EllipsePen(effectiveStyle.Border),
                     Fill = ellipse.FillColor is { } cf ? new BrushStyle(cf) : null,
                 });
                 actualHeight = MaxHeight(actualHeight, elementBounds, bandOrigin, null);
@@ -434,6 +446,7 @@ internal sealed class BandRenderer
                     primitives.Add(p);
                 }
                 var tablixGrown = new Rectangle(elementBounds.X, elementBounds.Y, elementBounds.Width, tablixHeight);
+                borderBounds = tablixGrown;
                 actualHeight = MaxHeight(actualHeight, tablixGrown, bandOrigin, tablixGrown);
                 break;
 
@@ -452,6 +465,13 @@ internal sealed class BandRenderer
                 }
                 actualHeight = MaxHeight(actualHeight, elementBounds, bandOrigin, null);
                 break;
+        }
+
+        // Every other element draws Style.Border on top of its content. Rectangle and ellipse stroke their own outline
+        // above, and a line is itself a stroke.
+        if (element is not (RectangleElement or EllipseElement or LineElement))
+        {
+            EmitBorder(primitives, effectiveStyle.Border, borderBounds, element.Id);
         }
 
         // Propagate the element's Action/Bookmark onto every primitive it just emitted, so
@@ -723,15 +743,57 @@ internal sealed class BandRenderer
         };
     }
 
-    private static PenStyle? ResolveBorderPen(ReportElement element)
+    private static bool IsUniform(Border? border)
+        => border is not null && border.Top.IsVisible
+           && border.Left == border.Top && border.Right == border.Top && border.Bottom == border.Top;
+
+    // An ellipse has no sides; the first visible one stands for the outline, so a border set only on the bottom
+    // still draws instead of being ignored because the top happened to be empty.
+    private static PenStyle? EllipsePen(Border? border)
+        => border is null ? null
+            : PenStyle.FromBorderSide(border.Top) ?? PenStyle.FromBorderSide(border.Right)
+              ?? PenStyle.FromBorderSide(border.Bottom) ?? PenStyle.FromBorderSide(border.Left);
+
+    /// <summary>Emits <paramref name="border"/> around <paramref name="bounds"/>: a single stroked rectangle when the
+    /// four sides are identical, otherwise one line per visible side (top, right, bottom, left).</summary>
+    private static void EmitBorder(List<LayoutPrimitive> primitives, Border? border, Rectangle bounds, string elementId)
     {
-        var border = element.Style.Border;
         if (border is null)
         {
-            return null;
+            return;
         }
-        // Element-level fallback: use the top side as representative.
-        return PenStyle.FromBorderSide(border.Top);
+        if (IsUniform(border))
+        {
+            primitives.Add(new DrawRectanglePrimitive
+            {
+                Bounds = bounds,
+                SourceElementId = elementId,
+                Pen = PenStyle.FromBorderSide(border.Top),
+            });
+            return;
+        }
+        Point topLeft = new(bounds.X, bounds.Y), topRight = new(bounds.Right, bounds.Y);
+        Point bottomLeft = new(bounds.X, bounds.Bottom), bottomRight = new(bounds.Right, bounds.Bottom);
+        AddSide(border.Top, topLeft, topRight);
+        AddSide(border.Right, topRight, bottomRight);
+        AddSide(border.Bottom, bottomLeft, bottomRight);
+        AddSide(border.Left, topLeft, bottomLeft);
+
+        void AddSide(BorderSide side, Point from, Point to)
+        {
+            if (PenStyle.FromBorderSide(side) is not { } pen)
+            {
+                return;
+            }
+            primitives.Add(new DrawLinePrimitive
+            {
+                Bounds = new Rectangle(from.X, from.Y, to.X - from.X, to.Y - from.Y),
+                From = from,
+                To = to,
+                Pen = pen,
+                SourceElementId = elementId,
+            });
+        }
     }
 
     // The effective Core style after applying any matching conditional formats. Carries Format (the

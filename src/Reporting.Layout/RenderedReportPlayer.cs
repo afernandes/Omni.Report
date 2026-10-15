@@ -90,6 +90,11 @@ public static class RenderedReportPlayer
                 case DrawLinePrimitive l:
                     context.DrawLine(l.From, l.To, l.Pen);
                     break;
+                case DrawRectanglePrimitive { CornerRadius.Mils: > 0 } r:
+                    // IRenderingContext has no rounded-rectangle call; a path keeps every backend (GDI, ESC/POS
+                    // raster, host implementations) honouring the radius without widening the public contract.
+                    context.DrawPath(builder => BuildRoundedRectangle(builder, r.Bounds, r.CornerRadius), r.Pen, r.Fill);
+                    break;
                 case DrawRectanglePrimitive r:
                     context.DrawRectangle(r.Bounds, r.Pen, r.Fill);
                     break;
@@ -128,5 +133,25 @@ public static class RenderedReportPlayer
                 context.PopClip();
             }
         }
+    }
+
+    /// <summary>Traces a rectangle with quarter-circle corners clockwise from the top edge. The radius is capped at
+    /// half the shorter side, matching the Skia exporters.</summary>
+    private static void BuildRoundedRectangle(IPathBuilder builder, Rectangle bounds, Unit radius)
+    {
+        var shorter = bounds.Width < bounds.Height ? bounds.Width : bounds.Height;
+        var r = radius * 2 > shorter ? shorter / 2 : radius;
+        var d = r * 2;
+        Unit left = bounds.X, top = bounds.Y, right = bounds.X + bounds.Width, bottom = bounds.Y + bounds.Height;
+        builder.MoveTo(new Point(left + r, top))
+            .LineTo(new Point(right - r, top))
+            .Arc(new Rectangle(right - d, top, d, d), 270, 90)
+            .LineTo(new Point(right, bottom - r))
+            .Arc(new Rectangle(right - d, bottom - d, d, d), 0, 90)
+            .LineTo(new Point(left + r, bottom))
+            .Arc(new Rectangle(left, bottom - d, d, d), 90, 90)
+            .LineTo(new Point(left, top + r))
+            .Arc(new Rectangle(left, top, d, d), 180, 90)
+            .Close();
     }
 }
