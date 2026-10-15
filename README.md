@@ -31,10 +31,10 @@ XLSX/CSV preservam valores escalares e identificadores. XLSX não deduz fórmula
 exportados como texto. A inferência de JSON/XML usa `decimal` para valores fracionários.
 
 Parte do conteúdo que o modelo aceita mas o renderizador ainda não desenha é reportada em
-`RenderedReport.Diagnostics` (exibido pelo designer no preview) — hoje, `ORL025` para `RowSpan > 1` e para células
-além da linha 1 numa tabela plana. O diagnóstico avisa; não desenha o que falta. A cobertura não é total: a matriz
-ainda descarta células de corpo além da primeira sem aviso (ROADMAP, item 2a), então ausência de diagnósticos não
-garante ausência de perda. O host deve avaliar os diagnósticos antes de aceitar a saída.
+`RenderedReport.Diagnostics` (exibido pelo designer no preview) — hoje, `ORL025` para `RowSpan > 1`, para células
+além da linha 1 numa tabela plana e para células da matriz além do canto e da primeira medida. O diagnóstico avisa;
+não desenha o que falta. A cobertura se limita a esses casos conhecidos: ausência de diagnósticos não prova que nada
+mais foi descartado. O host deve avaliar os diagnósticos antes de aceitar a saída.
 
 ## Galeria
 

@@ -81,7 +81,7 @@ Os problemas que restam são de cinco tipos:
 |---|---|---|---|---|---|
 | 1 | PDF embute as fontes **inteiras** — sem subsetting real (1 página = 1,1 MB) — **✔ FEITO (#278)** | Fidelidade/Perf | M | 🧪 | R2 #23 reaberto |
 | 2 | `RowSpan` aceito, persistido e **ignorado** pelo renderer do Tablix — **✔ FEITO (#274)** | Fidelidade | M | ✅ | R2 #36 |
-| 2a | Matriz: células de corpo além da primeira ignoradas **sem** o aviso `ORL025` | Fidelidade | P | ✅ | item 2 |
+| 2a | Matriz: células de corpo além da primeira ignoradas **sem** o aviso `ORL025` — **✔ FEITO (#288)** | Fidelidade | P | ✅ | item 2 |
 | 3 | `Style.Border` não desenhada em Label/TextBox/Image; grade do Tablix com cor fixa — **✔ FEITO (#275)** (grade: ver 3a) | Fidelidade | M | ✅ | R2 #21a |
 | 3a | Grade do Tablix com cor e espessura fixas, sem relação com o estilo | Fidelidade | M | ✅ | item 3 |
 | 4 | `CornerRadius` descartado em retângulo sem filhos — **✔ FEITO (#275)** | Fidelidade | P | ✅ | R2 #21b |
@@ -276,7 +276,7 @@ inspeção, os 3 casos positivos falham. Quando o item 49 entrar, o `RowSpan` ga
 
 ---
 
-### 2a. Matriz: células de corpo além da primeira ignoradas sem aviso ✅
+### 2a. Matriz: células de corpo além da primeira ignoradas sem aviso ✅ — ✔ FEITO
 
 **O problema.** O `ORL025` do item 2 cobre a tabela plana, não a matriz. O `TablixRenderer` da matriz lê o canto
 e **só a primeira** `TextBoxElement` de corpo (`RowIndex >= 1 && ColumnIndex >= 1`, `body ??= tb`); uma segunda
@@ -287,6 +287,13 @@ um resultado sem diagnósticos não garante que nada sumiu. Apontado na revisão
 conteúdo, com teste positivo e negativo nos três modos. Várias medidas por interseção são o item 49.
 
 **Pronto quando:** uma matriz com duas células de corpo gera o diagnóstico; a matriz de uma célula não gera ruído.
+
+**FEITO (#288).** `InspectLimitations` conta, espelhando `RenderMatrixCore`, as células com conteúdo que a matriz
+não desenha — tudo além do canto e da primeira caixa de texto do corpo, o que inclui rótulos fixos de cabeçalho — e
+emite `ORL025` `Tablix[nome].MatrixCells` com a quantidade. O mesmo levantamento achou a perda na origem: o
+importador RDL pegava só o primeiro `Textbox` do `TablixBody` sem avisar; agora uma segunda expressão distinta vai
+para `ImportWarnings` (células que repetem a medida são totais e não avisam). Verificado por 5 testes novos, com os
+positivos falhando antes da correção, e por sabotagem.
 
 ---
 
@@ -1112,6 +1119,7 @@ movimento de arquivos, e 31. O restante do item 26 (`designer.js`, `ElementViewM
 | Item 7 — exportação no Designer sem registro, sem erro visível e com cliques perdidos | Menu do registro, alerta de falha, estado ocupado | #280 |
 | Item 8 — documentação desatualizada | README, badges, CHANGELOG e aviso de evidências locais | #281 |
 | Item 9 — contrato de exportação no pacote PDF | Pacote `Reporting.Output`; CSV/JSON/XML/Markdown/Excel sem SkiaSharp | #282 |
+| Item 2a — matriz descartava medidas extras sem aviso | `ORL025` `MatrixCells` + aviso no import RDL | #288 |
 
 **Lições que valem para os próximos itens:**
 
