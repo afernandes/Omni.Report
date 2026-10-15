@@ -6,6 +6,7 @@
 :root,
 [data-theme="light"] {
   /* Surfaces */
+  --paper:            #FFFFFF;   /* the report page itself — white in BOTH themes (it is what gets printed) */
   --bg-canvas:        #FAFAF7;   /* paper, subtle ivory */
   --bg-surface:       #FFFFFF;
   --bg-panel:         #F4F2EC;   /* off-white cool */

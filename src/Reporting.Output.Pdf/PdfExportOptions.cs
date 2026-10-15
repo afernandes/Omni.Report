@@ -20,5 +20,13 @@ public sealed record PdfExportOptions
     /// <summary>If true, raster images embedded into the PDF will be compressed.</summary>
     public bool CompressImages { get; init; } = true;
 
+    /// <summary>Embeds only the glyphs the report uses from each font instead of the whole font program. Defaults
+    /// to <see langword="true"/>: a one-page report otherwise carries every font file it touches — over a megabyte
+    /// for two Arial weights, tens of megabytes for a CJK font.</summary>
+    /// <remarks>Turn it off only when the recipient must edit text in the PDF with characters the report does not
+    /// contain. A font that cannot be subsetted (license flags, variable fonts, platform without the native
+    /// subsetter) is embedded whole regardless of this setting.</remarks>
+    public bool SubsetFonts { get; init; } = true;
+
     public static readonly PdfExportOptions Default = new();
 }

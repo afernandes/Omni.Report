@@ -36,6 +36,13 @@ public partial class ReportDesigner
 
     [Inject] private IServiceProvider Services { get; set; } = default!;
 
+    // Optional: hosts without logging configured (some tests, minimal MAUI setups) get a no-op logger instead of a
+    // resolution failure. Falls on the host's pipeline (Seq, Application Insights, OpenTelemetry) when present.
+    private Microsoft.Extensions.Logging.ILogger? _logger;
+    private Microsoft.Extensions.Logging.ILogger Logger => _logger ??=
+        Services.GetService(typeof(Microsoft.Extensions.Logging.ILogger<ReportDesigner>)) as Microsoft.Extensions.Logging.ILogger
+        ?? Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance;
+
     private readonly Services.DesignerMenuCoordinator _menus = new();
     private IReadOnlyList<byte[]> _previewPages = [];
     private int _previewCurrentPage;
@@ -933,7 +940,11 @@ public partial class ReportDesigner
         await using var src = e.File.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024);
         await src.CopyToAsync(ms);
         try { State.Load(ms.ToArray()); }
-        catch (Exception ex) { Console.Error.WriteLine($"Falha ao carregar .repx: {ex.Message}"); }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _alert = new("Falha ao abrir o arquivo", $"Não foi possível abrir {e.File.Name}: {ex.Message}");
+            Reporting.Designer.Blazor.Services.DesignerLog.RepxLoadFailed(Logger, ex);
+        }
     }
 
     private async Task OnLoadRdlFile(InputFileChangeEventArgs e)
@@ -946,7 +957,11 @@ public partial class ReportDesigner
         await using var src = e.File.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024);
         await src.CopyToAsync(ms);
         try { State.LoadRdl(ms.ToArray()); }
-        catch (Exception ex) { Console.Error.WriteLine($"Falha ao importar .rdl: {ex.Message}"); }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _alert = new("Falha ao importar o RDL", $"Não foi possível importar {e.File.Name}: {ex.Message}");
+            Reporting.Designer.Blazor.Services.DesignerLog.RdlImportFailed(Logger, ex);
+        }
     }
 
     // RDL export is a DEFINITION serialization (the native model projected to RDL), not a render export — so it
@@ -994,7 +1009,7 @@ public partial class ReportDesigner
         {
             // A broken expression, data source or host service must reach the author, not just the server's stderr.
             _alert = new("Falha no preview", ex.Message);
-            Console.Error.WriteLine($"Preview error: {ex.Message}");
+            Reporting.Designer.Blazor.Services.DesignerLog.PreviewFailed(Logger, ex);
         }
     }
 
@@ -1244,7 +1259,7 @@ public partial class ReportDesigner
             // An exporter is host-pluggable code: whatever it throws becomes a message the author can act on, rather
             // than an unhandled exception that would tear down the circuit.
             _alert = new("Falha na exportação", $"Não foi possível exportar em {descriptor.Label}: {ex.Message}");
-            Console.Error.WriteLine($"Export ({descriptor.Format}) error: {ex.Message}");
+            Reporting.Designer.Blazor.Services.DesignerLog.ExportFailed(Logger, descriptor.Format, ex);
         }
         finally
         {
@@ -1304,7 +1319,7 @@ public partial class ReportDesigner
         {
             // Errors surface in the dialog (it catches and shows the message). Log
             // server-side so support can correlate.
-            Console.Error.WriteLine($"Print error: {ex.Message}");
+            Reporting.Designer.Blazor.Services.DesignerLog.PrintFailed(Logger, ex);
             throw;
         }
     }

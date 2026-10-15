@@ -79,7 +79,7 @@ Os problemas que restam são de cinco tipos:
 
 | # | Item | Tipo | Esforço | Conf. | Origem |
 |---|---|---|---|---|---|
-| 1 | PDF embute as fontes **inteiras** — sem subsetting real (1 página = 1,1 MB) | Fidelidade/Perf | M | 🧪 | R2 #23 reaberto |
+| 1 | PDF embute as fontes **inteiras** — sem subsetting real (1 página = 1,1 MB) — **✔ FEITO (#278)** | Fidelidade/Perf | M | 🧪 | R2 #23 reaberto |
 | 2 | `RowSpan` aceito, persistido e **ignorado** pelo renderer do Tablix — **✔ FEITO (#274)** | Fidelidade | M | ✅ | R2 #36 |
 | 3 | `Style.Border` não desenhada em Label/TextBox/Image; grade do Tablix com cor fixa — **✔ FEITO (#275)** (grade: ver 3a) | Fidelidade | M | ✅ | R2 #21a |
 | 3a | Grade do Tablix com cor e espessura fixas, sem relação com o estilo | Fidelidade | M | ✅ | item 3 |
@@ -96,7 +96,7 @@ Os problemas que restam são de cinco tipos:
 | 9 | Abstração de exportação mora no pacote PDF → CSV/JSON/XML/Excel arrastam SkiaSharp — **✔ FEITO (#282)** | Arquitetura | M | ✅ | novo |
 | 10 | Contrato de export: `ExportAsync` real, faixa de páginas e consumo de `PreparedReport` | API | M | ✅ | R2 #14 + #39 |
 | 11 | Designer, Viewer e Hosting referenciam **todos** os exporters | Arquitetura | M | ✅ | novo |
-| 12 | Nenhum `ILogger` em `src/`; falhas do Designer vão para `Console.Error` | Observabilidade | P | ✅ | novo |
+| 12 | Nenhum `ILogger` em `src/`; falhas do Designer vão para `Console.Error` — **✔ FEITO (#283)** | Observabilidade | P | ✅ | novo |
 | 13 | Monaco carregado do CDN em runtime — não funciona offline nem sob CSP | Segurança/DX | M | ✅ | novo |
 | 14 | **Decisão:** postura de segurança do Roslyn (só fonte confiável × isolamento real) | Segurança | P/G | 🔍 | R2 #11 |
 | 15 | **Decisão:** i18n — a UI já mistura português e inglês | Produto | P/G | 🧪 | R2 #30 |
@@ -107,7 +107,7 @@ Os problemas que restam são de cinco tipos:
 |---|---|---|---|---|---|
 | 16 | Paleta de comandos com 13 de ~40 comandos e campo de busca sem foco | UX | P | 🧪 | novo |
 | 17 | Menus incompletos e enganosos ("Inserir" com 6 de ~19 tipos; "Validar" = preview; "Atalhos" = paleta) | UX | P | 🧪 | novo |
-| 18 | Tema escuro escurece o papel — o texto preto do relatório some | UX/Fidelidade | P | 🧪 | novo |
+| 18 | Tema escuro escurece o papel — o texto preto do relatório some — **✔ FEITO (#285)** | UX/Fidelidade | P | 🧪 | novo |
 | 19 | Designer não cria fontes JSON, XML, REST nem FileSystem (paridade dos 3 modos) | Paridade | M | 🧪 | novo |
 | 20 | Sem layout responsivo: abaixo de ~1.280 px o painel de propriedades sai da tela | UX | M | 🧪 | novo |
 | 21 | Acessibilidade: botões sem nome, toggles sem `aria-pressed`, modais sem `aria-modal`, 304 estilos inline | A11y | M | ✅ | novo |
@@ -170,7 +170,7 @@ Os problemas que restam são de cinco tipos:
 
 ## P0 — Saída incorreta ou enganosa
 
-### 1. PDF embute as fontes inteiras — sem subsetting real 🧪
+### 1. PDF embute as fontes inteiras — sem subsetting real 🧪 — ✔ FEITO
 
 **O problema.** Todo PDF carrega o programa TrueType **completo** de cada fonte usada. Um relatório de uma página
 com Arial e Arial Bold sai com **1,1 MB**, dos quais ~1,1 MB são as duas fontes.
@@ -204,6 +204,39 @@ PDF/A (item 37), que exige fontes embutidas em todo arquivo arquivado.
 
 **Pronto quando:** o PDF de uma página do sample 01 fica abaixo de ~100 KB, o texto continua extraível e o teste
 falha se o embutimento voltar a ser completo.
+
+**FEITO (#278) — hipótese da Ação confirmada; subsetting feito antes de desenhar.** O `libSkiaSharp` 4.153.1
+do NuGet não tem nenhum símbolo `hb_*` (PDB do win-x64 e `.so` do linux-x64): sem HarfBuzz, o `SkPDFSubsetFont`
+é o stub que devolve nulo e o Skia embute o arquivo inteiro, escrevendo o prefixo mesmo assim. O
+`SKDocumentPdfMetadata` não tem opção de subsetter. O nativo do HarfBuzzSharp 14.2.1.301 exporta o `hb-subset`
+(win-x64, linux-x64, linux-arm64, osx); o wrapper gerenciado é que não o expõe.
+
+Como o Skia embute o programa da typeface com que desenha, o `SkiaPdfExporter` passou a subsetar **antes** de
+desenhar: `PdfFontSubsetter` coleta os caracteres por typeface num pré-passe (pela mesma decisão por caractere do
+renderer, fallback incluído — `SkiaPrimitiveRenderer.CollectTypefaceUsage`), `HarfBuzzSubsetter` corta a fonte
+via P/Invoke e o texto é desenhado com a typeface do subset. Fonte que não pode ser subsetada (licença `fsType`,
+fonte variável, nativo ausente, avanços ou métricas divergentes em algum tamanho usado) sai inteira, como antes.
+`PdfExportOptions.SubsetFonts` (padrão `true`) desliga.
+
+| Medição (sample 01, Windows) | Antes | Depois |
+|---|--:|--:|
+| PDF de uma página | 1.111.607 bytes | 53.206 bytes (−95,2%) |
+| `/Length1` Arial | 1.045.720 | 44.716 |
+| `/Length1` Arial Bold | 989.780 | 31.636 |
+
+Os demais samples do `SkiaPdfExporter` caem de 92% a 98%. Verificado por três testes escritos antes da correção e
+confirmados falhando: `/Length1` < 1/5 do menor arquivo de origem, sample 01 < 100 KB e, com e sem subset,
+baseline de início e fim de cada glifo idênticos (sample 01 e um relatório com 3 estilos, 3 tamanhos, acentos e
+caracteres em fonte de fallback). No Linux (nativo FreeType/fontconfig) as mesmas asserções rodam no job
+`ubuntu-latest` do CI. A revisão do PR fechou três bordas, cada uma com teste que falha sem a correção: o `.notdef`
+mantém o contorno (caractere que nenhuma fonte cobre continua mostrando a caixa, não um espaço em branco), surrogate
+solto sai como o mesmo U+FFFD do arquivo inteiro, e uma `libHarfBuzzSharp` sem `hb-subset` não vaza a cópia da fonte.
+
+De quebra: o fallback CJK do Windows (Yu Gothic UI) vem de um `.ttc`, e o Skia embutia **a coleção inteira** como
+`/FontFile2` — programa inválido. O subset sai com uma face só. **Custo:** a exportação do sample 01 no Windows
+foi de ~45 ms para ~140 ms — ~10 ms do pré-passe e do corte, o resto é o primeiro uso de typeface nova no backend
+PDF do Skia. **Fora do escopo:** o `SkiaPdfRenderingContext` (canvas em streaming, sample 05) continua embutindo
+as fontes inteiras.
 
 ---
 
@@ -508,7 +541,7 @@ Designer referencia `CodeFirst`.
 
 ---
 
-### 12. Nenhum `ILogger` em `src/` ✅
+### 12. Nenhum `ILogger` em `src/` ✅ — ✔ FEITO
 
 **O problema.** Zero ocorrências de `ILogger` em `src/`. O Designer escreve falhas em `Console.Error` em seis
 pontos: `ReportDesigner.razor.cs:936, 949, 995, 1229, 1284` e `Components/MonacoEditor.razor.cs:67`. Num host
@@ -520,6 +553,14 @@ substitui** log de erro com mensagem e exceção.
 
 **Ação.** `ILogger<T>` injetado (com `NullLogger` como padrão), message templates estruturados, sem interpolação,
 sem dados do relatório. Para o Designer, o mesmo erro vai ao log **e** à UI (item 7).
+
+**FEITO (#283).** Os seis pontos viraram eventos `[LoggerMessage]` com `EventId` fixo (`DesignerLog`), resolvidos de
+forma opcional — sem logging configurado, `NullLogger`. Os templates levam só a operação e, na exportação, o formato.
+A revisão apontou que encaminhar a exceção ao logger vazava conteúdo mesmo assim (uma `ExpressionEvaluationException`
+cita a expressão inteira, e o provedor persiste o objeto): agora só vai a cadeia de tipos da exceção, e o teste usa uma
+exceção com conteúdo sensível e confere mensagem, estado estruturado e ausência do objeto. Abrir `.repx` e importar `.rdl` também falhavam em
+silêncio para o autor e passaram a usar o alerta do item 7. A biblioteca fora do Designer não ganhou log: ela devolve
+diagnósticos (`RenderedReport.Diagnostics`, `ExportWarning`) e telemetria, que é o canal certo para quem a consome.
 
 ---
 
@@ -604,7 +645,7 @@ e listar erros com localização, sem executar); diálogo de atalhos de verdade.
 
 ---
 
-### 18. Tema escuro escurece o papel 🧪
+### 18. Tema escuro escurece o papel 🧪 — ✔ FEITO
 
 Com o tema escuro, a área da página fica escura, mas os elementos mantêm a cor do relatório (preto por padrão).
 Os cabeçalhos "Produto", "Qtde" e "Preço Unitário" do sample 01 ficam quase invisíveis. Além de ilegível, deixa
@@ -612,6 +653,10 @@ de ser WYSIWYG: o papel impresso é branco.
 
 **Ação.** O tema escuro deve escurecer o *chrome* do Designer, não o papel — a página continua com o fundo
 definido no relatório (branco por padrão), como fazem SSRS Report Builder, Crystal e o Word.
+
+**FEITO (#285).** Token `--paper`, branco nos dois temas, para o fundo da folha; dentro dela, no tema escuro, os tokens
+claros de texto, borda, grade e vínculo de dados são restaurados, e o chrome continua escuro. Verificado no navegador
+pelas cores computadas: papel `rgb(255, 255, 255)` e rótulo em preto. Só CSS — não há teste automatizado de cor.
 
 ---
 
@@ -1026,6 +1071,7 @@ movimento de arquivos, e 31. O restante do item 26 (`designer.js`, `ElementViewM
 | R2 #21 — perda do "inherit" de `ForeColor`/`Font` | O VM lembra que o modelo dizia "herdar" e devolve `null` | #222 |
 | R2 #23 — garantia de fontes no PDF | Teste de embutimento — **reaberto** como item 1 (não mede subsetting) | #248 |
 | R2 #30a / #30b — SkiaSharp 4 e NCalc 7 | Migrações com teste da garantia semântica antes | #253, #254, #269 |
+| Item 1 — PDF embutia as fontes inteiras | Subsetting via `hb-subset` antes de desenhar; PDF de uma página de 1,1 MB para 53 KB | #278 |
 | Item 2 — `RowSpan` e linhas-modelo extras descartados sem aviso | Diagnóstico `ORL025` (o span depende do item 49) | #274 |
 | F01–F27 da auditoria técnica | Ver `docs/correcoes-f01-f27-2026-09-08.md` | #260 |
 | Itens 3 e 4 — borda em qualquer elemento e raio de retângulo sem filhos | Borda sobre o conteúdo no tamanho final; `CornerRadius` na primitiva | #275 |
@@ -1033,6 +1079,8 @@ movimento de arquivos, e 31. O restante do item 26 (`designer.js`, `ElementViewM
 | Item 5 — export RDL sem `ToggleItem`/`InitiallyHidden` | `<Visibility>` completa + `omni:Visible`; fora da lista de perdas | #276 |
 | Advisories do `System.Security.Cryptography.Pkcs` | Pin na 10.0.13 | #271 |
 | Item 6 — elemento-fantasma selecionado após desfazer | Seleção podada a cada mudança do histórico | #277 |
+| Item 18 — tema escuro escurecia o papel | Token `--paper`; folha com tokens claros | #285 |
+| Item 12 — Designer sem `ILogger` | Eventos `[LoggerMessage]` sem conteúdo do relatório | #283 |
 | Item 7 — exportação no Designer sem registro, sem erro visível e com cliques perdidos | Menu do registro, alerta de falha, estado ocupado | #280 |
 | Item 8 — documentação desatualizada | README, badges, CHANGELOG e aviso de evidências locais | #281 |
 | Item 9 — contrato de exportação no pacote PDF | Pacote `Reporting.Output`; exportadores sem SkiaSharp | #282 |
