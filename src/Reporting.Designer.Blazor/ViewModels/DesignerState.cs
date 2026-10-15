@@ -321,12 +321,38 @@ public sealed class DesignerState : Notifying
     private void SubscribeTab(DocumentTab tab)
     {
         tab.Changed += OnTabChanged;
+        tab.History.Changed += OnHistoryChanged;
     }
 
     private void UnsubscribeTab(DocumentTab tab)
     {
         tab.Changed -= OnTabChanged;
+        tab.History.Changed -= OnHistoryChanged;
     }
 
     private void OnTabChanged() => RaiseChanged();
+
+    // Undo and redo can take a selected element out of the document (undoing an insert or a paste, redoing a
+    // delete). A selection still pointing at it leaves a detached view model editable in the property grid, where
+    // edits go nowhere, so whatever left the document leaves the selection too.
+    private void OnHistoryChanged()
+    {
+        if (_selectedElements.Count == 0)
+        {
+            return;
+        }
+        var attached = Report.AllElements().ToHashSet();
+        var detached = _selectedElements.Where(element => !attached.Contains(element)).ToList();
+        if (detached.Count == 0)
+        {
+            return;
+        }
+        foreach (var element in detached)
+        {
+            _selectedElements.Remove(element);
+            element.IsSelected = false;
+        }
+        _selectedElement = _selectedElements.Count > 0 ? _selectedElements[^1] : null;
+        RaiseChanged();
+    }
 }
