@@ -446,6 +446,16 @@ o alerta do preview explica. Verificado com bUnit (`ExportFlowTests`, os 3 falha
 com os 9 formatos + RDL; durante o PDF, 7/7 botões desabilitados; depois, download feito e botões reabilitados. O log
 estruturado continua pendente no item 12.
 
+**Follow-up (#PRNUM) — cinco pontas apontadas na revisão do #280.** (1) Exportar pelo menu depois de um preview bem
+sucedido exportava o documento **anterior** quando a nova preparação falhava (ou o prompt de parâmetros era
+cancelado), e ainda limpava o alerta da falha: `PreviewAsync` passou a dizer se ESTE pedido preparou o relatório, e
+só então há exportação. (2) O menu do TopBar seguia habilitado durante uma exportação e um segundo pedido disparava
+outro preview: o estado ocupado é reservado **antes** da preparação, exportar/imprimir ficam desabilitados no menu
+(o RDL, que só serializa a definição, não) e F5 é ignorado enquanto exporta. (3) Um `OperationCanceledException` que o
+Designer não pediu (timeout de fonte de dados ou do exportador) sumia sem alerta; agora é falha como outra qualquer.
+(4) Trocar de aba durante a exportação nomeava os bytes de A com o nome de B; o nome vem do snapshot preparado.
+Verificado por `ExportConsistencyTests` (6) e sabotagem de cada ponto.
+
 ---
 
 ### 8. Documentação afirma o que não é mais verdade ✅
