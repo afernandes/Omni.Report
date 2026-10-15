@@ -986,10 +986,16 @@ public partial class ReportDesigner
     }
 
     // ─── Preview ────────────────────────────────────────────────────────────────
-    /// <summary>Triggers preview/export. If any report parameter has no cached value and the
+    // Preview button, F5 and the Preview command. Ignored while an export runs: preparing again would replace the
+    // document the export is reading.
+    private Task OnPreview() => _exportingFormat is not null ? Task.CompletedTask : PreviewAsync();
+
+    /// <summary>Paginates the current report for preview. If any report parameter has no cached value and the
     /// user hasn't explicitly skipped prompting, opens the <see cref="ParameterPromptDialog"/>
-    /// first; otherwise paginates immediately with the cached values.</summary>
-    private async Task OnPreview()
+    /// first; otherwise paginates immediately with the cached values. Returns <see langword="true"/> only when THIS
+    /// request prepared the current report — a cancelled prompt, a failure or a tab switch leave whatever preview
+    /// existed before, which an export must not mistake for the current document.</summary>
+    private async Task<bool> PreviewAsync()
     {
         var requestedTab = State.ActiveTab;
         try
@@ -1002,7 +1008,7 @@ public partial class ReportDesigner
                 var values = await PromptForParametersAsync();
                 if (values is null || !ReferenceEquals(requestedTab, State.ActiveTab))
                 {
-                    return; // user cancelled
+                    return false; // user cancelled
                 }
                 foreach (var kv in values)
                 {
@@ -1013,13 +1019,18 @@ public partial class ReportDesigner
             if (await PaginateAndRenderAsync() && ReferenceEquals(requestedTab, State.ActiveTab))
             {
                 State.IsPreviewing = true;
+                return true;
             }
+            return false;
         }
-        catch (Exception ex) when (ex is not OperationCanceledException)
+        catch (Exception ex)
         {
             // A broken expression, data source or host service must reach the author, not just the server's stderr.
+            // PaginateAndRenderAsync turns the Designer's own cancellation into `false`; a cancellation that still
+            // arrives here came from elsewhere — a data source's timeout — and is a failure like any other.
             _alert = new("Falha no preview", ex.Message);
             Reporting.Designer.Blazor.Services.DesignerLog.PreviewFailed(Logger, ex);
+            return false;
         }
     }
 
@@ -1099,6 +1110,7 @@ public partial class ReportDesigner
     private async Task<bool> PaginateAndRenderAsync()
     {
         var previewTab = State.ActiveTab;
+        var reportName = State.Report.Name;
         var generation = _previewGeneration;
         _previewCancellation?.Cancel();
         using var cancellation = new CancellationTokenSource();
@@ -1129,6 +1141,7 @@ public partial class ReportDesigner
             if (!ReferenceEquals(previewTab, State.ActiveTab) || generation != _previewGeneration) { rendered.Dispose(); return false; }
             _previewPrepared?.Dispose();
             _previewPrepared = rendered;
+            _previewReportName = reportName;
             _previewDiagnostics = rendered.Diagnostics.Select(d => d.Message).Distinct().ToArray();
             _previewPages = new Services.PreviewPageCache(rendered);
             _previewCurrentPage = 0;
@@ -1226,9 +1239,13 @@ public partial class ReportDesigner
         _previewPages = [];
         _previewPrepared?.Dispose();
         _previewPrepared = null;
+        _previewReportName = null;
         _previewCurrentPage = 0;
         State.IsPreviewing = false;
     }
+
+    // Name of the report _previewPrepared was paginated from — the export's file name, whatever tab is active then.
+    private string? _previewReportName;
 
     /// <summary>Single generic export handler — receives the descriptor the user clicked
     /// and routes to <c>IReportExporter.Export</c>. No hardcoded format list: registering
@@ -1241,17 +1258,70 @@ public partial class ReportDesigner
 
     private void DismissAlert() => _alert = null;
 
+    // The preview toolbar's export: the document on screen is the one prepared, so it is exported as is.
     private async Task OnExport(Reporting.Designer.Blazor.Services.ExporterDescriptor descriptor)
     {
-        if (_previewPrepared is null || descriptor is null || _exportingFormat is not null)
+        if (_previewPrepared is null || descriptor is null || !TryBeginExport(descriptor))
         {
             return;
+        }
+        try
+        {
+            await ExportPreparedAsync(descriptor);
+        }
+        finally
+        {
+            EndExport();
+        }
+    }
+
+    // Menu and palette exports start from the canvas, so the report is prepared first. The busy state is taken
+    // BEFORE preparing — a second request cannot start a competing preview — and only a document this request
+    // prepared is exported: a failed or cancelled preparation must not export the previous preview.
+    private async Task ExportFromMenuAsync(Reporting.Designer.Blazor.Services.ExporterDescriptor descriptor)
+    {
+        if (!TryBeginExport(descriptor))
+        {
+            return;
+        }
+        try
+        {
+            if (await PreviewAsync())
+            {
+                await ExportPreparedAsync(descriptor);
+            }
+        }
+        finally
+        {
+            EndExport();
+        }
+    }
+
+    private bool TryBeginExport(Reporting.Designer.Blazor.Services.ExporterDescriptor descriptor)
+    {
+        if (_exportingFormat is not null)
+        {
+            return false;
         }
         _exportingFormat = descriptor.Format;
         _alert = null;
         StateHasChanged();
+        return true;
+    }
+
+    private void EndExport()
+    {
+        _exportingFormat = null;
+        StateHasChanged();
+    }
+
+    private async Task ExportPreparedAsync(Reporting.Designer.Blazor.Services.ExporterDescriptor descriptor)
+    {
         // Let the disabled state render before the CPU-bound export runs on the circuit.
         await Task.Yield();
+        // Named after the prepared document, fixed before the exporter runs: the author can switch tabs meanwhile,
+        // and one report's bytes must not be saved under another report's name.
+        var fileName = SafeFileName(_previewReportName ?? string.Empty) + descriptor.FileExtension;
         try
         {
             // Each IReportExporter writes to a Stream. We capture to a MemoryStream so
@@ -1260,21 +1330,15 @@ public partial class ReportDesigner
             // stream contract for downloads — bytes is the lingua franca.
             using var ms = new MemoryStream();
             await descriptor.Exporter.ExportAsync(MaterializePreview(), ms);
-            var bytes = ms.ToArray();
-            var fileName = SafeFileName(State.Report.Name) + descriptor.FileExtension;
-            await TriggerDownload(fileName, descriptor.ContentType, bytes);
+            await TriggerDownload(fileName, descriptor.ContentType, ms.ToArray());
         }
-        catch (Exception ex) when (ex is not OperationCanceledException)
+        catch (Exception ex)
         {
             // An exporter is host-pluggable code: whatever it throws becomes a message the author can act on, rather
-            // than an unhandled exception that would tear down the circuit.
+            // than an unhandled exception that would tear down the circuit. The Designer passes no cancellation
+            // token, so a cancellation here (an exporter's own timeout) is a failure too.
             _alert = new("Falha na exportação", $"Não foi possível exportar em {descriptor.Label}: {ex.Message}");
             Reporting.Designer.Blazor.Services.DesignerLog.ExportFailed(Logger, descriptor.Format, ex);
-        }
-        finally
-        {
-            _exportingFormat = null;
-            StateHasChanged();
         }
     }
 
@@ -1657,13 +1721,17 @@ public partial class ReportDesigner
                     }
                     else
                     {
-                        await OnPreview();
-                        // OnPreview reports its own failure; exporting needs a paginated document.
-                        if (_previewPrepared is not null) await OnExport(desc);
+                        await ExportFromMenuAsync(desc);
                     }
                     break;
                 }
-            case "file.print": await OnPreview(); await OnPrint(); break;
+            case "file.print":
+                // Same rule as the menu exports: print only what this request prepared, never during an export.
+                if (_exportingFormat is null && await PreviewAsync())
+                {
+                    await OnPrint();
+                }
+                break;
             case "edit.undo": OnUndo(); break;
             case "edit.redo": OnRedo(); break;
             case "edit.cut": OnCut(); break;
