@@ -225,7 +225,9 @@ Os demais samples do `SkiaPdfExporter` caem de 92% a 98%. Verificado por três t
 confirmados falhando: `/Length1` < 1/5 do menor arquivo de origem, sample 01 < 100 KB e, com e sem subset,
 baseline de início e fim de cada glifo idênticos (sample 01 e um relatório com 3 estilos, 3 tamanhos, acentos e
 caracteres em fonte de fallback). No Linux (nativo FreeType/fontconfig) as mesmas asserções rodam no job
-`ubuntu-latest` do CI.
+`ubuntu-latest` do CI. A revisão do PR fechou três bordas, cada uma com teste que falha sem a correção: o `.notdef`
+mantém o contorno (caractere que nenhuma fonte cobre continua mostrando a caixa, não um espaço em branco), surrogate
+solto sai como o mesmo U+FFFD do arquivo inteiro, e uma `libHarfBuzzSharp` sem `hb-subset` não vaza a cópia da fonte.
 
 De quebra: o fallback CJK do Windows (Yu Gothic UI) vem de um `.ttc`, e o Skia embutia **a coleção inteira** como
 `/FontFile2` — programa inválido. O subset sai com uma face só. **Custo:** a exportação do sample 01 no Windows
