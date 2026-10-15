@@ -4,7 +4,7 @@ using DocumentFormat.OpenXml.Validation;
 using DocumentFormat.OpenXml.Wordprocessing;
 using FluentAssertions;
 using Reporting.Output.Docx;
-using Reporting.Output.Pdf;
+using Reporting.Output;
 using Reporting.Samples.CodeFirst.Reports;
 using Xunit;
 

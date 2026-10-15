@@ -44,7 +44,8 @@ Para **estender, integrar ou contribuir** com o OmniReport. Para usar a engine, 
 | `Reporting.Expressions.Roslyn` | **Opt-in** — compila `CodeElement` C#/VB (RCE por design; desabilitado por padrão) |
 | `Reporting.Data` / `Reporting.DataSources` | `IReportDataSource`, datasets, campos, relações, parâmetros |
 | `Reporting.Layout` | **Paginador** de duas passadas; `BandRenderer`, `TablixRenderer`, `ChartRenderer`, `KpiRenderer`, `MapRenderer`; `LayoutPrimitive` |
-| `Reporting.Rendering` | Abstrações: `IRenderingContext`, `IReportExporter`, `IPathBuilder` |
+| `Reporting.Rendering` | Abstrações de desenho: `IRenderingContext`, `IPathBuilder` |
+| `Reporting.Output` | Contrato de exportação: `IReportExporter`, `ExportWarning`, extensões `ExportToBytes`/`ExportToFile` — sem dependência de renderização |
 | `Reporting.Rendering.Skia` / `.Gdi` | Backends (SkiaSharp cross-plat; GDI Windows) |
 | `Reporting.CodeFirst` | API fluente `ReportBuilder`/`BandContent`/`TablixBuilder`/`ChartBuilder` |
 | `Reporting.Serialization` | `.repx` (XML) + `.repjson` (JSON) writers/readers; **`RdlImporter`** |
@@ -110,7 +111,10 @@ builder.Services.AddReporting(o => o.AddDataSource("Vendas", new MyDataSource())
 
 ### 5.3 Exportador custom
 
-Implemente `IReportExporter` (`Format`/`FileExtension`/`ContentType` + `Export(RenderedReport, Stream)`).
+Implemente `IReportExporter` (pacote `Reporting.Output`, namespace `Reporting.Output`:
+`Format`/`FileExtension`/`ContentType` + `Export(RenderedReport, Stream)`; sobrescreva `ExportAsync` quando a escrita
+puder ser assíncrona). Referencie só `Reporting.Output` — o pacote PDF arrasta o SkiaSharp nativo, e um exportador
+de texto não precisa dele.
 Exportadores tabulares reusam `LayoutPrimitiveGrid.Build(report)` (quantiza primitivas de texto em linhas/colunas
 com `RowKind`). Exportadores que precisam rasterizar uma região (ex.: chart no Word) usam
 `RegionRasterizer.RenderRegionPng(prims, region, dpi)` de `Reporting.Output.Image`.

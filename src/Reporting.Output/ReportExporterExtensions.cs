@@ -1,10 +1,14 @@
 using Reporting.Layout;
 
-namespace Reporting.Output.Pdf;
+namespace Reporting.Output;
 
 /// <summary>Convenience helpers over <see cref="IReportExporter"/>.</summary>
 public static class ReportExporterExtensions
 {
+    /// <summary>Exports <paramref name="report"/> into a byte array (whole document in memory).</summary>
+    /// <param name="exporter">The exporter to run.</param>
+    /// <param name="report">The paginated report.</param>
+    /// <returns>The encoded document.</returns>
     public static byte[] ExportToBytes(this IReportExporter exporter, RenderedReport report)
     {
         ArgumentNullException.ThrowIfNull(exporter);
@@ -13,6 +17,10 @@ public static class ReportExporterExtensions
         return ms.ToArray();
     }
 
+    /// <summary>Exports <paramref name="report"/> to the file at <paramref name="path"/>, creating or replacing it.</summary>
+    /// <param name="exporter">The exporter to run.</param>
+    /// <param name="report">The paginated report.</param>
+    /// <param name="path">Destination file path.</param>
     public static void ExportToFile(this IReportExporter exporter, RenderedReport report, string path)
     {
         ArgumentNullException.ThrowIfNull(exporter);

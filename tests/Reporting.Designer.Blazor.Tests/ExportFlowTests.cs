@@ -5,6 +5,7 @@ using Reporting.Designer.Blazor.Components;
 using Reporting.Designer.Blazor.Services;
 using Reporting.Designer.Blazor.ViewModels;
 using Reporting.Layout;
+using Reporting.Output;
 using Reporting.Output.Pdf;
 using Reporting.Output.Xml;
 using Xunit;

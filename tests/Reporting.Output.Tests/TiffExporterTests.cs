@@ -2,7 +2,7 @@ using System.Buffers.Binary;
 using FluentAssertions;
 using Reporting.CodeFirst;
 using Reporting.Output.Image;
-using Reporting.Output.Pdf;
+using Reporting.Output;
 using Xunit;
 
 namespace Reporting.Output.Tests;

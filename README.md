@@ -176,7 +176,7 @@ dotnet add package AndersonN.Omni.Report.Hosting.AspNetCore
 
 | Categoria | Sufixos (após `AndersonN.Omni.Report.`) |
 |---|---|
-| Exporters | `Output.{Excel,Html,Svg,Csv,Json,Markdown}` |
+| Exporters | `Output.{Excel,Html,Svg,Csv,Json,Markdown,Xml,Docx,Image}` — todos sobre o contrato `Output` (`IReportExporter`) |
 | Conectores | `DataSources.{Sqlite,PostgreSql,SqlServer,MySql,AdoNet,Json,Xml,WebService,FileSystem}` |
 | Impressão | `Printing.{WindowsSpooler,EscPos,Android}` |
 | Extras | `Barcode` · `Maps` · `Designer.Blazor.DataConnect` |

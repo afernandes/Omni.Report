@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
 using Reporting.Layout;
 using Reporting.Output.Excel;
-using Reporting.Output.Pdf;
 using Reporting.Printing;
 using Reporting.Rendering.Skia;
 

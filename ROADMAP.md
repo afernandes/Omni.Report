@@ -93,7 +93,7 @@ Os problemas que restam são de cinco tipos:
 
 | # | Item | Tipo | Esforço | Conf. | Origem |
 |---|---|---|---|---|---|
-| 9 | Abstração de exportação mora no pacote PDF → CSV/JSON/XML/Excel arrastam SkiaSharp | Arquitetura | M | ✅ | novo |
+| 9 | Abstração de exportação mora no pacote PDF → CSV/JSON/XML/Excel arrastam SkiaSharp — **✔ FEITO (#282)** | Arquitetura | M | ✅ | novo |
 | 10 | Contrato de export: `ExportAsync` real, faixa de páginas e consumo de `PreparedReport` | API | M | ✅ | R2 #14 + #39 |
 | 11 | Designer, Viewer e Hosting referenciam **todos** os exporters | Arquitetura | M | ✅ | novo |
 | 12 | Nenhum `ILogger` em `src/`; falhas do Designer vão para `Console.Error` | Observabilidade | P | ✅ | novo |
@@ -432,7 +432,7 @@ então não viraram itens. Achado de passagem: o `[Unreleased]` do `CHANGELOG` p
 
 ## P1 — Arquitetura e decisões antes do 1.0
 
-### 9. A abstração de exportação mora no pacote PDF ✅
+### 9. A abstração de exportação mora no pacote PDF ✅ — ✔ FEITO
 
 **O problema.** `IReportExporter` está em `src/Reporting.Output.Pdf/IReportExporter.cs`, no namespace
 `Reporting.Output.Pdf`; `ExportWarning` também (`src/Reporting.Output.Pdf/ExportWarning.cs`). Como o pacote PDF
@@ -454,6 +454,15 @@ páginas — ver item 10) dependendo só de `Layout`. Todos os exporters passam 
 um exporter como os outros. Opcional: `[TypeForwardedTo]` por uma versão para suavizar a migração.
 
 **Pronto quando:** `dotnet list package --include-transitive` do `Output.Csv` não mostra SkiaSharp.
+
+**FEITO (#282).** Novo pacote `Reporting.Output` (namespace `Reporting.Output`), dependendo só de Core e Layout, com
+`IReportExporter`, `ExportWarning`, `ExportWarningHandler` e as extensões. Os nove exportadores sem Skia passaram a
+referenciar só o contrato, e o critério foi conferido: o `Output.Csv` não traz mais SkiaSharp. Não usei
+`[TypeForwardedTo]`: o encaminhamento só preserva o tipo se o namespace continuar `Reporting.Output.Pdf`, o que
+deixaria o contrato com o nome errado para sempre — pré-1.0, a quebra explícita custa menos. Ela está nas supressões
+do Package Validation (todas decorrentes da mudança do tipo) e no CHANGELOG, com a migração. O pacote nasceu com a
+trava de documentação, que pegou dois métodos sem `<summary>`; e o guia do desenvolvedor, que dizia que o contrato
+ficava em `Reporting.Rendering`, foi corrigido.
 
 ---
 
@@ -1026,6 +1035,7 @@ movimento de arquivos, e 31. O restante do item 26 (`designer.js`, `ElementViewM
 | Item 6 — elemento-fantasma selecionado após desfazer | Seleção podada a cada mudança do histórico | #277 |
 | Item 7 — exportação no Designer sem registro, sem erro visível e com cliques perdidos | Menu do registro, alerta de falha, estado ocupado | #280 |
 | Item 8 — documentação desatualizada | README, badges, CHANGELOG e aviso de evidências locais | #281 |
+| Item 9 — contrato de exportação no pacote PDF | Pacote `Reporting.Output`; exportadores sem SkiaSharp | #282 |
 
 **Lições que valem para os próximos itens:**
 

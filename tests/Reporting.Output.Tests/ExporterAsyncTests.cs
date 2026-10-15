@@ -2,6 +2,7 @@ using FluentAssertions;
 using Reporting.CodeFirst;
 using Reporting.Layout;
 using Reporting.Output.Image;
+using Reporting.Output;
 using Reporting.Output.Pdf;
 using Xunit;
 

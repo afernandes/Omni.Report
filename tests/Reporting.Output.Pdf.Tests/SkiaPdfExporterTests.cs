@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Reporting.CodeFirst;
+using Reporting.Output;
 using Reporting.Output.Pdf;
 using Reporting.Samples.CodeFirst.Reports;
 using UglyToad.PdfPig;
