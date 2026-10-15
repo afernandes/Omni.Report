@@ -1,6 +1,7 @@
 using AngleSharp.Dom;
 using Bunit;
 using FluentAssertions;
+using Microsoft.Extensions.DependencyInjection;
 using Reporting.CodeFirst;
 using Reporting.Layout;
 using Reporting.Samples.CodeFirst.Reports;
@@ -41,7 +42,35 @@ public class ReportViewerTests : Bunit.BunitContext
         cut.FindAll("button[title='Primeira página']").Should().NotBeEmpty();
         cut.FindAll("button[title='Próxima página']").Should().NotBeEmpty();
         cut.FindAll("button[title='Exportar PDF']").Should().NotBeEmpty();
-        cut.FindAll("button[title='Exportar XLSX']").Should().NotBeEmpty();
+        cut.FindAll("button[title='Exportar XLSX']").Should().BeEmpty(
+            "XLSX comes from the host: without a registered exporter there is no button that could not work");
+    }
+
+    [Fact]
+    public void Renders_xlsx_button_whatever_the_casing_of_the_registered_format()
+    {
+        // The Designer's registry matches formats ignoring case; the Viewer must find the same registrations.
+        Services.AddSingleton<Reporting.Output.IReportExporter>(new UpperCaseXlsxExporter());
+        var cut = Render<ReportViewer>(p => p.Add(v => v.Report, BuildSampleReport()));
+
+        cut.FindAll("button[title='Exportar XLSX']").Should().ContainSingle();
+    }
+
+    private sealed class UpperCaseXlsxExporter : Reporting.Output.IReportExporter
+    {
+        public string Format => "XLSX";
+        public string FileExtension => ".xlsx";
+        public string ContentType => "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+        public void Export(RenderedReport report, Stream output) => output.WriteByte(0);
+    }
+
+    [Fact]
+    public void Renders_xlsx_button_when_the_host_registers_the_exporter()
+    {
+        Services.AddSingleton<Reporting.Output.IReportExporter>(new Reporting.Output.Excel.ExcelExporter());
+        var cut = Render<ReportViewer>(p => p.Add(v => v.Report, BuildSampleReport()));
+
+        cut.FindAll("button[title='Exportar XLSX']").Should().ContainSingle();
     }
 
     [Fact]
@@ -144,6 +173,7 @@ public class ReportViewerTests : Bunit.BunitContext
     [Fact]
     public void Export_xlsx_emits_event_with_xlsx_bytes()
     {
+        Services.AddSingleton<Reporting.Output.IReportExporter>(new Reporting.Output.Excel.ExcelExporter());
         var report = BuildSampleReport();
         ReportExportEventArgs? captured = null;
         var cut = Render<ReportViewer>(p => p
