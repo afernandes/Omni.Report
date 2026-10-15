@@ -1,6 +1,7 @@
 using System.Globalization;
 using Reporting.Designer.Blazor.DataConnect;
 using Reporting.Designer.Blazor.Services;
+using Reporting.Output;
 using Reporting.Samples.BlazorServer.Components;
 using Reporting.Viewer.Blazor;
 
@@ -27,12 +28,11 @@ builder.Services.AddOmniReportDesignerDataConnect();
 // printing, chain `.WithNativePrinter<WindowsSpoolerPrinter>()`.
 builder.Services.AddOmniReportDesignerPrinting();
 
-// Designer exporters: registers PDF, XLSX, HTML+SVG, SVG, CSV, JSON, Markdown as
-// IReportExporter instances. The Designer's preview toolbar auto-discovers them via
-// IExporterRegistry and renders one button per format. Register fewer or add custom
-// formats by replacing this call with manual `services.AddSingleton<IReportExporter, ...>()`
-// for the subset you want.
-builder.Services.AddDefaultExporters();
+// Exporters (package Output.All): registers PDF, XLSX, DOCX, HTML+SVG, SVG, CSV, JSON, XML and Markdown as
+// IReportExporter instances. The Designer's menus and preview toolbar and the Viewer discover them; nothing is a
+// fixed list. To ship fewer formats, reference only the Output.* packages you use and register them with
+// `services.AddSingleton<IReportExporter, ...>()` instead.
+builder.Services.AddOmniReportExporters();
 
 // HttpClient for the WebService data source samples. We register a singleton because
 // the providers themselves are short-lived (built per report run), and we want to

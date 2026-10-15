@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
 using Reporting.Layout;
-using Reporting.Output.Excel;
 using Reporting.Output;
 using Reporting.Output.Pdf;
 using Reporting.Printing;
@@ -164,20 +163,20 @@ public partial class ReportViewer : ComponentBase, IDisposable
         });
     }
 
+    // XLSX comes from the host (an IReportExporter with Format "xlsx", e.g. via Output.All's
+    // AddOmniReportExporters()): the Viewer does not reference ClosedXML, and the button only shows when a host
+    // registered the format.
+    private IReportExporter? XlsxExporter => _xlsxExporter ??= ((IEnumerable<IReportExporter>?)Services
+        .GetService(typeof(IEnumerable<IReportExporter>)))?.FirstOrDefault(e => e.Format == "xlsx");
+    private IReportExporter? _xlsxExporter;
+
     private async Task ExportXlsxAsync()
     {
-        if (Report is null || _busy)
+        if (Report is null || _busy || XlsxExporter is not { } exporter)
         {
             return;
         }
-        await RunExportAsync("xlsx",
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            () =>
-            {
-                var bytes = new ExcelExporter(new ExcelExportOptions { Title = Report.Name })
-                    .ExportToBytes(Report);
-                return Task.FromResult(bytes);
-            });
+        await RunExportAsync("xlsx", exporter.ContentType, () => exporter.ExportToBytesAsync(Report));
     }
 
     private async Task PrintAsync()
