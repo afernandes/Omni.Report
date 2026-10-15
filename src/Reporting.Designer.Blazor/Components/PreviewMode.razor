@@ -44,7 +44,7 @@
            per registered ExporterDescriptor. No hardcoded list: register a new exporter
            in DI and a button appears automatically. The host controls label/icon/order
            via ExporterDescriptor; auto-wrapping covers the seven first-party formats. *@
-        <div class="tb-group">
+        <div class="tb-group" aria-busy="@(IsBusy ? "true" : "false")">
             @if (Exporters is { Count: > 0 })
             {
                 @foreach (var exp in Exporters)
@@ -52,7 +52,7 @@
                     var captured = exp;
                     <button class="tb-btn @(captured.IsPrimary ? "primary" : null)" type="button"
                             title="@captured.Description"
-                            disabled="@(PageCount == 0)"
+                            disabled="@(PageCount == 0 || IsBusy)"
                             @onclick="@(() => OnExport.InvokeAsync(captured))">
                         <Icon Name="@captured.IconName" Size="16" CssClass="icon icon-16" /> @captured.Label
                     </button>
@@ -60,7 +60,7 @@
             }
         </div>
         <button class="tb-btn primary" type="button" style="margin-left:6px;"
-                disabled="@(PageCount == 0)" @onclick="OnPrintClicked">
+                disabled="@(PageCount == 0 || IsBusy)" @onclick="OnPrintClicked">
             <Icon Name="printer" Size="16" CssClass="icon icon-16" /> Imprimir
         </button>
     </div>
