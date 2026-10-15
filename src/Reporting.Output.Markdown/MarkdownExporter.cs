@@ -33,11 +33,22 @@ public sealed class MarkdownExporter : IReportExporter
     public void Export(RenderedReport report, Stream output)
     {
         using var operation = Reporting.Diagnostics.ReportTelemetry.Start("export");
-        ExportCore(report, output);
+        ExportCore(report, output, CancellationToken.None);
         operation.Complete();
     }
 
-    private void ExportCore(RenderedReport report, Stream output)
+    /// <summary>Writes the document with asynchronous I/O; the table layout needs the whole grid, so it is built in memory
+    /// first, checking <paramref name="cancellationToken"/> between rows.</summary>
+    public async Task ExportAsync(RenderedReport report, Stream output, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        using var operation = Reporting.Diagnostics.ReportTelemetry.Start("export", cancellationToken);
+        await AsyncExport.WriteBufferedAsync(output, (buffer, token) => ExportCore(report, buffer, token),
+            cancellationToken).ConfigureAwait(false);
+        operation.Complete();
+    }
+
+    private void ExportCore(RenderedReport report, Stream output, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(report);
         ArgumentNullException.ThrowIfNull(output);
@@ -71,11 +82,12 @@ public sealed class MarkdownExporter : IReportExporter
         writer.Write(_options.LineEnding);
         writer.Write(_options.LineEnding);
 
-        WriteTables(writer, grid, title);
+        WriteTables(writer, grid, title, cancellationToken);
         writer.Flush();
     }
 
-    private void WriteTables(StreamWriter writer, LayoutPrimitiveGrid grid, string documentTitle)
+    private void WriteTables(StreamWriter writer, LayoutPrimitiveGrid grid, string documentTitle,
+        CancellationToken cancellationToken)
     {
         var columnCount = grid.ColumnCount;
         if (columnCount == 0 || grid.Rows.Count == 0)
@@ -192,6 +204,7 @@ public sealed class MarkdownExporter : IReportExporter
 
         for (int r = firstBodyRow; r < grid.Rows.Count; r++)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             var row = grid.Rows[r];
             if (row.Kind == RowKind.GroupHeader)
             {
