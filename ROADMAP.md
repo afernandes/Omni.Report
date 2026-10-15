@@ -259,7 +259,8 @@ e tornar a grade do Tablix dirigida por estilo.
 apagada).
 
 **FEITO (#275).** Todo elemento sem contorno próprio (tudo menos Rectangle, Ellipse e Line) emite a borda **sobre o
-conteúdo**, no tamanho final — o do TextBox depois de crescer/encolher e o do Tablix depois de crescer. Quatro lados
+conteúdo**, no tamanho final — o do TextBox depois de crescer/encolher e o do Tablix depois de crescer, inclusive em
+cada fatia ou ladrilho de colunas quando ele pagina. Quatro lados
 iguais viram um retângulo com traço; lados diferentes, uma linha por lado visível com estilo, espessura e cor
 próprios. Duas correções vieram junto, da mesma raiz: o Rectangle usava **só o lado de cima** (uma borda só
 inferior sumia) e a borda vinha do estilo cru, ignorando estilo nomeado e formatação condicional — agora vem do
@@ -298,7 +299,9 @@ usado como forma arredondada não tem filhos: o SVG exportado é um `<rect>` sem
 fundo de `BackColor`, que antes ficava quadrado atrás de um retângulo arredondado. Os exportadores Skia (PDF, SVG,
 PNG/TIFF) desenham `roundRect`, com o raio limitado a metade do menor lado; o player genérico (GDI, ESC/POS e
 hosts) traça o mesmo contorno via `DrawPath`, **sem ampliar `IRenderingContext`** — uma interface pública que
-hosts implementam. JSON e XML exportam `cornerRadius`. O golden `Formas` mudou de `<rect>` para um `path`
+hosts implementam. Os cantos são curvas cúbicas: o `Arc` dos backends é um arco inscrito independente (o Skia abre
+um contorno novo; o GDI não move o ponto corrente), e misturá-lo com `LineTo` fragmentava o preenchimento e traçava
+segmentos internos — apontado na revisão e travado por testes de pixel no GDI e no Skia. JSON e XML exportam `cornerRadius`. O golden `Formas` mudou de `<rect>` para um `path`
 arredondado (o backend SVG do Skia emite `roundRect` assim, não como `rx`). Verificado também em pixel no GDI: com
 raio, o canto fica fora da forma. Sabotagem: sem o caminho arredondado do player, o teste do GDI falha.
 

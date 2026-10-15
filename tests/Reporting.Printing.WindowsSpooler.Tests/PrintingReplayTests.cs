@@ -60,6 +60,43 @@ public sealed class PrintingReplayTests
             "a 250-mil radius leaves the corner pixel outside the shape");
     }
 
+    [Fact]
+    public void PlayPage_ContornoArredondado_NaoTracaSegmentosInternosNoGdi()
+    {
+        using var bitmap = new System.Drawing.Bitmap(203, 203);
+        bitmap.SetResolution(203, 203);
+        using var graphics = System.Drawing.Graphics.FromImage(bitmap);
+        graphics.Clear(System.Drawing.Color.White);
+        using var context = new GdiRenderingContext(graphics);
+
+        RenderedReportPlayer.PlayPage(PrintingReplayFixture.RoundedOutlinePage(), context);
+        graphics.Flush();
+
+        bitmap.GetPixel(101, 1).R.Should().Be(0, "the top edge is stroked");
+        // An arc that leaves the current point behind makes the next LineTo cut diagonally through the shape: from the
+        // top-right tangent (152, 0) to (203, 152) it crosses (177, 76). A connected outline leaves it white.
+        bitmap.GetPixel(177, 76).R.Should().Be(255);
+        bitmap.GetPixel(101, 101).R.Should().Be(255, "an outline does not fill the interior");
+    }
+
+    [Fact]
+    public void PlayPage_RetanguloArredondadoPreenchido_FormaUmaRegiaoContinuaNoSkia()
+    {
+        using var bitmap = new SKBitmap(203, 203);
+        using var canvas = new SKCanvas(bitmap);
+        canvas.Clear(SKColors.White);
+        using (var context = new SkiaCanvasRenderingContext(canvas, 203))
+        {
+            RenderedReportPlayer.PlayPage(PrintingReplayFixture.RoundedRectanglePage(rounded: true), context);
+        }
+        canvas.Flush();
+
+        // A path whose corners each start a new contour fills only slivers along the edges, leaving the centre white.
+        bitmap.GetPixel(101, 101).Red.Should().BeLessThan(128);
+        bitmap.GetPixel(101, 2).Red.Should().BeLessThan(128);
+        bitmap.GetPixel(2, 2).Red.Should().BeGreaterThan(128, "the corner lies outside the 250-mil radius");
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

@@ -138,7 +138,23 @@ internal sealed class BandRenderer
                 startRow, maxHeight, startCol, out _, out nextRow, out _, out nextCol, out height)
             : TablixRenderer.RenderFlatSlice(tablix, bounds, rows, _evaluator, _templates, ctx, _namedStyles,
                 startRow, maxHeight, out _, out nextRow, out height);
+        // Same Style.Border the whole-table path draws in RenderElement, around each page slice / column tile, so a
+        // bordered table keeps its outline once it starts paginating.
+        var tileBounds = new Rectangle(bounds.X, bounds.Y, DrawnWidth(prims, bounds.X, widthBudget), height);
+        EmitBorder(prims, ResolveEffectiveStyle(tablix, ctx).Border, tileBounds, tablix.Id);
         return (prims, height, nextRow, nextCol);
+    }
+
+    // A column tile may draw fewer columns than its width budget, so its outline follows what was actually drawn.
+    private static Unit DrawnWidth(List<LayoutPrimitive> primitives, Unit left, Unit fallback)
+    {
+        var right = left;
+        foreach (var primitive in primitives)
+        {
+            var edge = primitive.Bounds.X + primitive.Bounds.Width;
+            if (edge > right) right = edge;
+        }
+        return right > left ? right - left : fallback;
     }
 
     /// <summary>The effective bottom of a single element in band-space (its <c>Bounds.Y</c> + the height it

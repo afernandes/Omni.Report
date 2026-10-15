@@ -75,6 +75,48 @@ public class TablixPaginationTests
             .Build();
     }
 
+    // The Matrix/WideMatrix builders above with a red border on the Tablix: the whole-table path draws it, and the
+    // sliced/tiled path (a table that paginates) must draw it too, around each slice.
+    private static readonly Reporting.Styling.Color BorderColor = Reporting.Styling.Color.FromHex("#AA0000");
+
+    private static Report Bordered(Report report)
+    {
+        var definition = report.Definition;
+        var header = definition.ReportHeader!;
+        var tablix = header.Elements.OfType<Reporting.Elements.TablixElement>().Single();
+        var bordered = tablix with
+        {
+            Style = tablix.Style with
+            {
+                Border = Reporting.Styling.Border.Uniform(Reporting.Styling.BorderLineStyle.Solid,
+                    Reporting.Geometry.Unit.FromPoint(1), BorderColor),
+            },
+        };
+        var elements = new Reporting.Common.EquatableArray<Reporting.Elements.ReportElement>(
+            header.Elements.Select(e => ReferenceEquals(e, tablix) ? bordered : e).ToArray());
+        return new Report(definition with { ReportHeader = header with { Elements = elements } }, report.DataSources);
+    }
+
+    [Fact]
+    public async Task PaginateAsync_MatrizComBordaQuePagina_DesenhaABordaEmCadaPagina()
+    {
+        var rendered = await Bordered(Matrix(clientes: 120)).PaginateAsync();
+
+        rendered.Pages.Count.Should().BeGreaterThan(1, "the matrix must paginate for this to exercise the slice path");
+        rendered.Pages.Should().OnlyContain(page => page.Primitives.OfType<DrawRectanglePrimitive>()
+            .Any(r => r.Pen != null && r.Pen.Color == BorderColor));
+    }
+
+    [Fact]
+    public async Task PaginateAsync_MatrizComBordaEmLadrilhosDeColunas_DesenhaABordaEmCadaLadrilho()
+    {
+        var rendered = await Bordered(WideMatrix(cols: 24, minColMm: 25)).PaginateAsync();
+
+        rendered.Pages.Count.Should().BeGreaterThan(1, "the columns must tile across pages");
+        rendered.Pages.Should().OnlyContain(page => page.Primitives.OfType<DrawRectanglePrimitive>()
+            .Any(r => r.Pen != null && r.Pen.Color == BorderColor));
+    }
+
     [Fact]
     public async Task A_wide_matrix_with_MinColumnWidth_paginates_across_columns()
     {
