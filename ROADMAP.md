@@ -96,7 +96,7 @@ Os problemas que restam são de cinco tipos:
 |---|---|---|---|---|---|
 | 9 | Abstração de exportação mora no pacote PDF → CSV/JSON/XML/Excel arrastam SkiaSharp — **✔ FEITO (#282)** | Arquitetura | M | ✅ | novo |
 | 10 | Contrato de export: `ExportAsync` real, faixa de páginas e consumo de `PreparedReport` | API | M | ✅ | R2 #14 + #39 |
-| 11 | Designer, Viewer e Hosting referenciam **todos** os exporters — parte 1 (Designer e Viewer) feita (#NNN) | Arquitetura | M | ✅ | novo |
+| 11 | Designer, Viewer e Hosting referenciam **todos** os exporters — parte 1 (Designer e Viewer) feita (#292) | Arquitetura | M | ✅ | novo |
 | 12 | Nenhum `ILogger` em `src/`; falhas do Designer vão para `Console.Error` — **✔ FEITO (#283)** | Observabilidade | P | ✅ | novo |
 | 13 | Monaco carregado do CDN em runtime — não funciona offline nem sob CSP — **✔ FEITO (#286)** | Segurança/DX | M | ✅ | novo |
 | 14 | **Decisão:** postura de segurança do Roslyn (só fonte confiável × isolamento real) | Segurança | P/G | 🔍 | R2 #11 |
@@ -574,7 +574,7 @@ Designer referencia `CodeFirst`.
 
 **Pronto quando:** um host com Designer + PDF não restaura ClosedXML nem OpenXml.
 
-**Parte 1 feita (#NNN) — Designer e Viewer.** Novo pacote `Reporting.Output.All` com `AddOmniReportExporters()` (os 9
+**Parte 1 feita (#292) — Designer e Viewer.** Novo pacote `Reporting.Output.All` com `AddOmniReportExporters()` (os 9
 formatos); o `AddDefaultExporters()` saiu do Designer (quebra registrada no CHANGELOG e no Package Validation). O
 Designer referencia só o exportador PDF — a impressão gera PDF — e deixou de referenciar `CodeFirst`, que não usava;
 o Viewer perdeu XLSX/HTML/SVG/CSV/JSON/Markdown e mostra o botão XLSX só se o host registrar o formato. Critério

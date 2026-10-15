@@ -19,7 +19,7 @@ API de baixo nível e Designer), com serialização e testes junto. As entradas 
   OpenXml e o resto. Agora o Designer traz só o PDF (a impressão gera PDF) e deixou de referenciar `CodeFirst`; o
   Viewer mostra o botão XLSX apenas quando o host registra um exportador `xlsx`. Migração: referencie
   `Reporting.Output.All` e troque `AddDefaultExporters()` por `AddOmniReportExporters()` (`using Reporting.Output;`),
-  ou registre só os formatos que usa (#NNN).
+  ou registre só os formatos que usa (#292).
 - **`IReportExporter`, `ExportWarning`, `ExportWarningHandler` e `ReportExporterExtensions` saíram do pacote
   `Reporting.Output.Pdf` para o novo pacote `Reporting.Output`, namespace `Reporting.Output`.** O contrato morava no
   pacote PDF, que depende do SkiaSharp: exportar CSV, JSON, XML, Markdown ou Excel arrastava os binários nativos do
