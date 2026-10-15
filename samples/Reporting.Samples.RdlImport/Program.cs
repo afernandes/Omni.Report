@@ -17,6 +17,7 @@ using Reporting.Elements;              // ReportElement
 using Reporting.Layout;                // ReportPaginator, PaginationRequest
 using Reporting.Output.Html;           // SvgHtmlExporter
 using Reporting.Output.Image;          // PngImageExporter
+using Reporting.Output;
 using Reporting.Output.Pdf;            // SkiaPdfExporter, PdfExportOptions
 using Reporting.Serialization;         // RdlImporter
 

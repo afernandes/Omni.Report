@@ -1,7 +1,7 @@
 using FluentAssertions;
 using Reporting.Designer.Blazor.Services;
 using Reporting.Layout;
-using Reporting.Output.Pdf;
+using Reporting.Output;
 using Xunit;
 
 namespace Reporting.Designer.Blazor.Tests;

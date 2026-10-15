@@ -1,4 +1,4 @@
-using Reporting.Output.Pdf;
+using Reporting.Output;
 using ClosedXML.Excel;
 using FluentAssertions;
 using Reporting.Common;

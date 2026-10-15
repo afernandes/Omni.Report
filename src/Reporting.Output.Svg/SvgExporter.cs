@@ -5,7 +5,7 @@ using SkiaSharp;
 using Reporting.Geometry;
 using Reporting.Layout;
 using Reporting.Layout.Primitives;
-using Reporting.Output.Pdf;
+using Reporting.Output;
 using Reporting.Rendering.Skia;
 
 namespace Reporting.Output.Svg;
