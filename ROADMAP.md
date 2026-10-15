@@ -1100,7 +1100,7 @@ movimento de arquivos, e 31. O restante do item 26 (`designer.js`, `ElementViewM
 | Item 12 — Designer sem `ILogger` | Eventos `[LoggerMessage]` sem conteúdo do relatório | #283 |
 | Item 7 — exportação no Designer sem registro, sem erro visível e com cliques perdidos | Menu do registro, alerta de falha, estado ocupado | #280 |
 | Item 8 — documentação desatualizada | README, badges, CHANGELOG e aviso de evidências locais | #281 |
-| Item 9 — contrato de exportação no pacote PDF | Pacote `Reporting.Output`; exportadores sem SkiaSharp | #282 |
+| Item 9 — contrato de exportação no pacote PDF | Pacote `Reporting.Output`; CSV/JSON/XML/Markdown/Excel sem SkiaSharp | #282 |
 
 **Lições que valem para os próximos itens:**
 
