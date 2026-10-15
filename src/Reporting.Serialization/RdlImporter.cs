@@ -704,6 +704,11 @@ public sealed partial class RdlImporter
         {
             el = el with { Visible = false };
         }
+        // A toggled element whose Hidden is a visibility expression: the initial collapsed state has no RDL slot left.
+        if (props.TryGetValue("omni:InitiallyHidden", out var initially) && string.Equals(initially, "true", StringComparison.OrdinalIgnoreCase))
+        {
+            el = el with { InitiallyHidden = true };
+        }
         switch (el)
         {
             case SubreportElement sr:

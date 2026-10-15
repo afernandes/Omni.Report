@@ -285,7 +285,11 @@ visto: sob um `ToggleItem`, o `<Hidden>` do RDL significa "começa recolhido" �
 **permanente** num elemento com toggle voltava como visível. Não há lugar no RDL para os dois estados ao mesmo
 tempo; o `Hidden` passou a carregar só o estado inicial e o oculto permanente viaja como `omni:Visible` em
 `CustomProperties`, a estratégia já usada para os outros campos sem equivalente. Validado contra o XSD oficial
-RDL 2016 (`RdlXsdValidationTests`) e por `RdlToggleRoundTripTests` (4 casos). Sabotagem: revertendo o writer, 12
+RDL 2016 (`RdlXsdValidationTests`) e por `RdlToggleRoundTripTests`. A revisão do PR apontou mais dois casos, também
+corrigidos: com toggle, uma visibilidade **condicional** (`<Hidden>=expressão`) voltou a ser projetada — o estado
+inicial, quando coexiste com ela, vai em `omni:InitiallyHidden` —, e um `ToggleItemId` que aponta para o
+**bookmark** da TextBox (como o CodeFirst produz) é reescrito para o nome exportado dela, já que o RDL resolve
+`<ToggleItem>` por nome; referências que já são nomes, como as importadas, ficam intactas. Sabotagem: revertendo o writer, 12
 testes falham — inclusive a própria rede, que agora impede a perda de voltar.
 
 ---

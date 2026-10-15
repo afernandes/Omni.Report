@@ -35,17 +35,19 @@ internal static partial class RdlWriter
     internal const string SyntheticNamePrefix = "omni_auto_";
 
     // RDL <Visibility>: Hidden (OmniReport stores Visible, the inverse) and the drill-down ToggleItem — the exact
-    // inverse of RdlImporter.ApplyCommon/ReadToggle. Under a ToggleItem, RDL's Hidden means "starts collapsed"
-    // (InitiallyHidden), so it carries only that; a permanent Visible=false on a toggled element has no RDL slot and
-    // travels as the omni:Visible custom property (WriteCustomProperties).
+    // inverse of RdlImporter.ApplyCommon/ReadToggle. Under a ToggleItem, a constant Hidden means "starts collapsed"
+    // (InitiallyHidden) and an expression Hidden is the conditional visibility, so Hidden carries the expression when
+    // there is one and the initial state otherwise. What does not fit — a permanent Visible=false, or InitiallyHidden
+    // next to an expression — travels as omni: custom properties (WriteCustomProperties).
     private static XElement? WriteVisibility(ReportElement el)
     {
         bool toggled = !string.IsNullOrEmpty(el.ToggleItemId);
-        string? hidden = toggled ? (el.InitiallyHidden ? "true" : null)
+        string? expressionHidden = string.IsNullOrEmpty(el.VisibleExpression)
+            ? null
+            : "=Not(" + RdlExpressionReverse.ToRdl(el.VisibleExpression)[1..] + ")"; // drop the leading '='
+        string? hidden = toggled ? expressionHidden ?? (el.InitiallyHidden ? "true" : null)
             : !el.Visible ? "true"
-            : !string.IsNullOrEmpty(el.VisibleExpression)
-                ? "=Not(" + RdlExpressionReverse.ToRdl(el.VisibleExpression)[1..] + ")" // drop the leading '='
-                : null;
+            : expressionHidden;
         if (hidden is null && !toggled)
         {
             return null;
@@ -171,7 +173,64 @@ internal static partial class RdlWriter
         AddIfPresent(report, def, "Description", "Description");
         AddIfPresent(report, def, "Author", "Author");
 
+        ResolveToggleReferences(report, def);
         return new XDocument(new XDeclaration("1.0", "utf-8", null), report);
+    }
+
+    // ReportElement.ToggleItemId names the toggling TextBox either by its Bookmark (CodeFirst: ToggleItem(bookmark)) or,
+    // for imported RDL, by its Name. RDL resolves <ToggleItem> by item Name only, so a bookmark reference is rewritten to
+    // the exported Name of the text item carrying it. A value that already names an exported Textbox is left alone.
+    private static void ResolveToggleReferences(XElement report, ReportDefinition def)
+    {
+        var toggles = report.Descendants(Rdl + "ToggleItem").ToList();
+        if (toggles.Count == 0)
+        {
+            return;
+        }
+        var textboxNames = report.Descendants(Rdl + "Textbox")
+            .Select(t => (string?)t.Attribute("Name"))
+            .OfType<string>()
+            .ToHashSet(StringComparer.Ordinal);
+        var nameByBookmark = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var element in AllElements(def))
+        {
+            if (element is TextBoxElement or LabelElement && !string.IsNullOrEmpty(element.Bookmark))
+            {
+                nameByBookmark.TryAdd(element.Bookmark!, string.IsNullOrEmpty(element.Name)
+                    ? SyntheticNamePrefix + element.Id
+                    : element.Name);
+            }
+        }
+        foreach (var toggle in toggles)
+        {
+            if (!textboxNames.Contains(toggle.Value) && nameByBookmark.TryGetValue(toggle.Value, out var name))
+            {
+                toggle.Value = name;
+            }
+        }
+    }
+
+    private static IEnumerable<ReportElement> AllElements(ReportDefinition def)
+    {
+        var bands = new List<IBand?> { def.ReportHeader, def.PageHeader, def.Detail, def.PageFooter, def.ReportFooter };
+        bands.AddRange(def.Groups);
+        var pending = new Stack<ReportElement>(bands.OfType<IBand>().SelectMany(b => b.Elements)
+            .Concat(def.Detail.SubDetails.SelectMany(s => s.Elements)));
+        while (pending.TryPop(out var element))
+        {
+            yield return element;
+            if (element is RectangleElement rect)
+            {
+                foreach (var child in rect.Children) pending.Push(child);
+            }
+            else if (element is TablixElement tablix)
+            {
+                foreach (var cell in tablix.Cells)
+                {
+                    if (cell.Content is not null) pending.Push(cell.Content);
+                }
+            }
+        }
     }
 
     // ── ReportParameters ──────────────────────────────────────────────────────────
@@ -842,6 +901,10 @@ internal static partial class RdlWriter
         if (!el.Visible && !string.IsNullOrEmpty(el.ToggleItemId))
         {
             props.Add(("omni:Visible", "false")); // see WriteVisibility: Hidden is taken by the initial toggle state
+        }
+        if (el.InitiallyHidden && !string.IsNullOrEmpty(el.ToggleItemId) && !string.IsNullOrEmpty(el.VisibleExpression))
+        {
+            props.Add(("omni:InitiallyHidden", "true")); // see WriteVisibility: Hidden is taken by the expression
         }
         switch (el)
         {
