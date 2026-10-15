@@ -34,6 +34,31 @@ public sealed class PreviewPageCache : IReadOnlyList<byte[]>
     /// <summary>Number of encoded images currently retained.</summary>
     public int CachedPageCount { get { lock (_gate) return _images.Count; } }
 
+    // A 96-DPI raster shown on a 2x screen, or at 200% zoom, is upscaled by the browser and the text blurs. The page
+    // is rasterized at 96 × scale instead — the <img> keeps its CSS size, it only gets more pixels.
+    private const double MaxScale = 4;
+    private const double ScaleStep = 0.25;
+
+    /// <summary>Raster density over 96 DPI: device pixel ratio × zoom. Pages that would exceed the pixel budget at
+    /// this scale are rendered at the largest scale that fits.</summary>
+    public double Scale { get; private set; } = 1;
+
+    /// <summary>Sets <see cref="Scale"/> (clamped to 1–4, in quarter steps so small zoom changes reuse the cache)
+    /// and drops the cached images when it changes.</summary>
+    /// <returns><see langword="true"/> when the scale changed and pages will be rasterized again.</returns>
+    public bool SetScale(double scale)
+    {
+        var snapped = Math.Clamp(Math.Ceiling(scale / ScaleStep) * ScaleStep, 1, MaxScale);
+        lock (_gate)
+        {
+            if (snapped == Scale) return false;
+            Scale = snapped;
+            _images.Clear();
+            _order.Clear();
+            return true;
+        }
+    }
+
     /// <summary>Gets the PNG for a zero-based page index.</summary>
     public byte[] this[int index]
     {
@@ -47,8 +72,8 @@ public sealed class PreviewPageCache : IReadOnlyList<byte[]>
                 // Evict before allocating the next raster, limiting concurrent cache retention.
                 if (_images.Count == 3) _images.Remove(_order.Dequeue());
                 var page = _getPage(index);
-                ValidateRaster(page);
-                using var renderer = new SkiaRenderingContext();
+                var scale = Math.Min(Scale, FittingScale(page));
+                using var renderer = new SkiaRenderingContext((float)(96 * scale));
                 RenderedReportPlayer.PlayPage(page, renderer);
                 image = renderer.GetPagePng(0);
                 _images.Add(index, image);
@@ -58,7 +83,8 @@ public sealed class PreviewPageCache : IReadOnlyList<byte[]>
         }
     }
 
-    private static void ValidateRaster(RenderedPage page)
+    // The largest scale whose raster stays within the pixel budget; a page that does not fit even at 96 DPI fails.
+    private static double FittingScale(RenderedPage page)
     {
         long height = page.PageSetup.PageHeight.Mils;
         if (page.PageSetup.IsContinuous)
@@ -71,6 +97,7 @@ public sealed class PreviewPageCache : IReadOnlyList<byte[]>
         var heightPixels = Math.Ceiling(height * 96.0 / 1000);
         if (widthPixels <= 0 || heightPixels <= 0 || widthPixels * heightPixels > MaxRasterPixels)
             throw new InvalidOperationException($"A página excede o limite de {MaxRasterPixels} pixels do preview.");
+        return Math.Sqrt(MaxRasterPixels / (widthPixels * heightPixels));
     }
 
     /// <summary>Enumerates PNGs on demand. Consumers retaining results own those references.</summary>
