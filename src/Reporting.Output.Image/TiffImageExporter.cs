@@ -1,5 +1,5 @@
 using Reporting.Layout;
-using Reporting.Output.Pdf;
+using Reporting.Output;
 using SkiaSharp;
 
 namespace Reporting.Output.Image;

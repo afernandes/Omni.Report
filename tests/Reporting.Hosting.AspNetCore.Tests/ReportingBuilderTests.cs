@@ -4,6 +4,7 @@ using Reporting.DataSources;
 using Reporting.Hosting;
 using Reporting.Layout;
 using Reporting.Output.Excel;
+using Reporting.Output;
 using Reporting.Output.Pdf;
 using Reporting.Printing;
 using Reporting.Rendering;

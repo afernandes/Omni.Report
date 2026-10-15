@@ -1,5 +1,6 @@
 using Reporting.Common;
 using Reporting.Layout;
+using Reporting.Output;
 using Reporting.Output.Pdf;
 using Reporting.Paper;
 

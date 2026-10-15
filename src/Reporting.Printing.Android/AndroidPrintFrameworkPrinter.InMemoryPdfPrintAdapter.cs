@@ -1,6 +1,5 @@
 using Reporting.Common;
 using Reporting.Layout;
-using Reporting.Output.Pdf;
 using Reporting.Paper;
 
 namespace Reporting.Printing.Android;

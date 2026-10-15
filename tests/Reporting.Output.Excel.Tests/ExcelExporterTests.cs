@@ -2,7 +2,7 @@ using ClosedXML.Excel;
 using FluentAssertions;
 using Reporting.CodeFirst;
 using Reporting.Output.Excel;
-using Reporting.Output.Pdf;
+using Reporting.Output;
 using Reporting.Samples.CodeFirst.Reports;
 using Xunit;
 
