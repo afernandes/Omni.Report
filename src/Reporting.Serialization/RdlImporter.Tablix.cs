@@ -56,6 +56,22 @@ public sealed partial class RdlImporter
             }));
         }
 
+        // The matrix model holds one body cell. A second DISTINCT expression is a second measure and is lost; a
+        // cell repeating the measure is a total, which RowSubtotals/ColumnSubtotals regenerate.
+        int bodyExpressions = El(item, "TablixBody")?.Descendants()
+            .Where(e => e.Name.LocalName == "Textbox")
+            .Select(TextboxValue)
+            .Where(value => !string.IsNullOrEmpty(value))
+            .Distinct(StringComparer.Ordinal)
+            .Count() ?? 0;
+        if (bodyExpressions > 1)
+        {
+            int extraMeasures = bodyExpressions - 1;
+            _warnings.Add($"Tablix '{name}': a matriz usa só a primeira expressão do corpo — {extraMeasures} " +
+                $"{(extraMeasures == 1 ? "expressão do corpo ignorada" : "expressões do corpo ignoradas")} (várias " +
+                "medidas por interseção ainda não são suportadas).");
+        }
+
         if (rowGroups.Count == 0 || colGroups.Count == 0)
         {
             // Pure flat tables are handled above; reaching here means exactly one axis is dynamic and the

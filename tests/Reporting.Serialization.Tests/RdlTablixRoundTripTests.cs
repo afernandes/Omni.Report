@@ -91,6 +91,32 @@ public class RdlTablixRoundTripTests
             "a matrix Tablix must reconstruct exactly what the importer reads");
     }
 
+    [Theory]
+    [InlineData("=Count(Fields!Id.Value)", true)]    // a second measure: dropped, so the import must say so
+    [InlineData("=Sum(Fields!Vendas.Value)", false)] // a total cell repeating the measure: regenerated, no loss
+    public void Matrix_with_a_second_body_expression_warns_on_import(string secondCell, bool warns)
+    {
+        var rdlText = MatrixRdl
+            .Replace("<TablixColumns><TablixColumn><Width>40mm</Width></TablixColumn></TablixColumns>",
+                "<TablixColumns><TablixColumn><Width>40mm</Width></TablixColumn><TablixColumn><Width>40mm</Width></TablixColumn></TablixColumns>")
+            .Replace("</TablixCell></TablixCells>",
+                "</TablixCell><TablixCell><CellContents><Textbox Name=\"v2\"><Paragraphs><Paragraph><TextRuns>" +
+                $"<TextRun><Value>{secondCell}</Value></TextRun></TextRuns></Paragraph></Paragraphs></Textbox>" +
+                "</CellContents></TablixCell></TablixCells>");
+
+        var imported = new RdlExporter().LoadFromBytes(Encoding.UTF8.GetBytes(rdlText));
+
+        var warnings = imported.Metadata.TryGetValue("ImportWarnings", out var text) ? text : string.Empty;
+        if (warns)
+        {
+            warnings.Should().Contain("Matriz").And.Contain("1 expressão do corpo ignorada");
+        }
+        else
+        {
+            warnings.Should().NotContain("expressão do corpo");
+        }
+    }
+
     [Fact]
     public void Matrix_cells_and_sort_survive_the_round_trip()
     {
