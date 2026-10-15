@@ -114,7 +114,7 @@ Os problemas que restam são de cinco tipos:
 | 20 | Sem layout responsivo: abaixo de ~1.280 px o painel de propriedades sai da tela | UX | M | 🧪 | novo |
 | 21 | Acessibilidade: botões sem nome, toggles sem `aria-pressed`, modais sem `aria-modal`, 304 estilos inline | A11y | M | ✅ | novo |
 | 22 | Defeitos visuais pequenos (placeholder `&#10;`, aba "Untitled.repx", rótulo "DATE") | UX | P | 🧪 | novo |
-| 23 | Preview rasterizado a 96 DPI — borrado em tela HiDPI e com zoom | UX | P | 🧪 | novo |
+| 23 | Preview rasterizado a 96 DPI — borrado em tela HiDPI e com zoom — **✔ FEITO (#294)** | UX | P | 🧪 | novo |
 | 24 | Editor de rich text (`TextRuns`) — ausente no Designer e no CodeFirst | Feature | M | ✅ | R2 #32 |
 | 25 | Botão "Testar" do editor de expressões avalia com dados fictícios | UX | M | 🔍 | auditoria |
 
@@ -780,11 +780,16 @@ navegação só por teclado e contraste (WCAG 2.2 AA) — não verificados nesta
 
 ---
 
-### 23. Preview rasterizado a 96 DPI 🧪
+### 23. Preview rasterizado a 96 DPI 🧪 — ✔ FEITO
 
 O preview é um PNG de 794 × 1.123 px (A4 a 96 DPI), independente de `devicePixelRatio` e do zoom. Em tela HiDPI
 ou com zoom > 100 % o texto fica borrado. **Ação:** rasterizar em `96 × devicePixelRatio × zoom` (respeitando o
 orçamento de pixels do F03) ou servir a página como SVG.
+
+**FEITO (#294) — pela primeira alternativa.** O cache rasteriza em `96 × devicePixelRatio × zoom` (1–4×, em quartos),
+reduz a escala para caber nos 16 Mpx em vez de falhar e re-rasteriza ao mudar o zoom; o SVG traria de volta a
+dependência do `Output.Svg` que o item 11 tirou do Designer. No navegador, A4 ampliado passou de 794 para 1.588 px
+de largura natural. `PreviewHiDpiTests` (4).
 
 ---
 
@@ -1164,6 +1169,7 @@ movimento de arquivos, e 31. O restante do item 26 (`designer.js`, `ElementViewM
 | Item 9 — contrato de exportação no pacote PDF | Pacote `Reporting.Output`; CSV/JSON/XML/Markdown/Excel sem SkiaSharp | #282 |
 | Item 13 — Monaco do CDN, sem offline nem CSP estrita | Monaco empacotado; fallback para texto simples | #286 |
 | Item 2a — matriz descartava medidas extras sem aviso | `ORL025` `MatrixCells` + aviso no import RDL | #288 |
+| Item 23 — preview borrado em HiDPI e com zoom | Raster em 96 × DPR × zoom, dentro do orçamento de pixels | #294 |
 
 **Lições que valem para os próximos itens:**
 
