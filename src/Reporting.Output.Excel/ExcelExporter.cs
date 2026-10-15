@@ -30,11 +30,22 @@ public sealed class ExcelExporter : IReportExporter
     public void Export(RenderedReport report, Stream output)
     {
         using var operation = Reporting.Diagnostics.ReportTelemetry.Start("export");
-        WriteReport(report, output);
+        WriteReport(report, output, CancellationToken.None);
         operation.Complete();
     }
 
-    private void WriteReport(RenderedReport report, Stream output)
+    /// <summary>Builds the workbook in memory, checking <paramref name="cancellationToken"/> between rows, and copies it
+    /// to <paramref name="output"/> with asynchronous I/O — ClosedXML only writes the whole workbook at once.</summary>
+    public async Task ExportAsync(RenderedReport report, Stream output, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        using var operation = Reporting.Diagnostics.ReportTelemetry.Start("export", cancellationToken);
+        await AsyncExport.WriteBufferedAsync(output, (buffer, token) => WriteReport(report, buffer, token),
+            cancellationToken).ConfigureAwait(false);
+        operation.Complete();
+    }
+
+    private void WriteReport(RenderedReport report, Stream output, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(report);
         ArgumentNullException.ThrowIfNull(output);
@@ -55,7 +66,7 @@ public sealed class ExcelExporter : IReportExporter
 
         var grid = LayoutPrimitiveGrid.Build(report);
         ReportDroppedContent(grid);
-        WriteGrid(ws, grid);
+        WriteGrid(ws, grid, cancellationToken);
 
         if (_options.FreezeHeader && grid.Rows.Count > 0)
         {
@@ -100,10 +111,11 @@ public sealed class ExcelExporter : IReportExporter
 
     // ── Worksheet writer ────────────────────────────────────────────────────────
 
-    private void WriteGrid(IXLWorksheet ws, LayoutPrimitiveGrid grid)
+    private void WriteGrid(IXLWorksheet ws, LayoutPrimitiveGrid grid, CancellationToken cancellationToken)
     {
         for (int r = 0; r < grid.Rows.Count; r++)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             var gridRow = grid.Rows[r];
             int xlRow = r + 1;
             foreach (var kv in gridRow.Cells)

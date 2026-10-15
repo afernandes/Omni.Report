@@ -39,11 +39,22 @@ public sealed class DocxExporter : IReportExporter
     public void Export(RenderedReport report, Stream output)
     {
         using var operation = Reporting.Diagnostics.ReportTelemetry.Start("export");
-        ExportCore(report, output);
+        ExportCore(report, output, CancellationToken.None);
         operation.Complete();
     }
 
-    private void ExportCore(RenderedReport report, Stream output)
+    /// <summary>Builds the package in memory, checking <paramref name="cancellationToken"/> between pages, and copies it
+    /// to <paramref name="output"/> with asynchronous I/O — a ZIP package is only complete at the end.</summary>
+    public async Task ExportAsync(RenderedReport report, Stream output, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        using var operation = Reporting.Diagnostics.ReportTelemetry.Start("export", cancellationToken);
+        await AsyncExport.WriteBufferedAsync(output, (buffer, token) => ExportCore(report, buffer, token),
+            cancellationToken).ConfigureAwait(false);
+        operation.Complete();
+    }
+
+    private void ExportCore(RenderedReport report, Stream output, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(report);
         ArgumentNullException.ThrowIfNull(output);
@@ -75,7 +86,7 @@ public sealed class DocxExporter : IReportExporter
         var grid = LayoutPrimitiveGrid.Build(gridReport);
         if (grid.Rows.Count > 0)
         {
-            body.AppendChild(BuildTable(grid));
+            body.AppendChild(BuildTable(grid, cancellationToken));
         }
 
         // Inline raster images (logo/photo/signature) — emitted as standalone paragraphs after the table.
@@ -84,6 +95,7 @@ public sealed class DocxExporter : IReportExporter
         uint drawingId = 1;
         foreach (var page in report.Pages)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             foreach (var img in page.Primitives.OfType<DrawImagePrimitive>())
             {
                 if (img.Data.Count > 0 && seen.Add(img.Data)
@@ -99,6 +111,7 @@ public sealed class DocxExporter : IReportExporter
         {
             foreach (var (region, prims) in VisualRegions(report, visualIds))
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 var png = Reporting.Output.Image.RegionRasterizer.RenderRegionPng(prims, region, _options.RasterizeDpi);
                 var synthetic = new DrawImagePrimitive
                 {
@@ -173,7 +186,7 @@ public sealed class DocxExporter : IReportExporter
 
     // ── Table writer ──────────────────────────────────────────────────────────────
 
-    private static Table BuildTable(LayoutPrimitiveGrid grid)
+    private static Table BuildTable(LayoutPrimitiveGrid grid, CancellationToken cancellationToken)
     {
         int columnCount = grid.ColumnCount;
 
@@ -201,6 +214,7 @@ public sealed class DocxExporter : IReportExporter
 
         foreach (var gridRow in grid.Rows)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             var tr = new TableRow();
             for (int col = 0; col < columnCount; col++)
             {

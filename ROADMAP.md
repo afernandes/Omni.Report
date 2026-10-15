@@ -95,7 +95,7 @@ Os problemas que restam são de cinco tipos:
 | # | Item | Tipo | Esforço | Conf. | Origem |
 |---|---|---|---|---|---|
 | 9 | Abstração de exportação mora no pacote PDF → CSV/JSON/XML/Excel arrastam SkiaSharp — **✔ FEITO (#282)** | Arquitetura | M | ✅ | novo |
-| 10 | Contrato de export: `ExportAsync` real, faixa de páginas e consumo de `PreparedReport` — parte 1 (faixa) feita (#290) | API | M | ✅ | R2 #14 + #39 |
+| 10 | Contrato de export: `ExportAsync` real, faixa de páginas e consumo de `PreparedReport` — **✔ FEITO (#290, #291)** | API | M | ✅ | R2 #14 + #39 |
 | 11 | Designer, Viewer e Hosting referenciam **todos** os exporters — parte 1 (Designer e Viewer) feita (#292) | Arquitetura | M | ✅ | novo |
 | 12 | Nenhum `ILogger` em `src/`; falhas do Designer vão para `Console.Error` — **✔ FEITO (#283)** | Observabilidade | P | ✅ | novo |
 | 13 | Monaco carregado do CDN em runtime — não funciona offline nem sob CSP — **✔ FEITO (#286)** | Segurança/DX | M | ✅ | novo |
@@ -534,7 +534,7 @@ ficava em `Reporting.Rendering`, foi corrigido.
 
 ---
 
-### 10. Contrato de exportação: `ExportAsync` real, faixa de páginas e `PreparedReport` ✅
+### 10. Contrato de exportação: `ExportAsync` real, faixa de páginas e `PreparedReport` ✅ — ✔ FEITO
 
 **O problema.** O item 14 da 2ª revisão foi parcialmente entregue: `IReportExporter.ExportAsync` existe
 (`IReportExporter.cs:37`) com implementação padrão delegando à síncrona — mas **só 3 exporters** a implementam de
@@ -559,9 +559,15 @@ inteiro.
 **Parte 1 feita (#290) — faixa de páginas.** `PageRange` (1-based, inclusiva, `Parse("3-7")`) em `Reporting.Output` e
 duas sobrecargas de `ExportAsync`: sobre `RenderedReport` (fatia) e sobre `PreparedReport`, que lê do armazenamento
 preparado **só** as páginas pedidas — exportar 3–7 de um relatório longo não carrega o resto. Vale para todos os
-exportadores sem mudar nenhum. Faltam: `ExportAsync` com E/S assíncrona e cancelamento por página nos exportadores
-de texto/SVG/HTML/DOCX/XLSX (parte 2) e consumo progressivo de páginas, para o Designer exportar sem materializar
-o documento inteiro (parte 3).
+exportadores sem mudar nenhum. 
+
+**Parte 2 feita (#291) — `ExportAsync` real.** `AsyncExport` em `Reporting.Output`: CSV (lotes de 256 linhas), JSON,
+XML e HTML escrevem em etapas — buffer por etapa, `WriteAsync` no destino e o token checado antes e depois de cada
+escrita; Markdown, SVG, DOCX e XLSX montam em memória com cancelamento entre linhas/páginas e copiam de forma
+assíncrona. O destino nunca recebe escrita síncrona (o ASP.NET Core a recusa no corpo da resposta). PDF, PNG e TIFF
+continuam em streaming síncrono com cancelamento por página: bufferizar raster de qualquer tamanho seria pior — o
+contrato documenta. Os dois critérios de pronto estão atendidos. Fica como melhoria, não como pendência do item: um
+contrato de páginas sob demanda para o Designer exportar o documento inteiro sem materializá-lo.
 
 ---
 
@@ -1171,6 +1177,7 @@ movimento de arquivos, e 31. O restante do item 26 (`designer.js`, `ElementViewM
 | Item 9 — contrato de exportação no pacote PDF | Pacote `Reporting.Output`; CSV/JSON/XML/Markdown/Excel sem SkiaSharp | #282 |
 | Item 13 — Monaco do CDN, sem offline nem CSP estrita | Monaco empacotado; fallback para texto simples | #286 |
 | Item 2a — matriz descartava medidas extras sem aviso | `ORL025` `MatrixCells` + aviso no import RDL | #288 |
+| Item 10 — contrato de exportação sem faixa e sem E/S assíncrona | `PageRange`/`PreparedReport` por faixa; `AsyncExport` nos exportadores | #290, #291 |
 
 **Lições que valem para os próximos itens:**
 

@@ -41,11 +41,24 @@ public sealed class JsonExporter : IReportExporter
     public void Export(RenderedReport report, Stream output)
     {
         using var operation = Reporting.Diagnostics.ReportTelemetry.Start("export");
-        ExportCore(report, output);
+        foreach (var _ in WriteSteps(report, output, CancellationToken.None))
+        {
+        }
         operation.Complete();
     }
 
-    private void ExportCore(RenderedReport report, Stream output)
+    /// <summary>Writes the document with asynchronous I/O, one page at a time, checking
+    /// <paramref name="cancellationToken"/> between pages.</summary>
+    public async Task ExportAsync(RenderedReport report, Stream output, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        using var operation = Reporting.Diagnostics.ReportTelemetry.Start("export", cancellationToken);
+        await AsyncExport.WriteInStepsAsync(output, buffer => WriteSteps(report, buffer, cancellationToken),
+            cancellationToken).ConfigureAwait(false);
+        operation.Complete();
+    }
+
+    private IEnumerable<int> WriteSteps(RenderedReport report, Stream output, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(report);
         ArgumentNullException.ThrowIfNull(output);
@@ -66,9 +79,12 @@ public sealed class JsonExporter : IReportExporter
 
         writer.WritePropertyName("pages");
         writer.WriteStartArray();
-        foreach (var page in report.Pages)
+        for (int index = 0; index < report.Pages.Count; index++)
         {
-            WritePage(writer, page);
+            cancellationToken.ThrowIfCancellationRequested();
+            WritePage(writer, report.Pages[index]);
+            writer.Flush();
+            yield return index;
         }
         writer.WriteEndArray();
 
