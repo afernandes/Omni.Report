@@ -10,7 +10,7 @@ namespace Reporting.Output.Tests;
 public sealed record XLinha(string Nome, string Valor);
 
 /// <summary>
-/// Coverage for the structured XML exporter: the shared <see cref="Reporting.Output.Pdf.IReportExporter"/> contract,
+/// Coverage for the structured XML exporter: the shared <see cref="Reporting.Output.IReportExporter"/> contract,
 /// well-formed output with a stable schema (report → pages → primitives), XML escaping of special chars, and the
 /// TextsOnly option.
 /// </summary>

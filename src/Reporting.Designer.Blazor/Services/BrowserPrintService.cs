@@ -2,6 +2,7 @@ using Microsoft.JSInterop;
 using Reporting.Common;
 using Reporting.Layout;
 using Reporting.Layout.Primitives;
+using Reporting.Output;
 using Reporting.Output.Pdf;
 using Reporting.Paper;
 

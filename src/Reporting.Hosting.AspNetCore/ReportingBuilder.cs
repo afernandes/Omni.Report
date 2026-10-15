@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Reporting.DataSources;
 using Reporting.Layout;
+using Reporting.Output;
 using Reporting.Output.Pdf;
 using Reporting.Output.Excel;
 using Reporting.Printing;

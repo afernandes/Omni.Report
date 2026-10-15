@@ -17,6 +17,34 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:Reporting.Designer.Blazor.Services.ExporterDescriptor.#ctor(Reporting.Output.Pdf.IReportExporter,System.String,System.String,System.String,System.Int32,System.Boolean)</Target>
+    <Left>lib/net10.0/Reporting.Designer.Blazor.dll</Left>
+    <Right>lib/net10.0/Reporting.Designer.Blazor.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:Reporting.Designer.Blazor.Services.ExporterDescriptor.Deconstruct(Reporting.Output.Pdf.IReportExporter@,System.String@,System.String@,System.String@,System.Int32@,System.Boolean@)</Target>
+    <Left>lib/net10.0/Reporting.Designer.Blazor.dll</Left>
+    <Right>lib/net10.0/Reporting.Designer.Blazor.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:Reporting.Designer.Blazor.Services.ExporterDescriptor.get_Exporter</Target>
+    <Left>lib/net10.0/Reporting.Designer.Blazor.dll</Left>
+    <Right>lib/net10.0/Reporting.Designer.Blazor.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:Reporting.Designer.Blazor.Services.ExporterRegistry.#ctor(System.Collections.Generic.IEnumerable{Reporting.Designer.Blazor.Services.ExporterDescriptor},System.Collections.Generic.IEnumerable{Reporting.Output.Pdf.IReportExporter})</Target>
+    <Left>lib/net10.0/Reporting.Designer.Blazor.dll</Left>
+    <Right>lib/net10.0/Reporting.Designer.Blazor.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Reporting.Designer.Blazor.ViewModels.DesignerState.get_Clipboard</Target>
     <Left>lib/net10.0/Reporting.Designer.Blazor.dll</Left>
     <Right>lib/net10.0/Reporting.Designer.Blazor.dll</Right>

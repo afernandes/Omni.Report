@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Reporting.Output;
 using Reporting.Output.Pdf;
 
 namespace Reporting.Designer.Blazor.Services;

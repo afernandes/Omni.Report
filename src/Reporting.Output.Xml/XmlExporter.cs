@@ -3,7 +3,7 @@ using System.Xml;
 using Reporting.Geometry;
 using Reporting.Layout;
 using Reporting.Layout.Primitives;
-using Reporting.Output.Pdf;
+using Reporting.Output;
 
 namespace Reporting.Output.Xml;
 

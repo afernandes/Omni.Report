@@ -2,7 +2,7 @@ using ClosedXML.Excel;
 using Reporting.Layout;
 using Reporting.Layout.Primitives;
 using Reporting.Layout.Tabular;
-using Reporting.Output.Pdf;
+using Reporting.Output;
 
 namespace Reporting.Output.Excel;
 

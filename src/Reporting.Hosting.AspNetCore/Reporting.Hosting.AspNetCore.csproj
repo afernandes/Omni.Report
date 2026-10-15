@@ -18,6 +18,7 @@
     <ProjectReference Include="..\Reporting.DataSources\Reporting.DataSources.csproj" />
     <ProjectReference Include="..\Reporting.Expressions\Reporting.Expressions.csproj" />
     <ProjectReference Include="..\Reporting.Layout\Reporting.Layout.csproj" />
+    <ProjectReference Include="..\Reporting.Output\Reporting.Output.csproj" />
     <ProjectReference Include="..\Reporting.Rendering\Reporting.Rendering.csproj" />
     <ProjectReference Include="..\Reporting.Rendering.Skia\Reporting.Rendering.Skia.csproj" />
     <ProjectReference Include="..\Reporting.Output.Pdf\Reporting.Output.Pdf.csproj" />

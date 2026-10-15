@@ -23,6 +23,7 @@
     <ProjectReference Include="..\Reporting.Core\Reporting.Core.csproj" />
     <ProjectReference Include="..\Reporting.CodeFirst\Reporting.CodeFirst.csproj" />
     <ProjectReference Include="..\Reporting.Layout\Reporting.Layout.csproj" />
+    <ProjectReference Include="..\Reporting.Output\Reporting.Output.csproj" />
     <ProjectReference Include="..\Reporting.Serialization\Reporting.Serialization.csproj" />
     <ProjectReference Include="..\Reporting.Printing\Reporting.Printing.csproj" />
     <ProjectReference Include="..\Reporting.Viewer.Blazor\Reporting.Viewer.Blazor.csproj" />

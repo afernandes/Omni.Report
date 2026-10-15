@@ -7,7 +7,7 @@ using Reporting.Output.Csv;
 using Reporting.Output.Html;
 using Reporting.Output.Json;
 using Reporting.Output.Markdown;
-using Reporting.Output.Pdf;
+using Reporting.Output;
 using Reporting.Output.Svg;
 using Xunit;
 

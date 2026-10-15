@@ -42,6 +42,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Reporting.Core\Reporting.Core.csproj" />
     <ProjectReference Include="..\Reporting.Layout\Reporting.Layout.csproj" />
+    <ProjectReference Include="..\Reporting.Output\Reporting.Output.csproj" />
     <ProjectReference Include="..\Reporting.Printing\Reporting.Printing.csproj" />
     <ProjectReference Include="..\Reporting.Output.Pdf\Reporting.Output.Pdf.csproj" />
   </ItemGroup>
