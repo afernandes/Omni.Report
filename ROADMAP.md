@@ -84,7 +84,7 @@ Os problemas que restam são de cinco tipos:
 | 3 | `Style.Border` não desenhada em Label/TextBox/Image; grade do Tablix com cor fixa — **✔ FEITO (#275)** (grade: ver 3a) | Fidelidade | M | ✅ | R2 #21a |
 | 3a | Grade do Tablix com cor e espessura fixas, sem relação com o estilo | Fidelidade | M | ✅ | item 3 |
 | 4 | `CornerRadius` descartado em retângulo sem filhos — **✔ FEITO (#275)** | Fidelidade | P | ✅ | R2 #21b |
-| 5 | Export RDL perde `ToggleItem` e `InitiallyHidden` (perda conhecida, registrada na rede de paridade) | Perda de dados | P | ✅ | R2 #12 |
+| 5 | Export RDL perde `ToggleItem` e `InitiallyHidden` (perda conhecida, registrada na rede de paridade) — **✔ FEITO (#276)** | Perda de dados | P | ✅ | R2 #12 |
 | 6 | Designer: desfazer uma inserção deixa o elemento removido **selecionado e editável** — **✔ FEITO (#277)** | Bug | P | 🧪 | novo |
 | 7 | Exportação no Designer: menu fixo divergente do registro, falha silenciosa, cliques perdidos | Bug | P | 🧪 | novo |
 | 8 | Documentação afirma o que não é mais verdade (README, badges, evidências não versionadas) | Doc | P | ✅ | novo |
@@ -307,7 +307,7 @@ raio, o canto fica fora da forma. Sabotagem: sem o caminho arredondado do player
 
 ---
 
-### 5. Export RDL perde `ToggleItem` e `InitiallyHidden` ✅
+### 5. Export RDL perde `ToggleItem` e `InitiallyHidden` ✅ — ✔ FEITO
 
 **O problema.** `RepxWriter` e `RepJsonWriter` gravam `ToggleItemId` (`RepxWriter.cs:456`,
 `RepJsonWriter.cs:395`); `RdlWriter.cs` tem **zero** ocorrências de `ToggleItem`. Importar um `.rdl` com
@@ -326,6 +326,19 @@ Limite da rede, a considerar: ela percorre as propriedades do elemento; valores 
 de `CommonLossy` — a rede passa a garantir que a perda não volte.
 
 **Pronto quando:** o round-trip `.rdl` de drill-down preserva o vínculo e as duas entradas saem da lista de perdas.
+
+**FEITO (#276).** `RdlWriter.WriteVisibility` emite `<Hidden>` e `<ToggleItem>` como inverso exato do importador.
+Tirar as duas entradas de `CommonLossy` fez a rede de paridade apontar um terceiro caso que a revisão não tinha
+visto: sob um `ToggleItem`, o `<Hidden>` do RDL significa "começa recolhido" — então um `Visible=false`
+**permanente** num elemento com toggle voltava como visível. Não há lugar no RDL para os dois estados ao mesmo
+tempo; o `Hidden` passou a carregar só o estado inicial e o oculto permanente viaja como `omni:Visible` em
+`CustomProperties`, a estratégia já usada para os outros campos sem equivalente. Validado contra o XSD oficial
+RDL 2016 (`RdlXsdValidationTests`) e por `RdlToggleRoundTripTests`. A revisão do PR apontou mais dois casos, também
+corrigidos: com toggle, uma visibilidade **condicional** (`<Hidden>=expressão`) voltou a ser projetada — o estado
+inicial, quando coexiste com ela, vai em `omni:InitiallyHidden` —, e um `ToggleItemId` que aponta para o
+**bookmark** da TextBox (como o CodeFirst produz) é reescrito para o nome exportado dela, já que o RDL resolve
+`<ToggleItem>` por nome; referências que já são nomes, como as importadas, ficam intactas. Sabotagem: revertendo o writer, 12
+testes falham — inclusive a própria rede, que agora impede a perda de voltar.
 
 ---
 
@@ -969,6 +982,7 @@ movimento de arquivos, e 31. O restante do item 26 (`designer.js`, `ElementViewM
 | F01–F27 da auditoria técnica | Ver `docs/correcoes-f01-f27-2026-09-08.md` | #260 |
 | Itens 3 e 4 — borda em qualquer elemento e raio de retângulo sem filhos | Borda sobre o conteúdo no tamanho final; `CornerRadius` na primitiva | #275 |
 | Seis recomendações pós-auditoria + F28 | Preview sob demanda, limites, F24/F25, cache limitado, isolamento do designer, telemetria, um tipo por arquivo | #270 |
+| Item 5 — export RDL sem `ToggleItem`/`InitiallyHidden` | `<Visibility>` completa + `omni:Visible`; fora da lista de perdas | #276 |
 | Advisories do `System.Security.Cryptography.Pkcs` | Pin na 10.0.13 | #271 |
 | Item 6 — elemento-fantasma selecionado após desfazer | Seleção podada a cada mudança do histórico | #277 |
 

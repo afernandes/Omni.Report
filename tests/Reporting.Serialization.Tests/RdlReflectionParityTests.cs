@@ -27,7 +27,7 @@ namespace Reporting.Serialization.Tests;
 /// </list>
 ///
 /// <para><b>The lists below are a map of the RDL export debt, not a wish list.</b> Every entry is a real gap
-/// measured against the live exporter; see ROADMAP.md item 12.</para>
+/// measured against the live exporter; see ROADMAP.md item 5 (3ª revisão; item 12 na 2ª).</para>
 /// </summary>
 public class RdlReflectionParityTests
 {
@@ -54,8 +54,6 @@ public class RdlReflectionParityTests
         "ConditionalFormats",   // native-only concept — SSRS expresses it as per-property expressions
         "PropertyExpressions",  // ditto: RDL binds expressions per attribute, not as a generic bag
         "VisibleExpression",    // <Visibility><Hidden> is written, but the expression form is not projected
-        "ToggleItemId",         // IMPORT was fixed in #217; the WRITER still does not emit <ToggleItem>
-        "InitiallyHidden",      // same gap as ToggleItemId — export side still open
     };
 
     /// <summary>Extra losses per element type, on top of <see cref="CommonLossy"/>.</summary>
