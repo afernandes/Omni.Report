@@ -104,7 +104,11 @@ public sealed partial class ReportPaginator : IReportPaginator
         _evaluator.CodeFunctionResolver = request.CodeFunctionResolver;
         var measurer = request.Measurer ?? new AverageWidthTextMeasurer();
         iterationRows ??= BuildIterationRows(request, allSources);
-        var diagnostics = InspectLimitations(request.Definition);
+        // The root run already walks every inline and resolved subreport, and RenderSubreport discards a child run's
+        // diagnostics; inspecting again per subreport instance would repeat the reflection walk for every row.
+        var diagnostics = request.SubreportDepth == 0
+            ? InspectLimitations(request.Definition)
+            : EquatableArray<PaginationDiagnostic>.Empty;
         bool twoPass = UsesTotalPages(request.Definition) || UsesLastPageGating(request.Definition);
         var finalSink = _pageSink;
         // The counting pass releases each completed page instead of retaining a second document.
