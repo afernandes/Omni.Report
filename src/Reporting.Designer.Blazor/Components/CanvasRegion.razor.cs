@@ -43,6 +43,7 @@ public partial class CanvasRegion
     [Parameter] public IReadOnlyList<Reporting.Designer.Blazor.Services.ExporterDescriptor>? Exporters { get; set; }
     [Parameter] public EventCallback<Reporting.Designer.Blazor.Services.ExporterDescriptor> OnExport { get; set; }
     [Parameter] public EventCallback OnPrint { get; set; }
+    [Parameter] public bool IsExporting { get; set; }
     [Parameter] public int PreviewZoom { get; set; } = 100;
     [Parameter] public EventCallback<int> PreviewZoomChanged { get; set; }
 

@@ -68,6 +68,25 @@ public class RdlXsdValidationTests
     }
 
     [Fact]
+    public void SaveToBytes_ElementosComDrillDown_SaoValidosNoXsd()
+    {
+        // ToggleItem + Hidden (initial state) and the omni:Visible custom property must stay inside the schema.
+        var def = new ReportDefinition("Drill", PageSetup.A4Portrait, DetailBand.Empty)
+        {
+            ReportHeader = new ReportBand(BandKind.ReportHeader, Unit.FromMm(40),
+                new EquatableArray<ReportElement>(new ReportElement[]
+                {
+                    new TextBoxElement { Name = "Cabecalho", Expression = "Fields.Grupo", Bounds = R(0, 0, 80, 8) },
+                    new TextBoxElement { Expression = "Fields.X", Bounds = R(0, 10, 80, 8),
+                        ToggleItemId = "Cabecalho", InitiallyHidden = true },
+                    new TextBoxElement { Expression = "Fields.Y", Bounds = R(0, 20, 80, 8),
+                        ToggleItemId = "Cabecalho", Visible = false },
+                })),
+        };
+        ValidationErrors(new RdlExporter().SaveToBytes(def)).Should().BeEmpty();
+    }
+
+    [Fact]
     public void Header_with_common_items_is_xsd_valid()
     {
         var def = new ReportDefinition("H", PageSetup.A4Portrait, DetailBand.Empty)
