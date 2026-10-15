@@ -1170,6 +1170,7 @@ movimento de arquivos, e 31. O restante do item 26 (`designer.js`, `ElementViewM
 | Item 9 — contrato de exportação no pacote PDF | Pacote `Reporting.Output`; CSV/JSON/XML/Markdown/Excel sem SkiaSharp | #282 |
 | Item 13 — Monaco do CDN, sem offline nem CSP estrita | Monaco empacotado; fallback para texto simples | #286 |
 | Item 2a — matriz descartava medidas extras sem aviso | `ORL025` `MatrixCells` + aviso no import RDL | #288 |
+| Item 10 — contrato de exportação sem faixa e sem E/S assíncrona | `PageRange`/`PreparedReport` por faixa; `AsyncExport` nos exportadores | #290, #291 |
 
 **Lições que valem para os próximos itens:**
 
