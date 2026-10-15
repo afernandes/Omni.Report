@@ -607,27 +607,42 @@
         }
     }, { passive: false });
 
-    // ───── Browser-shortcut interceptor (Ctrl+A inside designer) ───────────────
-    // Blazor's @onkeydown processes the event AFTER the browser's default. Ctrl+A on the
-    // designer canvas would let the browser select every text node on the page. Suppress
-    // it (and a couple of other VS-style shortcuts) at the capture phase whenever focus is
-    // inside the .report-designer host but not inside a real editable surface (input /
-    // textarea / contenteditable / Monaco editor).
+    // ───── Text fields keep their keys ──────────────────────────────────────────
+    // A key typed in a text field belongs to the field: Backspace erases a character, arrows move the caret, Ctrl+Z
+    // undoes typing. The root's .NET keyboard handler cannot see the event target, so it is told when focus enters
+    // or leaves a text field and skips the canvas shortcuts (Delete, arrows, Ctrl+Z…) meanwhile — before this,
+    // Backspace in the property grid deleted the selected element. Checkboxes and buttons are not text fields:
+    // Ctrl+Z after ticking one still undoes it. Only transitions are sent, not every focus change.
+    function isTextField(target) {
+        const field = target?.closest?.('input, textarea, select, [contenteditable="true"], .monaco-editor, .monaco-host');
+        if (!field) return false;
+        if (field.tagName !== "INPUT") return true;
+        return !/^(checkbox|radio|button|submit|reset|file|color|range|image)$/i.test(field.type);
+    }
+    let focusInTextField = false;
+    listen(document, "focusin", ev => {
+        const inField = isTextField(ev.target);
+        if (inField === focusInTextField || !state.dotnetRef) return;
+        focusInTextField = inField;
+        state.dotnetRef.invokeMethodAsync("OnTextFieldFocusChanged", inField)
+            .catch(err => console.warn("[designer] field focus notification failed", err));
+    });
+
+    // ───── Browser-shortcut interceptor ─────────────────────────────────────────
+    // Blazor's @onkeydown processes the event AFTER the browser's default, so the browser's own action for a
+    // shortcut the Designer owns must be cancelled here, at the capture phase. Save, open, print, palette and
+    // shortcuts work from anywhere in the Designer, text fields included; select-all and duplicate only outside a
+    // text field, where Ctrl+A must keep selecting the field's text.
     listen(document, "keydown", ev => {
-        const inDesigner = ev.target?.closest?.(".report-designer");
-        if (!inDesigner) return;
-        const inEditable = ev.target?.closest?.(
-            'input, textarea, [contenteditable="true"], .monaco-editor, .monaco-host'
-        );
-        if (inEditable) return;
-        if ((ev.ctrlKey || ev.metaKey) && !ev.altKey) {
-            const k = ev.key.toLowerCase();
-            // Letters we own at the designer level. Browser would otherwise hijack 'a'
-            // (Select All on the document), 'd' (bookmark), 's' (save page), 'o' (open).
-            // ...and 'p' (print page), 'k' (address-bar search), '/' — the Designer's print, palette and shortcuts.
-            if (k === "a" || k === "d" || k === "s" || k === "o" || k === "p" || k === "k" || k === "/") {
-                ev.preventDefault();
-            }
+        if (!ev.target?.closest?.(".report-designer")) return;
+        if (!(ev.ctrlKey || ev.metaKey) || ev.altKey) return;
+        const k = ev.key.toLowerCase();
+        // Browser would otherwise save the page, open a file, print the page, focus the address bar.
+        const designerWide = k === "s" || k === "o" || k === "p" || k === "k" || k === "/";
+        // Browser would otherwise select the whole page, bookmark it.
+        const canvasOnly = k === "a" || k === "d";
+        if (designerWide || (canvasOnly && !isTextField(ev.target))) {
+            ev.preventDefault();
         }
     }, { capture: true });
 
