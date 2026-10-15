@@ -21,7 +21,7 @@
                     <label class="pp-label" for="@($"{_inputPrefix}-{captured.Name}")">
                         @(string.IsNullOrWhiteSpace(captured.Prompt) ? captured.Name : captured.Prompt)
                         @if (captured.Required) { <span class="pp-req" title="Obrigatório">*</span> }
-                        <span class="pp-type">@captured.Type</span>
+                        <span class="pp-type">@DesignerFieldTypeLabel.Of(captured.Type)</span>
                     </label>
                     @{ var allowed = OptionsFor(captured); }
                     @{ var isQueryDriven = !string.IsNullOrWhiteSpace(captured.AvailableValuesDataSet) && ResolveOptions is not null; }

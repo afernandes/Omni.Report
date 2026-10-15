@@ -18,7 +18,7 @@
                             style="font-size:11px;background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--r-1);">
                         @foreach (var t in Enum.GetValues<DesignerFieldType>())
                         {
-                            <option value="@t" selected="@(p.Type == t)">@t</option>
+                            <option value="@t" selected="@(p.Type == t)">@DesignerFieldTypeLabel.Of(t)</option>
                         }
                     </select>
                     <input type="text" placeholder="default" value="@p.DefaultValue"
@@ -52,9 +52,13 @@
                         <input type="checkbox" checked="@p.AllowBlank"
                                @onchange="@(e => p.AllowBlank = (bool)(e.Value ?? false))" /> Vazio</label>
                 </div>
+                @* A date has no sensible list of allowed values; the prompt offers a date picker instead. A date that
+                   already has values (switched from Text, or loaded so) keeps the block, so they can be cleared. *@
+                @if (p.Type != DesignerFieldType.Date || HasAvailableValues(p))
+                {
                 <div style="margin-top:4px;">
                     <div style="font-size:10px;color:var(--text-secondary);margin-bottom:2px;">Valores permitidos (1 por linha: <code>valor</code> ou <code>valor|rótulo</code>)</div>
-                    <textarea value="@p.AvailableValuesText" placeholder="1|Ativo&#10;0|Inativo" rows="2"
+                    <textarea value="@p.AvailableValuesText" placeholder="@AvailableValuesPlaceholder" rows="2"
                               @onchange="@(e => p.AvailableValuesText = e.Value?.ToString())"
                               style="width:100%;font-family:var(--font-mono);font-size:11px;background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--r-1);padding:2px 4px;resize:vertical;box-sizing:border-box;"></textarea>
                     <div style="display:flex;gap:4px;align-items:center;margin-top:3px;">
@@ -79,6 +83,7 @@
                                style="flex:1;font-size:10.5px;background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--r-1);padding:2px 4px;" />
                     </div>
                 </div>
+                }
             </div>
         }
     }
