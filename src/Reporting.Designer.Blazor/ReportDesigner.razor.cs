@@ -48,6 +48,8 @@ public partial class ReportDesigner
     private int _previewCurrentPage;
     private Reporting.Layout.PreparedReport? _previewPrepared;
     private int _previewZoom = 100;
+    // window.devicePixelRatio, read when a preview is prepared (the window may have moved to another screen since).
+    private double _devicePixelRatio = 1;
     private bool _pageSetupOpen;
     private bool _expressionEditorOpen;
     private bool _printDialogOpen;
@@ -1117,6 +1119,12 @@ public partial class ReportDesigner
         _previewCancellation = cancellation;
         try
         {
+            // Registered before this await so disposal or a newer preview cancels it while the lookup is pending.
+            try { _devicePixelRatio = await Js.InvokeAsync<double>("omniDesigner.devicePixelRatio", cancellation.Token); }
+            catch (JSException) { }
+            catch (InvalidOperationException) { /* pre-render: keep the last known ratio */ }
+            cancellation.Token.ThrowIfCancellationRequested();
+
             var definition = State.BuildDefinition();
             var paginator = new Reporting.Layout.ReportPaginator();
 
@@ -1143,7 +1151,9 @@ public partial class ReportDesigner
             _previewPrepared = rendered;
             _previewReportName = reportName;
             _previewDiagnostics = rendered.Diagnostics.Select(d => d.Message).Distinct().ToArray();
-            _previewPages = new Services.PreviewPageCache(rendered);
+            var pages = new Services.PreviewPageCache(rendered);
+            pages.SetScale(_devicePixelRatio * _previewZoom / 100.0);
+            _previewPages = pages;
             _previewCurrentPage = 0;
             return true;
         }
@@ -1623,6 +1633,16 @@ public partial class ReportDesigner
         return Task.CompletedTask;
     }
 
+    // A zoom change re-rasterizes the preview at the new density: a 96-DPI image enlarged to 200% blurs.
+    private void OnPreviewZoomChanged(int zoom)
+    {
+        _previewZoom = zoom;
+        if (_previewPages is Services.PreviewPageCache pages)
+        {
+            pages.SetScale(_devicePixelRatio * zoom / 100.0);
+        }
+    }
+
     /// <summary>Called from <c>omniDesigner</c> when the user wheel-scrolls with Ctrl
     /// held inside the canvas. Routes to the active surface — design canvas adjusts
     /// <c>State.Zoom</c> (0.25–4.0); preview mode adjusts <c>_previewZoom</c> (25–400%).
@@ -1634,7 +1654,7 @@ public partial class ReportDesigner
         {
             // delta is the same fractional step used by the design canvas (~0.10 or ~0.25);
             // multiply by 100 to land in the preview's integer-percent space.
-            _previewZoom = Math.Clamp(_previewZoom + (int)Math.Round(delta * 100), 25, 400);
+            OnPreviewZoomChanged(Math.Clamp(_previewZoom + (int)Math.Round(delta * 100), 25, 400));
             StateHasChanged();
         }
         else

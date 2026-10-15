@@ -1586,6 +1586,8 @@
     }
     const scoped = new Set(["setTheme", "getTheme", "toggleTheme", "setSnap", "setRulerUnit", "refreshRulers", "detachRulers", "registerOutsideClick"]);
     const api = {
+        // The preview rasterizes pages at 96 DPI × this ratio, so a HiDPI screen gets a sharp image.
+        devicePixelRatio() { return window.devicePixelRatio || 1; },
         register(root, reference) {
             if (!reference) { reference = root; root = resolve([]); }
             instance(rootOf(root) || root).register(reference);
