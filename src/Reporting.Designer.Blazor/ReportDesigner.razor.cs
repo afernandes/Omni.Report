@@ -106,6 +106,15 @@ public partial class ReportDesigner
             }
             catch (JSException) { }
             catch (InvalidOperationException) { /* pre-render */ }
+            _focusScope.Root = _rootRef;
+        }
+        else if (_focusRootPending)
+        {
+            _focusRootPending = false;
+            try { await _rootRef.FocusAsync(preventScroll: true); }
+            catch (JSDisconnectedException) { }
+            catch (JSException) { }
+            catch (InvalidOperationException) { }
         }
     }
 
@@ -1341,9 +1350,9 @@ public partial class ReportDesigner
     // ─── Keyboard ───────────────────────────────────────────────────────────────
     private async Task OnKeyDown(KeyboardEventArgs e)
     {
-        if (State.CommandPaletteOpen)
+        if (State.CommandPaletteOpen || _focusScope.HasOpenModal)
         {
-            return; // palette handles its own keys
+            return; // the palette and the dialogs handle their own keys; nothing may change the report behind them
         }
         if (e.Key == "F5") { await OnPreview(); return; }
         if (e.Key == "F8") { OpenExpressionEditor(); return; }
@@ -1684,12 +1693,24 @@ public partial class ReportDesigner
         }
     }
 
-    // The palette runs the same commands as the menus, through the same dispatcher.
+    // The palette runs the same commands as the menus, through the same dispatcher. Closing it removes the focused
+    // search box, so focus goes back to the root, where the shortcuts live; a command that opens a dialog moves it
+    // on into that dialog afterwards (the dialog focuses itself after this component's render).
     private async Task OnPaletteCommand(string id)
     {
         State.CommandPaletteOpen = false;
+        _focusRootPending = true;
         await OnMenuCommand(id);
     }
+
+    private void OnPaletteClosed()
+    {
+        State.CommandPaletteOpen = false;
+        _focusRootPending = true;
+    }
+
+    private readonly Reporting.Designer.Blazor.Services.DesignerFocusScope _focusScope = new();
+    private bool _focusRootPending;
 
     private bool _shortcutsOpen;
 

@@ -1,12 +1,17 @@
 @namespace Reporting.Designer.Blazor.Components
+@implements IDisposable
 
 @if (Visible)
 {
+    @* Keys stop here: the Designer root would otherwise run canvas shortcuts (Delete, Ctrl+Z, Esc) on the report
+       behind the dialog. *@
     <div class="dlg-overlay"
          @onclick="OnBackdropClicked"
          @onkeydown="OnKeyDown"
+         @onkeydown:stopPropagation="true"
          tabindex="-1">
-        <div class="dlg-modal" role="dialog" aria-label="@Title"
+        <div class="dlg-modal" role="dialog" aria-modal="true" aria-label="@Title" tabindex="-1"
+             @ref="_dialog"
              @onclick:stopPropagation="true">
             <div class="dlg-head">
                 <Icon Name="@HeadIcon" Size="16" CssClass="icon icon-16" />

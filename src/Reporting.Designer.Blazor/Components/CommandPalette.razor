@@ -10,7 +10,8 @@
                        value="@_query"
                        placeholder="Buscar comando ou propriedade…"
                        @oninput="@(e => _query = e.Value?.ToString() ?? string.Empty)"
-                       @onkeydown="HandleKey" />
+                       @onkeydown="HandleKey"
+                       @onkeydown:stopPropagation="true" />
                 <span class="esc-hint">Esc <kbd>Esc</kbd></span>
             </div>
             <div class="cmdp-list">
@@ -22,7 +23,7 @@
                     <div class="cmdp-group">@g.Key</div>
                     @foreach (var cmd in g)
                     {
-                        <div class="cmdp-item @(cmd == _highlight ? "is-hl" : null)"
+                        <div class="cmdp-item @(cmd == _highlight ? "is-hl" : null)" data-command-id="@cmd.Id"
                              @onclick="@(() => Execute(cmd))">
                             <Icon Name="@cmd.Icon" Size="16" CssClass="icon icon-16 ic" />
                             <span>@cmd.Title</span>

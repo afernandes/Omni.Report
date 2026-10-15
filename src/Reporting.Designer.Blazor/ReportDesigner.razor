@@ -3,6 +3,7 @@
 @inject IJSRuntime Js
 
 <CascadingValue Value="_menus" IsFixed="true">
+<CascadingValue Value="_focusScope" IsFixed="true">
 <CascadingValue Value="State.History">
 <div class="report-designer" tabindex="0"
      @onkeydown="OnKeyDown" @ref="_rootRef">
@@ -150,7 +151,7 @@
                    DataSourceCount="State.DataSources.Count" />
 
         <CommandPalette Visible="State.CommandPaletteOpen"
-                        OnClose="() => State.CommandPaletteOpen = false"
+                        OnClose="OnPaletteClosed"
                         Commands="_commands"
                         OnExecute="OnPaletteCommand" />
 
@@ -211,7 +212,6 @@
                               Band="_bandPropsEditing"
                               OnClose="() => _bandPropsOpen = false" />
 
-        @* Sobre — mostra a versão REAL lida do assembly e o runtime corrente (sem strings fixas). *@
         <DesignerModal Visible="_shortcutsOpen" Title="Atalhos de teclado" HeadIcon="keyboard"
                        CloseOnBackdrop="true" OnClose="() => _shortcutsOpen = false">
             <table class="shortcuts-table">
@@ -228,6 +228,7 @@
             </table>
         </DesignerModal>
 
+        @* Sobre — mostra a versão REAL lida do assembly e o runtime corrente (sem strings fixas). *@
         <DesignerModal Visible="_aboutOpen" Title="Sobre o OmniReport" HeadIcon="info"
                        CloseOnBackdrop="true" OnClose="() => _aboutOpen = false">
             <div style="display:flex;flex-direction:column;gap:12px;min-width:320px;font-size:13px;">
@@ -270,4 +271,5 @@
 
 </CascadingValue>
 
+</CascadingValue>
 </CascadingValue>

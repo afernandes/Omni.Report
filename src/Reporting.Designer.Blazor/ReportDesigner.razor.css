@@ -188,6 +188,10 @@
     flex-direction: column;
     overflow: hidden;
 }
+/* The dialog box takes focus only so keys land inside it; the visible focus ring belongs to the control Tab reaches. */
+::deep .dlg-modal:focus {
+    outline: none;
+}
 ::deep .dlg-head {
     display: flex;
     align-items: center;

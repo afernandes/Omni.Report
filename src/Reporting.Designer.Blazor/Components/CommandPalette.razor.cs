@@ -16,12 +16,16 @@ public partial class CommandPalette
     private string _query = string.Empty;
     private DesignerCommand? _highlight;
     private ElementReference _input;
-    private bool _focusPending;
+
+    // True from the start so a palette first rendered already open is focused too.
+    private bool _focusPending = true;
 
     protected override void OnParametersSet()
     {
         // `autofocus` is ignored for an element Blazor inserts after load, so the search box is focused explicitly
         // each time the palette opens; otherwise the first keystrokes go to the canvas instead of the query.
+        // Its keys never reach the Designer root (stopPropagation on the input): the Escape that closes the palette
+        // would otherwise also clear the selection or leave the preview.
         if (!Visible)
         {
             _focusPending = true;

@@ -12,6 +12,7 @@ using Reporting.Styling;
 using Reporting.Designer.Blazor;
 using Reporting.Designer.Blazor.Components;
 using Reporting.Designer.Blazor.Icons;
+using Reporting.Designer.Blazor.Services;
 using Reporting.Designer.Blazor.ViewModels;
 using Reporting.Output.Excel;
 using Reporting.Printing;
@@ -38,6 +39,65 @@ public partial class DesignerModal
     [Parameter] public bool CloseOnEscape { get; set; } = true;
 
     [Parameter] public EventCallback OnClose { get; set; }
+
+    [CascadingParameter] internal DesignerFocusScope? FocusScope { get; set; }
+
+    private ElementReference _dialog;
+    private bool _shown;
+    private bool _focusDialog;
+    private bool _restoreFocus;
+
+    protected override void OnParametersSet()
+    {
+        // Focus follows the visibility edge, not every render: re-focusing the dialog on each parameter update would
+        // pull focus out of the field the user is typing in.
+        if (Visible && !_shown)
+        {
+            _focusDialog = true;
+            _restoreFocus = false;
+        }
+        else if (!Visible && _shown)
+        {
+            _restoreFocus = true;
+            _focusDialog = false;
+        }
+        _shown = Visible;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_focusDialog)
+        {
+            _focusDialog = false;
+            FocusScope?.Opened(this, _dialog);
+            await TryFocusAsync(_dialog);
+        }
+        else if (_restoreFocus)
+        {
+            _restoreFocus = false;
+            if (FocusScope?.Closed(this) is { } target)
+            {
+                await TryFocusAsync(target);
+            }
+        }
+    }
+
+    public void Dispose()
+    {
+        if (_shown)
+        {
+            FocusScope?.Closed(this);
+        }
+    }
+
+    // Focus is a convenience: a closed circuit or a pre-rendered page must not turn it into an error.
+    private static async Task TryFocusAsync(ElementReference element)
+    {
+        try { await element.FocusAsync(preventScroll: true); }
+        catch (JSDisconnectedException) { }
+        catch (JSException) { }
+        catch (InvalidOperationException) { }
+    }
 
     private Task OnCloseClicked() => OnClose.InvokeAsync();
     private Task OnBackdropClicked() => CloseOnBackdrop ? OnClose.InvokeAsync() : Task.CompletedTask;

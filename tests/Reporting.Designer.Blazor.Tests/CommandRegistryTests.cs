@@ -1,4 +1,5 @@
 using Bunit;
+using Bunit.Rendering;
 using FluentAssertions;
 using Microsoft.AspNetCore.Components.Web;
 using Reporting.Designer.Blazor.Components;
@@ -27,9 +28,7 @@ public sealed class CommandRegistryTests : BunitContext
 
         foreach (var command in DesignerCommandCatalog.Build([]))
         {
-            await designer.InvokeAsync(() => state.CommandPaletteOpen = true);
-            var item = designer.FindAll(".cmdp-item").First(i => i.TextContent.Contains(command.Title, StringComparison.Ordinal));
-            await designer.InvokeAsync(() => item.Click());
+            await RunFromPalette(designer, state, command.Id);
             if (designer.FindAll(".designer-alert").Any(a => a.TextContent.Contains("Comando não reconhecido")))
             {
                 unrouted.Add(command.Id);
@@ -88,7 +87,7 @@ public sealed class CommandRegistryTests : BunitContext
         });
         var designer = Render<ReportDesigner>(p => p.Add(x => x.InitialState, state));
 
-        await RunFromPalette(designer, state, "Validar expressões");
+        await RunFromPalette(designer, state, "report.validate");
 
         designer.Find(".designer-alert").TextContent.Should().Contain("TotalErrado").And.Contain("1 expressão");
     }
@@ -99,7 +98,7 @@ public sealed class CommandRegistryTests : BunitContext
         var state = new DesignerState();
         var designer = Render<ReportDesigner>(p => p.Add(x => x.InitialState, state));
 
-        await RunFromPalette(designer, state, "Validar expressões");
+        await RunFromPalette(designer, state, "report.validate");
 
         var alert = designer.Find(".designer-alert");
         alert.ClassList.Should().Contain("is-ok");
@@ -128,10 +127,22 @@ public sealed class CommandRegistryTests : BunitContext
         state.Theme.Should().Be("dark", "Ctrl+Shift+L is the theme shortcut the menu advertises");
     }
 
-    private static async Task RunFromPalette(IRenderedComponent<ReportDesigner> designer, DesignerState state, string title)
+    // By id, not title: titles overlap ("QR Code" contains "Code"). A command still finishing (preview, print) can
+    // re-render the palette between finding the item and clicking it, which retires the handler id that was read —
+    // so the item is looked up again rather than failing on a stale handler.
+    private static async Task RunFromPalette(IRenderedComponent<ReportDesigner> designer, DesignerState state, string id)
     {
-        await designer.InvokeAsync(() => state.CommandPaletteOpen = true);
-        var item = designer.FindAll(".cmdp-item").First(i => i.TextContent.Contains(title, StringComparison.Ordinal));
-        await designer.InvokeAsync(() => item.Click());
+        for (var attempt = 1; ; attempt++)
+        {
+            await designer.InvokeAsync(() => state.CommandPaletteOpen = true);
+            try
+            {
+                await designer.Find($".cmdp-item[data-command-id='{id}']").ClickAsync(new MouseEventArgs());
+                return;
+            }
+            catch (UnknownEventHandlerIdException) when (attempt < 5)
+            {
+            }
+        }
     }
 }
