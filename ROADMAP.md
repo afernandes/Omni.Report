@@ -447,7 +447,7 @@ o alerta do preview explica. Verificado com bUnit (`ExportFlowTests`, os 3 falha
 com os 9 formatos + RDL; durante o PDF, 7/7 botões desabilitados; depois, download feito e botões reabilitados. O log
 estruturado continua pendente no item 12.
 
-**Follow-up (#PRNUM) — cinco pontas apontadas na revisão do #280.** (1) Exportar pelo menu depois de um preview bem
+**Follow-up (#289) — cinco pontas apontadas na revisão do #280.** (1) Exportar pelo menu depois de um preview bem
 sucedido exportava o documento **anterior** quando a nova preparação falhava (ou o prompt de parâmetros era
 cancelado), e ainda limpava o alerta da falha: `PreviewAsync` passou a dizer se ESTE pedido preparou o relatório, e
 só então há exportação. (2) O menu do TopBar seguia habilitado durante uma exportação e um segundo pedido disparava
