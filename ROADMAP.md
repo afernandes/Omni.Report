@@ -1,1057 +1,940 @@
 # OmniReport — Roadmap
 
-**Baseline:** `main` @ `f83ea38` + PR #215 · **Versão publicada:** 0.1.1 · **Revisão:** 2ª (a 1ª tinha baseline PR #214)
+**Baseline:** `main` @ `e7600bf` (PR #270) · **Versão publicada:** 0.1.1 · **Revisão:** 3ª — 14/10/2026
+(a 2ª tinha baseline `f83ea38` + PR #215)
 
 ## Como este documento foi produzido
 
-Varredura em cinco frentes — débito estrutural, cobertura de testes, gaps de produto, Designer, infra/release —
-cruzando código-fonte, `docs/` e histórico git. Esta revisão **re-verificou** os itens da anterior contra o
-código atual e acrescentou os gaps de paridade com outras engines (SSRS, Crystal, JasperReports, DevExpress
-XtraReports, Telerik, FastReport, Stimulsoft).
+Esta revisão reuniu seis frentes, cada uma verificada contra o código atual e, quando possível, **executando** o
+produto em vez de ler o código:
 
-**Níveis de confiança** — respeite-os antes de agir:
+1. **Re-verificação** dos 43 itens da 2ª revisão e dos achados F01–F28 da auditoria técnica de 05/09/2026
+   (`docs/auditoria-tecnica-2026-09-05.md`, `docs/correcoes-f01-f27-2026-09-08.md`,
+   `docs/evolucao-pos-auditoria-2026-09-09.md`).
+2. **Designer no navegador**: sample `Reporting.Samples.BlazorServer` rodando, com seleção, multisseleção,
+   alinhamento, distribuição, camadas, setas, inserção, recortar/copiar/colar, desfazer/refazer, menus, paleta
+   de comandos, tema, grade/snap/régua, diálogos (parâmetros, fonte de dados, configuração de página, impressão,
+   editor de expressões), preview e exportação nos 9 formatos registrados.
+3. **Arquitetura e organização**: grafo de dependências entre os 39 projetos, tamanho por arquivo, organização
+   de pastas, solution e cobertura de teste por projeto.
+4. **Fidelidade**: saídas reais dos samples (PDF inspecionado objeto a objeto, Markdown, CSV, preview em PNG).
+5. **DX**: README, quickstarts, samples, CI, tooling e documentação.
+6. **Paridade** com SSRS, Crystal, JasperReports, DevExpress XtraReports, Telerik, FastReport e Stimulsoft.
 
-- ✅ **Verificado**: confirmado por leitura direta do arquivo/linha citado **nesta revisão**.
-- 🔍 **Relatado**: veio da varredura anterior com evidência `arquivo:linha`, mas não foi reconfirmado agora.
-  **Confirme antes de abrir o PR.**
+**Níveis de confiança:**
 
-> **Duas armadilhas já mapeadas — não "corrija" nenhuma das duas:**
-> 1. "`RepeatColumnHeaders`/`MinColumnWidth` não editáveis no Designer" — **falso**: entregues no PR #211 via
->    anotação `[PropertyGrid]` no modelo (por isso não aparecem hardcoded em `PropertyGrid.razor`).
-> 2. "`catch (Exception)` genéricos em `DesignerDataConnect`" — **falso positivo verificado**: os 5 catches
->    (`DesignerDataConnect.cs:59,102,161,191,226`) envolvem operações user-facing (testar conexão, descobrir
->    schema, preview) que **devem** converter qualquer falha em mensagem para o usuário. Estreitá-los faria o
->    Designer estourar exceção em erro não-antecipado. O item 18 trata de outros pontos, não destes.
-
-### Estado geral do projeto
-
-A engenharia é madura para um pré-1.0: build determinístico, SourceLink, `.snupkg`, Trusted Publishing via OIDC,
-`TreatWarningsAsErrors=true`, ~1.200 testes, zero `TODO`/`FIXME`/`NotImplementedException` em `src/`, zero
-`#pragma warning disable`, 39 projetos publicáveis. A compatibilidade RDL fechou >90% dos gaps rastreados, e a
-paginação do Tablix está completa em 2D (linha #197/#207 + coluna #209).
-
-Por isso os problemas críticos **não são de falta de processo** — são de *divergência entre o que a documentação
-ou o comentário afirma e o que o MSBuild ou o runtime realmente faz*. Passam despercebidos justamente porque a
-área parece coberta.
+- 🧪 **Executado**: reproduzido rodando o produto (navegador, arquivo gerado, teste) nesta revisão.
+- ✅ **Verificado**: confirmado por leitura direta do arquivo/linha citado nesta revisão.
+- 🔍 **Relatado**: vem de revisão anterior ou da auditoria e não foi reconfirmado. **Confirme antes de agir.**
 
 **Legenda de esforço:** P ≤1 dia · M 2–5 dias · G 1–3 semanas · GG >3 semanas
 
-### O que mudou desde a 1ª revisão
+**Item concluído:** a linha na lista priorizada ganha **✔ FEITO (#PR)**, o detalhamento ganha uma seção
+**FEITO.** com o que foi entregue e como foi verificado, e a entrega entra no *Histórico de concluídos*. A
+numeração não muda — itens novos entram no fim do nível correspondente com sufixo (ex.: 7a).
+
+> **O padrão de defeito continua o mesmo das revisões anteriores:** *o que a documentação, o comentário ou o
+> teste afirma diverge do que o runtime faz*. Nesta revisão ele apareceu de novo em seis lugares — inclusive
+> numa conclusão desta própria série (item 1). A regra que vale para todos os itens abaixo: **verifique o
+> comportamento, não o identificador**.
+
+---
+
+## Resumo executivo
+
+O núcleo está maduro para um pré-1.0: build `TreatWarningsAsErrors`, 1.950+ testes, golden files, Package
+Validation contra o nuget.org, CI Linux cobrindo todos os projetos cross-platform, testes contra bancos reais,
+auditoria de vulnerabilidades e os 27 achados da auditoria técnica corrigidos. O Designer funciona de verdade
+nos fluxos principais — todos os comandos de edição testados no navegador fizeram o que prometem.
+
+Os problemas que restam são de cinco tipos:
+
+1. **Saída incorreta ou inchada sem aviso** — o PDF embute as fontes *inteiras* (1 página = 1,1 MB); `RowSpan`,
+   borda de texto e cantos arredondados são aceitos pelo modelo e descartados na renderização.
+2. **Arquitetura que fica cara depois do 1.0** — a abstração de exportação mora dentro do pacote PDF, então
+   exportar CSV arrasta o SkiaSharp nativo; Designer, Viewer e Hosting referenciam todos os exporters.
+3. **Acabamento do Designer** — paleta com 13 de ~40 comandos, menus incompletos, tema escuro que apaga o texto,
+   ausência de layout responsivo e de semântica de acessibilidade.
+4. **Organização do código** — arquivos de 1.100–1.700 linhas, Designer organizado por tipo e não por feature,
+   solution plana, 135 arquivos gerados versionados.
+5. **Features de mercado** ainda ausentes — senha/PDF-A, cache de relatório, document map no viewer, wizard,
+   watermark.
+
+---
+
+## O que mudou desde a 2ª revisão
 
 | Mudança | Detalhe |
 |---|---|
-| ✅ **P0 #1 resolvido** | `ReportPaginator` thread-safety: `PaginateAsync` roda cada execução numa **instância privada** (`ReportPaginator.cs:63`), compartilhando só o `ExpressionCompiler` (cache concorrente). Guardado por `PaginatorConcurrencyTests`. Saiu da lista. |
-| ✅ **Sintoma do #7 corrigido** | Os `CS1574` do `Sample11` foram corrigidos (PR #215) — mas a **causa raiz** (CS1591 só travado no CodeFirst) continua no item 7. |
-| ➕ **4 itens novos** | Gaps de paridade com outras engines não mapeados antes: **23** (embedding de fontes), **31** (watermark + rotação), **33** (Excel freeze/autofilter), **39** (export de intervalo de páginas). |
-| ➖ **2 não-itens** | `AllowMultiple` (multi-value params) **já existe** em `ReportParameter.cs:12`; **undo/redo já existe** no Designer (`Commands.cs:11,23-25`). Ambos saíram da consideração. |
+| ✅ **Concluídos** | Itens 1–10, 12 (rede de paridade RDL), 13, 14 (parcial), 16, 18, 20, 21 (inherit), 30a, 30b; partes de 15, 17 e 19; achados F01–F27 (#260) e as seis recomendações pós-auditoria (#270). Lista completa no fim do documento. |
+| ⚠️ **Reaberto** | **Item 23 (fontes no PDF).** A 2ª revisão o declarou *falso positivo* afirmando que o PDF "embute E faz subsetting". Embutir, sim; **subsetting, não** — ver item 1. |
+| ➕ **Novos** | 23 itens novos, vindos do teste do Designer no navegador, da análise de arquitetura e da inspeção das saídas. |
+| 🔁 **Refinados** | O antigo item 36 (RowSpan) deixou de ser "gap RDL de nicho": o campo já existe no modelo e nos serializadores e é **ignorado pelo renderer** — virou defeito (item 2). |
 
 ---
 
 ## Lista priorizada
 
-### P0 — Bloqueadores de 1.0 (integridade de entrega)
+### P0 — Saída incorreta ou enganosa (corrigir antes de qualquer feature)
 
-| # | Item | Tipo | Esforço | Conf. |
-|---|---|---|---|---|
-| 1 | `Printing.Android` publicado no NuGet como stub que só lança `PlatformNotSupportedException` | Bug de release | P | ✅ |
-| 2 | `release.yml` publica no NuGet.org sem rodar nenhum teste | Processo | P | ✅ |
-| 3 | README embutido nos 39 pacotes com imagens quebradas no NuGet.org | DX/imagem | P | ✅ |
+| # | Item | Tipo | Esforço | Conf. | Origem |
+|---|---|---|---|---|---|
+| 1 | PDF embute as fontes **inteiras** — sem subsetting real (1 página = 1,1 MB) | Fidelidade/Perf | M | 🧪 | R2 #23 reaberto |
+| 2 | `RowSpan` aceito, persistido e **ignorado** pelo renderer do Tablix — **✔ FEITO (#274)** | Fidelidade | M | ✅ | R2 #36 |
+| 3 | `Style.Border` não desenhada em Label/TextBox/Image; grade do Tablix com cor fixa | Fidelidade | M | ✅ | R2 #21a |
+| 4 | `CornerRadius` descartado em retângulo sem filhos | Fidelidade | P | ✅ | R2 #21b |
+| 5 | Export RDL perde `ToggleItem` e `InitiallyHidden` (perda conhecida, registrada na rede de paridade) | Perda de dados | P | ✅ | R2 #12 |
+| 6 | Designer: desfazer uma inserção deixa o elemento removido **selecionado e editável** | Bug | P | 🧪 | novo |
+| 7 | Exportação no Designer: menu fixo divergente do registro, falha silenciosa, cliques perdidos | Bug | P | 🧪 | novo |
+| 8 | Documentação afirma o que não é mais verdade (README, badges, evidências não versionadas) | Doc | P | ✅ | novo |
 
-### P1 — Confiabilidade verificável (o que hoje é afirmado, não testado)
+### P1 — Arquitetura e decisões antes do 1.0
 
-| # | Item | Tipo | Esforço | Conf. |
-|---|---|---|---|---|
-| 4 | Zero teste nos 3 conectores SQL de produção (SqlServer/PostgreSql/MySql) | Teste | M | 🔍 |
-| 5 | CI Linux cobre 15/39 projetos — metade da superfície "cross-platform" nunca é verificada | CI | P | 🔍 |
-| 6 | Sem gate de breaking change de API pública | Processo | M | ✅ |
-| 7 | XML docs obrigatórios em 1 de 39 pacotes → IntelliSense vazio | DX | M | ✅ |
-| 8 | Sem Dependabot, CodeQL, scan de vulnerabilidade nem `SECURITY.md` | Segurança | P | ✅ |
-| 9 | `CHANGELOG.md` ~91 PRs desatualizado | Doc | P | ✅ |
-| 10 | `Verify.Xunit` referenciado sem uso → zero regressão visual real | Teste | M | ✅ |
-| 11 | `Expressions.Roslyn` executa C# arbitrário sem sandbox, com 5 testes | Segurança | G | 🔍 |
+| # | Item | Tipo | Esforço | Conf. | Origem |
+|---|---|---|---|---|---|
+| 9 | Abstração de exportação mora no pacote PDF → CSV/JSON/XML/Excel arrastam SkiaSharp | Arquitetura | M | ✅ | novo |
+| 10 | Contrato de export: `ExportAsync` real, faixa de páginas e consumo de `PreparedReport` | API | M | ✅ | R2 #14 + #39 |
+| 11 | Designer, Viewer e Hosting referenciam **todos** os exporters | Arquitetura | M | ✅ | novo |
+| 12 | Nenhum `ILogger` em `src/`; falhas do Designer vão para `Console.Error` | Observabilidade | P | ✅ | novo |
+| 13 | Monaco carregado do CDN em runtime — não funciona offline nem sob CSP | Segurança/DX | M | ✅ | novo |
+| 14 | **Decisão:** postura de segurança do Roslyn (só fonte confiável × isolamento real) | Segurança | P/G | 🔍 | R2 #11 |
+| 15 | **Decisão:** i18n — a UI já mistura português e inglês | Produto | P/G | 🧪 | R2 #30 |
 
-### P2 — Débito técnico estrutural
+### P2 — Designer: UI/UX (verificado no navegador)
 
-| # | Item | Tipo | Esforço | Conf. |
-|---|---|---|---|---|
-| 12 | Travessia do modelo duplicada em 6 serializadores | Arquitetura | G | ✅ |
-| 13 | Backend GDI não implementa gradiente → some silenciosamente na impressão | Paridade | P | ✅ |
-| 14 | `IReportExporter.Export` síncrono, sem `CancellationToken` | API | M | ✅ |
-| 15 | `MaterializeAsync` sem streaming → memória proporcional ao dataset inteiro | Performance | G | 🔍 |
-| 16 | Excel/DOCX descartam gráficos, imagens e estilo sem avisar | Paridade | M | ✅ |
-| 17 | `ElementViewModel`: God object de ~1.400 linhas e ~76 propriedades | Arquitetura | G | 🔍 |
-| 18 | `catch` nus em 5 pontos de `Layout` mascaram bugs reais | Robustez | P | ✅ |
-| 19 | `RdlImporter`/`RdlWriter` monolíticos (1.713 e 1.376 linhas) | Arquitetura | M | 🔍 |
-| 20 | Sem benchmarks — nenhuma barreira contra regressão de performance | Performance | M | ✅ |
-| 21 | Perda da semântica "inherit" de `ForeColor`/`Font` no Designer | Bug sutil | P | 🔍 |
+| # | Item | Tipo | Esforço | Conf. | Origem |
+|---|---|---|---|---|---|
+| 16 | Paleta de comandos com 13 de ~40 comandos e campo de busca sem foco | UX | P | 🧪 | novo |
+| 17 | Menus incompletos e enganosos ("Inserir" com 6 de ~19 tipos; "Validar" = preview; "Atalhos" = paleta) | UX | P | 🧪 | novo |
+| 18 | Tema escuro escurece o papel — o texto preto do relatório some | UX/Fidelidade | P | 🧪 | novo |
+| 19 | Designer não cria fontes JSON, XML, REST nem FileSystem (paridade dos 3 modos) | Paridade | M | 🧪 | novo |
+| 20 | Sem layout responsivo: abaixo de ~1.280 px o painel de propriedades sai da tela | UX | M | 🧪 | novo |
+| 21 | Acessibilidade: botões sem nome, toggles sem `aria-pressed`, modais sem `aria-modal`, 304 estilos inline | A11y | M | ✅ | novo |
+| 22 | Defeitos visuais pequenos (placeholder `&#10;`, aba "Untitled.repx", rótulo "DATE") | UX | P | 🧪 | novo |
+| 23 | Preview rasterizado a 96 DPI — borrado em tela HiDPI e com zoom | UX | P | 🧪 | novo |
+| 24 | Editor de rich text (`TextRuns`) — ausente no Designer e no CodeFirst | Feature | M | ✅ | R2 #32 |
+| 25 | Botão "Testar" do editor de expressões avalia com dados fictícios | UX | M | 🔍 | auditoria |
 
-### P3 — Features essenciais de produto
+### P3 — Débito técnico, organização do código e DX
 
-| # | Item | Tipo | Esforço | Conf. |
-|---|---|---|---|---|
-| 22 | PDF: senha/criptografia e PDF/A (arquivamento fiscal) | Feature | G | ✅ |
-| 23 | **Embedding/subsetting de fontes no PDF** — pré-requisito do 22 | Feature | M | ✅ |
-| 24 | Cache de relatório renderizado | Feature | M | ✅ |
-| 25 | Viewer sem document map, busca ou miniaturas | Feature | M | 🔍 |
-| 26 | Designer sem wizard de criação de relatório | Feature | M | ✅ |
-| 27 | Oracle sem pacote de 1ª classe (prometido em doc, ausente em `src/`) | Feature | P | ✅ |
-| 28 | `WebServiceDataSource` sem suporte a REST paginado | Feature | M | 🔍 |
-| 29 | Sample de `Hosting.AspNetCore` inexistente | DX | P | ✅ |
-| 30 | UI do Designer 100% hardcoded em pt-BR, sem i18n | Feature | G | ✅ |
+| # | Item | Tipo | Esforço | Conf. | Origem |
+|---|---|---|---|---|---|
+| 26 | Arquivos-deus: `ReportDesigner.razor.cs` (1.686), `designer.js` (1.611), `ReportPaginator.cs` (1.335), `ElementViewModel.cs` (1.173) | Arquitetura | G | ✅ | R2 #17 |
+| 27 | `RdlImporter` (1.385) e `RdlWriter` (1.053) monolíticos | Arquitetura | M | ✅ | R2 #19 |
+| 28 | Organização por tipo, não por feature (Designer, `Core/Elements`, raiz do `Layout`) | Organização | M | ✅ | novo |
+| 29 | Solution plana: 39 projetos numa única pasta `/src/` | Organização | P | ✅ | novo |
+| 30 | Arquivos gerados versionados: `out-novos/` (135 arquivos) e `Designer.Blazor/Docs/index-reference.html` | Higiene | P | ✅ | novo |
+| 31 | Projetos sem teste direto: `Maps`, `Printing`, `Rendering`, `Printing.Android` | Teste | M | ✅ | novo |
+| 32 | CI coleta cobertura sem limite e não verifica `dotnet format` | Processo | P | ✅ | novo |
+| 33 | `Culture(CultureInfo.InvariantCulture)` lança `ArgumentException` | Bug de API | P | ✅ | R2 #21c |
+| 34 | Paleta de gráficos com cores vizinhas quase iguais (laranja-700 × âmbar-700) | Fidelidade | P | 🧪 | novo |
+| 35 | Espaçamento irregular de glifos no raster ("Qtd e") | Fidelidade | M | 🔍 | novo |
+| 36 | Sem ADRs: decisões relevantes vivem só em comentários e neste roadmap | DX | P | ✅ | novo |
 
-### P4 — Features recomendadas (diferenciação e alcance)
+### P4 — Features essenciais de produto
 
-| # | Item | Tipo | Esforço | Conf. |
-|---|---|---|---|---|
-| 31 | **Watermark + rotação de texto/elemento** | Feature | M | ✅ |
-| 32 | Editor de rich text (`TextRuns`) no Designer | Feature | M | 🔍 |
-| 33 | **Excel: autofilter e uma aba por grupo** (freeze já existe — ver nota) | Feature | P | 🟡 |
-| 34 | Barcodes 2D além de QR (DataMatrix, PDF417, Aztec) | Feature | M | 🔍 |
-| 35 | Query builder visual (hoje só SQL em texto) | Feature | G | 🔍 |
-| 36 | RowSpan no corpo do Tablix + `StaticMember`/`DynamicMember` | RDL | G | 🔍 |
-| 37 | Site de documentação (DocFX) + `troubleshooting.md` | DX | M | 🔍 |
-| 38 | Meta-pacote de onboarding | DX | P | 🔍 |
-| 39 | **Export de intervalo de páginas** | Feature | P | ✅ |
-| 40 | Agendamento e entrega por e-mail de relatórios | Feature | GG | 🔍 |
-| 41 | RTL e `WritingMode` (árabe/hebraico, texto vertical) | i18n | G | 🔍 |
-| 42 | Tagged PDF / acessibilidade | Acessib. | G | 🔍 |
-| 43 | Exporters RTF / ODT / PPTX | Feature | G | 🔍 |
+| # | Item | Tipo | Esforço | Conf. | Origem |
+|---|---|---|---|---|---|
+| 37 | PDF: senha/criptografia e PDF/A (depende do item 1) | Feature | G | ✅ | R2 #22 |
+| 38 | Streaming real das fontes de dados e exportação progressiva | Performance | G | ✅ | R2 #15 + F25 |
+| 39 | Cache de relatório renderizado com chave (definição + parâmetros + dados + tenant) | Feature | M | ✅ | R2 #24 |
+| 40 | Viewer: document map, busca e miniaturas | Feature | M | ✅ | R2 #25 |
+| 41 | Wizard de criação de relatório no Designer | Feature | M | ✅ | R2 #26 |
+| 42 | Oracle sem pacote de 1ª classe (a documentação promete) | Feature | P | ✅ | R2 #27 |
+| 43 | `WebServiceDataSource` sem REST paginado | Feature | M | ✅ | R2 #28 |
+| 44 | Sample de `Hosting.AspNetCore` inexistente | DX | P | ✅ | R2 #29 |
+| 45 | Excel: autofilter e uma aba por grupo | Feature | P | ✅ | R2 #33 |
+
+### P5 — Features recomendadas (diferenciação e alcance)
+
+| # | Item | Tipo | Esforço | Conf. | Origem |
+|---|---|---|---|---|---|
+| 46 | Watermark + rotação de texto/elemento | Feature | M | ✅ | R2 #31 |
+| 47 | Barcodes 2D além de QR (PDF417, DataMatrix, Aztec) | Feature | M | ✅ | R2 #34 |
+| 48 | Query builder visual | Feature | G | ✅ | R2 #35 |
+| 49 | `StaticMember`/`DynamicMember` no Tablix | RDL | G | 🔍 | R2 #36 |
+| 50 | Site de documentação (DocFX) + `troubleshooting.md` | DX | M | ✅ | R2 #37 |
+| 51 | Meta-pacote de onboarding + template `dotnet new` | DX | P | ✅ | R2 #38 |
+| 52 | Agendamento e entrega de relatórios (módulo separado) | Feature | GG | ✅ | R2 #40 |
+| 53 | RTL e `WritingMode` | i18n | G | ✅ | R2 #41 |
+| 54 | Tagged PDF / acessibilidade | A11y | G | ✅ | R2 #42 |
+| 55 | Exporters RTF / ODT / PPTX | Feature | G | ✅ | R2 #43 |
 
 ---
 
 # Detalhamento
 
-## P0 — Bloqueadores de 1.0
+## P0 — Saída incorreta ou enganosa
 
-### 1. `Printing.Android` publicado como stub inoperante ✅
+### 1. PDF embute as fontes inteiras — sem subsetting real 🧪
 
-**O problema.** O pacote `AndersonN.Omni.Report.Printing.Android` é publicado no NuGet.org contendo o *stub* —
-uma DLL cujo único comportamento é lançar `PlatformNotSupportedException`.
+**O problema.** Todo PDF carrega o programa TrueType **completo** de cada fonte usada. Um relatório de uma página
+com Arial e Arial Bold sai com **1,1 MB**, dos quais ~1,1 MB são as duas fontes.
 
-**Evidência (re-verificada):**
-- `src/Reporting.Printing.Android/Reporting.Printing.Android.csproj` — **`IsPackable` não aparece no arquivo**
-  (grep sem nenhum match).
-- `Directory.Build.props:51-52` — `IsPackable=false` só se aplica a projetos `.Tests`.
-- `Directory.Build.props:43,47` — o projeto casa com `StartsWith('Reporting.')`, então **recebe `PackageId`** e
-  é empacotável por padrão do SDK.
-- Sem `OMNIREPORT_BUILD_ANDROID=true` (não setado em nenhum workflow), compila como `net10.0` com
-  `OMNIREPORT_ANDROID_STUB`, e `AndroidPrintFrameworkPrinter.cs:24,29` lança `PlatformNotSupportedException`.
-- O comentário do CI em `ci.yml:155-157` afirma que o stub "fica de fora via `<IsPackable>false</IsPackable>`" —
-  **a propriedade não existe**.
-- É anunciado ao usuário em `README.md:169`.
+**Evidência (inspeção objeto a objeto de `samples/Reporting.Samples.CodeFirst/out/01-vendas-por-cliente.pdf`):**
 
-**Por que é crítico.** `dotnet add package …Printing.Android` entrega hoje um pacote que não faz nada além de
-lançar exceção. É a pior classe de defeito de release: publicado, anunciado e inoperante.
+| Objeto | `/Length1` (fonte descomprimida) | Arquivo de origem | Tamanho do arquivo |
+|---|--:|---|--:|
+| `15 0 obj` (`/FontFile2`) | 1.045.720 | `C:\Windows\Fonts\arial.ttf` | 1.045.720 |
+| `11 0 obj` (`/FontFile2`) | 989.780 | `C:\Windows\Fonts\arialbd.ttf` | 989.780 |
 
-**Ação.** Adicionar ao `.csproj`:
-```xml
-<IsPackable Condition="'$(OMNIREPORT_BUILD_ANDROID)' != 'true'">false</IsPackable>
+O tamanho descomprimido é **idêntico byte a byte** ao arquivo da fonte. O nome da fonte, porém, traz o prefixo
+de subset (`AAAAAA+Arial-BoldMT`, `BAAAAA+ArialMT`) — por isso a 2ª revisão concluiu, errado, que havia
+subsetting. O prefixo é só uma etiqueta; o programa embutido é o arquivo inteiro.
+
+`tests/Reporting.Output.Pdf.Tests/FontEmbeddingTests.cs` trava exatamente a garantia errada: confere que existe
+`/FontFile2`, que o nome casa com `^[A-Z]{6}\+.+` e que o texto é extraível. **Nenhuma asserção mede o tamanho do
+programa embutido.**
+
+**Por que importa.** Holerites, DANFEs e faturas são gerados aos milhares e enviados por e-mail. Um arquivo de
+1,1 MB onde caberiam algumas dezenas de KB multiplica armazenamento, banda e tempo de envio. E pesa sobre o
+PDF/A (item 37), que exige fontes embutidas em todo arquivo arquivado.
+
+**Ação.**
+1. Confirmar a causa. Hipótese a verificar: o Skia só subseta quando o subsetter do HarfBuzz está habilitado na
+   compilação do `libSkiaSharp`; o binário distribuído pode não tê-lo. Confirmar no Linux também (outro nativo).
+2. Se o nativo não subsetar: subsetar antes de embutir (o projeto já depende do HarfBuzz via `SkiaSharp.HarfBuzz`)
+   ou pós-processar o PDF com biblioteca dedicada.
+3. Corrigir `FontEmbeddingTests` para medir o que importa: `/Length1` de cada `FontFile2` menor que uma fração do
+   arquivo de origem, e um teto de tamanho para o PDF de uma página.
+
+**Pronto quando:** o PDF de uma página do sample 01 fica abaixo de ~100 KB, o texto continua extraível e o teste
+falha se o embutimento voltar a ser completo.
+
+---
+
+### 2. `RowSpan` aceito, persistido e ignorado pelo renderer ✅ — ✔ FEITO
+
+**O problema.** `TablixCell` declara `ColumnSpan` e `RowSpan` (`src/Reporting.Core/Elements/TablixCell.cs:7-11`).
+Os dois são lidos e gravados pelos serializadores (`RepxWriter.cs:770`, `RepxReader.cs:531`,
+`RepJsonWriter.cs:609`, `RepJsonReader.cs:555`). Mas o `TablixRenderer` usa `ColumnSpan` e **nunca lê
+`RowSpan`** — zero ocorrências em `src/Reporting.Layout`. O importador RDL também não o preenche
+(`RdlImporter.Tablix.cs:336`: "RowSpan is implicit").
+
+Nem o CodeFirst nem o Designer expõem a propriedade — viola a regra dos três modos de autoria.
+
+**Por que importa.** Um `.repx`/`.repjson` com célula mesclada verticalmente carrega, salva e recarrega o valor —
+e renderiza como se ele não existisse. É o pior tipo de perda: aceita sem erro e descartada na saída.
+
+**Ação.** Implementar no `TablixRenderer` (a célula ocupa as linhas seguintes; as células cobertas não são
+emitidas), expor nos três modos e cobrir com golden. Se a decisão for não suportar agora, **rejeitar** `RowSpan > 1`
+na validação da definição em vez de aceitar em silêncio. Os casos de `StaticMember`/`DynamicMember` ficam no
+item 49.
+
+**Pronto quando:** um Tablix com `RowSpan = 2` gera uma célula com o dobro da altura nos golden files, nos 3 modos.
+
+**FEITO (#274) — pela segunda alternativa da Ação, e por um motivo que a revisão não tinha visto.** Implementar o
+span exigiria primeiro algo onde ele atuar: o Tablix plano tem exatamente **duas linhas-modelo** (0 = cabeçalho,
+1 = detalhe repetido por registro) e a matriz lê só o canto e a primeira célula do corpo. Mesclar verticalmente
+só faz sentido com cabeçalhos de várias linhas estáticas — que não existem no modelo e são o item 49. O mesmo
+levantamento achou uma segunda perda silenciosa da mesma origem: **células além da linha 1** numa tabela plana
+também nunca eram desenhadas.
+
+`RenderedReport.Diagnostics` passa a trazer **`ORL025`** nos dois casos (`Tablix[nome].RowSpan` e
+`Tablix[nome].TemplateRows`), percorrendo a definição e os subrelatórios inline e resolvidos
+(`ReportPaginator.Diagnostics.cs`). O Designer já exibe os diagnósticos no preview. Verificado por
+`TablixRowDiagnosticsTests` (4 casos, incluindo o negativo — tabela válida não gera ruído) e por sabotagem: sem a
+inspeção, os 3 casos positivos falham. Quando o item 49 entrar, o `RowSpan` ganha onde atuar e o diagnóstico sai.
+
+---
+
+### 3. `Style.Border` não desenhada em Label/TextBox/Image ✅
+
+**O problema.** `ResolveBorderPen` (`src/Reporting.Layout/Internal/BandRenderer.cs:726`) só é chamado para
+`RectangleElement` (linha 326) e `EllipseElement` (linha 358). A passagem genérica de elemento emite o fundo, mas
+nunca um retângulo com traço. Uma borda em Label, TextBox ou Image **não vira primitiva alguma**. A grade do
+Tablix tem cor fixa (`TablixRenderer.cs:24`, `#CBD5E1`) e ignora o estilo.
+
+Continua fixado como caracterização em `tests/Reporting.Golden.Tests/RenderGapCharacterizationTests.cs` — ou seja,
+o teste existe **para garantir que o defeito continua lá** até ser corrigido.
+
+**Por que importa.** TextBox com borda é o caso mais banal de relatório estilo SSRS. O Designer deixa configurar
+a borda no painel de propriedades — e a saída a ignora.
+
+**Ação.** Emitir o retângulo de borda na passagem genérica (as quatro faces, com estilo/espessura/cor por face)
+e tornar a grade do Tablix dirigida por estilo.
+
+**Pronto quando:** o golden `Estilos` mostra a primitiva de borda e a caracterização correspondente falha (e é
+apagada).
+
+---
+
+### 4. `CornerRadius` descartado em retângulo sem filhos ✅
+
+**O problema.** `DrawRectanglePrimitive` não tem campo de raio. O valor sobrevive só como `ClipCornerRadius`
+(`src/Reporting.Layout/Primitives/LayoutPrimitive.cs:37-39`), aplicado aos **filhos** do retângulo. Um retângulo
+usado como forma arredondada não tem filhos: o SVG exportado é um `<rect>` sem `rx`. Também fixado em
+`RenderGapCharacterizationTests`.
+
+**Ação.** Campo de raio em `DrawRectanglePrimitive`, honrado em Skia, GDI, PDF, SVG e no overlay HTML.
+
+**Pronto quando:** o golden `Formas` mostra `rx` e a caracterização falha.
+
+---
+
+### 5. Export RDL perde `ToggleItem` e `InitiallyHidden` ✅
+
+**O problema.** `RepxWriter` e `RepJsonWriter` gravam `ToggleItemId` (`RepxWriter.cs:456`,
+`RepJsonWriter.cs:395`); `RdlWriter.cs` tem **zero** ocorrências de `ToggleItem`. Importar um `.rdl` com
+drill-down e salvá-lo como `.rdl` perde o vínculo e o estado inicial oculto — o mesmo defeito que o PR #217
+corrigiu no sentido import.
+
+A causa estrutural **já tem rede**: o PR #219 criou `RdlReflectionParityTests`, que percorre por reflexão as
+propriedades de cada `ReportElement` e falha se alguma se perder no round-trip RDL sem estar declarada como perda.
+É ela que registra esta lacuna explicitamente (`RdlReflectionParityTests.cs:57-58`, lista `CommonLossy`: *"the
+WRITER still does not emit `<ToggleItem>`"*). Ou seja: a perda é conhecida e travada — falta fechá-la.
+
+Limite da rede, a considerar: ela percorre as propriedades do elemento; valores dentro de registros aninhados
+(como `TablixCell.RowSpan`, item 2) só são cobertos se o populador os alcançar.
+
+**Ação.** Emitir `<Visibility><Hidden>` e `<ToggleItem>` no `RdlWriter` e remover `ToggleItemId`/`InitiallyHidden`
+de `CommonLossy` — a rede passa a garantir que a perda não volte.
+
+**Pronto quando:** o round-trip `.rdl` de drill-down preserva o vínculo e as duas entradas saem da lista de perdas.
+
+---
+
+### 6. Designer: desfazer inserção deixa um elemento "fantasma" 🧪
+
+**O problema.** Reproduzido no navegador: inserir um Código de barras pela toolbar → **Desfazer**. O canvas volta
+a ter 18 elementos, mas a barra de status continua com "Seleção: 1 elemento" e o painel de propriedades segue
+exibindo o código de barras removido (X 15, Y 0, "1234567890", Code128) — editável, e agora rotulado como
+pertencente à banda Detail.
+
+**Por que importa.** Editar o fantasma altera um view model desanexado: a mudança some, ou entra no histórico
+apontando para algo que não está no documento. É a mesma classe de defeito que o F23 corrigiu para outros
+comandos.
+
+**Ação.** Ao desfazer/refazer, remover da seleção os elementos que deixaram de pertencer ao documento (e
+reselecionar os que voltaram). Teste bUnit: inserir → desfazer → seleção vazia e painel sem elemento.
+
+**Pronto quando:** desfazer qualquer inserção, colagem ou duplicação deixa a seleção consistente com o canvas.
+
+---
+
+### 7. Exportação no Designer: menu fixo, falha silenciosa, cliques perdidos 🧪
+
+**O problema — três defeitos no mesmo fluxo:**
+
+1. **Menu fixo.** `Components/TopBar.razor:41-62` lista oito formatos *hardcoded*. A barra do preview, ao
+   contrário, vem do `IExporterRegistry` e mostra nove (inclui XML). O comentário em
+   `ReportDesigner.razor.cs:1578-1581` afirma que todo exporter registrado "becomes automatically available" —
+   verdade na paleta e no preview, falso no menu Arquivo.
+2. **Falha silenciosa.** Se o host não registrou um formato, o item do menu não faz nada
+   (`ReportDesigner.razor.cs:1587-1592`: `desc is null` → `break`). Se a exportação lança, a exceção vai para
+   `Console.Error` (linha 1229) e o usuário não vê nada.
+3. **Cliques perdidos.** Clicar nos nove botões do preview em sequência (2,5 s de intervalo) gerou **sete**
+   downloads: HTML e SVG sumiram sem erro. Isoladamente, os dois funcionam. Não há estado de "ocupado" nem
+   desabilitação durante a exportação.
+
+**Ação.** Gerar o menu a partir do registro; mostrar erro de exportação na UI (toast/diálogo); desabilitar os
+botões e indicar progresso enquanto uma exportação está em curso.
+
+**Pronto quando:** menu, paleta e preview listam exatamente os mesmos formatos; uma falha aparece para o usuário;
+cliques durante uma exportação são enfileirados ou bloqueados de forma visível.
+
+---
+
+### 8. Documentação afirma o que não é mais verdade ✅
+
+| Onde | Afirma | Realidade |
+|---|---|---|
+| `README.md:34-37` | `GroupBand.FilterExpression`/`SortExpressions`/`KeepTogether` emitem `ORL024` | Implementados no #270; `ORL024` não existe mais em `src/` |
+| `README.md:3-9` | Badges "CI passing", "1000+ tests", "core coverage ≥80%" | São imagens estáticas do shields.io — não refletem nenhum status real; a suíte tem 1.950+ testes |
+| `README.md:400` | "38 bibliotecas", "23 projetos de teste" | 39 e 25 |
+| `docs/auditoria-*.md`, `docs/correcoes-*.md`, `docs/evolucao-*.md` | Evidências em `artifacts/...` | `artifacts/` está no `.gitignore` (4,3 GB só nesta máquina) — quem clona não consegue conferir a evidência |
+| `README.md:426` | Seção "Roadmap (diferido)" | Segunda lista de roadmap, divergente desta |
+
+**Ação.** Corrigir os trechos; trocar os badges estáticos por badges reais do GitHub Actions (status do
+`ci.yml`) e da cobertura publicada, ou removê-los; nas auditorias, distinguir evidência versionada
+(`docs/evidencias/`) de evidência local, ou versionar o mínimo necessário; apontar a seção de roadmap do README
+para este arquivo.
+
+**Pronto quando:** nenhum número ou status do README é estático, e toda evidência citada como prova é acessível
+a quem clona o repositório.
+
+---
+
+## P1 — Arquitetura e decisões antes do 1.0
+
+### 9. A abstração de exportação mora no pacote PDF ✅
+
+**O problema.** `IReportExporter` está em `src/Reporting.Output.Pdf/IReportExporter.cs`, no namespace
+`Reporting.Output.Pdf`; `ExportWarning` também (`src/Reporting.Output.Pdf/ExportWarning.cs`). Como o pacote PDF
+depende de `Rendering.Skia`, **todo exporter** herda o SkiaSharp e seus binários nativos:
+
 ```
-Se o pacote Android for realmente desejado, publicá-lo num job separado com o workload `android` instalado.
-Corrigir o comentário mentiroso em `ci.yml:155-157`.
+Output.Csv / Output.Json / Output.Xml / Output.Markdown / Output.Excel / Output.Html / Output.Docx
+    └─► Output.Pdf ─► Rendering.Skia ─► SkiaSharp + NativeAssets
+```
 
-**Pronto quando:** `dotnet pack OmniReport.slnx` não gera o `.nupkg` do Android sem a variável; o comentário do
-CI reflete o mecanismo real. Considerar despublicar/deprecar a versão já publicada.
+Quem só quer exportar CSV num container Linux mínimo carrega o Skia nativo — e o item 1 do roadmap anterior
+(Linux sem fonte) mostrou o quanto esse nativo é sensível ao ambiente.
 
----
+**Por que agora.** Mover um tipo público de pacote e de namespace é breaking change. Antes do 1.0 custa uma
+entrada no CHANGELOG e uma supressão no Package Validation; depois, custa uma major.
 
-### 2. `release.yml` publica sem rodar testes ✅
+**Ação.** Criar `Reporting.Output` (abstrações: `IReportExporter`, `ExportWarning`, options base, faixa de
+páginas — ver item 10) dependendo só de `Layout`. Todos os exporters passam a depender dele; `Output.Pdf` vira
+um exporter como os outros. Opcional: `[TypeForwardedTo]` por uma versão para suavizar a migração.
 
-**O problema.** O job de release faz `restore` → `build` → `pack` → `push` sem nenhum `dotnet test`.
-
-**Evidência (re-verificada):** `.github/workflows/release.yml` — grep por `dotnet test` **não retorna nada**;
-os únicos passos são `dotnet pack` (`:68`) e `dotnet nuget push` (`:99`, `:117`).
-
-**Por que importa.** Um `workflow_dispatch` numa tag cujos testes nunca rodaram (ou rodaram vermelhos) publica
-pacotes quebrados **irreversivelmente** — o NuGet.org não permite reupload da mesma versão, só deprecação. O
-item 1 é exatamente a categoria de defeito que um gate de release pegaria.
-
-**Ação.** Inserir `dotnet test` antes do `pack`, ou exigir que a tag aponte para um commit com check verde
-(`gh api` verificando o status do commit).
-
-**Pronto quando:** um release com teste vermelho falha antes do `push`.
+**Pronto quando:** `dotnet list package --include-transitive` do `Output.Csv` não mostra SkiaSharp.
 
 ---
 
-### 3. README com imagens quebradas nas 39 páginas do NuGet ✅
+### 10. Contrato de exportação: `ExportAsync` real, faixa de páginas e `PreparedReport` ✅
 
-**O problema.** Todo pacote embute o `README.md` da raiz, que referencia imagens por caminho relativo — mas a
-pasta `assets/` nunca entra no `.nupkg`.
+**O problema.** O item 14 da 2ª revisão foi parcialmente entregue: `IReportExporter.ExportAsync` existe
+(`IReportExporter.cs:37`) com implementação padrão delegando à síncrona — mas **só 3 exporters** a implementam de
+verdade (`SkiaPdfExporter`, `PngImageExporter`, `TiffImageExporter`). Os demais bloqueiam a thread no meio de um
+pipeline assíncrono, e um cliente que desiste do download não libera o servidor.
 
-**Evidência:**
-- `Directory.Build.props:62-63` — embute `README.md` em todo pacote empacotável.
-- `README.md:30-32,39-40` — `<img src="assets/designer-light.png">`, `sample-dashboard.png`, `sample-map.png`,
-  `sample-tablix.png`, `sample-nfce.png`.
-- `assets/` existe com os PNGs, mas **nenhum `.csproj`/`.props` referencia a pasta**.
-- O bloco ```mermaid``` do README também não é renderizado pelo NuGet.org.
+Duas lacunas do mesmo contrato:
 
-**Por que importa.** A aba "Readme" de todos os 39 pacotes mostra imagens quebradas — é a primeira impressão de
-quem avalia a biblioteca. Agrava-se pelo README ser monolítico: quem abre o pacote `Barcode` recebe um documento
-sobre o produto inteiro.
+- **Faixa de páginas** (antigo item 39): exportar "páginas 3–7" exige montar um `RenderedReport` parcial à mão.
+  `PrintOptions` tem faixa; os exporters, não.
+- **Documento preparado** (`PreparedReport`, entregue no #270): os exporters recebem `RenderedReport` completo,
+  então o Designer materializa todas as páginas para exportar (`ReportDesigner.razor.cs:1288-1294`,
+  `MaterializePreview`), desfazendo o ganho de memória do preview sob demanda.
 
-**Ação.** Trocar os caminhos por URLs absolutas (`https://raw.githubusercontent.com/<org>/<repo>/main/assets/…`)
-— corrige o NuGet.org sem prejudicar o GitHub. Opcionalmente, gerar um README curto por pacote via target
-MSBuild. Adicionar `PackageIcon` (hoje ausente em todos os pacotes).
+**Ação.** Junto com o item 9: `ExportAsync` nativo em todos os exporters; `PageRange` nas options base; sobrecarga
+que consome páginas sob demanda (`PreparedReport`/`IAsyncEnumerable<RenderedPage>`) para os formatos que
+permitem escrita progressiva (PDF, SVG por página, CSV, JSON).
 
-**Pronto quando:** inspeção do `.nupkg` mostra README com URLs resolvíveis; ícone presente.
-
----
-
-## P1 — Confiabilidade verificável
-
-### 4. Zero teste nos 3 conectores SQL de produção 🔍
-
-`Reporting.DataSources.SqlServer` (160 LOC), `.PostgreSql` (180) e `.MySql` (157) não são referenciados por
-nenhum `.csproj` de teste. São exatamente o tipo de shim "óbvio demais para errar" onde falhas de mapeamento de
-tipo e connection string custam caro — e o SQL Server é provavelmente o conector mais usado em ambiente
-corporativo. Comparar com `.Sqlite`, que ao menos tem 4 testes.
-
-**Ação.** Testes de integração com Testcontainers (SQL Server, PostgreSQL, MySQL) cobrindo abertura de conexão,
-mapeamento de tipos (datas, decimais, nulos, `uniqueidentifier`), streaming e cancelamento. Rodar num job de CI
-separado (marcado, não bloqueante em PR se lento).
-
-**FEITO.** `tests/Reporting.DataSources.Integration.Tests` — **um contrato só, executado contra os três motores**.
-Eles são o mesmo shim três vezes (cada um entrega uma fábrica de conexão ao `AdoNetDataSource`), então uma cópia
-de teste por motor iria divergir, e um comportamento que só um deles acerta é justamente o bug que interessa.
-
-Cobre exatamente o que um shim fino erra: nulo chegando como `DBNull` em vez de `null` (não é nulo — toda
-checagem a jusante falha calada e o valor renderiza como `System.DBNull`), `decimal` virando `double`
-(`1450.90` → `1450.8999999999999` num relatório financeiro), `DateTime` truncado para meia-noite, booleano do
-MySQL (que não tem o tipo — `TINYINT(1)` é a convenção), parâmetro por nome, leitura preguiçosa e cancelamento.
-
-Roda no workflow `db-integration.yml`: em PR que toca conector ou o `AdoNet` compartilhado, em push na `main`,
-semanalmente e sob demanda. Imagens **pinadas por tag** — com `latest` a suíte mudaria de comportamento sem
-nenhum commit.
-
-Dois detalhes que evitam falso-verde, ambos deliberados:
-
-1. **O gate vive no `DockerFactAttribute`, não no workflow.** Em CI os testes só rodam com
-   `OMNIREPORT_DB_TESTS` setada. Sem isso, o job Linux do `ci.yml` — que deriva a lista de projetos
-   automaticamente — passaria a puxar três imagens de banco em todo PR. Manter a decisão no atributo torna o
-   comportamento independente de como cada job escolhe seus projetos.
-2. **O workflow falha se algum teste for pulado.** Um job cuja única razão de existir é rodar contra banco real
-   não pode ficar verde tendo pulado tudo; perder o Docker no runner viraria um verde silencioso, que é o
-   defeito que este roadmap mais encontrou.
-
-**A primeira execução real já encontrou um defeito de produção.** `AdoNetDataSource` delegava o cancelamento
-inteiramente ao token passado para `DbDataReader.ReadAsync`. Quando o driver já tem as linhas em buffer local
-esse método retorna **de forma síncrona sem consultar o token** — ou seja, o cancelamento era honrado por
-acidente de driver: o SqlClient consulta, o Npgsql e o MySqlConnector não. Um render cancelado continuava
-drenando o resultado inteiro no PostgreSQL e no MySQL. Foi exatamente rodar o **mesmo teste nos três motores**
-que tornou isso visível — passava em um, falhava em dois. Corrigido com `ThrowIfCancellationRequested()` por
-linha (`AdoNetDataSource.cs:143`).
-
-Placar da primeira execução contra bancos reais: 25 de 27 verdes, as 2 falhas sendo esse defeito nos dois
-motores afetados.
+**Pronto quando:** cancelar um export em curso libera a thread; exportar uma faixa não materializa o documento
+inteiro.
 
 ---
 
-### 5. CI Linux verifica só 15 de 39 projetos 🔍
+### 11. Designer, Viewer e Hosting referenciam todos os exporters ✅
 
-O job `build-linux` (`ci.yml:78-132`) restaura/compila 15 projetos e testa 12 de 23. **Nunca são compilados no
-Linux**, apesar de terem TFM `net10.0` puro: todos os `DataSources.*` (AdoNet, Sqlite, PostgreSql, SqlServer,
-MySql, Json, Xml, WebService, FileSystem), `Expressions.Roslyn`, `Maps`, `Designer.Blazor.DataConnect` e os
-exporters `Svg`, `Html`, `Csv`, `Json`, `Xml`, `Markdown`, `Docx`, `Image`.
+**O problema.** `Reporting.Designer.Blazor.csproj` referencia `CodeFirst`, `Printing`, `Serialization` e **nove**
+pacotes `Output.*`; `Viewer.Blazor` referencia sete `Output.*` mais Skia e Printing; `Hosting.AspNetCore`
+referencia Docx, Excel, Pdf, Skia e Printing. Um host que só quer o Designer com export PDF instala ClosedXML,
+OpenXml e todo o resto.
 
-Essa é justamente a categoria de maior risco cross-platform (drivers nativos, `ClosedXML`, `OpenXml`, I/O de
-arquivo, `HttpClient`). A promessa "roda em container Linux" é, para metade da superfície do produto, **não
-testada**.
+O mecanismo de extensão certo já existe: `IExporterRegistry` descobre exporters por DI, e
+`AddDefaultExporters()` registra o conjunto padrão. O acoplamento de projeto é que não acompanha.
 
-**Nota positiva:** o isolamento Windows-only está bem-feito — `Rendering.Gdi` e `Printing.WindowsSpooler` usam
-TFM `net10.0-windows`, então um consumidor Linux nem consegue restaurá-los. O risco não é GDI vazar; é o resto
-não ser verificado.
+**Ação.** O Designer e o Viewer dependem só da abstração (item 9); os exporters concretos entram pelo host ou por
+um pacote de conveniência (`…Designer.Blazor.AllExporters`, ou o meta-pacote do item 51). Reavaliar por que o
+Designer referencia `CodeFirst`.
 
-**Ação.** Ampliar o job Linux para a solução inteira, excluindo apenas TFMs `-windows`/`-android`.
-
----
-
-### 6. Sem gate de breaking change de API pública ✅
-
-Não há `Microsoft.CodeAnalysis.PublicApiAnalyzers` — **nenhum `PublicAPI.Shipped.txt` existe no repositório**
-(glob sem match) — nem `ApiCompat` ou equivalente. Com 39 pacotes interdependentes, uma mudança silenciosa em
-`Reporting.Core` pode quebrar consumidores dos outros 38 sem aviso. O sinal de "isto é breaking" depende hoje de
-disciplina humana no Conventional Commit (`CONTRIBUTING.md:49`).
-
-**Ação.** Adotar `PublicApiAnalyzers` ao menos em `Core`, `CodeFirst`, `Layout` e `Rendering` **antes do 1.0** —
-depois do 1.0 o custo de adoção sobe muito.
-
-**FEITO — por outro mecanismo, e mais amplo.** Adotado o **Package Validation** nativo do SDK
-(`EnablePackageValidation` + baseline `0.1.1`) em vez do `PublicApiAnalyzers`. Três razões, nesta ordem:
-
-1. **Cobre os 39 pacotes**, não os 4 propostos — a Ação original limitava o escopo exatamente porque o custo
-   por projeto do PublicApiAnalyzers é alto.
-2. **Não exige `PublicAPI.Shipped.txt` por projeto** (dezenas de milhares de linhas geradas para manter à mão,
-   que também podem ficar desatualizadas em silêncio — o defeito que este roadmap mais encontrou).
-3. **Compara contra o artefato realmente publicado no nuget.org**, não contra um arquivo no repo. A pergunta
-   que importa é "isto quebra quem já consome o pacote?", e essa é literalmente a comparação feita.
-
-Os pacotes 0.1.0/0.1.1 estão publicados, então o baseline existe. Resultado medido: **só 8 dos 39 pacotes têm
-quebra desde a 0.1.1** — Core, CodeFirst, Layout, Expressions, Rendering, Rendering.Skia, Rendering.Gdi e
-Designer.Blazor — e as supressões somam ~14 KB. Os outros 31 estão estáveis. `Output.Docx`, `Output.Image` e
-`Output.Xml` ficam sem baseline por não existirem na 0.1.1; entram quando a 0.2.0 sair.
-
-Verificado por sabotagem: remover `Unit.ToCm()` faz o `pack` falhar com
-`CP0002: O membro 'double Reporting.Geometry.Unit.ToCm()' existe em [Linha de base] ... mas não em ...`.
-
-Achado de tabela: o `<Version>` default do repo era `0.1.0-alpha` — **atrás** da 0.1.1 já publicada. Passava
-despercebido porque o `release.yml` sobrescreve com a tag, então só quem rodasse `pack` local geraria um pacote
-mais velho que o do nuget.org. O `CP0003` do Package Validation foi o que tornou isso visível. Corrigido para
-`0.2.0-alpha`.
-
-Procedimento para aceitar uma quebra intencional documentado em `CONTRIBUTING.md`.
+**Pronto quando:** um host com Designer + PDF não restaura ClosedXML nem OpenXml.
 
 ---
 
-### 7. XML docs obrigatórios em 1 de 39 pacotes ✅
+### 12. Nenhum `ILogger` em `src/` ✅
 
-`GenerateDocumentationFile=true` é global (`Directory.Build.props:9`), mas `CS1591` é suprimido globalmente no
-`NoWarn`. Apenas `Reporting.CodeFirst` reverte a supressão (PR #208). Resultado: `Core`, `Layout`,
-`Serialization`, todos os `Output.*` e `DataSources.*` podem ter 0% de doc pública sem que o build reclame — e o
-IntelliSense do consumidor fica vazio.
+**O problema.** Zero ocorrências de `ILogger` em `src/`. O Designer escreve falhas em `Console.Error` em seis
+pontos: `ReportDesigner.razor.cs:936, 949, 995, 1229, 1284` e `Components/MonacoEditor.razor.cs:67`. Num host
+ASP.NET Core essas mensagens não passam pelo pipeline de logging, não têm nível nem correlação e não chegam ao
+Seq/Application Insights/OpenTelemetry do host.
 
-**Dimensão medida:** ~444 membros públicos sem `<summary>` só em `Reporting.Core`; ~1.000+ somando Core, Layout
-e CodeFirst antes do #208.
+A telemetria entregue no #270 (Activity/Meter `OmniReport`) cobre duração e resultado das fases, mas **não
+substitui** log de erro com mensagem e exceção.
 
-Isso também explicava os `CS1574` dos samples: sem warning-as-error para docs fora do CodeFirst, um `cref`
-quebrado nunca falha o build. O PR #215 corrigiu os dois crefs do `Sample11`, mas **só o sintoma** — a próxima
-doc quebrada volta a passar silenciosa.
+**Ação.** `ILogger<T>` injetado (com `NullLogger` como padrão), message templates estruturados, sem interpolação,
+sem dados do relatório. Para o Designer, o mesmo erro vai ao log **e** à UI (item 7).
 
-**Ação.** Estender o padrão do CodeFirst progressivamente, começando pelos pacotes core. Há trilho pronto: os
-PRs #205 e #208 documentaram 32 tipos de Core/Layout e travaram CS1591 no CodeFirst — é continuar por
-`Reporting.Core` → `Layout` → `Rendering`.
+---
 
-**FEITO — os cinco pacotes do núcleo documentados e travados.**
+### 13. Monaco carregado do CDN em runtime ✅
 
-**Correção das dimensões declaradas acima**, em duas rodadas. Os "~444 em Core" contavam o warning duplicado que
-o MSBuild emite por membro. E o "128 do Layout" somava a cadeia de dependências: compilar o `Layout` compila
-`Expressions` e `DataSources` junto, e os avisos deles apareciam no mesmo build. Medido por localização única e
-atribuído ao projeto dono, com `--no-incremental` (sem isso o build fica up-to-date e reporta **zero**, que foi
-como esses números se distorceram em primeiro lugar):
+**O problema.** `src/Reporting.Designer.Blazor/wwwroot/js/monaco-host.js:14` carrega o editor de
+`https://cdn.jsdelivr.net/npm/monaco-editor@…`. Consequências: o editor de expressões não funciona offline nem em
+rede corporativa sem acesso ao CDN; um host com Content-Security-Policy restritiva precisa liberar um domínio de
+terceiro; e o código executado no navegador do usuário vem de fora do pacote publicado. A auditoria já registrou
+erro de carregamento do worker de localização pelo CDN.
 
-| Pacote | Membros públicos sem doc | Situação |
+**Ação.** Empacotar o Monaco no RCL (ou torná-lo configurável, com o pacote local como padrão), e documentar a CSP
+necessária. Fallback para `<textarea>` se o editor não carregar.
+
+**Pronto quando:** o editor de expressões abre com a rede bloqueada.
+
+---
+
+### 14. Decisão: postura de segurança do Roslyn 🔍
+
+O pacote `Expressions.Roslyn` executa C# arbitrário do relatório. O F17 resolveu a retenção de memória
+(`AssemblyLoadContext` coletável), mas **não** há restrição do que o código pode fazer: não há allowlist de
+namespaces nem timeout (zero ocorrências em `src/Reporting.Expressions.Roslyn`). O pacote é opt-in e o README
+avisa "use apenas com fontes confiáveis".
+
+**Decisão pendente:** (a) manter "só fontes confiáveis" — barato e honesto — registrando a decisão em ADR e com
+um aviso em runtime quando o resolver for habilitado; ou (b) isolar de verdade (allowlist de assemblies, timeout,
+processo separado) — caro. Em qualquer caso, testar casos hostis (laço infinito, `File`/`Process`, estouro de
+pilha) para documentar o comportamento.
+
+---
+
+### 15. Decisão: i18n — a UI já mistura idiomas 🧪
+
+O roadmap anterior pedia uma decisão de escopo ("há mercado fora do Brasil?"). Enquanto ela não vem, a UI
+degradou para uma **mistura**: no painel de propriedades convivem "Visível se", "Aparência", "Cor do texto" e
+"Layout", "Width", "Height", "Behavior", "Locked", "Bookmark", "Toggle by"; o diálogo de parâmetros mostra
+"Data inicial" com o subtítulo "DATE"; a aba de documento novo chama-se "Untitled.repx" enquanto o título diz
+"Sem título". Zero arquivos `.resx`.
+
+**Ação.** Decidir. Se a resposta for "só pt-BR": uniformizar tudo em português e registrar em ADR. Se for
+"internacional": `IStringLocalizer` + `.resx`, começando pelas strings já em inglês. Os itens 15 e 53 (RTL)
+dependem dessa decisão.
+
+---
+
+## P2 — Designer: UI/UX
+
+Verificação feita no navegador com o sample `Reporting.Samples.BlazorServer`. **Funcionaram como prometido:**
+seleção e multisseleção (Shift+clique), alinhar (6 direções), distribuir, mesma largura/altura/tamanho, mover com
+setas, inserir pela toolbar (5 tipos), recortar/copiar/colar/excluir, desfazer/refazer de todas essas operações,
+grade/snap/régua, tema, diálogos de parâmetros, fonte de dados (8 abas), configuração de página e impressão,
+editor de expressões com Monaco, preview e exportação nos 9 formatos.
+
+### 16. Paleta de comandos incompleta e sem foco 🧪
+
+A paleta lista **13** comandos fixos ("13 resultados"); existem ~40 comandos tratados no despacho
+(`ReportDesigner.razor.cs`, ~60 `case`). Ficam de fora alinhamento, distribuição, camadas, exportações, zoom,
+grade, snap, tema, configuração de página. Além disso, o campo de busca usa o atributo `autofocus`
+(`Components/CommandPalette.razor:9`), que o Blazor não aplica a elementos inseridos dinamicamente: ao abrir com
+Ctrl+K, o texto digitado **não vai para a busca**.
+
+**Ação.** Gerar a lista a partir de um registro único de comandos (o mesmo que alimenta menus e atalhos);
+`ElementReference.FocusAsync()` em `OnAfterRenderAsync`.
+
+---
+
+### 17. Menus incompletos e enganosos 🧪
+
+- **Inserir** oferece 6 tipos (TextBox, Label, Linha, Retângulo, Imagem, Código de barras); a Toolbox oferece
+  ~19 (Elipse, QR, Tabela, Chart, Gauge, Sparkline, Map, DataBar, Indicator, Subreport, Code, Nº Página…).
+- **Relatório › Validar expressões** e o botão "Validar relatório" só abrem o preview
+  (`ReportDesigner.razor.cs:1620`: `case "report.validate": await OnPreview();`).
+- **Ajuda › Atalhos de teclado** abre a paleta de comandos (linha 1633) — embora exista
+  `src/Reporting.Designer.Blazor/Docs/KEYBOARD-SHORTCUTS.md`.
+- Não há menu **Formatar/Organizar**: alinhamento e camadas só existem na toolbar.
+- Há dois `case` duplicados para inserir o mesmo tipo (`insert.textbox`/`insert.text`, `insert.rectangle`/
+  `insert.rect`, `insert.image`/`insert.img`).
+
+**Ação.** Menus gerados do mesmo registro de comandos do item 16; validação real (compilar todas as expressões
+e listar erros com localização, sem executar); diálogo de atalhos de verdade.
+
+---
+
+### 18. Tema escuro escurece o papel 🧪
+
+Com o tema escuro, a área da página fica escura, mas os elementos mantêm a cor do relatório (preto por padrão).
+Os cabeçalhos "Produto", "Qtde" e "Preço Unitário" do sample 01 ficam quase invisíveis. Além de ilegível, deixa
+de ser WYSIWYG: o papel impresso é branco.
+
+**Ação.** O tema escuro deve escurecer o *chrome* do Designer, não o papel — a página continua com o fundo
+definido no relatório (branco por padrão), como fazem SSRS Report Builder, Crystal e o Word.
+
+---
+
+### 19. Designer não cria fontes JSON, XML, REST nem FileSystem 🧪
+
+O editor de fonte de dados oferece cinco provedores: In-memory, SQLite, PostgreSQL, SQL Server e MySQL. Os
+conectores `Json`, `Xml`, `WebService` e `FileSystem` existem, são documentados e estão nos samples — mas só podem
+ser autorados por código. Viola a regra de paridade dos três modos de autoria.
+
+**Ação.** Provedores no editor com os campos de cada conector (URL/arquivo, caminho de registros, headers por
+segredo nomeado, paginação quando o item 43 entrar), reaproveitando as abas de Campos e Preview.
+
+---
+
+### 20. Sem layout responsivo 🧪
+
+Num painel de ~630 px úteis (pane de 800 px com a navegação do sample), o painel de propriedades sai da tela e
+a toolbar é cortada, sem rolagem nem colapso. Os painéis laterais não são recolhíveis.
+
+**Ação.** Painéis laterais recolhíveis, toolbar com overflow ("…"), e um aviso explícito de largura mínima para
+autoria abaixo de ~1.024 px (a visualização pode continuar). Validar em 1.024 / 1.280 / 1.440.
+
+---
+
+### 21. Acessibilidade ✅
+
+Medido nos `.razor` do Designer: **25** `aria-label` contra 171 `title`; 2 `role="dialog"` e **0** `aria-modal`
+para mais de dez diálogos; **0** `aria-pressed` — os toggles Grade/Snap/Régua indicam estado só por classe CSS;
+2 botões visíveis sem nome acessível (zoom − / + do preview); **304** estilos inline em 28 componentes, contra a
+convenção do próprio projeto (tokens + CSS isolado).
+
+**Ação.** Nome acessível em todo botão de ícone; `aria-pressed` nos toggles; diálogos com `role="dialog"`,
+`aria-modal`, foco preso e retorno de foco; mover estilos inline para CSS isolado com tokens. Verificar
+navegação só por teclado e contraste (WCAG 2.2 AA) — não verificados nesta revisão.
+
+---
+
+### 22. Defeitos visuais pequenos 🧪
+
+- Placeholder dos "Valores permitidos" exibe `1|Ativo&#10;0|Inativo` literal — entidade codificada duas vezes
+  (`Components/ParametersList.razor:57`).
+- A aba do documento continua "Untitled.repx" após carregar "Vendas por Cliente" (`ViewModels/DesignerState.cs:17`).
+- Subtítulo "DATE" (inglês) sob os rótulos de parâmetro em português.
+- O campo "Valores permitidos" aparece também para parâmetros do tipo Date, onde não faz sentido.
+
+---
+
+### 23. Preview rasterizado a 96 DPI 🧪
+
+O preview é um PNG de 794 × 1.123 px (A4 a 96 DPI), independente de `devicePixelRatio` e do zoom. Em tela HiDPI
+ou com zoom > 100 % o texto fica borrado. **Ação:** rasterizar em `96 × devicePixelRatio × zoom` (respeitando o
+orçamento de pixels do F03) ou servir a página como SVG.
+
+---
+
+### 24. Editor de rich text (`TextRuns`) ✅
+
+O modelo suporta runs com formatação mista e os serializadores os preservam, mas nem o Designer nem o CodeFirst
+(zero ocorrências de `TextRuns` em `src/Reporting.CodeFirst`) permitem criá-los. A auditoria também registrou que
+estilos e ações por run não são preservados na renderização concatenada — confirmar antes de expor na UI.
+
+---
+
+### 25. "Testar" do editor de expressões usa dados fictícios 🔍
+
+Relatado pela auditoria (`ExpressionEditorDialog.razor`): a avaliação é real, mas os valores são de amostra
+(`Number = 42`, `Money = 1234,56`, `Date = Now`). **Ação:** avaliar contra a primeira linha real do preview da
+fonte quando disponível, mantendo a amostra como fallback e indicando qual foi usada.
+
+---
+
+## P3 — Débito técnico, organização do código e DX
+
+### 26. Arquivos-deus ✅
+
+| Arquivo | Linhas | Responsabilidades misturadas |
 |---|--:|---|
-| `Reporting.Core` | 220 | documentado e travado |
-| `Reporting.Expressions` | 38 | documentado e travado |
-| `Reporting.DataSources` | 37 | documentado e travado |
-| `Reporting.Layout` | 29 | documentado e travado |
-| `Reporting.Rendering` | 24 | documentado e travado |
+| `Designer.Blazor/ReportDesigner.razor.cs` | 1.686 | despacho de ~60 comandos, preview, export, impressão, abrir/salvar, clipboard, teclado |
+| `Designer.Blazor/wwwroot/js/designer.js` | 1.611 | drag, resize, guias, régua, seleção por área, atalhos |
+| `Layout/ReportPaginator.cs` | 1.335 | já dividido em 11 parciais, e o principal ainda tem 1.335 |
+| `Designer.Blazor/ViewModels/ElementViewModel.cs` | 1.173 | estado de UI + mapeamento de ~18 tipos de elemento |
 
-Somado ao `CodeFirst` (#208), a trava cobre agora **todo o núcleo que um consumidor toca diretamente**. Fechar só
-o `Layout` teria travado um pacote e deixado suas duas dependências — igualmente públicas — degradando.
-
-A trava é a mesma do `CodeFirst` (#208): `NoWarn.Replace(';CS1591','')` no csproj do projeto, que somado ao
-`TreatWarningsAsErrors` das bibliotecas empacotáveis faz o build **falhar** enquanto houver membro público sem
-`<summary>` — e continuar falhando se um novo chegar sem ela. É a parte que importa: sem a trava, a documentação
-volta a se degradar no próximo PR.
-
-Como efeito colateral previsto no próprio item, a trava também passa a pegar `cref` quebrado (CS1574) nesses dois
-projetos — um foi encontrado e corrigido enquanto a documentação era escrita.
+**Ação.** No Designer: extrair um **registro de comandos** (resolve os itens 16 e 17 junto), e serviços de
+preview/export/arquivo; dividir `designer.js` em módulos ES por interação. No `ElementViewModel`: continuar a
+divisão por faceta já iniciada (`ViewModels/Facets/`). Sem big-bang — a suíte do Designer (357 testes) cobre.
 
 ---
 
-### 8. Sem Dependabot, CodeQL nem `SECURITY.md` ✅
+### 27. `RdlImporter`/`RdlWriter` monolíticos ✅
 
-`.github/workflows/` tem só `ci.yml` e `release.yml`. **Verificado por glob: não existe `dependabot.yml` nem
-`SECURITY.md`**; não há CodeQL nem `dotnet list package --vulnerable`. Já há evidência de correção **reativa** de
-CVE (`Directory.Packages.props:60-65`, pin de `SQLitePCLRaw` por `GHSA-2m69-gcr7-jv3q`) — exatamente o que o
-Dependabot automatizaria.
-
-**Ação.** `dependabot.yml` (NuGet + Actions), job semanal de auditoria de vulnerabilidade, `SECURITY.md` com
-canal de divulgação responsável.
+1.385 e 1.053 linhas, misturando parsing genérico com regras por tipo de elemento. Já existe
+`RdlImporter.Tablix.cs` e `RdlWriter.Tablix.cs` como modelo. **Ação:** continuar o split por tipo (Chart, Gauge,
+Map, CustomReportItem), espelhando o particionamento do registry de Repx/RepJson. Combina com o item 5.
 
 ---
 
-### 9. `CHANGELOG.md` ~91 PRs desatualizado ✅
+### 28. Organização por tipo, não por feature ✅
 
-A última entrada é **0.1.1 (2026-06-18)** e `[Unreleased]` diz literalmente **"Nada ainda."**
-(`CHANGELOG.md:8-10`, re-verificado) — mas o histórico vai até o PR **#215**, com features substanciais
-(gradientes, named styles, cascading parameters, paginação 2D do Tablix, CF por-célula, exporters TIFF/XML) que
-os docs de conformidade RDL já descrevem como entregues.
+- **Designer:** `Components/` (84 arquivos), `ViewModels/` (65), `Services/` (17). Uma feature — "fonte de dados",
+  "parâmetros", "preview", "impressão" — fica espalhada pelas três pastas. A convenção do projeto é feature-first.
+  Proposta: `Canvas/`, `PropertyGrid/`, `DataSources/`, `Parameters/`, `Expressions/`, `Preview/`, `Printing/`,
+  `Shell/` (menus, toolbar, paleta, abas), cada uma com seus componentes, VMs e serviços.
+- **`Core/Elements/`:** 41 arquivos planos. Proposta: `Text/`, `Shapes/`, `Data/` (Tablix/Table), `Visuals/`
+  (Chart, Gauge, Map, KPI), `Codes/` (Barcode/QR), `Containers/`, `Actions/`.
+- **Raiz do `Layout`:** 22 arquivos, 11 deles parciais do `ReportPaginator`. Proposta: `Pagination/` para o
+  paginador e suas parciais, `Prepared/` para documento preparado e streaming, mantendo na raiz só os contratos
+  públicos (`IReportPaginator`, `PaginationRequest`, `RenderedReport`…).
 
-**Ação.** Reconstruir o `[Unreleased]` a partir do log (os commits seguem Conventional Commits, então é
-semi-automatizável com `git-cliff`). Adicionar ao checklist de release, ou automatizar de vez — hoje há **duas**
-fontes de notas não sincronizadas (o CHANGELOG manual e o `generate_release_notes` do `release.yml:126-132`).
-
-**FEITO.** `[Unreleased]` reconstruído a partir dos 225 PRs desde a v0.1.1, curado por área em vez de uma linha
-por commit — um changelog de 225 bullets não é lido. As 136 referências de PR foram conferidas por script contra
-`git log v0.1.1..main`: nenhuma inexistente.
-
-A causa estrutural também foi fechada, senão o arquivo envelhece de novo: o `release.yml` passa a extrair a
-seção da versão publicada e usá-la como `body_path` do GitHub Release, com o `generate_release_notes`
-acrescentando a lista de PRs **abaixo** — as duas fontes somam em vez de competir. E, principalmente, **sem
-seção para a versão o release falha**. Esquecer o CHANGELOG deixa de ser omissão invisível e vira bloqueio de
-entrega. Extrator testado nos quatro casos, incluindo a colisão de prefixo (`0.1` não casa com `0.1.1`).
+Mover arquivos **sem** mudar namespace preserva a API pública (o Package Validation confirma).
 
 ---
 
-### 10. `Verify.Xunit` referenciado sem uso → zero regressão visual ✅
+### 29. Solution plana ✅
 
-`tests/Reporting.Rendering.Tests/Reporting.Rendering.Tests.csproj:20` referencia `Verify.Xunit`, mas
-**re-verificado: o único hit de "Verify" no projeto inteiro é a própria linha do `.csproj`** — nenhum `.cs` usa
-a API e não existe nenhum `*.verified.*`.
+`OmniReport.slnx` tem quatro pastas (`/samples/`, `/src/`, `/benchmarks/`, `/tests/`) e os 39 projetos de `src`
+numa só. **Ação:** pastas de solução por camada, espelhando o grafo de dependências:
 
-O que existe são testes de contagem de pixels de tinta por região — validam propriedades geométricas, mas **não
-comparam contra imagem de referência**. Nada protege contra regressão visual sutil (mudança de anti-aliasing,
-gradiente ligeiramente errado, deslocamento de baseline) em PDF/PNG/SVG.
+```
+/Core/        Core, Expressions, Expressions.Roslyn, Layout, CodeFirst, Serialization, Barcode, Maps
+/Data/        DataSources, DataSources.* (9)
+/Rendering/   Rendering, Rendering.Skia, Rendering.Gdi
+/Output/      Output (item 9), Output.* (10)
+/Printing/    Printing, Printing.*
+/UI/          Designer.Blazor, Designer.Blazor.DataConnect, Viewer.Blazor
+/Hosting/     Hosting.AspNetCore
+```
 
-**Ação.** Ou ativar o Verify com golden files para um conjunto representativo de relatórios, ou remover a
-dependência morta. A primeira é claramente melhor para um motor de renderização — e tem sinergia com o item 13
-(o gradiente ausente no GDI seria pego por um golden file).
-
-**FEITO.** `tests/Reporting.Golden.Tests` — 4 relatórios pinados em duas camadas: o *display list* do paginador
-(geometria, fonte, cor, alinhamento, quebra de página, `Page.Total`) e a emissão SVG (preenchimento, traço,
-gradiente). A referência morta em `Reporting.Rendering.Tests` foi removida. Verificado por sabotagem: descartar
-o gradiente em `StyleResolver.BackgroundBrush` derruba os dois goldens de `Formas` — `fill=#FF8800→#FFFFFF/TopBottom`
-vira `fill=#FF8800` e o `<linearGradient>` some do SVG. Estabilidade cross-platform é por construção, não por
-sorte: mils inteiros + `AverageWidthTextMeasurer` + cultura fixa + resumo do SVG que descarta os avanços por
-glifo (que o Skia tira da fonte resolvida e mudam no Linux). Ver `tests/Reporting.Golden.Tests/README.md`.
+Os testes espelham as mesmas pastas. Opcionalmente, refletir a mesma divisão no disco (`src/Core/…`) — mais caro
+(paths de CI, scripts, docs), avaliar depois do 1.0.
 
 ---
 
-### 11. `Expressions.Roslyn` sem sandbox, com 5 testes 🔍
+### 30. Arquivos gerados versionados ✅
 
-O pacote executa C# arbitrário definido no relatório. A varredura não encontrou nenhuma restrição de segurança
-(`AppDomain`, `SecurityException`, allowlist de assemblies) em `src/Reporting.Expressions.Roslyn`, e há apenas 5
-testes, todos de caminho feliz.
+- `out-novos/`: **135 arquivos** de saída (PNG, PDF, XLSX, CSV…) versionados desde o commit inicial, sem nenhuma
+  referência em código, docs ou scripts.
+- `src/Reporting.Designer.Blazor/Docs/index-reference.html`: protótipo HTML que carrega Bootstrap do jsDelivr e
+  `lucide@latest` do unpkg — versão não fixada, dentro da pasta de um projeto empacotável.
 
-**Por que importa.** Um `.rdl`/`.repx` vindo de fonte não confiável — cenário natural num produto que **importa
-arquivos SSRS** — vira execução arbitrária de código no servidor.
-
-> **Atenuante desde a 1ª revisão:** o vazamento de `CodeFunctionResolver` entre requisições concorrentes (antigo
-> P0 #1) foi corrigido, então o risco não escala mais de "relatório malicioso" para "comprometimento
-> cross-tenant" por essa via. O risco de execução arbitrária **permanece**.
-
-**Ação.** Decisão de produto primeiro: (a) documentar explicitamente que `Code`/Roslyn só deve ser habilitado
-para relatórios confiáveis e mantê-lo opt-in — barato e honesto; ou (b) investir em isolamento real (allowlist
-de namespaces, `AssemblyLoadContext` restrito, timeout de execução) — caro. Independente da escolha, ampliar os
-testes para casos hostis (loop infinito, acesso a `File`/`Process`, stack overflow).
+**Ação.** Remover `out-novos/` e adicioná-lo ao `.gitignore`; mover o protótipo para `docs/` (ou removê-lo) e
+conferir que `Docs/` não entra no `.nupkg`.
 
 ---
 
-## P2 — Débito técnico estrutural
+### 31. Projetos sem teste direto ✅
 
-### 12. Travessia do modelo duplicada em 6 serializadores ✅
-
-`RepxWriter`/`RepxReader`, `RepJsonWriter`/`RepJsonReader`, `RdlWriter`/`RdlImporter` implementam **cada um** a
-travessia completa de `ReportDefinition → Bands → Elements → Style/Border/Font`, com métodos 1:1 pelo nome.
-
-Este é o maior risco sistêmico do repositório: **todo campo novo no modelo precisa ser replicado em até 6
-lugares**, e esquecer um produz perda silenciosa de dados. Não é hipotético — está **confirmado três vezes**, e
-a terceira ainda está aberta:
-
-- O PR **#212** corrigiu o export RDL, que descartava `MinColumnWidth`/`RepeatColumnHeaders`/`KeepTogether`
-  (entregues em #197/#209). Ler → salvar `.rdl` → reler **perdia** o comportamento de paginação.
-- O PR **#217** corrigiu o *importador* RDL, que descartava `ToggleItemId`/`InitiallyHidden`: importar um `.rdl`
-  com `<Visibility><ToggleItem>` transformava um relatório com drill-down num relatório estático.
-- ⚠️ **Ainda aberto:** o `RdlWriter` **também** não emite `<ToggleItem>` — só o import foi fechado no #217. O
-  round-trip `.rdl` de drill-down continua com perda no sentido export.
-
-Os três foram achados por revisão, não por teste — não há nada no build que impeça o quarto caso.
-
-**Contexto importante:** já existe trilho para resolver — o `ElementSerializationRegistry` (auto-wiring por
-convenção, PRs #74/#75/#76) reduziu os 4 switches de Repx/RepJson. O RDL ficou de fora por ser projeção com
-semântica própria (e os 3 campos do #212 tiveram de ser escritos à mão como `omni:` CustomProperties).
-
-**Ação.** Duas frentes, na ordem:
-1. **Teste de completude por reflexão** (esforço P, valor altíssimo): enumerar as propriedades públicas de cada
-   `ReportElement` e falhar se alguma não for coberta por nenhum serializador. Transforma "esqueci um dos 6" de
-   bug de produção em erro de build. **Faça isto primeiro** — captura a classe inteira de bug por uma fração do
-   custo da refatoração.
-2. Estender a cobertura do registry ao caminho RDL onde a semântica for direta.
+`Maps`, `Printing`, `Rendering` e `Printing.Android` não são referenciados por nenhum projeto de teste.
+`Rendering` (as abstrações de contexto, estilos e `ContinuousPageBounds`) é exercitado indiretamente; `Maps` teve
+0 % de cobertura na auditoria. **Ação:** testes diretos para `Maps` (resolução de shapes, registro) e para o
+contrato de `Printing` (seleção de páginas, cópias); `Printing.Android` depende de dispositivo — manter o build
+real no CI e documentar.
 
 ---
 
-### 13. Backend GDI não implementa gradiente ✅
+### 32. Gates de qualidade ausentes no CI ✅
 
-`SkiaPrimitiveRenderer.cs:301-331` implementa gradiente linear (4 direções) e radial. O equivalente GDI usa só
-cor sólida — **re-verificado: a palavra "Gradient" tem ZERO ocorrências em todo o projeto
-`src/Reporting.Rendering.Gdi`**.
-
-Um relatório com `BackgroundGradient` renderiza corretamente em PDF/SVG/imagem e cai silenciosamente para cor
-sólida **na impressão via spooler do Windows**, sem nenhum aviso. Como gradientes foram entregues em #179/#180 e
-o próprio doc de gaps registra "GDI = follow-up", é um follow-up conhecido e não fechado.
-
-**Ação.** Implementar via `LinearGradientBrush`/`PathGradientBrush` do GDI+ (suporte nativo, esforço baixo).
-Alternativa mínima: emitir warning de degradação.
+O `ci.yml` coleta cobertura (`--collect:"XPlat Code Coverage"`) e publica o artefato, mas **não há limite**: a
+cobertura pode cair a zero sem quebrar nada. E não há `dotnet format --verify-no-changes`, embora o
+`.editorconfig` e o `EnforceCodeStyleInBuild` existam. **Ação:** limite de cobertura por pacote do núcleo
+(começando no valor atual, para travar regressão) e verificação de formato.
 
 ---
 
-### 14. `IReportExporter.Export` síncrono sem `CancellationToken` ✅
+### 33. `Culture(CultureInfo.InvariantCulture)` lança ✅
 
-`src/Reporting.Output.Pdf/IReportExporter.cs:20` — `void Export(RenderedReport report, Stream output)`
-(re-verificado), implementado por 10+ exporters. Todo o resto do pipeline (`PaginateAsync`, `ReadAsync`) é async
-com token, mas a etapa final — potencialmente a mais cara em CPU e I/O — bloqueia a thread e não pode ser
-cancelada. Num host ASP.NET Core isso é I/O síncrono no meio de um pipeline assíncrono; um cliente que desiste
-do download não libera o servidor.
-
-**Ação.** Adicionar `ExportAsync(RenderedReport, Stream, CancellationToken)` à interface com implementação
-default delegando à síncrona (evita quebrar implementadores externos), migrando os exporters internos
-progressivamente. Fazer **antes do 1.0** — depois vira breaking change.
+`src/Reporting.CodeFirst/ReportBuilderRoot.cs:136` repassa `culture.Name` para `Language(string)`, que aplica
+`ThrowIfNullOrWhiteSpace` — e o nome da cultura invariante é `""`. Guardar `""` não resolve: o paginador trata
+string vazia como "nenhuma cultura". **Ação:** sentinela explícito reconhecido pelos dois lados, ou recusar com
+mensagem clara.
 
 ---
 
-### 15. `MaterializeAsync` sem streaming 🔍
+### 34. Paleta de gráficos com cores vizinhas quase iguais 🧪
 
-`ReportPaginator.cs:71` acumula cada fonte de dados inteira em `List<…>` antes de paginar. É necessário para
-sub-detail bands e para o 2-pass de `Page.Total`, mas significa que **todo** relatório materializa o dataset
-completo em memória — mesmo os que não precisam de nenhum dos dois.
-
-Há tensão com a documentação: `docs/data-sources.md:104-109` promete streaming via `IAsyncEnumerable` sem
-materializar tudo. O streaming existe na *leitura*; o paginador o desfaz.
-
-**Ação.** Detectar o caso simples (sem sub-detail, sem `Page.Total`, sem agregado global) e paginar em streaming
-real. Nos demais, manter a materialização e **documentar honestamente** a característica de memória.
-
-> **MEDIDO — o escopo deste item mudou.** Com o item 20 concluído, os benchmarks mostram alocação
-> **perfeitamente linear**: ~9,6 KB por linha (9,6 MB @ 1k · 96,7 MB @ 10k · 963 MB @ 100k), sem O(n²)
-> escondido. Mas o grosso **não é a entrada materializada** e sim a **saída** — cada linha vira primitivos que
-> o `RenderedReport` retém até o export. Streamar só a leitura reduz o pico e **não** derruba os 9,6 KB/linha.
-> Um ganho real exigiria streamar também a saída (emitir páginas conforme fecham, em vez de acumular o
-> `RenderedReport` inteiro), o que é escopo maior do que este item descrevia — provavelmente um item próprio.
-> Ver [docs/benchmarks.md](docs/benchmarks.md).
->
-> **Já entregue (PR #225):** cada fonte passou a ser lida **uma vez** por paginação. Antes o primário era lido
-> duas vezes (quatro em master-detail), ou seja, a mesma query SQL executada em dobro.
+`ChartRenderer.cs:28-36`: a paleta categórica põe `#C2410C` (laranja-700) e `#B45309` (âmbar-700) nas posições 1
+e 4. No sample "Dashboard", as fatias "Jan" e "Abr" da pizza são praticamente indistinguíveis, inclusive na
+legenda. **Ação:** paleta validada para distinção perceptual e para daltonismo; teste que garanta distância
+mínima entre cores consecutivas.
 
 ---
 
-### 16. Excel/DOCX descartam conteúdo sem avisar ✅
+### 35. Espaçamento irregular de glifos no raster 🔍
 
-`ExcelExporter` percorre apenas `DrawTextPrimitive` (re-verificado: `ExcelExporter.cs:13,52` —
-`LayoutPrimitiveGrid.Build(report)` sobre texto): gráficos, imagens, barcodes, gauges, mapas e KPIs
-**desaparecem** do `.xlsx`, e as cores de célula são hardcoded em vez de refletir o `Style` do relatório. DOCX
-rasteriza gráficos (limitação arquitetural aceita e documentada em `docs/rdl-coverage.md:69-71`).
-
-Que Excel seja orientado a dados é legítimo — o problema é a perda ser **silenciosa**: nem `ExcelExportOptions`
-documenta, nem nenhum warning é emitido.
-
-**Ação.** Emitir warnings de degradação na exportação (o motor já tem canal de warnings no import RDL —
-reutilizar o padrão) e documentar a matriz de fidelidade por exporter. Opcionalmente, rasterizar gráficos como
-imagem embutida no Excel, como o DOCX já faz.
+No preview do sample 01, o cabeçalho "Qtde" aparece como "Qtd e". Hipótese: posicionamento por glifo com
+avanços do medidor de texto diferentes dos da fonte efetivamente usada. **Confirmar** com um golden de raster ou
+inspeção das posições no PDF antes de corrigir.
 
 ---
 
-### 17. `ElementViewModel`: God object 🔍
+### 36. Sem ADRs ✅
 
-~1.400 linhas, ~76 propriedades observáveis, cobrindo simultaneamente os ~18 tipos de elemento, com
-`ToElement()`/`FromElement()` que precisam conhecer todos. Mistura estado de apresentação com mapeamento de
-domínio, e é o ponto onde bugs sutis de round-trip nascem (ver item 21).
-
-**Ação.** Refatoração incremental por faceta (TextFacet, ChartFacet, TablixFacet) em vez de big-bang — a suíte
-de ~299 testes do Designer, forte em round-trip, dá cobertura para refatorar com segurança. Baixa urgência,
-alto valor de longo prazo.
+Não existe `docs/adr/`. Decisões estruturais — RDL como projeção do modelo nativo, Package Validation em vez de
+PublicApiAnalyzers, FluentAssertions fixado na 6.x por licença, saída sempre estática, Roslyn opt-in — estão em
+comentários, PRs e neste roadmap. **Ação:** ADRs curtos para as decisões já tomadas e para as pendentes (itens 14
+e 15).
 
 ---
 
-### 18. `catch` nus em 5 pontos de `Layout` ✅
+## P4 — Features essenciais de produto
 
-Não há `catch {}` totalmente vazio (bom sinal), e vários pontos **já foram estreitados** no PR #199
-(`ReportPaginator.cs:254,472` filtram `FormatException or OverflowException or InvalidCastException`). Restam 5
-pontos nus, re-verificados:
+### 37. PDF: senha/criptografia e PDF/A ✅
 
-- `Internal/TablixRenderer.cs:708`, `:724`, `:765` — `catch` sem filtro em `EvalDouble`/`FormatNumber`,
-  retornando `0` silenciosamente.
-- `ReportPaginator.cs:691` — `catch { value = null; }`, **com** comentário justificando ("resilient by design:
-  a bad calculated-field expression nulls the field"). Este é deliberado; no máximo merece filtro de tipo.
-- `ReportPaginator.cs:1152` — `catch { value = null; }` **sem** comentário nem filtro.
-
-O padrão correto já domina o repo (`KpiRenderer`, `ChartRenderer`, `MapRenderer`, `PropertyPathBinder.cs:229`,
-`BandRenderer.cs:536` filtram por tipo). O risco: um `NullReferenceException` por bug real vira "célula com 0",
-indistinguível de dado inválido.
-
-> **Não confundir com os catches de `DesignerDataConnect`** — aqueles são corretos por design (ver aviso no topo).
-
-**Ação.** Restringir aos tipos esperados (`FormatException`, `InvalidCastException`, `OverflowException`,
-`ExpressionEvaluationException`), alinhando ao padrão dominante. Esforço baixo, ganho real de diagnosticabilidade.
+`PdfExportOptions` só expõe metadados — zero ocorrências de senha, criptografia ou PDF/A em
+`src/Reporting.Output.Pdf`. O produto se posiciona em documentos fiscais brasileiros (NFC-e, DANFE): arquivamento
+pede PDF/A, e distribuição de holerite/fatura pede senha. Paridade: Crystal, SSRS, Jasper, XtraReports e
+Stimulsoft têm senha; Jasper, XtraReports e FastReport têm PDF/A. **Depende do item 1**: PDF/A com fonte inteira
+embutida é válido, mas inviável em volume. Priorizar senha (menor esforço), depois PDF/A-3b com validador externo
+(veraPDF) no CI.
 
 ---
 
-### 19. `RdlImporter`/`RdlWriter` monolíticos 🔍
+### 38. Streaming real das fontes e exportação progressiva ✅
 
-1.713 e 1.376 linhas respectivamente, cada um misturando parsing genérico de XML com regras específicas por tipo
-de elemento (Tablix, Chart, Gauge, CustomReportItem, Map). A responsabilidade é coesa ("importar/exportar RDL"),
-mas o tamanho torna a navegação e a revisão caras — e é o arquivo mais tocado do repositório nos PRs recentes
-(#212 mexeu nos dois).
-
-**Ação.** Split por tipo de elemento (`RdlTablixImporter`, `RdlChartImporter`…), espelhando o particionamento que
-Repx/RepJson já têm via registry. Combina naturalmente com o item 12.
+O #270 entregou documento preparado em disco e emissão progressiva de páginas, mas **as fontes de dados continuam
+materializadas** (ordenação, agregados e relações exigem buffer) e os exporters recebem o documento inteiro (item
+10). **Ação:** especificar quais relatórios dispensam o buffer (sem ordenação global, sem `Page.Total`, sem
+agregado de relatório) e paginar em streaming nesses casos; exporters progressivos via item 10.
 
 ---
 
-### 20. Sem benchmarks ✅
+### 39. Cache de relatório renderizado ✅
 
-**Re-verificado: nenhum projeto de benchmark existe** (glob por `*Benchmark*/*.csproj` sem match), nenhuma
-referência a BenchmarkDotNet. Para um motor de layout/paginação que roda sob carga em servidor, não há barreira
-automática contra regressão de performance. `LargeReportPaginationTests` cobre integridade de dados a 600 linhas
-— é teste de correção, não de performance, e 600 linhas não expõe complexidade O(n²).
-
-**Ação.** Projeto de benchmark cobrindo paginação (1k/10k/100k linhas), avaliação de expressões e export
-PDF/Excel. Rodar sob demanda; publicar tendência. Pré-requisito para atacar o item 15 com dado em vez de
-intuição.
-
-**Consequência colhida.** Com os benchmarks no lugar, a asserção de wall-clock que morava em
-`SamplesIntegrationTests.Sample01_with_10k_rows_finishes_under_2_seconds` foi removida. Ela rodava **só fora do
-CI** — dispensava o runner compartilhado e cobrava o orçamento de 2 s justamente da máquina do dev, que costuma
-estar no meio de um build; verificado que falhava na `main` limpa neste workstation enquanto o CI passava verde.
-Um `Stopwatch` em volta de uma execução fria também não controla JIT nem warmup. O teste manteve a asserção de
-correção (10k linhas ⇒ múltiplas páginas) e o orçamento de tempo passou a viver em `PaginationBenchmarks`.
+Zero ocorrências de `HybridCache`/`IMemoryCache` em `src/`. O `PreparedReport` (#270) é a base natural: cachear o
+documento preparado por chave (definição + parâmetros + versão dos dados + tenant), com validade explícita.
+Paridade: FastReport tem cache em arquivo de páginas preparadas; SSRS, cache e snapshots.
 
 ---
 
-### 21. Perda da semântica "inherit" no Designer 🔍
+### 40. Viewer: document map, busca e miniaturas ✅
 
-`ElementViewModel.cs:1293,1300` — `ForeColor = element.Style.ForeColor ?? Color.Black` e
-`FontFamily = element.Style.Font?.Family ?? "Arial"` materializam valores explícitos onde o modelo tinha `null`
-(= "herdar do estilo nomeado/tema"). Um elemento sem cor explícita, ao ser aberto e salvo no Designer, passa a
-gravar `Black`/`Arial` como literal.
-
-Hoje o impacto visual é nulo (os defaults coincidem), mas quebra a herança de **named styles** — feature
-entregue em #181-183/#188-189. Um relatório editado no Designer deixa de responder à troca de tema.
-
-**Ação.** Representar "inherit" como estado distinto no VM (nullable + placeholder na UI), não como valor
-materializado. Conhecido e pré-existente; a chegada dos named styles elevou sua relevância.
+`ReportViewer.razor` (83 linhas) tem navegação, zoom, export e impressão; zero ocorrências de document map, busca
+ou miniaturas. O modelo já suporta `Bookmark`, `DocumentMapLabel` e `Action.BookmarkLink`, e o importador RDL os
+lê — falta consumir. Document map primeiro; busca exige camada de texto sobre a imagem (o exporter HTML já tem um
+overlay que serve de base).
 
 ---
 
-### 21a. `Style.Border` só é desenhada em Rectangle e Ellipse ✅
+### 41. Wizard de criação de relatório ✅
 
-Achado pela suíte de golden files (item 10) na primeira execução, e fixado em
-`tests/Reporting.Golden.Tests/RenderGapCharacterizationTests.cs`.
-
-`PenStyle.FromBorderSide` tem **um único chamador** em todo o `src/`: `ResolveBorderPen`
-(`Reporting.Layout/Internal/BandRenderer.cs:698`), invocado apenas nos casos `RectangleElement` (linha 320) e
-`EllipseElement` (linha 352). A passagem genérica de elemento emite um `DrawRectanglePrimitive` de **fundo**
-quando há preenchimento (linha 248), mas nunca um com traço.
-
-Consequência: `.Border(...)` num `Label`/`TextBox`/`Image` **não vira primitiva alguma** — nenhum backend pode
-desenhá-la. Um textbox com borda é o caso mais banal de relatório estilo SSRS. O Tablix também ignora
-`Style.Border`: desenha uma grade de cor fixa (`TablixRenderer.cs:24`, `#CBD5E1` a 0.5pt), não configurável.
-
-**Ação.** Emitir o retângulo de borda na passagem genérica (as 4 faces, não só `Top` como o fallback atual) e
-tornar a grade do Tablix dirigida por estilo. **Pronto quando** o golden `Estilos` mostrar a primitiva de borda
-e a caracterização correspondente falhar (então é apagada).
+Zero ocorrências de "Wizard" em `src/`. Todo relatório começa em branco. SSRS, Crystal e DevExpress guiam o
+usuário (fonte → campos → agrupamento → layout → estilo). Reaproveitar `DataSourceEditorDialog`,
+`SchemaExplorerTree` e `ParametersList`.
 
 ---
 
-### 21b. `CornerRadius` é descartado em retângulo sem filhos ✅
+### 42. Oracle sem pacote de 1ª classe ✅
 
-Mesmo achado, mesma caracterização. `DrawRectanglePrimitive` não tem campo de raio. O valor sobrevive só como
-`ClipCornerRadius`, que o `BandRenderer` carimba nos **filhos** do retângulo para recortar overflow
-(`BandRenderer.cs:342`). Um retângulo usado como forma arredondada não tem filhos, então o raio não chega a
-lugar nenhum — o SVG exportado é um `<rect>` sem `rx`, como registra `Goldens/Formas.svg.verified.txt`. Ser
-honrado para containers é justamente por que a lacuna passou despercebida.
-
-**Ação.** Campo de raio no `DrawRectanglePrimitive` + honrar em Skia, GDI, PDF, SVG e no overlay HTML.
+`docs/user-guide.md` e `docs/presentation.html` citam Oracle como suportado; `src/Reporting.DataSources.Oracle/`
+não existe. Os quatro conectores SQL são o template (35–58 linhas cada), e o contrato de integração do #237 se
+aplica sem alteração. Ou criar o pacote, ou corrigir a documentação.
 
 ---
 
-### 21c. `ReportBuilderRoot.Culture(CultureInfo.InvariantCulture)` lança 🔍
+### 43. `WebServiceDataSource` sem REST paginado ✅
 
-`Reporting.CodeFirst/ReportBuilder.cs:145` repassa `culture.Name` para `Language(string)`, que aplica
-`ArgumentException.ThrowIfNullOrWhiteSpace` — e o nome da cultura invariante é `""`. Uma chamada pública,
-documentada e perfeitamente razoável (é a escolha mais reprodutível para um relatório) lança
-`ArgumentException` com uma mensagem que cita um parâmetro que quem chamou nunca informou.
-
-Guardar `""` **não** resolve: `ReportPaginator.TryGetCulture` (linha 231) trata string vazia como "nenhuma
-cultura informada" e cai na cultura ambiente — silenciosamente o oposto do pedido. Suporte real exige um
-sentinela entendido pelos dois lados.
-
-**Ação.** Sentinela explícito (`Metadata["Language"] = "Invariant"`) reconhecido em `TryGetCulture`, ou —
-se a decisão for não suportar — lançar em `Culture()` com mensagem que diga isso. Contornado nos goldens
-fixando `en-US`.
+Uma única requisição; zero ocorrências de paginação em `src/Reporting.DataSources.WebService`. Estratégias
+configuráveis: cursor via campo do payload, offset/limit, header `Link`. Integrar ao limite de linhas
+(`PaginationLimits.MaxSourceRows`) para não drenar APIs sem fim.
 
 ---
 
-## P3 — Features essenciais de produto
+### 44. Sample de `Hosting.AspNetCore` inexistente ✅
 
-### 22. PDF: senha/criptografia e PDF/A ✅
-
-`PdfExportOptions` expõe **apenas** metadados — re-verificado, o record tem `Title`, `Author`, `Subject`,
-`Keywords`, `Producer`, `Creator`, `CreationDate`, `CompressImages` e nada mais. **Sem** senha, criptografia,
-assinatura digital, PDF/A ou formulários.
-
-**Por que é essencial e não opcional:** o README posiciona o produto fortemente em NFC-e/DANFE e documentos
-fiscais brasileiros. Arquivamento fiscal costuma exigir **PDF/A**, e distribuição de holerites/faturas costuma
-exigir **senha**. É a lacuna com maior descasamento entre o mercado-alvo declarado e a capacidade entregue.
-
-**Paridade:** Crystal, SSRS, Jasper, XtraReports e Stimulsoft têm senha/criptografia; Jasper e XtraReports têm
-PDF/A; XtraReports e Stimulsoft têm assinatura digital.
-
-**Ação.** Priorizar senha/criptografia (mais pedido, menor esforço) e depois PDF/A-3b. **O item 23 (embedding de
-fontes) é pré-requisito técnico do PDF/A** — não dá para conformar sem fontes embutidas. Avaliar se o backend
-Skia atende ou se é preciso pós-processamento com uma lib dedicada.
-
----
-
-### 23. Embedding/subsetting de fontes no PDF ❌ — **FALSO POSITIVO, não "corrija"**
-
-> **O PDF já embute E faz subsetting de fontes.** Verificado inspecionando um export real, não o código:
->
-> ```
-> /FontFile2: 2                              ← programas TrueType EMBUTIDOS
-> /Type0: 2                                  ← fontes compostas (CID), o caminho Unicode do Skia
-> glifo 'R' fonte='AAAAAA+Arial-BoldMT'      ← o prefixo AAAAAA+ é o marcador padrão de SUBSET
-> ```
->
-> O backend PDF do Skia faz as duas coisas por padrão. O item nasceu de inferir ausência de comportamento a
-> partir de ausência de identificador (`EmbedFont`/`FontSubset` não aparecem no `src/`) — o mesmo erro dos
-> outros três falsos positivos deste roadmap. Expor `EmbedFonts` seria adicionar um botão para algo que já
-> funciona e cujo único valor sensato é "ligado" (o PDF/A exige sempre).
->
-> **O que faltava de verdade — e foi entregue:** nada verificava isso. Como é um *default* do Skia e não uma
-> decisão deste código, uma atualização da biblioteca ou outro caminho de criação do `SKDocument` poderia
-> desligar em silêncio, e a falha é invisível na máquina que gerou o arquivo — o PDF só quebra num leitor sem
-> a fonte. `FontEmbeddingTests` trava as três garantias: programa embutido para **cada** fonte usada, nome com
-> prefixo de subset, e texto ainda extraível depois do remapeamento de glifos.
-
-**O texto original do item, preservado para contexto:**
-
-**O problema (INCORRETO).** Não há nenhum controle de embutimento de fonte: `EmbedFont`/`FontSubset` têm
-zero ocorrências em `src/`. O PDF depende de a fonte existir na máquina que abre o arquivo.
-
-**Por que importa.** Um PDF gerado com "Arial" ou uma fonte corporativa abre com métricas diferentes — ou
-substituição total — em máquina Linux, celular ou leitor sem a fonte. Para documento fiscal ou contrato, isso é
-descaracterização do documento. É também **pré-requisito obrigatório do PDF/A** (item 22): a norma exige todas as
-fontes embutidas.
-
-**Paridade:** todas as engines comerciais embutem fontes por padrão; o subsetting (embutir só os glifos usados)
-é o que mantém o arquivo pequeno.
-
-**Ação (SUPERADA).** Expor `EmbedFonts` (e idealmente `SubsetFonts`) em `PdfExportOptions`. Restou apenas a
-segunda metade — "guardar com teste que verifique a presença do dicionário `/FontFile2`" —, que é o que foi
-feito.
-
-**Pronto quando:** um PDF gerado abre com métricas idênticas numa máquina sem a fonte instalada. **Já era o
-caso**; agora há teste que impede isso de regredir.
-
-**Consequência para o item 22 (PDF/A):** o pré-requisito de fontes embutidas está satisfeito e travado, então o
-PDF/A parte de uma base menor do que o item supunha.
-
----
-
-### 24. Cache de relatório renderizado ✅
-
-**Re-verificado: nenhuma referência a `HybridCache` ou `IMemoryCache` em `src/`.** Cada `PaginateAsync()`
-recomputa do zero, inclusive para relatórios idênticos com os mesmos parâmetros. Em cenário web com relatórios
-pesados e concorrência, é o ganho de performance mais direto disponível.
-
-**Ação.** Cache de `RenderedReport` com chave (definição + parâmetros + versão dos dados), sobre `HybridCache`
-do .NET 10.
-
-> **Pré-condição agora satisfeita:** este item dependia do antigo P0 #1 (estado compartilhado no paginador), que
-> foi resolvido. Cachear sobre um paginador com vazamento entre requests multiplicaria o problema; agora é
-> seguro atacar.
-
----
-
-### 25. Viewer sem document map, busca ou miniaturas 🔍
-
-`ReportViewer.razor` tem 83 linhas: navegação de página, zoom, export PDF/XLSX, imprimir. **Não tem** busca,
-document map/bookmarks nem miniaturas. Renderiza páginas como imagens estáticas (`<img>`), o que também impede
-seleção de texto.
-
-O detalhe frustrante: o modelo **já suporta** `Bookmark`, `DocumentMapLabel` e `Action.BookmarkLink`, e o
-importador RDL os lê. O back-end está pronto; falta consumir no viewer.
-
-**Paridade:** document map/árvore de navegação é padrão em SSRS, Crystal, Jasper e XtraReports; miniaturas e
-busca de texto também.
-
-**Ação.** Document map primeiro (maior valor, dado o suporte pronto no modelo), depois miniaturas. Busca exige
-repensar o render por imagem — avaliar camada de texto sobreposta, como o overlay de a11y que o exporter HTML já
-faz.
-
----
-
-### 26. Designer sem wizard de criação ✅
-
-**Re-verificado: zero ocorrências de "Wizard" em `src/`.** Todo relatório novo começa 100% em branco. SSRS,
-Crystal e DevExpress guiam o usuário (fonte → campos → layout → estilo) — é a maior barreira de adoção para
-usuário não-técnico, justamente o público de um designer visual.
-
-**Ação.** Wizard de 4 passos reaproveitando peças que já existem e são sólidas (`DataSourceEditorDialog`,
-`SchemaExplorerTree`, `ParametersList`). Esforço moderado, impacto alto em onboarding.
-
----
-
-### 27. Oracle sem pacote de 1ª classe ✅
-
-`docs/user-guide.md:162` e `presentation.html:228` citam Oracle como suportado, mas **re-verificado por glob:
-`src/Reporting.DataSources.Oracle/` não existe**. Funciona só via `AdoNetDataSource` genérico com
-`DbProviderFactory` fornecido pelo host, sem a conveniência que SqlServer/PostgreSql/MySql/Sqlite têm.
-
-É discrepância entre documentação e entrega.
-
-**Ação.** Criar o pacote (baixo esforço, os 4 irmãos são o template) ou corrigir a documentação. Preferir criar —
-Oracle é relevante no mercado corporativo brasileiro.
-
----
-
-### 28. `WebServiceDataSource` sem REST paginado 🔍
-
-`WebServiceDataSource.cs:9-11,49-83` faz **uma única** requisição HTTP. APIs paginadas (cursor, `next`,
-offset/limit) exigem wrapper customizado pelo host. Como REST paginado é hoje o padrão dominante, é uma
-limitação que atinge a maioria dos casos reais.
-
-**Ação.** Estratégias de paginação configuráveis (cursor via campo do payload, offset/limit, header `Link`).
-
----
-
-### 29. Sample de `Hosting.AspNetCore` inexistente ✅
-
-**Re-verificado: `AddReporting` não aparece em nenhum arquivo de `samples/`** — só em `src/`, `tests/`, `docs/`
-e no `README.md:297-312`, que o anuncia como quickstart principal. O sample `BlazorServer` monta os serviços por
-DI manual, contornando o pacote que o README recomenda.
-
-Ou seja: **o caminho canônico de produção nunca é exercitado**, nem em sample nem em CI. Isso conectava
-diretamente ao antigo P0 #1 — um sample real teria tornado o bug de concorrência muito mais visível.
-
-**Ação.** Sample mínimo de API com `AddReporting`, endpoint de geração de PDF, e teste de integração com
+`AddReporting` não aparece em nenhum arquivo de `samples/` — o caminho que o README apresenta como recomendado
+para produção nunca é exercitado. **Ação:** sample mínimo de API (endpoint que gera PDF) + teste com
 `WebApplicationFactory`.
 
 ---
 
-### 30. UI do Designer sem i18n ✅
+### 45. Excel: autofilter e uma aba por grupo ✅
 
-**Re-verificado por glob: zero arquivos `.resx` no repositório**; zero `IStringLocalizer`. Todas as strings do
-Designer são hardcoded em português nos `.razor` ("Alinhar à esquerda", "Recortar", "Agrupar por…"). Não há como
-oferecer a UI em inglês ou espanhol sem fork dos componentes — SSRS, Crystal e DevExpress são localizáveis
-nativamente.
-
-**Ação.** Extrair para `.resx` com `IStringLocalizer`. Esforço mecânico mas amplo (31 componentes). **Decisão de
-produto:** só vale se houver ambição de mercado fora do Brasil — se não houver, **registre isso explicitamente**
-como decisão de escopo, como o projeto já faz bem em outros pontos.
+Freeze de cabeçalho e linhas zebradas já existem; autofilter e "uma aba por grupo" não (zero ocorrências em
+`src/Reporting.Output.Excel`). Paridade: SSRS, Crystal e Jasper fazem autofilter; SSRS e Jasper quebram aba por
+grupo.
 
 ---
 
-### 30a. Migração para SkiaSharp 4 ✅ — **FEITO**
+## P5 — Features recomendadas
 
-Adiado deliberadamente da varredura de dependências (que atualizou 19 pacotes). O SkiaSharp 4 depreciou a API
-mutável de `SKPath` em favor de `SKPathBuilder`, o que dá **10 erros CS0618 em 3 arquivos** —
-`SkiaPathBuilder.cs` (12 ocorrências), `SkiaPrimitiveRenderer.cs` (6) e `SkiaRenderingContext.cs` (2). Como as
-bibliotecas empacotáveis usam `TreatWarningsAsErrors`, obsolescência vira erro de build.
+### 46. Watermark + rotação ✅
 
-Em linhas é contido, mas é o **núcleo de renderização**, e a major traz um Skia nativo novo que pode deslocar
-rasterização e métricas. Numa varredura com 19 outros pacotes, qualquer regressão ficaria inatribuível.
+Zero ocorrências de `Watermark` em `src/` e de `Rotation` em `Reporting.Core`. Duas peças: rotação por elemento
+(habilita rótulos verticais em colunas estreitas e a própria marca d'água) e watermark de texto/imagem em
+`PageSetup` (opacidade, ângulo, atrás/à frente). Nos três modos de autoria.
 
-**A favor de fazer agora:** os golden files (#233) cobrem exatamente isso — a camada de emissão SVG passa pelo
-Skia, então uma mudança de comportamento aparece no diff em vez de passar batido.
+### 47. Barcodes 2D além de QR ✅
 
-**Ação.** PR próprio: migrar os 3 arquivos para `SKPathBuilder`, rodar os goldens e **ler o diff** antes de
-aceitar qualquer mudança neles.
+PDF417 tem uso real em documentos brasileiros (CNH, boletos), o que o torna o mais defensável; depois DataMatrix
+e Aztec.
 
-**FEITO.** Foram 10 obsolescências, mais do que o `SKPath` previsto — além dos 6 do path builder,
-`SKTypeface.GetGlyph` (cobertura de glifo migrou para `SKFont`), `SKCanvas.DrawText` (agora exige `SKTextAlign`)
-e duas sobrecargas de `DrawImage` (agora exigem `SKSamplingOptions`). Em todas escolhi o valor que **preserva o
-comportamento**, não o "melhor": `SKTextAlign.Left` porque o cursor já resolve alinhamento antes da chamada, e
-`SKSamplingOptions.Default` porque filtragem linear melhoraria imagem reduzida mas mudaria pixel — isso seria
-decisão de qualidade, não de migração, e escaparia à revisão deste PR.
+### 48. Query builder visual ✅
 
-**A prova de que nada mudou:** os goldens passaram **sem que nenhum `.verified` fosse tocado**. O diff inicial
-foi de 2 arquivos SVG e continha só ruído de float — `187.128` vs `187.12801`, `99.216` vs `99.216003` — na casa
-de 10⁻⁵ ponto, cerca de 3 nanômetros.
+Hoje: Monaco com SQL + explorador de schema real. Falta o construtor visual com detecção de JOIN do Graphical
+Query Designer (SSRS) e do Crystal.
 
-E ele expôs um defeito no próprio normalizador do golden: dados de path colam o comando ao número seguinte, então
-`187.12801L368.496` chega como **um único token**, e a versão anterior só descascava letra no *início*. Esse token
-passava sem arredondamento — era o único do arquivo que escapava. Corrigido para varrer números em vez de dividir
-por espaço, com `SvgShapeTests` travando os quatro casos, inclusive o de que um movimento real ainda aparece.
+### 49. `StaticMember`/`DynamicMember` no Tablix 🔍
 
-O `SKPathBuilder` é `IDisposable` e o `SKPath` agora sai por `Detach()`, então o adaptador passou a ser
-descartável — antes não havia o que liberar, porque ele expunha o `SKPath` direto.
+Último gap estrutural conhecido do Tablix (`docs/rdl-compatibility-gaps.md`). O caso comum (coluna fixa "Total")
+já é coberto por `ColumnSubtotals`. Definir a semântica antes de implementar. É também o que dá ao `RowSpan`
+onde atuar: hoje ele gera o diagnóstico `ORL025` (item 2), que deve sair quando as linhas estáticas existirem.
 
----
+### 50. Site de documentação + troubleshooting ✅
 
-### 30b. Migração para NCalc 7 ✅ — **FEITO**
+`docs/` tem ~30 documentos em Markdown solto. Com os XML docs travados no núcleo (#236/#247), um site DocFX com
+referência de API navegável passa a valer. Incluir `troubleshooting.md` (fontes no Linux, CSP do Monaco, SkiaSharp
+nativo, limites de paginação).
 
-Também adiado da varredura. O NCalc 7 mudou a assinatura de `LogicalExpressionFactory.Create` (agora
-`(string, LogicalExpressionParserOptions?, CultureInfo?)`) e a resolução de overload do construtor de
-`Expression`, dando 4 erros em `ExpressionCompiler.cs:40,47`.
+### 51. Meta-pacote de onboarding + template `dotnet new` ✅
 
-São 2 call sites, mas é o **motor de expressões**: 165 testes e todo o vocabulário SSRS (agregados, posicionais,
-lookups, formatação) dependem dele, e uma major pode mudar semântica de avaliação — coerção de tipo, cultura,
-comportamento de operador — e não só assinatura. É a segunda vez que o NCalc muda API de forma incompatível
-(ver [[ncalc6-and-audit]]).
+O quickstart exige quatro `dotnet add package`. Um meta-pacote `AndersonN.Omni.Report` para o caminho comum e um
+template `dotnet new omnireport-blazor` (Designer + Viewer + `AddReporting` prontos) reduzem o tempo até o primeiro
+relatório.
 
-**Ação.** PR próprio, com a suíte de expressões inteira como rede. Verificar especialmente se
-`ExpressionOptions.DecimalAsDefault` e `IgnoreCaseAtBuiltInFunctions` mantêm o mesmo efeito — são o que impede
-aritmética virar concatenação e o que faz `SUM` casar com `Sum`.
+### 52. Agendamento e entrega 🔍
 
-**FEITO — e a verificação recomendada era mesmo necessária.** O NCalc 7 dividiu as opções em duas metades:
-`Parsing` decide como o texto vira AST, `Evaluation` como esse AST executa. A fábrica passou a receber
-`LogicalExpressionParserOptions` + cultura, e o `CancellationToken` foi para o fim.
+Pacote separado, nunca no Core: fila durável, idempotência, retry, credenciais por tenant, auditoria. É o que
+separa "biblioteca" de "plataforma" (SSRS subscriptions, Jasper Server). Avaliar se pertence a este repositório ou
+ao produto que o consome.
 
-O detalhe que quase passou: **o tipo numérico de um literal é decidido no PARSE**. Passar `null` como opções de
-parse — que parece inofensivo, já que a versão anterior passava `ExpressionOptions.None` — faz `2.5` virar nó
-`double`, e **nenhuma opção de avaliação desfaz isso depois**. Toda a aritmética dos relatórios voltaria a ponto
-flutuante binário: `0.1 + 0.2` = `0.30000000000000004`, valores monetários em `1450.8999999999999`.
+### 53. RTL e `WritingMode` 🔍
 
-**Os 165 testes de expressão passaram com essa regressão ativa.** Eles comparam valores, e nas magnitudes de
-teste um `double` compara igual ao `decimal`. Nenhum assertava tipo. Só `ExpressionCompilerOptionsTests`,
-escrito para esta migração, pegou — e a sabotagem confirma: reintroduzir o `null` derruba 2 testes e deixa os
-outros 169 verdes.
+`docs/rdl-spec-compliance.md` registra "sempre LTR". Só faz sentido junto da decisão do item 15; a parte de texto
+vertical tem interseção com a rotação do item 46.
 
-Registro de um erro de diagnóstico no caminho, porque a lição vale: eu primeiro concluí que a conversão
-implícita `ExpressionOptions → ExpressionConfiguration` "perdia" o `DecimalAsDefault`, e construí uma
-reconstrução manual do `MathOptions` para compensar. Uma sonda por reflexão desmentiu — a conversão preenche
-`Parsing.FloatingPointNumberType` **e** `Evaluation.Math.FloatingPointNumberType` corretamente. O defeito era
-meu, em não repassar `Configuration.Parsing` à fábrica. A solução final é mais simples que a errada.
+### 54. Tagged PDF / acessibilidade 🔍
 
----
+O HTML tem overlay acessível; o PDF não tem árvore de estrutura. Relevante para setor público e licitações.
+Validar com veraPDF (PDF/UA).
 
-## P4 — Features recomendadas
+### 55. Exporters RTF / ODT / PPTX 🔍
 
-### 31. Watermark + rotação de texto/elemento ✅ — **NOVO**
-
-**O problema.** Não há marca d'água — **re-verificado: `Watermark` tem zero ocorrências em `src/`**. Pior: não é
-possível nem aproximar com um TextBox inclinado, porque **o modelo não tem rotação** (`Rotation`/`Angle` também
-com zero ocorrências em `Reporting.Core`).
-
-**Por que importa.** "RASCUNHO", "CONFIDENCIAL", "CÓPIA NÃO CONTROLADA" e logo de fundo são pedidos corriqueiros
-em relatório corporativo — e são o caso de uso que mais frequentemente força o usuário a pós-processar o PDF
-fora da ferramenta.
-
-**Paridade:** Crystal, Jasper, XtraReports, FastReport e Stimulsoft têm watermark de texto e de imagem, com
-rotação e opacidade. É das poucas features "de tabela" que faltam.
-
-**Ação.** Duas peças, úteis separadamente:
-1. **Rotação** (`Rotation` em graus no `ReportElement`) — habilita watermark e também rótulos verticais em
-   colunas estreitas, comuns em tabelas densas. Toca modelo + 4 serializadores (ver item 12) + renderers.
-2. **Watermark** como propriedade de `PageSetup` (texto ou imagem, opacidade, ângulo, "atrás/à frente do
-   conteúdo"), renderizada por página.
-
-Entregar nos 3 modos (code-first, low-level, Designer), como manda a convenção do projeto.
-
----
-
-### 32. Editor de rich text (`TextRuns`) 🔍
-
-O modelo suporta runs com formatação mista e o round-trip os preserva (`ElementViewModel.cs:1321`, comentário
-explícito *"no editor yet"*), mas não há UI para criá-los. Negrito em uma única palavra só é possível importando
-de fora. Todas as engines concorrentes têm editor de rich text no designer.
-
----
-
-### 33. Excel: autofilter e uma aba por grupo 🟡 — **PARCIALMENTE FALSO POSITIVO, corrigido**
-
-> **Correção da 2ª revisão.** Este item afirmava que faltava *freeze panes*, baseado num grep por
-> `FreezePane`/`AutoFilter`. **O freeze já existe** — sob outro nome: `ExcelExportOptions.FreezeHeader`
-> (default **true**), aplicado em `ExcelExporter.cs:57` via `ws.SheetView.FreezeRows(1)`. O grep por nome de
-> API do ClosedXML não achou o nome da *opção*. Terceiro falso-positivo desta varredura — confirme sempre o
-> comportamento, não só o identificador.
-
-O que **realmente** falta: **autofilter** e **uma aba por grupo**. `AlternateRowColors` (zebra) também já existe.
-
-**Por que importa.** Quem exporta para Excel quase sempre vai *analisar* os dados; o autofilter é um toque de
-API no ClosedXML (já é dependência). "Uma aba por grupo" é o passo seguinte, um pouco maior.
-
-**Paridade:** SSRS, Crystal e Jasper fazem autofilter; SSRS e Jasper suportam quebra de aba por grupo.
-
-**Ação.** `ExcelExportOptions` com `AutoFilter` e `SheetPerGroup`.
-
----
-
-### 34. Barcodes 2D além de QR 🔍
-
-DataMatrix, PDF417 e Aztec. **PDF417 tem uso real em documentos oficiais brasileiros** (CNH, boletos), o que o
-torna o mais defensável dos três.
-
----
-
-### 35. Query builder visual 🔍
-
-Hoje é Monaco com SQL em texto + explorador de schema real (introspecção de SQLite/Postgres/SqlServer/MySQL, com
-inserção de tabela/coluna). Funciona bem para quem sabe SQL; falta o construtor visual com detecção de JOIN que
-usuários do Graphical Query Designer (SSRS) ou do Crystal esperam.
-
----
-
-### 36. RowSpan no Tablix + `StaticMember`/`DynamicMember` 🔍
-
-Gaps RDL remanescentes (#7 e #8 em `docs/rdl-compatibility-gaps.md`). O próprio doc os classifica como nicho e
-recomenda definir a semântica antes de implementar. O caso comum de `StaticMember` (coluna fixa "Total") já é
-coberto por `ColumnSubtotals`. Baixa prioridade — mas é o último gap estrutural conhecido do Tablix.
-
----
-
-### 37. Site de documentação + troubleshooting 🔍
-
-`docs/` tem ~3.000 linhas bem organizadas, mas é Markdown solto no GitHub: sem site publicado, sem referência de
-API navegável, sem `troubleshooting.md`. **Depende do item 7** (XML docs) para a referência de API valer a pena.
-
----
-
-### 38. Meta-pacote de onboarding 🔍
-
-A granularidade de 39 pacotes é *tecnicamente correta* (isola Npgsql, ClosedXML, SkiaSharp de quem não precisa),
-mas o quickstart exige 4 `dotnet add package`. Um meta-pacote `AndersonN.Omni.Report` agregando o caminho comum
-reduz atrito sem desfazer a modularidade.
-
----
-
-### 39. Export de intervalo de páginas ✅ — **NOVO**
-
-Os exporters recebem o `RenderedReport` inteiro (`void Export(RenderedReport, Stream)`), sem nenhum parâmetro de
-faixa. Exportar "só as páginas 3–7" exige o chamador montar um `RenderedReport` parcial na mão. `PrintOptions`
-já tem faixa de páginas para **impressão** — a assimetria é evidente.
-
-**Paridade:** faixa de páginas é padrão em todos os viewers/exporters comerciais.
-
-**Ação.** `PageRange` nas options de export (ou sobrecarga `Export(report, stream, range)`). Encaixa
-naturalmente na migração do item 14 (`ExportAsync`) — mesma assinatura, mesma revisão, sem breaking change extra.
-
----
-
-### 40. Agendamento e entrega por e-mail 🔍
-
-Ausente por completo (sem scheduler, fila ou envio). É o que separa "biblioteca de relatórios" de "plataforma de
-relatórios" tipo SSRS/Jasper Server. Esforço alto; avaliar se é o posicionamento desejado ou se cabe melhor ao
-produto que consome a lib.
-
----
-
-### 41. RTL e `WritingMode` 🔍
-
-`docs/rdl-spec-compliance.md:185,219` registra 🔴 "sempre LTR". Bloqueia mercados árabe/hebraico e texto
-vertical. Só faz sentido junto do item 30 — e a parte de "texto vertical" tem interseção com a rotação do item 31.
-
----
-
-### 42. Tagged PDF / acessibilidade 🔍
-
-O exporter HTML já tem overlay de a11y; o PDF não tem estrutura de tags. Relevante para requisitos de
-acessibilidade do setor público (e para licitações).
-
----
-
-### 43. Exporters RTF / ODT / PPTX 🔍
-
-`docs/comparison.md:110` já reconhece a lacuna frente a concorrentes comerciais. Baixa prioridade: são formatos
-de nicho decrescente, e DOCX já cobre o caso "editar no Word".
+`docs/comparison.md` reconhece a lacuna. Baixa prioridade: DOCX cobre o caso "editar no Word".
 
 ---
 
 ## Sequenciamento sugerido
 
-**Sprint 1 — Destravar o 1.0 (P0 completo).** Itens 1–3. Todos de esforço P, todos com impacto desproporcional na
-percepção do produto: hoje um pacote publicado não funciona, o pipeline de release não tem gate e a vitrine do
-NuGet está com imagens quebradas. É o melhor retorno por dia de trabalho do roadmap inteiro.
+**Sprint 1 — Saída correta (P0).** Itens 6, 7, 8 (P, impacto imediato e visível), depois 1 (o maior ganho
+mensurável: ~95 % do tamanho de todo PDF), 5 (teste de reflexão primeiro — previne a próxima perda), 2, 3 e 4.
+Ao fim, nada que o modelo aceita é descartado em silêncio na saída.
 
-**Sprint 2 — Fechar o cerco de qualidade.** Itens 5, 8, 9, 29 (todos P), depois 4 e 6. Ao final, a promessa
-"cross-platform, testado, sem breaking change silencioso" passa a ser verificada, não afirmada.
+**Sprint 2 — Fronteiras do 1.0 (P1).** Itens 9, 10 e 11 juntos — é a mesma refatoração (abstração de exportação,
+contrato assíncrono com faixa de páginas, dependências por DI) e o único bloco com prazo real: depois do 1.0 vira
+major. Junto, 12 e 13. **Antes da sprint**, tomar as decisões 14 e 15 (custam uma conversa, não código).
 
-**Sprint 3 — Débito com maior retorno.** Comece pelo **teste de completude por reflexão do item 12** — é esforço
-P e elimina uma classe inteira de bug que já se materializou duas vezes (#212 e o `ToggleItemId`). Depois 13, 18,
-21 (todos P) e 10, 14 (M). O 14 é o único com prazo real: depois do 1.0 vira breaking change.
+**Sprint 3 — Designer utilizável por quem não é desenvolvedor (P2).** Começar pelo registro de comandos (o recorte
+do Designer no item 26), que resolve 16 e 17 de uma vez; depois 18, 22 e 23 (todos P); depois 19, 20 e 21.
 
-**Sprint 4+ — Produto.** Itens 22 + 23 juntos (senha/PDF-A dependem do embedding de fontes) e 26 primeiro — são
-o maior descasamento entre público-alvo declarado e capacidade entregue. Depois 24 (agora desbloqueado), 25, 27,
-28.
+**Sprint 4 — Organização (P3).** Itens 29, 30, 32 e 36 (P, mecânicos), depois 28 e 27 aproveitando o mesmo
+movimento de arquivos, e 31. O restante do item 26 (`designer.js`, `ElementViewModel`) em paralelo, por faceta.
 
-**Ganhos rápidos fora de ordem.** Os itens 33 (freeze/autofilter no Excel) e 39 (faixa de páginas) são ambos de
-esforço P, com valor perceptível imediato, e encaixam em revisões que já estão previstas (16 e 14
-respectivamente). Bons candidatos para preencher folga de sprint.
+**Sprint 5+ — Produto (P4).** 37 (senha, depois PDF/A — já com o item 1 resolvido), 39 e 40, 41, depois 42, 43,
+44 e 45 (todos pequenos, bons para preencher folga).
 
-**Antes de tudo — duas decisões de produto que não custam nada e mudam a prioridade de vários itens:**
-1. **Item 11** — postura de segurança do Roslyn: documentar como "só para fontes confiáveis" (barato) ou investir
-   em isolamento real (caro)?
-2. **Item 30** — há ambição de mercado fora do Brasil? Se não, registre a decisão e os itens 30 e 41 saem do
-   roadmap em vez de ficarem pendurados.
+**Ganhos rápidos fora de ordem:** 22, 33, 34, 42 e 44 são de esforço P e independentes de tudo.
+
+---
+
+## Não verificado nesta revisão
+
+| Verificação | Por quê | O que falta |
+|---|---|---|
+| Navegação por teclado e contraste WCAG | Exige leitor de tela e medição por componente | Auditoria com axe/Lighthouse e teste manual de foco |
+| Designer em 768 px | A emulação de viewport do navegador de teste não renderizou o Designer de forma confiável | Repetir em navegador real nas larguras 768 / 1.024 / 1.280 / 1.440 |
+| Subsetting de fonte no Linux | A inspeção do PDF foi feita no Windows | Repetir a inspeção do item 1 com o nativo do Linux |
+| Espaçamento de glifos (item 35) | Observado só no preview rasterizado | Golden de raster ou posições de glifo no PDF |
+| SQL Server, PostgreSQL e MySQL reais | Sem Docker nesta máquina | Coberto no CI pelo `db-integration.yml` |
+| Dispositivo Android e impressora física | Exigem hardware | Ver `docs/evolucao-pos-auditoria-2026-09-09.md` |
+
+---
+
+## Histórico de concluídos
+
+| Item (numeração da revisão em que nasceu) | Entrega | PR |
+|---|---|---|
+| R2 #1 — `Printing.Android` publicado como stub | `IsPackable=false` fora do build Android real | #231 |
+| R2 #2 — release sem teste | `release.yml` roda `dotnet test` antes do `pack` | #231 |
+| R2 #3 — README com imagens quebradas no NuGet | URLs absolutas | #231 |
+| R2 #4 — conectores SQL sem teste | Um contrato contra os três motores, em banco real; achou defeito de cancelamento no `AdoNetDataSource` | #237 |
+| R2 #5 — CI Linux com 15/39 projetos | Lista derivada automaticamente de todos os projetos cross-platform | #232 |
+| R2 #6 — sem gate de breaking change | Package Validation contra a 0.1.1 publicada, nos 39 pacotes | #235 |
+| R2 #7 — XML docs em 1 de 39 pacotes | Core, Expressions, DataSources, Layout e Rendering documentados e travados (CS1591) | #236, #247 |
+| R2 #8 — sem Dependabot/CodeQL/`SECURITY.md` | Dependabot agrupado, CodeQL, auditoria de vulnerabilidades, `SECURITY.md` | #232, #250 |
+| R2 #9 — CHANGELOG desatualizado | `[Unreleased]` reconstruído; release falha sem seção da versão | #234 |
+| R2 #10 — `Verify.Xunit` sem uso | Golden files de display list e SVG | #233 |
+| R2 #12 — travessia duplicada nos serializadores | Rede de paridade por reflexão no caminho RDL (perdas conhecidas declaradas; resto no item 5) | #219 |
+| R2 #13 — gradiente ausente no GDI | Linear e radial em `GdiRenderingContext` | #221 |
+| R2 #14 — export síncrono | `ExportAsync` na interface (resto no item 10) | #227 |
+| R2 #15 — leitura repetida das fontes | Cada fonte lida uma vez por paginação (streaming no item 38) | #225 |
+| R2 #16 — Excel descarta conteúdo sem avisar | `ExcelExportOptions.OnWarning` | #228 |
+| R2 #17 — `ElementViewModel` god object | Mapeamento de domínio extraído para facetas (parte 1; resto no item 26) | #226 |
+| R2 #18 — `catch` nus no `Layout` | Filtrados por tipo | #220 |
+| R2 #19 — `RdlImporter`/`RdlWriter` monolíticos | Bloco Tablix extraído em parciais (resto no item 27) | #230 |
+| R2 #20 — sem benchmarks | `Reporting.Benchmarks` (paginação, fontes de dados) | #229, #243 |
+| R2 #21 — perda do "inherit" de `ForeColor`/`Font` | O VM lembra que o modelo dizia "herdar" e devolve `null` | #222 |
+| R2 #23 — garantia de fontes no PDF | Teste de embutimento — **reaberto** como item 1 (não mede subsetting) | #248 |
+| R2 #30a / #30b — SkiaSharp 4 e NCalc 7 | Migrações com teste da garantia semântica antes | #253, #254, #269 |
+| Item 2 — `RowSpan` e linhas-modelo extras descartados sem aviso | Diagnóstico `ORL025` (o span depende do item 49) | #274 |
+| F01–F27 da auditoria técnica | Ver `docs/correcoes-f01-f27-2026-09-08.md` | #260 |
+| Seis recomendações pós-auditoria + F28 | Preview sob demanda, limites, F24/F25, cache limitado, isolamento do designer, telemetria, um tipo por arquivo | #270 |
+| Advisories do `System.Security.Cryptography.Pkcs` | Pin na 10.0.13 | #271 |
+
+**Lições que valem para os próximos itens:**
+
+- *Ausência de identificador não prova ausência de comportamento* — três falsos positivos da 2ª revisão.
+- *Presença de marcador não prova o comportamento* — o prefixo `AAAAAA+` não prova subsetting (item 1).
+- *Uma major que "compila e passa" é o cenário mais perigoso* — NCalc 7 passou nos 165 testes com a aritmética em
+  `double`; SkiaSharp 4 passou no Windows com zero pixel de texto no Linux.
+- *Um teste que só compara valor não pega mudança de tipo; um teste que só procura um token não pega o conteúdo
+  errado.* Escreva o teste da garantia semântica antes de mexer.
