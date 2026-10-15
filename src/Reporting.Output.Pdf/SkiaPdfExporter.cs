@@ -106,7 +106,7 @@ public sealed class SkiaPdfExporter : IReportExporter
                 SkiaPrimitiveRenderer.DrawLine(canvas, l.From, l.To, l.Pen, PdfDpi);
                 break;
             case DrawRectanglePrimitive r:
-                SkiaPrimitiveRenderer.DrawRectangle(canvas, r.Bounds, r.Pen, r.Fill, PdfDpi);
+                SkiaPrimitiveRenderer.DrawRectangle(canvas, r.Bounds, r.CornerRadius, r.Pen, r.Fill, PdfDpi);
                 break;
             case DrawEllipsePrimitive e:
                 SkiaPrimitiveRenderer.DrawEllipse(canvas, e.Bounds, e.Pen, e.Fill, PdfDpi);

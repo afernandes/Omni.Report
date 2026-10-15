@@ -699,6 +699,16 @@ public sealed partial class RdlImporter
 
     private static ReportElement ApplyCustomProperties(ReportElement el, Dictionary<string, string> props)
     {
+        // A toggled element hidden for good: RDL's Hidden only says how it starts, so the exporter adds this.
+        if (props.TryGetValue("omni:Visible", out var visible) && string.Equals(visible, "false", StringComparison.OrdinalIgnoreCase))
+        {
+            el = el with { Visible = false };
+        }
+        // A toggled element whose Hidden is a visibility expression: the initial collapsed state has no RDL slot left.
+        if (props.TryGetValue("omni:InitiallyHidden", out var initially) && string.Equals(initially, "true", StringComparison.OrdinalIgnoreCase))
+        {
+            el = el with { InitiallyHidden = true };
+        }
         switch (el)
         {
             case SubreportElement sr:

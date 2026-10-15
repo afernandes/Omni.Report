@@ -56,7 +56,7 @@ public static class RegionRasterizer
                 SkiaPrimitiveRenderer.DrawLine(canvas, l.From, l.To, l.Pen, dpi);
                 break;
             case DrawRectanglePrimitive r:
-                SkiaPrimitiveRenderer.DrawRectangle(canvas, r.Bounds, r.Pen, r.Fill, dpi);
+                SkiaPrimitiveRenderer.DrawRectangle(canvas, r.Bounds, r.CornerRadius, r.Pen, r.Fill, dpi);
                 break;
             case DrawEllipsePrimitive e:
                 SkiaPrimitiveRenderer.DrawEllipse(canvas, e.Bounds, e.Pen, e.Fill, dpi);

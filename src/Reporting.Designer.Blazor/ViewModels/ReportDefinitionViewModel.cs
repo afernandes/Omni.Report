@@ -100,7 +100,7 @@ public sealed class ReportDefinitionViewModel : Notifying
     }
 
     // Every element in the report, walking into nested Rectangle children.
-    private IEnumerable<ElementViewModel> AllElements()
+    internal IEnumerable<ElementViewModel> AllElements()
     {
         foreach (var band in Bands)
         {

@@ -13,6 +13,14 @@
             @foreach (var message in _previewDiagnostics) { <p>@message</p> }
         </div>
     }
+    @if (_alert is { } alert)
+    {
+        <div class="designer-alert" role="alert">
+            <strong>@alert.Title</strong>
+            <p>@alert.Message</p>
+            <button type="button" class="tb-btn" @onclick="DismissAlert">Fechar</button>
+        </div>
+    }
     <div class="app">
         <TopBar DocumentName="@State.Report.Name"
                 IsDarkTheme="@(State.Theme == "dark")"
@@ -21,7 +29,8 @@
                 OnSave="OnSave"
                 OnLoad="OnLoadFile"
                 OnLoadRdl="OnLoadRdlFile"
-                OnMenuCommand="OnMenuCommand" />
+                OnMenuCommand="OnMenuCommand"
+                Exporters="_exporterDescriptors" />
 
         <TabBar Tabs="State.Tabs"
                 ActiveTab="State.ActiveTab"
@@ -101,6 +110,7 @@
                           OnPreviewPageChanged="i => _previewCurrentPage = i"
                           Exporters="_exporterDescriptors"
                           OnExport="OnExport"
+                          IsExporting="@(_exportingFormat is not null)"
                           OnPrint="OnPrint"
                           PreviewZoom="_previewZoom"
                           PreviewZoomChanged="v => _previewZoom = v" />
