@@ -30,8 +30,17 @@ public partial class TopBar
     /// <summary>The Designer's command list (menus are rendered from it, grouped by <see cref="Reporting.Designer.Blazor.Services.DesignerCommand.Menu"/>).</summary>
     [Parameter] public IReadOnlyList<Reporting.Designer.Blazor.Services.DesignerCommand> Commands { get; set; } = [];
 
+    /// <summary>An export is running: render exports and print are disabled until it ends, so a second request
+    /// cannot start a competing preview whose result would be discarded.</summary>
+    [Parameter] public bool IsBusy { get; set; }
+
     private IEnumerable<Reporting.Designer.Blazor.Services.DesignerCommand> CommandsOf(string menu)
         => Commands.Where(c => c.Menu == menu);
+
+    // The RDL export serializes the definition and does not touch the preview, so it stays available.
+    private static bool IsOutputCommand(Reporting.Designer.Blazor.Services.DesignerCommand command)
+        => command.Id == "file.print"
+           || (command.Id.StartsWith("file.export.", StringComparison.Ordinal) && command.Id != "file.export.rdl");
 
     private Task OnToggleThemeClicked() => OnToggleTheme.InvokeAsync();
     private Task OnOpenPaletteClicked() => OnOpenPalette.InvokeAsync();

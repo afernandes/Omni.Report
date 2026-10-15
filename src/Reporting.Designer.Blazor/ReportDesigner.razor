@@ -37,7 +37,8 @@
                 OnLoad="OnLoadFile"
                 OnLoadRdl="OnLoadRdlFile"
                 OnMenuCommand="OnMenuCommand"
-                Commands="_commands" />
+                Commands="_commands"
+                IsBusy="@(_exportingFormat is not null)" />
 
         <TabBar Tabs="State.Tabs"
                 ActiveTab="State.ActiveTab"

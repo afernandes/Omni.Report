@@ -9,6 +9,9 @@ public partial class MenuCommandItem
     /// <summary>The command this entry runs.</summary>
     [Parameter, EditorRequired] public DesignerCommand Command { get; set; } = default!;
 
+    /// <summary>Shown but not selectable — e.g. export and print while an export is running.</summary>
+    [Parameter] public bool Disabled { get; set; }
+
     /// <summary>Receives the command id when the entry is chosen.</summary>
     [Parameter] public EventCallback<string> OnSelect { get; set; }
 

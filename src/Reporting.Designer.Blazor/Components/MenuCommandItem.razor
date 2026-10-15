@@ -4,6 +4,6 @@
 {
     <div class="dropdown-sep"></div>
 }
-<button class="dropdown-item" type="button" @onclick="Select">
+<button class="dropdown-item" type="button" disabled="@Disabled" @onclick="Select">
     <Icon Name="@Command.Icon" Size="12" CssClass="icon icon-12" /><span>@Command.Title</span><span class="shortcut">@Command.Shortcut</span>
 </button>
