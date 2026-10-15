@@ -95,7 +95,7 @@ Os problemas que restam são de cinco tipos:
 | # | Item | Tipo | Esforço | Conf. | Origem |
 |---|---|---|---|---|---|
 | 9 | Abstração de exportação mora no pacote PDF → CSV/JSON/XML/Excel arrastam SkiaSharp — **✔ FEITO (#282)** | Arquitetura | M | ✅ | novo |
-| 10 | Contrato de export: `ExportAsync` real, faixa de páginas e consumo de `PreparedReport` | API | M | ✅ | R2 #14 + #39 |
+| 10 | Contrato de export: `ExportAsync` real, faixa de páginas e consumo de `PreparedReport` — parte 1 (faixa) feita (#290) | API | M | ✅ | R2 #14 + #39 |
 | 11 | Designer, Viewer e Hosting referenciam **todos** os exporters | Arquitetura | M | ✅ | novo |
 | 12 | Nenhum `ILogger` em `src/`; falhas do Designer vão para `Console.Error` — **✔ FEITO (#283)** | Observabilidade | P | ✅ | novo |
 | 13 | Monaco carregado do CDN em runtime — não funciona offline nem sob CSP — **✔ FEITO (#286)** | Segurança/DX | M | ✅ | novo |
@@ -555,6 +555,13 @@ permitem escrita progressiva (PDF, SVG por página, CSV, JSON).
 
 **Pronto quando:** cancelar um export em curso libera a thread; exportar uma faixa não materializa o documento
 inteiro.
+
+**Parte 1 feita (#290) — faixa de páginas.** `PageRange` (1-based, inclusiva, `Parse("3-7")`) em `Reporting.Output` e
+duas sobrecargas de `ExportAsync`: sobre `RenderedReport` (fatia) e sobre `PreparedReport`, que lê do armazenamento
+preparado **só** as páginas pedidas — exportar 3–7 de um relatório longo não carrega o resto. Vale para todos os
+exportadores sem mudar nenhum. Faltam: `ExportAsync` com E/S assíncrona e cancelamento por página nos exportadores
+de texto/SVG/HTML/DOCX/XLSX (parte 2) e consumo progressivo de páginas, para o Designer exportar sem materializar
+o documento inteiro (parte 3).
 
 ---
 
