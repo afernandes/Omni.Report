@@ -990,8 +990,10 @@ public partial class ReportDesigner
                 State.IsPreviewing = true;
             }
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
+            // A broken expression, data source or host service must reach the author, not just the server's stderr.
+            _alert = new("Falha no preview", ex.Message);
             Console.Error.WriteLine($"Preview error: {ex.Message}");
         }
     }
@@ -1206,12 +1208,25 @@ public partial class ReportDesigner
     /// <summary>Single generic export handler — receives the descriptor the user clicked
     /// and routes to <c>IReportExporter.Export</c>. No hardcoded format list: registering
     /// a new exporter in DI automatically gets a working button + working handler.</summary>
+    // Format being exported right now (null = idle). While set, the preview's export and print buttons stay disabled:
+    // a click during an export used to be dropped without any sign.
+    private string? _exportingFormat;
+    // Last preview/export failure, shown to the author until dismissed — it used to reach only the server's stderr.
+    private Reporting.Designer.Blazor.Services.DesignerAlert? _alert;
+
+    private void DismissAlert() => _alert = null;
+
     private async Task OnExport(Reporting.Designer.Blazor.Services.ExporterDescriptor descriptor)
     {
-        if (_previewPrepared is null || descriptor is null)
+        if (_previewPrepared is null || descriptor is null || _exportingFormat is not null)
         {
             return;
         }
+        _exportingFormat = descriptor.Format;
+        _alert = null;
+        StateHasChanged();
+        // Let the disabled state render before the CPU-bound export runs on the circuit.
+        await Task.Yield();
         try
         {
             // Each IReportExporter writes to a Stream. We capture to a MemoryStream so
@@ -1219,14 +1234,22 @@ public partial class ReportDesigner
             // direct to the response would be lighter, but Blazor's JS interop has no
             // stream contract for downloads — bytes is the lingua franca.
             using var ms = new MemoryStream();
-            descriptor.Exporter.Export(MaterializePreview(), ms);
+            await descriptor.Exporter.ExportAsync(MaterializePreview(), ms);
             var bytes = ms.ToArray();
             var fileName = SafeFileName(State.Report.Name) + descriptor.FileExtension;
             await TriggerDownload(fileName, descriptor.ContentType, bytes);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
+            // An exporter is host-pluggable code: whatever it throws becomes a message the author can act on, rather
+            // than an unhandled exception that would tear down the circuit.
+            _alert = new("Falha na exportação", $"Não foi possível exportar em {descriptor.Label}: {ex.Message}");
             Console.Error.WriteLine($"Export ({descriptor.Format}) error: {ex.Message}");
+        }
+        finally
+        {
+            _exportingFormat = null;
+            StateHasChanged();
         }
     }
 
@@ -1585,10 +1608,15 @@ public partial class ReportDesigner
                     var registry = Services.GetService(typeof(Reporting.Designer.Blazor.Services.IExporterRegistry))
                                    as Reporting.Designer.Blazor.Services.IExporterRegistry;
                     var desc = registry?.Find(format);
-                    if (desc is not null)
+                    if (desc is null)
+                    {
+                        _alert = new("Falha na exportação", $"O formato '{format}' não está registrado neste host.");
+                    }
+                    else
                     {
                         await OnPreview();
-                        await OnExport(desc);
+                        // OnPreview reports its own failure; exporting needs a paginated document.
+                        if (_previewPrepared is not null) await OnExport(desc);
                     }
                     break;
                 }

@@ -38,30 +38,18 @@
                 <Icon Name="save" Size="12" CssClass="icon icon-12" /><span>Salvar como…</span><span class="shortcut">Ctrl+Shift+S</span>
             </button>
             <div class="dropdown-sep"></div>
-            <button class="dropdown-item" type="button" @onclick="@(() => OnMenuCommand.InvokeAsync("file.export.pdf"))">
-                <Icon Name="file-text" Size="12" CssClass="icon icon-12" /><span>Exportar PDF</span><span class="shortcut"></span>
-            </button>
-            <button class="dropdown-item" type="button" @onclick="@(() => OnMenuCommand.InvokeAsync("file.export.xlsx"))">
-                <Icon Name="file-spreadsheet" Size="12" CssClass="icon icon-12" /><span>Exportar XLSX</span><span class="shortcut"></span>
-            </button>
-            <button class="dropdown-item" type="button" @onclick="@(() => OnMenuCommand.InvokeAsync("file.export.docx"))">
-                <Icon Name="file-text" Size="12" CssClass="icon icon-12" /><span>Exportar DOCX</span><span class="shortcut"></span>
-            </button>
-            <button class="dropdown-item" type="button" @onclick="@(() => OnMenuCommand.InvokeAsync("file.export.html"))">
-                <Icon Name="file-code" Size="12" CssClass="icon icon-12" /><span>Exportar HTML</span><span class="shortcut"></span>
-            </button>
-            <button class="dropdown-item" type="button" @onclick="@(() => OnMenuCommand.InvokeAsync("file.export.svg"))">
-                <Icon Name="file-code" Size="12" CssClass="icon icon-12" /><span>Exportar SVG</span><span class="shortcut"></span>
-            </button>
-            <button class="dropdown-item" type="button" @onclick="@(() => OnMenuCommand.InvokeAsync("file.export.csv"))">
-                <Icon Name="file" Size="12" CssClass="icon icon-12" /><span>Exportar CSV</span><span class="shortcut"></span>
-            </button>
-            <button class="dropdown-item" type="button" @onclick="@(() => OnMenuCommand.InvokeAsync("file.export.json"))">
-                <Icon Name="file" Size="12" CssClass="icon icon-12" /><span>Exportar JSON</span><span class="shortcut"></span>
-            </button>
-            <button class="dropdown-item" type="button" @onclick="@(() => OnMenuCommand.InvokeAsync("file.export.markdown"))">
-                <Icon Name="file" Size="12" CssClass="icon icon-12" /><span>Exportar Markdown</span><span class="shortcut"></span>
-            </button>
+            @* One item per exporter the host registered (IExporterRegistry) — the same list the preview toolbar and the
+               command palette use, so a format the host left out never shows up as a dead menu entry. *@
+            @if (Exporters is { Count: > 0 })
+            {
+                @foreach (var exporter in Exporters)
+                {
+                    var command = "file.export." + exporter.Format;
+                    <button class="dropdown-item" type="button" @onclick="@(() => OnMenuCommand.InvokeAsync(command))">
+                        <Icon Name="@exporter.IconName" Size="12" CssClass="icon icon-12" /><span>Exportar @exporter.Label</span><span class="shortcut"></span>
+                    </button>
+                }
+            }
             <div class="dropdown-sep"></div>
             <button class="dropdown-item" type="button" @onclick="@(() => OnMenuCommand.InvokeAsync("file.export.rdl"))">
                 <Icon Name="file-code" Size="12" CssClass="icon icon-12" /><span>Exportar RDL (.rdl)</span><span class="shortcut"></span>

@@ -33,6 +33,9 @@ public partial class PreviewMode
     /// resolves the exporter, paginates if needed, and triggers the download.</summary>
     [Parameter] public EventCallback<Reporting.Designer.Blazor.Services.ExporterDescriptor> OnExport { get; set; }
     [Parameter] public EventCallback OnPrint { get; set; }
+    /// <summary>True while an export is running: export and print stay disabled so a second click is visibly refused
+    /// instead of being silently dropped.</summary>
+    [Parameter] public bool IsBusy { get; set; }
     /// <summary>Physical paper width in mm — drives the preview-page rectangle. Defaults to
     /// A4 (210mm) so existing call sites that don't pass a PageSetup still get a sane result.</summary>
     [Parameter] public double PaperWidthMm { get; set; } = 210.0;
