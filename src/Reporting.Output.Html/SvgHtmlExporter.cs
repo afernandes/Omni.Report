@@ -43,30 +43,40 @@ public sealed class SvgHtmlExporter : IReportExporter
     public void Export(RenderedReport report, Stream output)
     {
         using var operation = Reporting.Diagnostics.ReportTelemetry.Start("export");
-        ExportCore(report, output);
+        foreach (var _ in WriteSteps(report, output, CancellationToken.None))
+        {
+        }
         operation.Complete();
     }
 
-    private void ExportCore(RenderedReport report, Stream output)
+    /// <summary>Writes the document with asynchronous I/O, one page at a time, checking
+    /// <paramref name="cancellationToken"/> between pages.</summary>
+    public async Task ExportAsync(RenderedReport report, Stream output, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        using var operation = Reporting.Diagnostics.ReportTelemetry.Start("export", cancellationToken);
+        await AsyncExport.WriteInStepsAsync(output, buffer => WriteSteps(report, buffer, cancellationToken),
+            cancellationToken).ConfigureAwait(false);
+        operation.Complete();
+    }
+
+    private IEnumerable<int> WriteSteps(RenderedReport report, Stream output, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(report);
         ArgumentNullException.ThrowIfNull(output);
 
         var title = _options.Title ?? report.Name;
 
-        // Render each page to a self-contained SVG fragment via the SVG exporter. The
-        // fragment already carries viewBox + width="100%" / height="100%", so embedding is
-        // just dropping it into a CSS-sized container.
-        var pages = new List<SvgPageFragment>(report.Pages.Count);
-        foreach (var page in report.Pages)
-        {
-            pages.Add(_svg.RenderPage(page));
-        }
+        // Each page becomes a self-contained SVG fragment via the SVG exporter, rendered as it is written. The
+        // fragment already carries viewBox + width="100%" / height="100%", so embedding is just dropping it into a
+        // CSS-sized container.
+        int pageCount = report.Pages.Count;
+        var firstPage = pageCount > 0 ? _svg.RenderPage(report.Pages[0]) : null;
 
         // Print rule uses the first page's size — mixed-size reports still render fine on
         // screen (each <svg> carries its own intrinsic dimensions), but @page is per-doc.
-        var firstWidthMm = pages.Count > 0 ? PointsToMm(pages[0].WidthPt) : 210.0;
-        var firstHeightMm = pages.Count > 0 ? PointsToMm(pages[0].HeightPt) : 297.0;
+        var firstWidthMm = firstPage is not null ? PointsToMm(firstPage.WidthPt) : 210.0;
+        var firstHeightMm = firstPage is not null ? PointsToMm(firstPage.HeightPt) : 297.0;
 
         using var writer = new StreamWriter(output, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false), bufferSize: 8192, leaveOpen: true);
         writer.NewLine = "\n";
@@ -89,15 +99,16 @@ public sealed class SvgHtmlExporter : IReportExporter
             writer.Write("    </nav>\n");
         }
 
-        for (int i = 0; i < pages.Count; i++)
+        for (int i = 0; i < pageCount; i++)
         {
-            var p = pages[i];
+            cancellationToken.ThrowIfCancellationRequested();
+            var p = i == 0 ? firstPage! : _svg.RenderPage(report.Pages[i]);
             var widthMm = PointsToMm(p.WidthPt).ToString("0.###", CultureInfo.InvariantCulture);
             var heightMm = PointsToMm(p.HeightPt).ToString("0.###", CultureInfo.InvariantCulture);
             writer.Write("    <section class=\"page\" role=\"document\" aria-label=\"Página ");
             writer.Write((i + 1).ToString(CultureInfo.InvariantCulture));
             writer.Write(" de ");
-            writer.Write(pages.Count.ToString(CultureInfo.InvariantCulture));
+            writer.Write(pageCount.ToString(CultureInfo.InvariantCulture));
             writer.Write("\" style=\"width:");
             writer.Write(widthMm);
             writer.Write("mm;height:");
@@ -111,6 +122,8 @@ public sealed class SvgHtmlExporter : IReportExporter
                 writer.Write(overlay);
             }
             writer.Write("\n    </section>\n");
+            writer.Flush();
+            yield return i;
         }
 
         writer.Write("  </main>\n</body>\n</html>\n");
