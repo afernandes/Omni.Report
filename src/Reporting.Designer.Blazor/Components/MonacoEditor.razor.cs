@@ -20,6 +20,8 @@ namespace Reporting.Designer.Blazor.Components;
 
 public partial class MonacoEditor
 {
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
     /// <summary>Stable DOM id — required because Monaco mounts on a real element by id.</summary>
     [Parameter] public string DomId { get; set; } = "monaco-" + Guid.NewGuid().ToString("n")[..8];
 
@@ -64,7 +66,9 @@ public partial class MonacoEditor
             }
             catch (JSException ex)
             {
-                Console.Error.WriteLine($"Monaco mount failed: {ex.Message}");
+                var logger = Services.GetService(typeof(Microsoft.Extensions.Logging.ILogger<MonacoEditor>))
+                    as Microsoft.Extensions.Logging.ILogger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance;
+                Reporting.Designer.Blazor.Services.DesignerLog.MonacoMountFailed(logger, ex);
             }
             catch (InvalidOperationException) { /* pre-render */ }
         }
