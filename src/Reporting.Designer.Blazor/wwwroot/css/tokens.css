@@ -41,6 +41,7 @@
   --warning:          #A16207;
   --warning-soft:     #FEF3C7;
   --success:          #047857;
+  --success-soft:     #D1FAE5;
   --smart-guide:      #E879F9;   /* magenta align lines */
 
   /* Component-specific */
@@ -94,6 +95,7 @@
   --warning:          #EAB308;
   --warning-soft:     #3A2C09;
   --success:          #34D399;
+  --success-soft:     #0F2E22;
   --smart-guide:      #F0ABFC;
 
   --band-strip:       #1B1B1B;

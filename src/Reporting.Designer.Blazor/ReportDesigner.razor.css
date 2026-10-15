@@ -620,3 +620,8 @@
 .pagination-warning p { margin: 4px 0; }
 .designer-alert { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 12px 16px; background: var(--danger-soft); color: var(--danger); border-bottom: 1px solid var(--danger); }
 .designer-alert p { margin: 0; flex: 1 1 100%; }
+.designer-alert.is-ok { background: var(--success-soft); color: var(--success); border-bottom-color: var(--success); }
+.designer-alert ul { margin: 0; padding-left: 20px; flex: 1 1 100%; }
+.shortcuts-table { border-collapse: collapse; font-size: 13px; min-width: 360px; }
+.shortcuts-table td { padding: 4px 12px 4px 0; vertical-align: top; }
+.shortcuts-table kbd { white-space: nowrap; }

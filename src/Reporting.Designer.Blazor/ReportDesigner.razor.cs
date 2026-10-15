@@ -90,6 +90,7 @@ public partial class ReportDesigner
         {
             _exporterDescriptors = registry.Descriptors;
         }
+        _commands = Reporting.Designer.Blazor.Services.DesignerCommandCatalog.Build(_exporterDescriptors);
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -1360,19 +1361,18 @@ public partial class ReportDesigner
             {
                 case "z": OnUndo(); return;
                 case "y": OnRedo(); return;
-                case "s": await OnSave(); return;
+                case "s": await OnSave(); return;  // Ctrl+S and Ctrl+Shift+S (the Designer has no separate "save as")
                 case "k": State.CommandPaletteOpen = true; return;
+                case "p": await OnMenuCommand("file.print"); return;
+                case "l" when e.ShiftKey: await OnToggleTheme(); return;
+                case "/": _shortcutsOpen = true; return;
                 case "x": OnCut(); return;
                 case "c": OnCopy(); return;
                 case "v": OnPaste(); return;
                 case "d": DuplicateSelected(); return;
                 case "a":
                     // Ctrl+A: select all elements in the active band (industry standard).
-                    var b = State.ActiveBand ?? State.Report.FindBand(DesignerBandKind.Detail);
-                    if (b is not null && b.Elements.Count > 0)
-                    {
-                        State.SelectMany(b.Elements);
-                    }
+                    SelectAllInActiveBand();
                     return;
                 case "o":
                     try { await Js.InvokeVoidAsync("omniDesigner.openFile", _rootRef); }
@@ -1627,25 +1627,42 @@ public partial class ReportDesigner
             case "edit.copy": OnCopy(); break;
             case "edit.paste": OnPaste(); break;
             case "edit.delete": OnDeleteSelected(); break;
-            case "edit.selectall":
-                State.SelectMany(State.Report.Bands.SelectMany(b => b.Elements));
-                break;
+            case "edit.duplicate": DuplicateSelected(); break;
+            case "edit.selectall": SelectAllInActiveBand(); break;
             case "view.grid": State.GridVisible = !State.GridVisible; break;
             case "view.snap": State.SnapToGrid = !State.SnapToGrid; break;
+            case "view.rulers": State.RulersVisible = !State.RulersVisible; break;
             case "view.theme": await OnToggleTheme(); break;
             case "view.zoomin": State.Zoom = Math.Min(4.0, State.Zoom + 0.1); break;
             case "view.zoomout": State.Zoom = Math.Max(0.25, State.Zoom - 0.1); break;
             case "view.zoom100": State.Zoom = 1.0; break;
             case "view.preview": await OnPreview(); break;
-            case "insert.textbox": OnInsert(DesignerElementKind.TextBox); break;
-            case "insert.label": OnInsert(DesignerElementKind.Label); break;
-            case "insert.line": OnInsert(DesignerElementKind.Line); break;
-            case "insert.rectangle": OnInsert(DesignerElementKind.Rectangle); break;
-            case "insert.image": OnInsert(DesignerElementKind.Image); break;
-            case "insert.barcode": OnInsert(DesignerElementKind.Barcode); break;
+            // insert.<kind> for every element kind of the toolbox (DesignerCommandCatalog lists them all).
+            case var s when s.StartsWith("insert.", StringComparison.Ordinal)
+                            && Enum.TryParse<DesignerElementKind>(s["insert.".Length..], ignoreCase: true, out var kind):
+                OnInsert(kind);
+                break;
+            case "file.open":
+                try { await Js.InvokeVoidAsync("omniDesigner.openFile", _rootRef); }
+                catch (JSException) { }
+                break;
+            case "arrange.align.left": Align(AlignOp.Left); break;
+            case "arrange.align.centerh": Align(AlignOp.CenterH); break;
+            case "arrange.align.right": Align(AlignOp.Right); break;
+            case "arrange.align.top": Align(AlignOp.Top); break;
+            case "arrange.align.middlev": Align(AlignOp.MiddleV); break;
+            case "arrange.align.bottom": Align(AlignOp.Bottom); break;
+            case "arrange.distribute.h": Align(AlignOp.DistributeH); break;
+            case "arrange.distribute.v": Align(AlignOp.DistributeV); break;
+            case "arrange.size.width": Align(AlignOp.SameWidth); break;
+            case "arrange.size.height": Align(AlignOp.SameHeight); break;
+            case "arrange.size.both": Align(AlignOp.SameBoth); break;
+            case "arrange.order.front": BringToFront(); break;
+            case "arrange.order.forward": ChangeZOrder(+1); break;
+            case "arrange.order.backward": ChangeZOrder(-1); break;
+            case "arrange.order.back": SendToBack(); break;
             case "report.pagesetup": _pageSetupOpen = true; break;
-            case "report.preview": await OnPreview(); break;
-            case "report.validate": await OnPreview(); break;  // preview surfaces compile errors
+            case "report.validate": ValidateExpressions(); break;
             // RDL band properties dialog — opens for the currently active band, falling
             // back to the Detail band when nothing is selected (the dialog itself adapts
             // to the band kind).
@@ -1658,29 +1675,48 @@ public partial class ReportDesigner
                     }
                     break;
                 }
-            case "help.shortcuts": State.CommandPaletteOpen = true; break;
+            case "help.shortcuts": _shortcutsOpen = true; break;
             case "help.about": _aboutOpen = true; break;
+            default:
+                // A command id nobody routes is a bug in the command list, not something to ignore silently.
+                _alert = new("Comando não reconhecido", $"O comando '{id}' não existe neste Designer.");
+                break;
         }
     }
 
+    // The palette runs the same commands as the menus, through the same dispatcher.
     private async Task OnPaletteCommand(string id)
     {
         State.CommandPaletteOpen = false;
-        switch (id)
+        await OnMenuCommand(id);
+    }
+
+    private bool _shortcutsOpen;
+
+    // Menus, palette and shortcuts dialog render this one list (see DesignerCommandCatalog).
+    private IReadOnlyList<Reporting.Designer.Blazor.Services.DesignerCommand> _commands = [];
+
+    private void SelectAllInActiveBand()
+    {
+        var band = State.ActiveBand ?? State.Report.FindBand(DesignerBandKind.Detail);
+        if (band is not null && band.Elements.Count > 0)
         {
-            case "new": OnNewTab(); break;
-            case "save": await OnSave(); break;
-            case "undo": OnUndo(); break;
-            case "redo": OnRedo(); break;
-            case "delete": OnDeleteSelected(); break;
-            case "preview": await OnPreview(); break;
-            case "theme": await OnToggleTheme(); break;
-            case "insert.text": OnInsert(DesignerElementKind.TextBox); break;
-            case "insert.label": OnInsert(DesignerElementKind.Label); break;
-            case "insert.rect": OnInsert(DesignerElementKind.Rectangle); break;
-            case "insert.line": OnInsert(DesignerElementKind.Line); break;
-            case "insert.img": OnInsert(DesignerElementKind.Image); break;
+            State.SelectMany(band.Elements);
         }
+    }
+
+    // Design-time check of every element's expression template (brace balance, unknown fields and parameters) -
+    // the same rules as the status bar's error count, listed per element so the author can find each one.
+    private void ValidateExpressions()
+    {
+        var problems = State.Report.AllElements()
+            .Select(e => (Element: e, Error: ExpressionValidator.Validate(e.Expression, State.DataSources, State.Parameters)))
+            .Where(r => r.Error is not null)
+            .Select(r => $"{(string.IsNullOrWhiteSpace(r.Element.Name) ? ToolboxCatalog.For(r.Element.Kind).Label : r.Element.Name)}: {r.Error}")
+            .ToList();
+        _alert = problems.Count == 0
+            ? new("Validação", "Nenhum problema encontrado nas expressões dos elementos.", IsError: false)
+            : new("Validação", $"{problems.Count} expressão(ões) com problema:", problems);
     }
 
     private IReadOnlyList<string> _previewDiagnostics = [];

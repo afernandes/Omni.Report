@@ -92,6 +92,8 @@ internal static class IconCatalog
         "arrow-left"         => "<path d='m12 19-7-7 7-7'/><path d='M19 12H5'/>",
         "eye"                => "<path d='M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z'/><circle cx='12' cy='12' r='3'/>",
         "user"               => "<path d='M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2'/><circle cx='12' cy='7' r='4'/>",
+        "info"               => "<circle cx='12' cy='12' r='10'/><path d='M12 16v-4'/><path d='M12 8h.01'/>",
+        "keyboard"           => "<rect width='20' height='16' x='2' y='4' rx='2'/><path d='M6 8h.01'/><path d='M10 8h.01'/><path d='M14 8h.01'/><path d='M18 8h.01'/><path d='M8 12h.01'/><path d='M12 12h.01'/><path d='M16 12h.01'/><path d='M7 16h10'/>",
         _ => "<circle cx='12' cy='12' r='9'/>",
     };
 }

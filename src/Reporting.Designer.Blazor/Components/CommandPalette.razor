@@ -6,7 +6,7 @@
         <div class="cmdp" role="dialog" aria-label="Command palette" @onclick:stopPropagation="true">
             <div class="cmdp-input">
                 <Icon Name="search" Size="16" CssClass="icon icon-16" />
-                <input type="text" autofocus
+                <input type="text" @ref="_input" aria-label="Buscar comando"
                        value="@_query"
                        placeholder="Buscar comando ou propriedade…"
                        @oninput="@(e => _query = e.Value?.ToString() ?? string.Empty)"
@@ -15,7 +15,7 @@
             </div>
             <div class="cmdp-list">
                 @{
-                    var groups = Filter().GroupBy(c => c.Group);
+                    var groups = Filter().GroupBy(c => c.Menu);
                 }
                 @foreach (var g in groups)
                 {
@@ -26,13 +26,16 @@
                              @onclick="@(() => Execute(cmd))">
                             <Icon Name="@cmd.Icon" Size="16" CssClass="icon icon-16 ic" />
                             <span>@cmd.Title</span>
-                            <span class="crumb">@cmd.Crumb</span>
-                            <span class="kbd-line">
-                                @foreach (var k in cmd.Hotkey.Split('+'))
-                                {
-                                    <kbd>@k</kbd>
-                                }
-                            </span>
+                            <span class="crumb">@cmd.Menu</span>
+                            @if (cmd.Shortcut is { } shortcut)
+                            {
+                                <span class="kbd-line">
+                                    @foreach (var k in shortcut.Split('+'))
+                                    {
+                                        <kbd>@k</kbd>
+                                    }
+                                </span>
+                            }
                         </div>
                     }
                 }
