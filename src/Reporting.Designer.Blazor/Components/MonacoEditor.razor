@@ -2,4 +2,18 @@
 @implements IAsyncDisposable
 @inject IJSRuntime Js
 
-<div id="@DomId" style="@($"width:100%;height:{Height};border:1px solid var(--border,#E5E2D9);border-radius:4px;overflow:hidden;background:var(--bg-surface,#fff);")"></div>
+@if (_fallback)
+{
+    <div class="monaco-fallback">
+        <textarea id="@DomId" class="monaco-fallback-input" style="@($"height:{Height};")"
+                  aria-label="@Label" spellcheck="false"
+                  value="@_fallbackValue" @oninput="OnFallbackInput"></textarea>
+        <p class="monaco-fallback-note" role="status">
+            Editor avançado indisponível: realce e autocompletar desativados. A edição continua valendo.
+        </p>
+    </div>
+}
+else
+{
+    <div id="@DomId" aria-label="@Label" style="@($"width:100%;height:{Height};border:1px solid var(--border,#E5E2D9);border-radius:4px;overflow:hidden;background:var(--bg-surface,#fff);")"></div>
+}
