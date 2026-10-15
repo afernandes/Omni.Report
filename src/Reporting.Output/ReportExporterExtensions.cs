@@ -71,6 +71,9 @@ public static class ReportExporterExtensions
     {
         ArgumentNullException.ThrowIfNull(exporter);
         ArgumentNullException.ThrowIfNull(report);
+        // A disposed PreparedReport reports zero pages; reading StorageBytes throws ObjectDisposedException instead,
+        // so misuse fails rather than exporting an empty document.
+        _ = report.StorageBytes;
         var range = pages ?? (report.PageCount == 0 ? default(PageRange?) : new PageRange(1, report.PageCount));
         range?.EnsureWithin(report.PageCount);
         var selected = range is { } r

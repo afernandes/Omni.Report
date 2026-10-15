@@ -62,6 +62,21 @@ public sealed class PageRangeExportTests
     }
 
     [Fact]
+    public async Task ExportAsync_RelatorioPreparadoDescartado_FalhaEmVezDeExportarVazio()
+    {
+        var built = BigReport();
+        var prepared = await new ReportPaginator().PrepareAsync(
+            new PaginationRequest { Definition = built.Definition, DataSources = built.DataSources });
+        prepared.Dispose();
+        using var output = new MemoryStream();
+
+        var act = () => new JsonExporter().ExportAsync(prepared, output);
+
+        await act.Should().ThrowAsync<ObjectDisposedException>();
+        output.Length.Should().Be(0);
+    }
+
+    [Fact]
     public async Task ExportAsync_FaixaAlemDaUltimaPagina_FalhaDizendoQuantasPaginasHa()
     {
         var report = await BigReport().PaginateAsync();
