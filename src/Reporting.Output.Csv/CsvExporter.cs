@@ -37,11 +37,27 @@ public sealed class CsvExporter : IReportExporter
     public void Export(RenderedReport report, Stream output)
     {
         using var operation = Reporting.Diagnostics.ReportTelemetry.Start("export");
-        ExportCore(report, output);
+        foreach (var _ in WriteSteps(report, output, CancellationToken.None))
+        {
+        }
         operation.Complete();
     }
 
-    private void ExportCore(RenderedReport report, Stream output)
+    /// <summary>Writes the CSV with asynchronous I/O, flushing every <see cref="RowsPerStep"/> rows and checking
+    /// <paramref name="cancellationToken"/> between them.</summary>
+    public async Task ExportAsync(RenderedReport report, Stream output, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        using var operation = Reporting.Diagnostics.ReportTelemetry.Start("export", cancellationToken);
+        await AsyncExport.WriteInStepsAsync(output, buffer => WriteSteps(report, buffer, cancellationToken),
+            cancellationToken).ConfigureAwait(false);
+        operation.Complete();
+    }
+
+    // A CSV has no pages: rows are the checkpoint. A few hundred keep the flushes few and the buffer small.
+    private const int RowsPerStep = 256;
+
+    private IEnumerable<int> WriteSteps(RenderedReport report, Stream output, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(report);
         ArgumentNullException.ThrowIfNull(output);
@@ -76,6 +92,12 @@ public sealed class CsvExporter : IReportExporter
                 // else: empty cell → emit nothing between delimiters
             }
             writer.Write(_options.LineEnding);
+            if ((r + 1) % RowsPerStep == 0)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                writer.Flush();
+                yield return r;
+            }
         }
         writer.Flush();
     }

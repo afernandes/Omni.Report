@@ -69,11 +69,22 @@ public sealed class SvgExporter : IReportExporter
     public void Export(RenderedReport report, Stream output)
     {
         using var operation = Reporting.Diagnostics.ReportTelemetry.Start("export");
-        ExportCore(report, output);
+        ExportCore(report, output, CancellationToken.None);
         operation.Complete();
     }
 
-    private void ExportCore(RenderedReport report, Stream output)
+    /// <summary>Draws the whole document on one SVG canvas, checking <paramref name="cancellationToken"/> between pages,
+    /// and copies it to <paramref name="output"/> with asynchronous I/O.</summary>
+    public async Task ExportAsync(RenderedReport report, Stream output, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        using var operation = Reporting.Diagnostics.ReportTelemetry.Start("export", cancellationToken);
+        await AsyncExport.WriteBufferedAsync(output, (buffer, token) => ExportCore(report, buffer, token),
+            cancellationToken).ConfigureAwait(false);
+        operation.Complete();
+    }
+
+    private void ExportCore(RenderedReport report, Stream output, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(report);
         ArgumentNullException.ThrowIfNull(output);
@@ -109,6 +120,7 @@ public sealed class SvgExporter : IReportExporter
             float currentY = 0f;
             for (int i = 0; i < report.Pages.Count; i++)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 var page = report.Pages[i];
                 var (w, h) = dims[i];
                 canvas.Save();
