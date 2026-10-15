@@ -3,6 +3,7 @@
 @inject IJSRuntime Js
 
 <CascadingValue Value="_menus" IsFixed="true">
+<CascadingValue Value="_focusScope" IsFixed="true">
 <CascadingValue Value="State.History">
 <div class="report-designer" tabindex="0"
      @onkeydown="OnKeyDown" @ref="_rootRef">
@@ -15,9 +16,15 @@
     }
     @if (_alert is { } alert)
     {
-        <div class="designer-alert" role="alert">
+        <div class="designer-alert @(alert.IsError ? null : "is-ok")" role="@(alert.IsError ? "alert" : "status")">
             <strong>@alert.Title</strong>
             <p>@alert.Message</p>
+            @if (alert.Details is { Count: > 0 } details)
+            {
+                <ul>
+                    @foreach (var detail in details) { <li>@detail</li> }
+                </ul>
+            }
             <button type="button" class="tb-btn" @onclick="DismissAlert">Fechar</button>
         </div>
     }
@@ -30,7 +37,7 @@
                 OnLoad="OnLoadFile"
                 OnLoadRdl="OnLoadRdlFile"
                 OnMenuCommand="OnMenuCommand"
-                Exporters="_exporterDescriptors" />
+                Commands="_commands" />
 
         <TabBar Tabs="State.Tabs"
                 ActiveTab="State.ActiveTab"
@@ -144,7 +151,8 @@
                    DataSourceCount="State.DataSources.Count" />
 
         <CommandPalette Visible="State.CommandPaletteOpen"
-                        OnClose="() => State.CommandPaletteOpen = false"
+                        OnClose="OnPaletteClosed"
+                        Commands="_commands"
                         OnExecute="OnPaletteCommand" />
 
         <PageSetupDialog Visible="_pageSetupOpen"
@@ -204,6 +212,22 @@
                               Band="_bandPropsEditing"
                               OnClose="() => _bandPropsOpen = false" />
 
+        <DesignerModal Visible="_shortcutsOpen" Title="Atalhos de teclado" HeadIcon="keyboard"
+                       CloseOnBackdrop="true" OnClose="() => _shortcutsOpen = false">
+            <table class="shortcuts-table">
+                <tbody>
+                    @foreach (var command in _commands.Where(c => c.Shortcut is not null))
+                    {
+                        <tr><td><kbd>@command.Shortcut</kbd></td><td>@command.Title</td></tr>
+                    }
+                    @foreach (var key in Reporting.Designer.Blazor.Services.DesignerCommandCatalog.CanvasKeys)
+                    {
+                        <tr><td><kbd>@key.Keys</kbd></td><td>@key.Description</td></tr>
+                    }
+                </tbody>
+            </table>
+        </DesignerModal>
+
         @* Sobre — mostra a versão REAL lida do assembly e o runtime corrente (sem strings fixas). *@
         <DesignerModal Visible="_aboutOpen" Title="Sobre o OmniReport" HeadIcon="info"
                        CloseOnBackdrop="true" OnClose="() => _aboutOpen = false">
@@ -247,4 +271,5 @@
 
 </CascadingValue>
 
+</CascadingValue>
 </CascadingValue>

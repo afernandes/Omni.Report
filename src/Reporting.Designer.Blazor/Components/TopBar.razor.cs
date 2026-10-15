@@ -27,8 +27,11 @@ public partial class TopBar
     [Parameter] public EventCallback<InputFileChangeEventArgs> OnLoad { get; set; }
     [Parameter] public EventCallback<InputFileChangeEventArgs> OnLoadRdl { get; set; }
     [Parameter] public EventCallback<string> OnMenuCommand { get; set; }
-    /// <summary>Registered exporters; the File menu lists exactly these (empty or null = no export entries).</summary>
-    [Parameter] public IReadOnlyList<Reporting.Designer.Blazor.Services.ExporterDescriptor>? Exporters { get; set; }
+    /// <summary>The Designer's command list (menus are rendered from it, grouped by <see cref="Reporting.Designer.Blazor.Services.DesignerCommand.Menu"/>).</summary>
+    [Parameter] public IReadOnlyList<Reporting.Designer.Blazor.Services.DesignerCommand> Commands { get; set; } = [];
+
+    private IEnumerable<Reporting.Designer.Blazor.Services.DesignerCommand> CommandsOf(string menu)
+        => Commands.Where(c => c.Menu == menu);
 
     private Task OnToggleThemeClicked() => OnToggleTheme.InvokeAsync();
     private Task OnOpenPaletteClicked() => OnOpenPalette.InvokeAsync();

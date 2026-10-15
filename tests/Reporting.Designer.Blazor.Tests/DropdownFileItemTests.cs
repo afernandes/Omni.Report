@@ -17,7 +17,8 @@ public class DropdownFileItemTests : Bunit.BunitContext
 
     private IRenderedComponent<TopBar> OpenArquivoMenu()
     {
-        var cut = Render<TopBar>(p => p.Add(x => x.DocumentName, "r"));
+        var cut = Render<TopBar>(p => p.Add(x => x.DocumentName, "r")
+            .Add(x => x.Commands, Reporting.Designer.Blazor.Services.DesignerCommandCatalog.Build([])));
         cut.FindAll("button.menu-item").First(b => b.TextContent.Contains("Arquivo")).Click();
         cut.FindAll(".dropdown-panel").Should().ContainSingle("the Arquivo menu is open");
         return cut;

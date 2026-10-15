@@ -28,7 +28,8 @@ public sealed class ExportFlowTests : BunitContext
             new(new SkiaPdfExporter(), "PDF", "Portable Document Format", "file-text"),
             new(new XmlExporter(), "XML", "Exportar como XML", "file-code"),
         ];
-        var topBar = Render<TopBar>(p => p.Add(x => x.Exporters, exporters).AddCascadingValue(new DesignerMenuCoordinator()));
+        var topBar = Render<TopBar>(p => p.Add(x => x.Commands, DesignerCommandCatalog.Build(exporters))
+            .AddCascadingValue(new DesignerMenuCoordinator()));
 
         topBar.FindAll("button").First(b => b.TextContent.Trim() == "Arquivo").Click();
 

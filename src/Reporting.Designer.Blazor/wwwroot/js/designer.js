@@ -624,7 +624,8 @@
             const k = ev.key.toLowerCase();
             // Letters we own at the designer level. Browser would otherwise hijack 'a'
             // (Select All on the document), 'd' (bookmark), 's' (save page), 'o' (open).
-            if (k === "a" || k === "d" || k === "s" || k === "o") {
+            // ...and 'p' (print page), 'k' (address-bar search), '/' — the Designer's print, palette and shortcuts.
+            if (k === "a" || k === "d" || k === "s" || k === "o" || k === "p" || k === "k" || k === "/") {
                 ev.preventDefault();
             }
         }
