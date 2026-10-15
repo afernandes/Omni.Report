@@ -1,9 +1,19 @@
+using System.Globalization;
 using System.Text;
+using System.Text.RegularExpressions;
 using FluentAssertions;
 using Reporting.CodeFirst;
+using Reporting.Common;
+using Reporting.Geometry;
+using Reporting.Layout;
+using Reporting.Layout.Primitives;
 using Reporting.Output;
 using Reporting.Output.Pdf;
+using Reporting.Paper;
+using Reporting.Rendering;
 using Reporting.Samples.CodeFirst.Reports;
+using Reporting.Styling;
+using SkiaSharp;
 using UglyToad.PdfPig;
 using Xunit;
 
@@ -15,8 +25,10 @@ namespace Reporting.Output.Pdf.Tests;
 /// <remarks>
 /// <para><b>Why this is a guard and not a feature.</b> The roadmap listed font embedding as missing, inferring
 /// it from <c>EmbedFont</c>/<c>FontSubset</c> having no occurrences in <c>src/</c>. Inspecting an actual export
-/// showed the opposite: Skia's PDF backend already embeds and subsets by default, so the PDFs were correct all
-/// along. What was genuinely missing is what these tests add — nothing verified it.</para>
+/// showed Skia's PDF backend does embed by default. It looked like it subsetted too — the font names carry the
+/// "ABCDEF+" prefix — but that was only the name: the libSkiaSharp on NuGet is built without HarfBuzz, so Skia
+/// embedded every font WHOLE (a one-page report weighed 1.1 MB). The exporter now subsets on its own
+/// (<c>PdfFontSubsetter</c>), and the size assertions below are what tell a real subset from a renamed full font.</para>
 ///
 /// <para>That matters because the behaviour is a <em>default</em>, not a decision this codebase makes. A Skia
 /// upgrade, a different <c>SKDocument</c> creation path or a stray option could turn it off, and the failure is
@@ -83,14 +95,202 @@ public class FontEmbeddingTests
 
         fontNames.Should().NotBeEmpty();
 
-        // PDF names a subsetted font "ABCDEF+Real-Name" — six uppercase letters and a plus. Losing the prefix
-        // means the whole font got embedded, which for a CJK or a large corporate family turns a small report
-        // into a multi-megabyte file.
+        // PDF names a subsetted font "ABCDEF+Real-Name" — six uppercase letters and a plus. The prefix is
+        // necessary but NOT sufficient: Skia writes it even when it embeds the whole font, which is why
+        // Embedded_font_programs_are_a_fraction_of_their_source_files checks the program size itself.
         foreach (var name in fontNames)
         {
             name.Should().MatchRegex("^[A-Z]{6}\\+.+",
                 $"'{name}' should be a subset — only the glyphs actually used belong in the file");
         }
+    }
+
+    /// <summary>Reads the <c>/Length1</c> of every embedded TrueType program — the size of the font file
+    /// BEFORE stream compression, which is what tells a subset apart from the whole font.</summary>
+    private static List<long> EmbeddedProgramSizes(byte[] pdf)
+        => Regex.Matches(Encoding.Latin1.GetString(pdf), @"/Length1 (\d+)")
+            .Select(m => long.Parse(m.Groups[1].Value, CultureInfo.InvariantCulture))
+            .ToList();
+
+    /// <summary>Size of each font file the report's text resolves to on this machine — what the PDF would
+    /// carry if it embedded the fonts whole. Resolved the way the renderer does, so on Linux it measures the
+    /// font that actually substitutes "Arial", not a file that is not there.</summary>
+    private static List<long> SourceFontFileSizes(RenderedReport report)
+    {
+        var sizes = new List<long>();
+        foreach (var font in report.Pages.SelectMany(p => p.Primitives).OfType<DrawTextPrimitive>()
+                     .Select(t => (t.Style.Font.Family, t.Style.Font.Style)).Distinct())
+        {
+            var style = new SKFontStyle(
+                (font.Style & FontStyle.Bold) != 0 ? SKFontStyleWeight.Bold : SKFontStyleWeight.Normal,
+                SKFontStyleWidth.Normal,
+                (font.Style & FontStyle.Italic) != 0 ? SKFontStyleSlant.Italic : SKFontStyleSlant.Upright);
+            using var typeface = SKTypeface.FromFamilyName(font.Family, style) ?? SKTypeface.Default;
+            using var stream = typeface.OpenStream(out _);
+            stream.Should().NotBeNull($"the font file behind '{font.Family}' must be readable to compare against");
+            sizes.Add(stream!.Length);
+        }
+        return sizes;
+    }
+
+    [Fact]
+    public async Task Embedded_font_programs_are_a_fraction_of_their_source_files()
+    {
+        var report = await Sample01_VendasPorCliente.Build().PaginateAsync();
+        var bytes = new SkiaPdfExporter().ExportToBytes(report);
+
+        var embedded = EmbeddedProgramSizes(bytes);
+        var sources = SourceFontFileSizes(report);
+        embedded.Should().NotBeEmpty();
+        sources.Should().NotBeEmpty();
+
+        // The "ABCDEF+" prefix asserted above is only a name: Skia writes it even when its subsetter is
+        // compiled out and the whole program goes in. The program size is the actual guarantee. A report this
+        // size uses well under a hundred glyphs of fonts that carry thousands, so each embedded program must be
+        // a small fraction of the smallest file it could have come from — a whole font fails by an order of
+        // magnitude, not by a margin a font update could cross.
+        long smallestSource = sources.Min();
+        foreach (var size in embedded)
+        {
+            size.Should().BeLessThan(smallestSource / 5,
+                $"an embedded program of {size:N0} bytes against a {smallestSource:N0}-byte source file is the whole font, not the glyphs the page uses");
+        }
+    }
+
+    [Fact]
+    public async Task One_page_report_does_not_weigh_megabytes()
+    {
+        var report = await Sample01_VendasPorCliente.Build().PaginateAsync();
+        report.PageCount.Should().Be(1, "the budget below is for a single page");
+
+        var bytes = new SkiaPdfExporter().ExportToBytes(report);
+
+        // Measured before the fix: 1,111,607 bytes, ~94% of it the two Arial programs. A one-page tabular report
+        // is text, a few lines and two subsetted fonts — 100 KB is a generous ceiling for that.
+        bytes.Length.Should().BeLessThan(100 * 1024,
+            "a one-page report that weighs over a megabyte is carrying whole font files, which turns every e-mailed invoice into an attachment problem");
+    }
+
+    /// <summary>A page that exercises what subsetting could get wrong: three styles and three sizes of one family
+    /// (one subset per style, checked at every size), accents and symbols beyond Latin-1, a character the primary
+    /// font lacks (so it falls back to another typeface, which is subsetted too), wrapping and alignment (both
+    /// computed with the substituted font) and a CR/LF line break.</summary>
+    private static RenderedReport MixedFontsReport()
+    {
+        static DrawTextPrimitive Text(string text, Font font, double top, HorizontalAlignment align) => new()
+        {
+            Text = text,
+            Bounds = new Rectangle(15.Mm(), top.Mm(), 70.Mm(), 30.Mm()),
+            Style = new TextStyle(font, Color.Black, align),
+        };
+        return new RenderedReport("Fontes mistas", new EquatableArray<RenderedPage>(
+        [
+            new RenderedPage(1, PageSetup.A4Portrait, new EquatableArray<LayoutPrimitive>(
+            [
+                Text("Relatório de Vendas — ação, café, coração", new Font("Arial", 16, FontStyle.Bold), 15, HorizontalAlignment.Left),
+                Text("Preço unitário € 12,50 · Ω · ±0,5% — texto longo que precisa quebrar em mais de uma linha",
+                    new Font("Arial", 10), 50, HorizontalAlignment.Center),
+                Text("Observação em itálico\r\nsegunda linha alinhada à direita", new Font("Arial", 7, FontStyle.Italic), 85, HorizontalAlignment.Right),
+                Text("Conferido ✓ 漢字", new Font("Arial", 10), 120, HorizontalAlignment.Left),
+            ])),
+        ]));
+    }
+
+    public static TheoryData<string> ReportsToCompare() => ["sample-01", "mixed-fonts"];
+
+    [Theory]
+    [MemberData(nameof(ReportsToCompare))]
+    public async Task Subsetting_does_not_move_a_single_glyph(string which)
+    {
+        var report = which == "sample-01"
+            ? await Sample01_VendasPorCliente.Build().PaginateAsync()
+            : MixedFontsReport();
+        var fixedDate = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        var subsetted = new SkiaPdfExporter(new PdfExportOptions { CreationDate = fixedDate }).ExportToBytes(report);
+        var whole = new SkiaPdfExporter(new PdfExportOptions { CreationDate = fixedDate, SubsetFonts = false }).ExportToBytes(report);
+
+        // The subsets are drawn in place of the system typefaces — wrapping, alignment and glyph positions are all
+        // recomputed with them. The layout engine measured with the originals, so anything but an exact match would
+        // put text somewhere other than where pagination decided it fits. Start and end of each glyph's baseline pin
+        // both its position and its advance.
+        //
+        // BoundingBox is deliberately NOT compared: PdfPig derives it from the embedded program, and the whole-font
+        // export cannot be read there when the fallback font lives in a collection (Windows' CJK fallback, Yu Gothic,
+        // is a .ttc) — Skia embedded the entire collection as /FontFile2, which is not a valid TrueType program. The
+        // subset is a single face, so it is the only side of this comparison whose outlines are readable at all.
+        using var expected = PdfDocument.Open(whole);
+        using var actual = PdfDocument.Open(subsetted);
+        actual.NumberOfPages.Should().Be(expected.NumberOfPages);
+        for (int number = 1; number <= expected.NumberOfPages; number++)
+        {
+            actual.GetPage(number).Letters.Select(l => new { l.Value, l.StartBaseLine, l.EndBaseLine, l.FontName, l.FontSize })
+                .Should().Equal(expected.GetPage(number).Letters.Select(l => new { l.Value, l.StartBaseLine, l.EndBaseLine, l.FontName, l.FontSize }),
+                    $"page {number} must look the same whether its fonts are embedded whole or subsetted");
+        }
+        subsetted.Length.Should().BeLessThan(whole.Length / 5, "otherwise the subsets were not used");
+    }
+
+    private static RenderedReport SingleTextReport(string text, string family) => new("Texto", new EquatableArray<RenderedPage>(
+    [
+        new RenderedPage(1, PageSetup.A4Portrait, new EquatableArray<LayoutPrimitive>(
+        [
+            new DrawTextPrimitive
+            {
+                Text = text,
+                Bounds = new Rectangle(15.Mm(), 20.Mm(), 120.Mm(), 30.Mm()),
+                Style = new TextStyle(new Font(family, 20), Color.Black),
+            },
+        ])),
+    ]));
+
+    private static (UglyToad.PdfPig.Content.Letter[] Subsetted, UglyToad.PdfPig.Content.Letter[] Whole) ExportBothWays(RenderedReport report)
+    {
+        var fixedDate = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        using var subsetted = PdfDocument.Open(new SkiaPdfExporter(new PdfExportOptions { CreationDate = fixedDate }).ExportToBytes(report));
+        using var whole = PdfDocument.Open(new SkiaPdfExporter(new PdfExportOptions { CreationDate = fixedDate, SubsetFonts = false }).ExportToBytes(report));
+        return (subsetted.GetPage(1).Letters.ToArray(), whole.GetPage(1).Letters.ToArray());
+    }
+
+    [Fact]
+    public void Character_no_font_covers_still_shows_the_missing_glyph_box()
+    {
+        // U+FDD0 is a noncharacter: no font maps it, so the renderer draws the primary font's .notdef — the box that
+        // tells the reader something is missing. HarfBuzz's default subset keeps .notdef's advance but drops its
+        // outline, which turns that box into blank space with the same width: positions match, the warning is gone.
+        SKFontManager.Default.MatchCharacter(0xFDD0).Should().BeNull("the test needs a character no installed font covers");
+        var (subsetted, whole) = ExportBothWays(SingleTextReport("A﷐B", "Arial"));
+
+        var missing = whole[1];
+        missing.BoundingBox.Height.Should().BeGreaterThan(0, "precondition: the whole font draws a visible .notdef");
+        subsetted.Select(l => new { l.Value, l.StartBaseLine, l.EndBaseLine, l.BoundingBox })
+            .Should().Equal(whole.Select(l => new { l.Value, l.StartBaseLine, l.EndBaseLine, l.BoundingBox }),
+                "the missing-glyph marker must be drawn the same whether the font is subsetted or embedded whole");
+    }
+
+    [Theory]
+    [InlineData(0xD800)] // lone high surrogate
+    [InlineData(0xDC00)] // lone low surrogate
+    public void Lone_surrogate_draws_the_same_replacement_glyph_with_and_without_subsetting(int surrogate)
+    {
+        // Built here, not passed as a string: xUnit serializes theory data, and that round trip would already have
+        // replaced the lone surrogate with U+FFFD — testing the valid character instead of the broken one.
+        string text = $"A{(char)surrogate}B";
+
+        // The renderer encodes text as UTF-8 to draw it, which turns an unpaired surrogate into U+FFFD — so U+FFFD is
+        // the glyph on the page, and the subset must carry it. Arial has no U+FFFD (it would draw .notdef either
+        // way), so the test uses whichever family the OS picks for U+FFFD: Segoe UI on Windows, DejaVu Sans on Linux.
+        using var replacementFont = SKFontManager.Default.MatchCharacter(0xFFFD);
+        replacementFont.Should().NotBeNull("the test needs an installed font with a U+FFFD glyph");
+        using (var probe = new SKFont(SKTypeface.FromFamilyName(replacementFont!.FamilyName), 20))
+        {
+            probe.GetGlyph(0xFFFD).Should().NotBe((ushort)0, $"precondition: '{replacementFont.FamilyName}' resolves to a typeface that has U+FFFD");
+        }
+
+        var (subsetted, whole) = ExportBothWays(SingleTextReport(text, replacementFont.FamilyName));
+
+        subsetted.Select(l => new { l.Value, l.StartBaseLine, l.EndBaseLine, l.FontName })
+            .Should().Equal(whole.Select(l => new { l.Value, l.StartBaseLine, l.EndBaseLine, l.FontName }),
+                "an unpaired surrogate must come out as the same replacement glyph, with the same advance, either way");
     }
 
     [Fact]

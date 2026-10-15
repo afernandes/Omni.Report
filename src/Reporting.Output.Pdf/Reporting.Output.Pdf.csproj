@@ -17,6 +17,12 @@
 
   <ItemGroup>
     <PackageReference Include="SkiaSharp" />
+    <!-- Subsetting de fontes. O libSkiaSharp distribuído é compilado SEM HarfBuzz, então o subsetter interno do
+         Skia (SkPDFSubsetFont) é o stub que devolve nulo e o PDF embutia cada fonte INTEIRA — mesmo com o prefixo
+         "ABCDEF+" no nome. O nativo do HarfBuzzSharp traz o hb-subset; o wrapper gerenciado não o expõe, por isso
+         HarfBuzzSubsetter chama a API C diretamente. O pacote de Linux é à parte, como o do SkiaSharp. -->
+    <PackageReference Include="HarfBuzzSharp" />
+    <PackageReference Include="HarfBuzzSharp.NativeAssets.Linux" />
   </ItemGroup>
 
 </Project>
