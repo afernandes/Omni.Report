@@ -84,7 +84,7 @@ Os problemas que restam são de cinco tipos:
 | 3 | `Style.Border` não desenhada em Label/TextBox/Image; grade do Tablix com cor fixa | Fidelidade | M | ✅ | R2 #21a |
 | 4 | `CornerRadius` descartado em retângulo sem filhos | Fidelidade | P | ✅ | R2 #21b |
 | 5 | Export RDL perde `ToggleItem` e `InitiallyHidden` (perda conhecida, registrada na rede de paridade) | Perda de dados | P | ✅ | R2 #12 |
-| 6 | Designer: desfazer uma inserção deixa o elemento removido **selecionado e editável** | Bug | P | 🧪 | novo |
+| 6 | Designer: desfazer uma inserção deixa o elemento removido **selecionado e editável** — **✔ FEITO (#277)** | Bug | P | 🧪 | novo |
 | 7 | Exportação no Designer: menu fixo divergente do registro, falha silenciosa, cliques perdidos | Bug | P | 🧪 | novo |
 | 8 | Documentação afirma o que não é mais verdade (README, badges, evidências não versionadas) | Doc | P | ✅ | novo |
 
@@ -281,7 +281,7 @@ de `CommonLossy` — a rede passa a garantir que a perda não volte.
 
 ---
 
-### 6. Designer: desfazer inserção deixa um elemento "fantasma" 🧪
+### 6. Designer: desfazer inserção deixa um elemento "fantasma" 🧪 — ✔ FEITO
 
 **O problema.** Reproduzido no navegador: inserir um Código de barras pela toolbar → **Desfazer**. O canvas volta
 a ter 18 elementos, mas a barra de status continua com "Seleção: 1 elemento" e o painel de propriedades segue
@@ -296,6 +296,11 @@ comandos.
 reselecionar os que voltaram). Teste bUnit: inserir → desfazer → seleção vazia e painel sem elemento.
 
 **Pronto quando:** desfazer qualquer inserção, colagem ou duplicação deixa a seleção consistente com o canvas.
+
+**FEITO (#277).** Em vez de corrigir comando a comando, o `DesignerState` ouve o histórico da aba ativa e, após
+cada mudança, retira da seleção o que saiu do documento — inserção ou colagem desfeita, exclusão refeita, filhos
+de um container removido —, mantendo selecionado o que continua lá. Assim um comando novo não precisa lembrar de
+limpar a seleção. `SelectionHistoryTests` cobre os quatro casos; sem a assinatura do histórico, os quatro falham.
 
 ---
 
@@ -914,6 +919,7 @@ movimento de arquivos, e 31. O restante do item 26 (`designer.js`, `ElementViewM
 | F01–F27 da auditoria técnica | Ver `docs/correcoes-f01-f27-2026-09-08.md` | #260 |
 | Seis recomendações pós-auditoria + F28 | Preview sob demanda, limites, F24/F25, cache limitado, isolamento do designer, telemetria, um tipo por arquivo | #270 |
 | Advisories do `System.Security.Cryptography.Pkcs` | Pin na 10.0.13 | #271 |
+| Item 6 — elemento-fantasma selecionado após desfazer | Seleção podada a cada mudança do histórico | #277 |
 
 **Lições que valem para os próximos itens:**
 
