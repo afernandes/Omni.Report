@@ -229,6 +229,69 @@ public class FontEmbeddingTests
         subsetted.Length.Should().BeLessThan(whole.Length / 5, "otherwise the subsets were not used");
     }
 
+    private static RenderedReport SingleTextReport(string text, string family) => new("Texto", new EquatableArray<RenderedPage>(
+    [
+        new RenderedPage(1, PageSetup.A4Portrait, new EquatableArray<LayoutPrimitive>(
+        [
+            new DrawTextPrimitive
+            {
+                Text = text,
+                Bounds = new Rectangle(15.Mm(), 20.Mm(), 120.Mm(), 30.Mm()),
+                Style = new TextStyle(new Font(family, 20), Color.Black),
+            },
+        ])),
+    ]));
+
+    private static (UglyToad.PdfPig.Content.Letter[] Subsetted, UglyToad.PdfPig.Content.Letter[] Whole) ExportBothWays(RenderedReport report)
+    {
+        var fixedDate = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        using var subsetted = PdfDocument.Open(new SkiaPdfExporter(new PdfExportOptions { CreationDate = fixedDate }).ExportToBytes(report));
+        using var whole = PdfDocument.Open(new SkiaPdfExporter(new PdfExportOptions { CreationDate = fixedDate, SubsetFonts = false }).ExportToBytes(report));
+        return (subsetted.GetPage(1).Letters.ToArray(), whole.GetPage(1).Letters.ToArray());
+    }
+
+    [Fact]
+    public void Character_no_font_covers_still_shows_the_missing_glyph_box()
+    {
+        // U+FDD0 is a noncharacter: no font maps it, so the renderer draws the primary font's .notdef — the box that
+        // tells the reader something is missing. HarfBuzz's default subset keeps .notdef's advance but drops its
+        // outline, which turns that box into blank space with the same width: positions match, the warning is gone.
+        SKFontManager.Default.MatchCharacter(0xFDD0).Should().BeNull("the test needs a character no installed font covers");
+        var (subsetted, whole) = ExportBothWays(SingleTextReport("A﷐B", "Arial"));
+
+        var missing = whole[1];
+        missing.BoundingBox.Height.Should().BeGreaterThan(0, "precondition: the whole font draws a visible .notdef");
+        subsetted.Select(l => new { l.Value, l.StartBaseLine, l.EndBaseLine, l.BoundingBox })
+            .Should().Equal(whole.Select(l => new { l.Value, l.StartBaseLine, l.EndBaseLine, l.BoundingBox }),
+                "the missing-glyph marker must be drawn the same whether the font is subsetted or embedded whole");
+    }
+
+    [Theory]
+    [InlineData(0xD800)] // lone high surrogate
+    [InlineData(0xDC00)] // lone low surrogate
+    public void Lone_surrogate_draws_the_same_replacement_glyph_with_and_without_subsetting(int surrogate)
+    {
+        // Built here, not passed as a string: xUnit serializes theory data, and that round trip would already have
+        // replaced the lone surrogate with U+FFFD — testing the valid character instead of the broken one.
+        string text = $"A{(char)surrogate}B";
+
+        // The renderer encodes text as UTF-8 to draw it, which turns an unpaired surrogate into U+FFFD — so U+FFFD is
+        // the glyph on the page, and the subset must carry it. Arial has no U+FFFD (it would draw .notdef either
+        // way), so the test uses whichever family the OS picks for U+FFFD: Segoe UI on Windows, DejaVu Sans on Linux.
+        using var replacementFont = SKFontManager.Default.MatchCharacter(0xFFFD);
+        replacementFont.Should().NotBeNull("the test needs an installed font with a U+FFFD glyph");
+        using (var probe = new SKFont(SKTypeface.FromFamilyName(replacementFont!.FamilyName), 20))
+        {
+            probe.GetGlyph(0xFFFD).Should().NotBe((ushort)0, $"precondition: '{replacementFont.FamilyName}' resolves to a typeface that has U+FFFD");
+        }
+
+        var (subsetted, whole) = ExportBothWays(SingleTextReport(text, replacementFont.FamilyName));
+
+        subsetted.Select(l => new { l.Value, l.StartBaseLine, l.EndBaseLine, l.FontName })
+            .Should().Equal(whole.Select(l => new { l.Value, l.StartBaseLine, l.EndBaseLine, l.FontName }),
+                "an unpaired surrogate must come out as the same replacement glyph, with the same advance, either way");
+    }
+
     [Fact]
     public async Task Text_stays_extractable_after_embedding()
     {

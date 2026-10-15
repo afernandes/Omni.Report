@@ -36,7 +36,8 @@ public static partial class SkiaPrimitiveRenderer
     /// later reaches for. Line breaks are not reported: <c>DrawText</c> splits on them and never draws them.</remarks>
     /// <param name="text">The text, as a <c>DrawText</c> call would receive it.</param>
     /// <param name="font">The font the text is styled with. Its size is irrelevant to coverage.</param>
-    /// <param name="use">Called once per drawn character with the typeface and the Unicode codepoint.</param>
+    /// <param name="use">Called once per drawn character with the typeface and the Unicode scalar value drawn — an
+    /// unpaired surrogate is reported as U+FFFD, the replacement character it is drawn as.</param>
     public static void CollectTypefaceUsage(string text, Reporting.Styling.Font font, Action<SKTypeface, int> use)
     {
         ArgumentNullException.ThrowIfNull(text);
@@ -54,7 +55,11 @@ public static partial class SkiaPrimitiveRenderer
             while (i < line.Length)
             {
                 int codepoint = ReadCodepoint(line, i, out int charsConsumed);
-                use(ResolveTypeface(primary, codepoint, null), codepoint);
+                // The typeface is chosen by the codepoint as written, exactly like BuildTextRuns does. But the glyph
+                // drawn for a lone surrogate is U+FFFD — DrawUnicodeText encodes the run as UTF-8, which replaces
+                // it — so that is the character the typeface has to provide.
+                int drawn = System.Text.Rune.IsValid(codepoint) ? codepoint : System.Text.Rune.ReplacementChar.Value;
+                use(ResolveTypeface(primary, codepoint, null), drawn);
                 i += charsConsumed;
             }
         }

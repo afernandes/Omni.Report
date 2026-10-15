@@ -177,11 +177,9 @@ internal sealed class PdfFontSubsetter : IDisposable
         var text = new StringBuilder(usage.Codepoints.Count * 2);
         foreach (var codepoint in usage.Codepoints)
         {
-            // A lone surrogate is collected as itself (the renderer draws it as .notdef) but is not a scalar value.
-            if (Rune.IsValid(codepoint))
-            {
-                text.Append(char.ConvertFromUtf32(codepoint));
-            }
+            // CollectTypefaceUsage reports scalar values only (an unpaired surrogate arrives as U+FFFD), so each one
+            // converts — and the replacement glyph gets checked like any other.
+            text.Append(char.ConvertFromUtf32(codepoint));
         }
         var characters = text.ToString();
         foreach (var size in usage.Sizes)
