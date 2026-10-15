@@ -509,8 +509,10 @@ substitui** log de erro com mensagem e exceção.
 sem dados do relatório. Para o Designer, o mesmo erro vai ao log **e** à UI (item 7).
 
 **FEITO (#283).** Os seis pontos viraram eventos `[LoggerMessage]` com `EventId` fixo (`DesignerLog`), resolvidos de
-forma opcional — sem logging configurado, `NullLogger`. Os templates levam só a operação e, na exportação, o formato;
-um teste garante que o nome do relatório não vaza para o log. Abrir `.repx` e importar `.rdl` também falhavam em
+forma opcional — sem logging configurado, `NullLogger`. Os templates levam só a operação e, na exportação, o formato.
+A revisão apontou que encaminhar a exceção ao logger vazava conteúdo mesmo assim (uma `ExpressionEvaluationException`
+cita a expressão inteira, e o provedor persiste o objeto): agora só vai a cadeia de tipos da exceção, e o teste usa uma
+exceção com conteúdo sensível e confere mensagem, estado estruturado e ausência do objeto. Abrir `.repx` e importar `.rdl` também falhavam em
 silêncio para o autor e passaram a usar o alerta do item 7. A biblioteca fora do Designer não ganhou log: ela devolve
 diagnósticos (`RenderedReport.Diagnostics`, `ExportWarning`) e telemetria, que é o canal certo para quem a consome.
 

@@ -43,8 +43,12 @@ public sealed class DesignerLoggingTests : BunitContext
         var entry = _logs.Entries.Single(e => e.EventId == 4);
         entry.Level.Should().Be(LogLevel.Error);
         entry.State.Should().Contain(new KeyValuePair<string, object?>("Format", "quebrado"));
-        entry.Exception.Should().BeOfType<IOException>();
-        entry.Message.Should().NotContain("Maria", "log events carry no report content");
+        entry.State.Should().Contain(new KeyValuePair<string, object?>("ExceptionType",
+            "System.IO.IOException <- System.InvalidOperationException"));
+        entry.Exception.Should().BeNull("a provider would persist the exception object, message included");
+        var everything = entry.Message + string.Join("|", entry.State.Select(kv => $"{kv.Key}={kv.Value}"));
+        everything.Should().NotContain("Maria").And.NotContain("Fields.Salario",
+            "neither the report name nor the expression quoted in the exception may reach the log");
     }
 
     [Fact]
@@ -59,7 +63,7 @@ public sealed class DesignerLoggingTests : BunitContext
 
         designer.WaitForAssertion(() =>
             designer.Find(".designer-alert").TextContent.Should().Contain("corrompido.repx"), TimeSpan.FromSeconds(5));
-        _logs.Entries.Should().ContainSingle(e => e.EventId == 1 && e.Exception != null);
+        _logs.Entries.Should().ContainSingle(e => e.EventId == 1 && e.Exception == null);
     }
 
     private sealed class FailingExporter : Reporting.Output.IReportExporter
@@ -67,7 +71,10 @@ public sealed class DesignerLoggingTests : BunitContext
         public string Format => "quebrado";
         public string FileExtension => ".bin";
         public string ContentType => "application/octet-stream";
-        public void Export(RenderedReport report, Stream output) => throw new IOException("disco cheio");
+        // The message quotes report content on purpose, as an expression-evaluation failure would.
+        public void Export(RenderedReport report, Stream output) => throw new IOException(
+            "disco cheio ao gravar o holerite de Maria Souza",
+            new InvalidOperationException("Fields.Salario * 1.1 falhou"));
     }
 
     private sealed record LogEntry(int EventId, LogLevel Level, string Message, Exception? Exception,
