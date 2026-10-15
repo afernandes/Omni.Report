@@ -195,6 +195,9 @@ public sealed class DesignerState : Notifying
         ArgumentNullException.ThrowIfNull(newReport);
         UnsubscribeTab(_activeTab);
         _activeTab.Report = newReport;
+        // The tab is named after what it holds: opening "Vendas por Cliente" must not leave it as "Untitled.repx".
+        // A file opened from disk is renamed to the file's own name afterwards (see ReportDesigner.OnLoadFile).
+        _activeTab.FileName = (string.IsNullOrWhiteSpace(newReport.Name) ? "Untitled" : newReport.Name) + ".repx";
         SubscribeTab(_activeTab);
         ClearSelection();
         ActiveBand = null;

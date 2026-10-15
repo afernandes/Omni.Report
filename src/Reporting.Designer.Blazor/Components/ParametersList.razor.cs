@@ -23,6 +23,9 @@ public partial class ParametersList
     [Parameter] public EventCallback OnAdd { get; set; }
     [Parameter] public EventCallback<DesignerParameter> OnRemove { get; set; }
 
+    // A literal newline: written as "&#10;" in the markup, Razor encodes the ampersand and the box shows the entity.
+    private const string AvailableValuesPlaceholder = "1|Ativo\n0|Inativo";
+
     private static DesignerFieldType ParseType(string? v)
         => Enum.TryParse<DesignerFieldType>(v, out var t) ? t : DesignerFieldType.Text;
 }
