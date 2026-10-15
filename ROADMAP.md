@@ -80,11 +80,11 @@ Os problemas que restam são de cinco tipos:
 | # | Item | Tipo | Esforço | Conf. | Origem |
 |---|---|---|---|---|---|
 | 1 | PDF embute as fontes **inteiras** — sem subsetting real (1 página = 1,1 MB) | Fidelidade/Perf | M | 🧪 | R2 #23 reaberto |
-| 2 | `RowSpan` aceito, persistido e **ignorado** pelo renderer do Tablix | Fidelidade | M | ✅ | R2 #36 |
+| 2 | `RowSpan` aceito, persistido e **ignorado** pelo renderer do Tablix — **✔ FEITO (#274)** | Fidelidade | M | ✅ | R2 #36 |
 | 3 | `Style.Border` não desenhada em Label/TextBox/Image; grade do Tablix com cor fixa | Fidelidade | M | ✅ | R2 #21a |
 | 4 | `CornerRadius` descartado em retângulo sem filhos | Fidelidade | P | ✅ | R2 #21b |
 | 5 | Export RDL perde `ToggleItem` e `InitiallyHidden` (perda conhecida, registrada na rede de paridade) — **✔ FEITO (#276)** | Perda de dados | P | ✅ | R2 #12 |
-| 6 | Designer: desfazer uma inserção deixa o elemento removido **selecionado e editável** | Bug | P | 🧪 | novo |
+| 6 | Designer: desfazer uma inserção deixa o elemento removido **selecionado e editável** — **✔ FEITO (#277)** | Bug | P | 🧪 | novo |
 | 7 | Exportação no Designer: menu fixo divergente do registro, falha silenciosa, cliques perdidos | Bug | P | 🧪 | novo |
 | 8 | Documentação afirma o que não é mais verdade (README, badges, evidências não versionadas) | Doc | P | ✅ | novo |
 
@@ -203,7 +203,7 @@ falha se o embutimento voltar a ser completo.
 
 ---
 
-### 2. `RowSpan` aceito, persistido e ignorado pelo renderer ✅
+### 2. `RowSpan` aceito, persistido e ignorado pelo renderer ✅ — ✔ FEITO
 
 **O problema.** `TablixCell` declara `ColumnSpan` e `RowSpan` (`src/Reporting.Core/Elements/TablixCell.cs:7-11`).
 Os dois são lidos e gravados pelos serializadores (`RepxWriter.cs:770`, `RepxReader.cs:531`,
@@ -222,6 +222,19 @@ na validação da definição em vez de aceitar em silêncio. Os casos de `Stati
 item 49.
 
 **Pronto quando:** um Tablix com `RowSpan = 2` gera uma célula com o dobro da altura nos golden files, nos 3 modos.
+
+**FEITO (#274) — pela segunda alternativa da Ação, e por um motivo que a revisão não tinha visto.** Implementar o
+span exigiria primeiro algo onde ele atuar: o Tablix plano tem exatamente **duas linhas-modelo** (0 = cabeçalho,
+1 = detalhe repetido por registro) e a matriz lê só o canto e a primeira célula do corpo. Mesclar verticalmente
+só faz sentido com cabeçalhos de várias linhas estáticas — que não existem no modelo e são o item 49. O mesmo
+levantamento achou uma segunda perda silenciosa da mesma origem: **células além da linha 1** numa tabela plana
+também nunca eram desenhadas.
+
+`RenderedReport.Diagnostics` passa a trazer **`ORL025`** nos dois casos (`Tablix[nome].RowSpan` e
+`Tablix[nome].TemplateRows`), percorrendo a definição e os subrelatórios inline e resolvidos
+(`ReportPaginator.Diagnostics.cs`). O Designer já exibe os diagnósticos no preview. Verificado por
+`TablixRowDiagnosticsTests` (4 casos, incluindo o negativo — tabela válida não gera ruído) e por sabotagem: sem a
+inspeção, os 3 casos positivos falham. Quando o item 49 entrar, o `RowSpan` ganha onde atuar e o diagnóstico sai.
 
 ---
 
@@ -294,7 +307,7 @@ testes falham — inclusive a própria rede, que agora impede a perda de voltar.
 
 ---
 
-### 6. Designer: desfazer inserção deixa um elemento "fantasma" 🧪
+### 6. Designer: desfazer inserção deixa um elemento "fantasma" 🧪 — ✔ FEITO
 
 **O problema.** Reproduzido no navegador: inserir um Código de barras pela toolbar → **Desfazer**. O canvas volta
 a ter 18 elementos, mas a barra de status continua com "Seleção: 1 elemento" e o painel de propriedades segue
@@ -309,6 +322,11 @@ comandos.
 reselecionar os que voltaram). Teste bUnit: inserir → desfazer → seleção vazia e painel sem elemento.
 
 **Pronto quando:** desfazer qualquer inserção, colagem ou duplicação deixa a seleção consistente com o canvas.
+
+**FEITO (#277).** Em vez de corrigir comando a comando, o `DesignerState` ouve o histórico da aba ativa e, após
+cada mudança, retira da seleção o que saiu do documento — inserção ou colagem desfeita, exclusão refeita, filhos
+de um container removido —, mantendo selecionado o que continua lá. Assim um comando novo não precisa lembrar de
+limpar a seleção. `SelectionHistoryTests` cobre os quatro casos; sem a assinatura do histórico, os quatro falham.
 
 ---
 
@@ -826,7 +844,8 @@ Query Designer (SSRS) e do Crystal.
 ### 49. `StaticMember`/`DynamicMember` no Tablix 🔍
 
 Último gap estrutural conhecido do Tablix (`docs/rdl-compatibility-gaps.md`). O caso comum (coluna fixa "Total")
-já é coberto por `ColumnSubtotals`. Definir a semântica antes de implementar. O `RowSpan` saiu daqui para o item 2.
+já é coberto por `ColumnSubtotals`. Definir a semântica antes de implementar. É também o que dá ao `RowSpan`
+onde atuar: hoje ele gera o diagnóstico `ORL025` (item 2), que deve sair quando as linhas estáticas existirem.
 
 ### 50. Site de documentação + troubleshooting ✅
 
@@ -924,10 +943,12 @@ movimento de arquivos, e 31. O restante do item 26 (`designer.js`, `ElementViewM
 | R2 #21 — perda do "inherit" de `ForeColor`/`Font` | O VM lembra que o modelo dizia "herdar" e devolve `null` | #222 |
 | R2 #23 — garantia de fontes no PDF | Teste de embutimento — **reaberto** como item 1 (não mede subsetting) | #248 |
 | R2 #30a / #30b — SkiaSharp 4 e NCalc 7 | Migrações com teste da garantia semântica antes | #253, #254, #269 |
+| Item 2 — `RowSpan` e linhas-modelo extras descartados sem aviso | Diagnóstico `ORL025` (o span depende do item 49) | #274 |
 | F01–F27 da auditoria técnica | Ver `docs/correcoes-f01-f27-2026-09-08.md` | #260 |
 | Seis recomendações pós-auditoria + F28 | Preview sob demanda, limites, F24/F25, cache limitado, isolamento do designer, telemetria, um tipo por arquivo | #270 |
 | Item 5 — export RDL sem `ToggleItem`/`InitiallyHidden` | `<Visibility>` completa + `omni:Visible`; fora da lista de perdas | #276 |
 | Advisories do `System.Security.Cryptography.Pkcs` | Pin na 10.0.13 | #271 |
+| Item 6 — elemento-fantasma selecionado após desfazer | Seleção podada a cada mudança do histórico | #277 |
 
 **Lições que valem para os próximos itens:**
 
