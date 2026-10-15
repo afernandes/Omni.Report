@@ -105,8 +105,8 @@ Os problemas que restam são de cinco tipos:
 
 | # | Item | Tipo | Esforço | Conf. | Origem |
 |---|---|---|---|---|---|
-| 16 | Paleta de comandos com 13 de ~40 comandos e campo de busca sem foco | UX | P | 🧪 | novo |
-| 17 | Menus incompletos e enganosos ("Inserir" com 6 de ~19 tipos; "Validar" = preview; "Atalhos" = paleta) | UX | P | 🧪 | novo |
+| 16 | Paleta de comandos com 13 de ~40 comandos e campo de busca sem foco — **✔ FEITO (#284)** | UX | P | 🧪 | novo |
+| 17 | Menus incompletos e enganosos ("Inserir" com 6 de ~19 tipos; "Validar" = preview; "Atalhos" = paleta) — **✔ FEITO (#284)** | UX | P | 🧪 | novo |
 | 18 | Tema escuro escurece o papel — o texto preto do relatório some | UX/Fidelidade | P | 🧪 | novo |
 | 19 | Designer não cria fontes JSON, XML, REST nem FileSystem (paridade dos 3 modos) | Paridade | M | 🧪 | novo |
 | 20 | Sem layout responsivo: abaixo de ~1.280 px o painel de propriedades sai da tela | UX | M | 🧪 | novo |
@@ -552,7 +552,7 @@ setas, inserir pela toolbar (5 tipos), recortar/copiar/colar/excluir, desfazer/r
 grade/snap/régua, tema, diálogos de parâmetros, fonte de dados (8 abas), configuração de página e impressão,
 editor de expressões com Monaco, preview e exportação nos 9 formatos.
 
-### 16. Paleta de comandos incompleta e sem foco 🧪
+### 16. Paleta de comandos incompleta e sem foco 🧪 — ✔ FEITO
 
 A paleta lista **13** comandos fixos ("13 resultados"); existem ~40 comandos tratados no despacho
 (`ReportDesigner.razor.cs`, ~60 `case`). Ficam de fora alinhamento, distribuição, camadas, exportações, zoom,
@@ -565,7 +565,7 @@ Ctrl+K, o texto digitado **não vai para a busca**.
 
 ---
 
-### 17. Menus incompletos e enganosos 🧪
+### 17. Menus incompletos e enganosos 🧪 — ✔ FEITO
 
 - **Inserir** oferece 6 tipos (TextBox, Label, Linha, Retângulo, Imagem, Código de barras); a Toolbox oferece
   ~19 (Elipse, QR, Tabela, Chart, Gauge, Sparkline, Map, DataBar, Indicator, Subreport, Code, Nº Página…).
@@ -579,6 +579,16 @@ Ctrl+K, o texto digitado **não vai para a busca**.
 
 **Ação.** Menus gerados do mesmo registro de comandos do item 16; validação real (compilar todas as expressões
 e listar erros com localização, sem executar); diálogo de atalhos de verdade.
+
+**FEITO (#284), junto com o item 16.** `DesignerCommandCatalog` é a lista única de menus, paleta e diálogo de atalhos;
+a paleta passou a chamar o mesmo despacho dos menus (o dela era uma cópia parcial, com "Abrir .repx…" sem `case` — um
+comando morto) e um id desconhecido vira alerta em vez de nada. Inserir é gerado da toolbox (17 tipos) e há um menu
+Organizar novo. A busca da paleta recebe foco com `FocusAsync`. "Validar expressões" lista cada elemento com problema
+usando as mesmas regras do contador da barra de status — que, conferido, era real e não fixo. O levantamento achou mais
+um caso do mesmo padrão: os menus anunciavam Ctrl+N, Ctrl+P, Ctrl+Shift+S, Ctrl+Shift+L e Ctrl+/, e nenhum tratador
+implementava; os interceptáveis foram implementados e o Ctrl+N saiu da lista, porque o Chrome não o entrega à página.
+O teste que mais protege daqui em diante executa todos os ~70 comandos do registro pela paleta e falha se algum não
+for roteado.
 
 ---
 
@@ -994,6 +1004,7 @@ movimento de arquivos, e 31. O restante do item 26 (`designer.js`, `ElementViewM
 | Item 5 — export RDL sem `ToggleItem`/`InitiallyHidden` | `<Visibility>` completa + `omni:Visible`; fora da lista de perdas | #276 |
 | Advisories do `System.Security.Cryptography.Pkcs` | Pin na 10.0.13 | #271 |
 | Item 6 — elemento-fantasma selecionado após desfazer | Seleção podada a cada mudança do histórico | #277 |
+| Itens 16 e 17 — paleta e menus incompletos, atalhos anunciados sem tratador | Registro único de comandos; Validar e Atalhos reais | #284 |
 | Item 7 — exportação no Designer sem registro, sem erro visível e com cliques perdidos | Menu do registro, alerta de falha, estado ocupado | #280 |
 
 **Lições que valem para os próximos itens:**
