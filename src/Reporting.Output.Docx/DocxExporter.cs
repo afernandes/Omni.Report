@@ -86,7 +86,7 @@ public sealed class DocxExporter : IReportExporter
         var grid = LayoutPrimitiveGrid.Build(gridReport);
         if (grid.Rows.Count > 0)
         {
-            body.AppendChild(BuildTable(grid));
+            body.AppendChild(BuildTable(grid, cancellationToken));
         }
 
         // Inline raster images (logo/photo/signature) — emitted as standalone paragraphs after the table.
@@ -111,6 +111,7 @@ public sealed class DocxExporter : IReportExporter
         {
             foreach (var (region, prims) in VisualRegions(report, visualIds))
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 var png = Reporting.Output.Image.RegionRasterizer.RenderRegionPng(prims, region, _options.RasterizeDpi);
                 var synthetic = new DrawImagePrimitive
                 {
@@ -185,7 +186,7 @@ public sealed class DocxExporter : IReportExporter
 
     // ── Table writer ──────────────────────────────────────────────────────────────
 
-    private static Table BuildTable(LayoutPrimitiveGrid grid)
+    private static Table BuildTable(LayoutPrimitiveGrid grid, CancellationToken cancellationToken)
     {
         int columnCount = grid.ColumnCount;
 
@@ -213,6 +214,7 @@ public sealed class DocxExporter : IReportExporter
 
         foreach (var gridRow in grid.Rows)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             var tr = new TableRow();
             for (int col = 0; col < columnCount; col++)
             {

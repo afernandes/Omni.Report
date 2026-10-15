@@ -27,6 +27,9 @@ API de baixo nível e Designer), com serialização e testes junto. As entradas 
 - **Execução e memória:** documento preparado em arquivo temporário (`PrepareAsync`), emissão progressiva de
   páginas (`StreamPagesAsync`), `PaginationLimits` opcionais, preview do designer sob demanda com cache de três
   páginas, cache limitado de caminhos de propriedade e telemetria `Activity`/`Meter` por fase (#270).
+- **`ExportAsync` real:** CSV, JSON, XML, HTML, Markdown, SVG, DOCX e XLSX escrevem no destino só com E/S
+  assíncrona e param entre páginas quando cancelados; `AsyncExport` oferece os mesmos padrões a exportadores de
+  terceiros (#291).
 - **Exportação por faixa:** `PageRange` e `ExportAsync(..., PageRange)` para qualquer exportador; sobre um
   `PreparedReport`, só as páginas pedidas são lidas (#290).
 - **Saída correta:** a borda (`Style.Border`) passa a ser desenhada em qualquer elemento e em cada fatia de um Tablix

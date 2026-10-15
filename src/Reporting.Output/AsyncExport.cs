@@ -28,6 +28,9 @@ public static class AsyncExport
         {
             cancellationToken.ThrowIfCancellationRequested();
             await DrainAsync(buffer, output, cancellationToken).ConfigureAwait(false);
+            // Again after the write: the destination may cancel while writing (a client disconnecting), and the next
+            // MoveNext would format a whole further step before any other check.
+            cancellationToken.ThrowIfCancellationRequested();
         }
         // Whatever the writer flushed when it was disposed, at the end of the steps.
         await DrainAsync(buffer, output, cancellationToken).ConfigureAwait(false);

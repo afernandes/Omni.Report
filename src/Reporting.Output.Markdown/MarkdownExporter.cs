@@ -138,6 +138,7 @@ public sealed class MarkdownExporter : IReportExporter
             // No tabular content — emit every row as a bold/plain paragraph.
             foreach (var row in grid.Rows)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 var text = row.Cells.Values.FirstOrDefault();
                 if (string.IsNullOrEmpty(text)) continue;
                 bool bold = _options.BoldTotals && (row.Kind == RowKind.Total || row.Kind == RowKind.Subtotal);
@@ -154,6 +155,7 @@ public sealed class MarkdownExporter : IReportExporter
         // title (we already emitted that as H1).
         for (int i = 0; i <= headerIdx - (syntheticHeader ? 0 : 1) && i < grid.Rows.Count; i++)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             var row = grid.Rows[i];
             if (row.Cells.Count >= 2 && !syntheticHeader) continue; // skip the chosen header row itself
             var text = row.Cells.Values.FirstOrDefault();

@@ -115,6 +115,29 @@ public sealed class AsyncIoExportTests
         output.Length.Should().Be(0);
     }
 
+    [Fact]
+    public async Task WriteInStepsAsync_DestinoCancelaDuranteAEscrita_NaoFormataOProximoPasso()
+    {
+        using var cancellation = new CancellationTokenSource();
+        var output = new AsyncOnlyStream { OnWrite = cancellation.Cancel };
+        int stepsFormatted = 0;
+
+        IEnumerable<int> Steps(Stream buffer)
+        {
+            for (int step = 0; step < 3; step++)
+            {
+                stepsFormatted++;
+                buffer.WriteByte((byte)step);
+                yield return step;
+            }
+        }
+
+        var act = () => AsyncExport.WriteInStepsAsync(output, Steps, cancellation.Token);
+
+        await act.Should().ThrowAsync<OperationCanceledException>();
+        stepsFormatted.Should().Be(1, "the cancellation raised by the first write must stop before the second step");
+    }
+
     /// <summary>A destination that, like an ASP.NET Core response body, refuses synchronous writes.</summary>
     private sealed class AsyncOnlyStream : Stream
     {
