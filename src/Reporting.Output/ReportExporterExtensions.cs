@@ -1,3 +1,4 @@
+using Reporting.Common;
 using Reporting.Layout;
 
 namespace Reporting.Output;
@@ -37,6 +38,49 @@ public static class ReportExporterExtensions
         using var ms = new MemoryStream();
         await exporter.ExportAsync(report, ms, cancellationToken).ConfigureAwait(false);
         return ms.ToArray();
+    }
+
+    /// <summary>Exports only the pages of <paramref name="pages"/> from an already paginated report.</summary>
+    /// <param name="exporter">The exporter to run.</param>
+    /// <param name="report">The paginated report.</param>
+    /// <param name="output">Destination stream.</param>
+    /// <param name="pages">Pages to export, 1-based and inclusive.</param>
+    /// <param name="cancellationToken">Observed before the export starts and by the exporter.</param>
+    /// <exception cref="ArgumentOutOfRangeException">The range ends after the last page.</exception>
+    public static Task ExportAsync(this IReportExporter exporter, RenderedReport report, Stream output,
+        PageRange pages, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(exporter);
+        ArgumentNullException.ThrowIfNull(report);
+        pages.EnsureWithin(report.PageCount);
+        var slice = report with { Pages = new EquatableArray<RenderedPage>(report.Pages.Skip(pages.From - 1).Take(pages.Count)) };
+        return exporter.ExportAsync(slice, output, cancellationToken);
+    }
+
+    /// <summary>Exports a <see cref="PreparedReport"/> — all of it, or only <paramref name="pages"/>. Only the pages
+    /// exported are read back from the prepared storage, so exporting pages 3–7 of a long report does not load the
+    /// rest into memory.</summary>
+    /// <param name="exporter">The exporter to run.</param>
+    /// <param name="report">The prepared report; it stays open and owned by the caller.</param>
+    /// <param name="output">Destination stream.</param>
+    /// <param name="pages">Pages to export, 1-based and inclusive; <see langword="null"/> exports every page.</param>
+    /// <param name="cancellationToken">Observed while the pages are read and by the exporter.</param>
+    /// <exception cref="ArgumentOutOfRangeException">The range ends after the last page.</exception>
+    public static Task ExportAsync(this IReportExporter exporter, PreparedReport report, Stream output,
+        PageRange? pages = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(exporter);
+        ArgumentNullException.ThrowIfNull(report);
+        var range = pages ?? (report.PageCount == 0 ? default(PageRange?) : new PageRange(1, report.PageCount));
+        range?.EnsureWithin(report.PageCount);
+        var selected = range is { } r
+            ? Enumerable.Range(r.From - 1, r.Count).Select(index => report.GetPage(index, cancellationToken)).ToArray()
+            : [];
+        var rendered = new RenderedReport(report.Name, new EquatableArray<RenderedPage>(selected))
+        {
+            Diagnostics = report.Diagnostics,
+        };
+        return exporter.ExportAsync(rendered, output, cancellationToken);
     }
 
     /// <summary>Writes the report to <paramref name="path"/>. The file handle is opened for asynchronous I/O,
