@@ -289,7 +289,7 @@ conteúdo, com teste positivo e negativo nos três modos. Várias medidas por in
 **Pronto quando:** uma matriz com duas células de corpo gera o diagnóstico; a matriz de uma célula não gera ruído.
 
 **FEITO (#288).** `InspectLimitations` conta, espelhando `RenderMatrixCore`, as células com conteúdo que a matriz
-não desenha — tudo além do canto e da primeira caixa de texto do corpo, o que inclui rótulos fixos de cabeçalho — e
+não desenha — tudo além do canto (só como rótulo) e da primeira caixa de texto do corpo, o que inclui rótulos fixos de cabeçalho — e
 emite `ORL025` `Tablix[nome].MatrixCells` com a quantidade. O mesmo levantamento achou a perda na origem: o
 importador RDL pegava só o primeiro `Textbox` do `TablixBody` sem avisar; agora uma segunda expressão distinta vai
 para `ImportWarnings` (células que repetem a medida são totais e não avisam). Verificado por 5 testes novos, com os

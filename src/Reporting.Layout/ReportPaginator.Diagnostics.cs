@@ -52,15 +52,15 @@ public sealed partial class ReportPaginator
         return new(diagnostics);
     }
 
-    // Mirrors TablixRenderer.RenderMatrixCore: it reads the corner (0, 0) and the FIRST TextBoxElement whose row and
-    // column are both >= 1; every other cell with content is dropped.
+    // Mirrors TablixRenderer.RenderMatrixCore: it draws the corner (0, 0) only as a LabelElement's text, and the FIRST
+    // TextBoxElement whose row and column are both >= 1; every other cell with content is dropped.
     private static int CountMatrixCellsNotDrawn(TablixElement tablix)
     {
         bool bodyTaken = false;
         int ignored = 0;
         foreach (var cell in tablix.Cells)
         {
-            if (cell.Content is null || (cell.RowIndex == 0 && cell.ColumnIndex == 0))
+            if (cell.Content is null || (cell.RowIndex == 0 && cell.ColumnIndex == 0 && cell.Content is LabelElement))
             {
                 continue;
             }

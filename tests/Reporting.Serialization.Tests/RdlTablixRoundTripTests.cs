@@ -118,6 +118,26 @@ public class RdlTablixRoundTripTests
     }
 
     [Fact]
+    public void Matrix_whose_first_body_textbox_is_empty_imports_the_measure_after_it()
+    {
+        var rdlText = MatrixRdl
+            .Replace("<TablixColumns><TablixColumn><Width>40mm</Width></TablixColumn></TablixColumns>",
+                "<TablixColumns><TablixColumn><Width>40mm</Width></TablixColumn><TablixColumn><Width>40mm</Width></TablixColumn></TablixColumns>")
+            .Replace("<TablixCells><TablixCell>",
+                "<TablixCells><TablixCell><CellContents><Textbox Name=\"vazio\"><Paragraphs><Paragraph><TextRuns>" +
+                "<TextRun><Value /></TextRun></TextRuns></Paragraph></Paragraphs></Textbox></CellContents></TablixCell><TablixCell>");
+
+        var imported = new RdlExporter().LoadFromBytes(Encoding.UTF8.GetBytes(rdlText));
+
+        var tablix = imported.ReportHeader!.Elements.OfType<TablixElement>().Single();
+        tablix.Cells.Should().Contain(c => c.RowIndex == 1 && c.ColumnIndex == 1
+            && ((TextBoxElement)c.Content!).Expression == "Sum(Fields.Vendas)",
+            "an empty intersection before the measure must not cost the matrix its body");
+        (imported.Metadata.TryGetValue("ImportWarnings", out var warnings) ? warnings : string.Empty)
+            .Should().NotContain("expressão do corpo");
+    }
+
+    [Fact]
     public void Matrix_cells_and_sort_survive_the_round_trip()
     {
         var rdl = new RdlExporter();

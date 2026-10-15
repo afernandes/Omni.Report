@@ -42,7 +42,10 @@ public sealed partial class RdlImporter
         {
             cells.Add(new TablixCell(0, 0, new LabelElement { Text = cornerRaw, Bounds = Rectangle.Empty }));
         }
-        var bodyTextbox = FirstTextbox(El(item, "TablixBody"));
+        // The first body textbox WITH a value: an empty intersection before the measure must not leave the matrix
+        // without its body cell.
+        var bodyTextboxes = El(item, "TablixBody")?.Descendants().Where(e => e.Name.LocalName == "Textbox").ToList() ?? [];
+        var bodyTextbox = bodyTextboxes.FirstOrDefault(textbox => !string.IsNullOrEmpty(TextboxValue(textbox)));
         var bodyRaw = TextboxValue(bodyTextbox);
         if (!string.IsNullOrEmpty(bodyRaw))
         {
@@ -56,17 +59,15 @@ public sealed partial class RdlImporter
             }));
         }
 
-        // The matrix model holds one body cell. A second DISTINCT expression is a second measure and is lost; a
+        // The matrix model holds one body cell. Any other DISTINCT expression is a second measure and is lost; a
         // cell repeating the measure is a total, which RowSubtotals/ColumnSubtotals regenerate.
-        int bodyExpressions = El(item, "TablixBody")?.Descendants()
-            .Where(e => e.Name.LocalName == "Textbox")
+        int extraMeasures = bodyTextboxes
             .Select(TextboxValue)
-            .Where(value => !string.IsNullOrEmpty(value))
+            .Where(value => !string.IsNullOrEmpty(value) && value != bodyRaw)
             .Distinct(StringComparer.Ordinal)
-            .Count() ?? 0;
-        if (bodyExpressions > 1)
+            .Count();
+        if (extraMeasures > 0)
         {
-            int extraMeasures = bodyExpressions - 1;
             _warnings.Add($"Tablix '{name}': a matriz usa só a primeira expressão do corpo — {extraMeasures} " +
                 $"{(extraMeasures == 1 ? "expressão do corpo ignorada" : "expressões do corpo ignoradas")} (várias " +
                 "medidas por interseção ainda não são suportadas).");

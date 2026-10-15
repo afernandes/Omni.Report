@@ -75,6 +75,17 @@ public sealed class TablixRowDiagnosticsTests
     }
 
     [Fact]
+    public async Task PaginateAsync_MatrizComCantoQueNaoERotulo_EmiteDiagnosticoORL025()
+    {
+        // The matrix draws the corner only as a label's text; an expression there is never evaluated.
+        var report = await PaginateMatrix(
+            new TablixCell(0, 0, new TextBoxElement { Id = "canto", Expression = "Parameters.Titulo" }),
+            new TablixCell(1, 1, new TextBoxElement { Id = "qtd", Expression = "Sum(Fields.Tamanho)" }));
+
+        report.Diagnostics.Should().ContainSingle(d => d.Feature == "Tablix[Vendas].MatrixCells");
+    }
+
+    [Fact]
     public async Task PaginateAsync_MatrizComCantoEUmaMedida_NaoEmiteDiagnostico()
     {
         var report = await PaginateMatrix(
