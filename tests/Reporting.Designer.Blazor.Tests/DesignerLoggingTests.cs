@@ -6,7 +6,6 @@ using Microsoft.Extensions.Logging;
 using Reporting.Designer.Blazor.Services;
 using Reporting.Designer.Blazor.ViewModels;
 using Reporting.Layout;
-using Reporting.Output.Pdf;
 using Xunit;
 
 namespace Reporting.Designer.Blazor.Tests;
@@ -63,7 +62,7 @@ public sealed class DesignerLoggingTests : BunitContext
         _logs.Entries.Should().ContainSingle(e => e.EventId == 1 && e.Exception != null);
     }
 
-    private sealed class FailingExporter : Reporting.Output.Pdf.IReportExporter
+    private sealed class FailingExporter : Reporting.Output.IReportExporter
     {
         public string Format => "quebrado";
         public string FileExtension => ".bin";
