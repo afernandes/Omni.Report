@@ -91,6 +91,52 @@ public class RdlTablixRoundTripTests
             "a matrix Tablix must reconstruct exactly what the importer reads");
     }
 
+    [Theory]
+    [InlineData("=Count(Fields!Id.Value)", true)]    // a second measure: dropped, so the import must say so
+    [InlineData("=Sum(Fields!Vendas.Value)", false)] // a total cell repeating the measure: regenerated, no loss
+    public void Matrix_with_a_second_body_expression_warns_on_import(string secondCell, bool warns)
+    {
+        var rdlText = MatrixRdl
+            .Replace("<TablixColumns><TablixColumn><Width>40mm</Width></TablixColumn></TablixColumns>",
+                "<TablixColumns><TablixColumn><Width>40mm</Width></TablixColumn><TablixColumn><Width>40mm</Width></TablixColumn></TablixColumns>")
+            .Replace("</TablixCell></TablixCells>",
+                "</TablixCell><TablixCell><CellContents><Textbox Name=\"v2\"><Paragraphs><Paragraph><TextRuns>" +
+                $"<TextRun><Value>{secondCell}</Value></TextRun></TextRuns></Paragraph></Paragraphs></Textbox>" +
+                "</CellContents></TablixCell></TablixCells>");
+
+        var imported = new RdlExporter().LoadFromBytes(Encoding.UTF8.GetBytes(rdlText));
+
+        var warnings = imported.Metadata.TryGetValue("ImportWarnings", out var text) ? text : string.Empty;
+        if (warns)
+        {
+            warnings.Should().Contain("Matriz").And.Contain("1 expressão do corpo ignorada");
+        }
+        else
+        {
+            warnings.Should().NotContain("expressão do corpo");
+        }
+    }
+
+    [Fact]
+    public void Matrix_whose_first_body_textbox_is_empty_imports_the_measure_after_it()
+    {
+        var rdlText = MatrixRdl
+            .Replace("<TablixColumns><TablixColumn><Width>40mm</Width></TablixColumn></TablixColumns>",
+                "<TablixColumns><TablixColumn><Width>40mm</Width></TablixColumn><TablixColumn><Width>40mm</Width></TablixColumn></TablixColumns>")
+            .Replace("<TablixCells><TablixCell>",
+                "<TablixCells><TablixCell><CellContents><Textbox Name=\"vazio\"><Paragraphs><Paragraph><TextRuns>" +
+                "<TextRun><Value /></TextRun></TextRuns></Paragraph></Paragraphs></Textbox></CellContents></TablixCell><TablixCell>");
+
+        var imported = new RdlExporter().LoadFromBytes(Encoding.UTF8.GetBytes(rdlText));
+
+        var tablix = imported.ReportHeader!.Elements.OfType<TablixElement>().Single();
+        tablix.Cells.Should().Contain(c => c.RowIndex == 1 && c.ColumnIndex == 1
+            && ((TextBoxElement)c.Content!).Expression == "Sum(Fields.Vendas)",
+            "an empty intersection before the measure must not cost the matrix its body");
+        (imported.Metadata.TryGetValue("ImportWarnings", out var warnings) ? warnings : string.Empty)
+            .Should().NotContain("expressão do corpo");
+    }
+
     [Fact]
     public void Matrix_cells_and_sort_survive_the_round_trip()
     {

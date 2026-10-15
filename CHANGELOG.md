@@ -30,8 +30,8 @@ API de baixo nível e Designer), com serialização e testes junto. As entradas 
 - **Saída correta:** a borda (`Style.Border`) passa a ser desenhada em qualquer elemento e em cada fatia de um Tablix
   que pagina; `CornerRadius` chega a retângulos sem filhos em PDF, SVG, PNG, GDI e ESC/POS (#275). `RowSpan` e
   linhas-modelo extras da tabela plana, que o renderizador não desenha, passam a gerar o diagnóstico `ORL025` em vez
-  de sumir (#274, #279). O aviso não recupera o conteúdo, e a matriz ainda descarta células de corpo além da
-  primeira sem avisar (ROADMAP, item 2a).
+  de sumir (#274, #279); a matriz também avisa as células além do canto e da primeira medida, e o import RDL avisa
+  a segunda medida (#288). O aviso não recupera o conteúdo.
 - **RDL:** o export preserva drill-down — `ToggleItem`, estado inicial e visibilidade condicional — e resolve
   referências por bookmark para o nome exportado (#276).
 - **Designer:** desfazer/refazer não deixa elemento fora do documento selecionado (#277); o menu de exportação

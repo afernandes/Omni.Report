@@ -42,7 +42,10 @@ public sealed partial class RdlImporter
         {
             cells.Add(new TablixCell(0, 0, new LabelElement { Text = cornerRaw, Bounds = Rectangle.Empty }));
         }
-        var bodyTextbox = FirstTextbox(El(item, "TablixBody"));
+        // The first body textbox WITH a value: an empty intersection before the measure must not leave the matrix
+        // without its body cell.
+        var bodyTextboxes = El(item, "TablixBody")?.Descendants().Where(e => e.Name.LocalName == "Textbox").ToList() ?? [];
+        var bodyTextbox = bodyTextboxes.FirstOrDefault(textbox => !string.IsNullOrEmpty(TextboxValue(textbox)));
         var bodyRaw = TextboxValue(bodyTextbox);
         if (!string.IsNullOrEmpty(bodyRaw))
         {
@@ -54,6 +57,20 @@ public sealed partial class RdlImporter
                 Bounds = Rectangle.Empty,
                 Style = bodyTextbox is null ? Style.Default : ReadStyle(bodyTextbox) ?? Style.Default,
             }));
+        }
+
+        // The matrix model holds one body cell. Any other DISTINCT expression is a second measure and is lost; a
+        // cell repeating the measure is a total, which RowSubtotals/ColumnSubtotals regenerate.
+        int extraMeasures = bodyTextboxes
+            .Select(TextboxValue)
+            .Where(value => !string.IsNullOrEmpty(value) && value != bodyRaw)
+            .Distinct(StringComparer.Ordinal)
+            .Count();
+        if (extraMeasures > 0)
+        {
+            _warnings.Add($"Tablix '{name}': a matriz usa só a primeira expressão do corpo — {extraMeasures} " +
+                $"{(extraMeasures == 1 ? "expressão do corpo ignorada" : "expressões do corpo ignoradas")} (várias " +
+                "medidas por interseção ainda não são suportadas).");
         }
 
         if (rowGroups.Count == 0 || colGroups.Count == 0)
