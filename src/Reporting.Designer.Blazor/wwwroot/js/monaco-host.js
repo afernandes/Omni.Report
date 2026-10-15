@@ -22,6 +22,9 @@
     const LOAD_TIMEOUT_MS = 15000;
 
     let loaderPromise = null;
+    // True once THIS module injected loader.js: only then may a failed load reset the AMD loader — a loader the host
+    // brought for its own modules is never reset.
+    let ownsLoader = false;
     let languageRegistered = false;
     const editors = new Map(); // id → { editor, dotnetRef }
 
@@ -162,10 +165,16 @@
                 resolve();
                 return;
             }
-            // A failed load is not cached: the next editor that opens tries again (the network may be back).
+            // A failed load is not cached: the next editor that opens tries again (the network may be back). The AMD
+            // loader keeps a module that failed as failed and never requests it again, so a loader we injected gets a
+            // fresh module registry (require.reset). loader.js itself cannot simply be loaded again — it declares
+            // top-level consts — so it is only re-injected when IT failed to load.
             const fail = (error) => {
                 clearTimeout(timer);
                 loaderPromise = null;
+                if (ownsLoader && !window.monaco?.editor && typeof window.require?.reset === "function") {
+                    window.require.reset();
+                }
                 reject(error);
             };
             const timer = setTimeout(
@@ -201,9 +210,11 @@
             }
             const script = document.createElement("script");
             script.src = `${MONACO_BASE}/loader.js`;
+            ownsLoader = true;
             script.onload = loadEditor;
             script.onerror = () => {
                 script.remove();
+                ownsLoader = false;
                 fail(new Error(`Falha ao carregar o Monaco de ${MONACO_BASE}.`));
             };
             document.head.appendChild(script);
@@ -404,7 +415,7 @@
 
     // ─── Public API ───────────────────────────────────────────────────────────────
     async function mount(opts) {
-        const { domId, initialValue, theme, language, completions, dotnetRef, baseUrl } = opts;
+        const { domId, initialValue, theme, language, completions, dotnetRef, baseUrl, ariaLabel } = opts;
         await loadMonaco(baseUrl);
 
         const host = document.getElementById(domId);
@@ -421,6 +432,8 @@
         const editor = monaco.editor.create(host, {
             value: initialValue || "",
             language: language || "omnireport-expression",
+            // The accessible name goes on Monaco's own focusable textarea, not on the wrapper around it.
+            ariaLabel: ariaLabel || undefined,
             theme: theme === "dark" ? "omnireport-dark" : "omnireport-light",
             automaticLayout: true,
             minimap: { enabled: false },

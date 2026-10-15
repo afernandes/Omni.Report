@@ -39,6 +39,33 @@ public sealed class MonacoEditorTests : BunitContext
     }
 
     [Fact]
+    public void Mount_ComRotulo_PassaORotuloParaOEditorDoMonaco()
+    {
+        var mount = JSInterop.SetupVoid("omniMonaco.mount", _ => true);
+        mount.SetVoidResult();
+
+        Render<MonacoEditor>(p => p.Add(x => x.Label, "Consulta SQL"));
+
+        var options = mount.Invocations.Single().Arguments[0]!;
+        options.GetType().GetProperty("ariaLabel")!.GetValue(options).Should().Be("Consulta SQL",
+            "screen readers name Monaco's own textarea, not the wrapper div");
+    }
+
+    [Fact]
+    public async Task Fallback_EscritaProgramaticaSemAssinante_AtualizaACaixaDeTexto()
+    {
+        JSInterop.SetupVoid("omniMonaco.mount", _ => true).SetException(new JSException("Monaco não carregou"));
+        var editor = Render<MonacoEditor>(p => p.Add(x => x.InitialValue, "=1"));
+        editor.WaitForElement("textarea");
+
+        await editor.InvokeAsync(() => editor.Instance.SetValueAsync("=Fields.B"));
+        await editor.InvokeAsync(() => editor.Instance.InsertAsync(" * 2"));
+
+        editor.Find("textarea").GetAttribute("value").Should().Be("=Fields.B * 2",
+            "the box must show what GetValueAsync returns, or the next keystroke overwrites it");
+    }
+
+    [Fact]
     public void AddOmniReportMonaco_BaseUrlVazia_FalhaExplicando()
     {
         var services = new ServiceCollection();

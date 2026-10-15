@@ -72,6 +72,7 @@ public partial class MonacoEditor
                     dotnetRef = _selfRef,
                     // null = the copy packaged with the Designer (resolved by monaco-host.js).
                     baseUrl = (Services.GetService(typeof(MonacoOptions)) as MonacoOptions)?.BaseUrl,
+                    ariaLabel = Label,
                 });
             }
             catch (JSException ex)
@@ -127,9 +128,12 @@ public partial class MonacoEditor
     private Task OnFallbackInput(ChangeEventArgs e) => SetFallbackValueAsync(e.Value?.ToString() ?? string.Empty);
 
     // Same notification Monaco gives through OnEditorValueChanged, so the hosting dialog cannot tell the difference.
+    // A programmatic write (SetValueAsync/InsertAsync) does not come from an event of this component, so it asks for
+    // the render itself — otherwise the box keeps showing the old text and the next keystroke overwrites the new one.
     private Task SetFallbackValueAsync(string value)
     {
         _fallbackValue = value;
+        StateHasChanged();
         return OnValueChanged.HasDelegate ? OnValueChanged.InvokeAsync(value) : Task.CompletedTask;
     }
 
