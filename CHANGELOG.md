@@ -17,9 +17,11 @@ API de baixo nível e Designer), com serialização e testes junto. As entradas 
 - **`IReportExporter`, `ExportWarning`, `ExportWarningHandler` e `ReportExporterExtensions` saíram do pacote
   `Reporting.Output.Pdf` para o novo pacote `Reporting.Output`, namespace `Reporting.Output`.** O contrato morava no
   pacote PDF, que depende do SkiaSharp: exportar CSV, JSON, XML, Markdown ou Excel arrastava os binários nativos do
-  Skia. SVG, PNG e PDF continuam com o Skia, e HTML (via SVG) e DOCX (via Image) também. Migração: troque `using Reporting.Output.Pdf;` por `using Reporting.Output;` onde só o contrato é usado
-  (`SkiaPdfExporter` e `PdfExportOptions` continuam em `Reporting.Output.Pdf`); quem referencia o pacote PDF recebe
-  `Reporting.Output` transitivamente.
+  Skia. SVG, PNG e PDF continuam com o Skia, e HTML (via SVG) e DOCX (via Image) também. Migração: troque
+  `using Reporting.Output.Pdf;` por `using Reporting.Output;` onde só o contrato é usado (`SkiaPdfExporter` e
+  `PdfExportOptions` continuam em `Reporting.Output.Pdf`); quem referencia o pacote PDF recebe `Reporting.Output`
+  transitivamente.
+
 ### Pós-auditoria e roadmap (2026-09 a 2026-10)
 
 - **Execução e memória:** documento preparado em arquivo temporário (`PrepareAsync`), emissão progressiva de
