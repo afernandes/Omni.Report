@@ -98,7 +98,7 @@ Os problemas que restam são de cinco tipos:
 | 10 | Contrato de export: `ExportAsync` real, faixa de páginas e consumo de `PreparedReport` | API | M | ✅ | R2 #14 + #39 |
 | 11 | Designer, Viewer e Hosting referenciam **todos** os exporters | Arquitetura | M | ✅ | novo |
 | 12 | Nenhum `ILogger` em `src/`; falhas do Designer vão para `Console.Error` — **✔ FEITO (#283)** | Observabilidade | P | ✅ | novo |
-| 13 | Monaco carregado do CDN em runtime — não funciona offline nem sob CSP | Segurança/DX | M | ✅ | novo |
+| 13 | Monaco carregado do CDN em runtime — não funciona offline nem sob CSP — **✔ FEITO (#286)** | Segurança/DX | M | ✅ | novo |
 | 14 | **Decisão:** postura de segurança do Roslyn (só fonte confiável × isolamento real) | Segurança | P/G | 🔍 | R2 #11 |
 | 15 | **Decisão:** i18n — a UI já mistura português e inglês | Produto | P/G | 🧪 | R2 #30 |
 
@@ -582,7 +582,7 @@ diagnósticos (`RenderedReport.Diagnostics`, `ExportWarning`) e telemetria, que 
 
 ---
 
-### 13. Monaco carregado do CDN em runtime ✅
+### 13. Monaco carregado do CDN em runtime ✅ — ✔ FEITO
 
 **O problema.** `src/Reporting.Designer.Blazor/wwwroot/js/monaco-host.js:14` carrega o editor de
 `https://cdn.jsdelivr.net/npm/monaco-editor@…`. Consequências: o editor de expressões não funciona offline nem em
@@ -594,6 +594,15 @@ erro de carregamento do worker de localização pelo CDN.
 necessária. Fallback para `<textarea>` se o editor não carregar.
 
 **Pronto quando:** o editor de expressões abre com a rede bloqueada.
+
+**FEITO (#286) — pela primeira alternativa da Ação: o Monaco vai no pacote.** Só o necessário: núcleo do editor,
+worker, fonte de ícones e a linguagem SQL (~4,2 MB, 1,5 MB no nupkg), em `wwwroot/lib/monaco`, com LICENSE e
+ThirdPartyNotices; `tools/update-monaco.ps1` atualiza a cópia via `npm pack`. O `monaco-host.js` resolve a base
+pela URL do próprio script e carrega o worker direto da mesma origem, então a CSP precisa só de `'self'` (o
+bootstrap `data:` ficou para quem aponta outra origem). `AddOmniReportMonaco(o => o.BaseUrl = ...)` serve outra
+versão. Se o Monaco não carregar em 15 s, o editor vira texto simples com aviso e a expressão continua editável e
+aplicável. Verificado no navegador — zero requisições externas, autocompletar, worker e SQL funcionando; com base
+inacessível, o fallback aparece e a edição é aplicada — e por `MonacoEditorTests` (5, com sabotagem).
 
 ---
 
@@ -1129,6 +1138,7 @@ movimento de arquivos, e 31. O restante do item 26 (`designer.js`, `ElementViewM
 | Item 7 — exportação no Designer sem registro, sem erro visível e com cliques perdidos | Menu do registro, alerta de falha, estado ocupado | #280 |
 | Item 8 — documentação desatualizada | README, badges, CHANGELOG e aviso de evidências locais | #281 |
 | Item 9 — contrato de exportação no pacote PDF | Pacote `Reporting.Output`; CSV/JSON/XML/Markdown/Excel sem SkiaSharp | #282 |
+| Item 13 — Monaco do CDN, sem offline nem CSP estrita | Monaco empacotado; fallback para texto simples | #286 |
 
 **Lições que valem para os próximos itens:**
 
