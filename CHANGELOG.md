@@ -12,6 +12,15 @@ gravar `.rdl` — e a regra de que toda feature chega igual nos **três modos de
 API de baixo nível e Designer), com serialização e testes junto. As entradas abaixo são agrupadas por
 área em vez de uma por commit; o número entre parênteses é o PR.
 
+### Changed — quebra de API
+
+- **`IReportExporter`, `ExportWarning`, `ExportWarningHandler` e `ReportExporterExtensions` saíram do pacote
+  `Reporting.Output.Pdf` para o novo pacote `Reporting.Output`, namespace `Reporting.Output`.** O contrato morava no
+  pacote PDF, que depende do SkiaSharp: exportar CSV, JSON, XML, Markdown ou Excel arrastava os binários nativos do
+  Skia. Migração: troque `using Reporting.Output.Pdf;` por `using Reporting.Output;` onde só o contrato é usado
+  (`SkiaPdfExporter` e `PdfExportOptions` continuam em `Reporting.Output.Pdf`); quem referencia o pacote PDF recebe
+  `Reporting.Output` transitivamente.
+
 ### Correções da auditoria F01–F27 (2026-09-08)
 
 - Segurança: resolução de segredos negada por padrão; erros públicos de dados sem detalhes do provedor;

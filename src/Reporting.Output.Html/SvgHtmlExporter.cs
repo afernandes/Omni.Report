@@ -3,7 +3,7 @@ using System.Net;
 using System.Text;
 using Reporting.Geometry;
 using Reporting.Layout;
-using Reporting.Output.Pdf;
+using Reporting.Output;
 using Reporting.Output.Svg;
 
 namespace Reporting.Output.Html;

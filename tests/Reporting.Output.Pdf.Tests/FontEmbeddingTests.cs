@@ -7,6 +7,7 @@ using Reporting.Common;
 using Reporting.Geometry;
 using Reporting.Layout;
 using Reporting.Layout.Primitives;
+using Reporting.Output;
 using Reporting.Output.Pdf;
 using Reporting.Paper;
 using Reporting.Rendering;

@@ -6,6 +6,7 @@ using Reporting.DataSources.Sqlite;
 using Reporting.Output.Csv;
 using Reporting.Output.Excel;
 using Reporting.Output.Html;
+using Reporting.Output;
 using Reporting.Output.Pdf;
 using Reporting.Output.Svg;
 using Reporting.Styling;

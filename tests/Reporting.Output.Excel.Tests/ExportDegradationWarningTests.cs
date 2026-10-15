@@ -1,7 +1,7 @@
 using FluentAssertions;
 using Reporting.CodeFirst;
 using Reporting.Output.Excel;
-using Reporting.Output.Pdf;
+using Reporting.Output;
 using Reporting.Elements;
 using Reporting.Styling;
 using Xunit;
