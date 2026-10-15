@@ -1369,8 +1369,32 @@ public partial class ReportDesigner
         {
             return; // the palette and the dialogs handle their own keys; nothing may change the report behind them
         }
+        // Designer-wide shortcuts: they work from anywhere, a text field included.
         if (e.Key == "F5") { await OnPreview(); return; }
         if (e.Key == "F8") { OpenExpressionEditor(); return; }
+        if (e.CtrlKey || e.MetaKey)
+        {
+            switch (e.Key.ToLowerInvariant())
+            {
+                case "s": await OnSave(); return;  // Ctrl+S and Ctrl+Shift+S (the Designer has no separate "save as")
+                case "k": State.CommandPaletteOpen = true; return;
+                case "p": await OnMenuCommand("file.print"); return;
+                case "l" when e.ShiftKey: await OnToggleTheme(); return;
+                case "/": _shortcutsOpen = true; return;
+                case "o":
+                    try { await Js.InvokeVoidAsync("omniDesigner.openFile", _rootRef); }
+                    catch (JSException) { }
+                    catch (InvalidOperationException) { }
+                    return;
+            }
+        }
+
+        // The rest edit the report or the selection. Typed in a text field they edit the text instead: Backspace in
+        // the property grid must erase a character, not delete the selected element.
+        if (_focusInTextField)
+        {
+            return;
+        }
         if (e.Key == "Escape")
         {
             if (State.IsPreviewing) { ClosePreview(); return; }
@@ -1385,11 +1409,6 @@ public partial class ReportDesigner
             {
                 case "z": OnUndo(); return;
                 case "y": OnRedo(); return;
-                case "s": await OnSave(); return;  // Ctrl+S and Ctrl+Shift+S (the Designer has no separate "save as")
-                case "k": State.CommandPaletteOpen = true; return;
-                case "p": await OnMenuCommand("file.print"); return;
-                case "l" when e.ShiftKey: await OnToggleTheme(); return;
-                case "/": _shortcutsOpen = true; return;
                 case "x": OnCut(); return;
                 case "c": OnCopy(); return;
                 case "v": OnPaste(); return;
@@ -1397,11 +1416,6 @@ public partial class ReportDesigner
                 case "a":
                     // Ctrl+A: select all elements in the active band (industry standard).
                     SelectAllInActiveBand();
-                    return;
-                case "o":
-                    try { await Js.InvokeVoidAsync("omniDesigner.openFile", _rootRef); }
-                    catch (JSException) { }
-                    catch (InvalidOperationException) { }
                     return;
             }
         }
@@ -1447,6 +1461,11 @@ public partial class ReportDesigner
     }
 
     // ─── JS interop callbacks ───────────────────────────────────────────────────
+    /// <summary>Called from <c>omniDesigner</c> when keyboard focus enters or leaves a text field inside the
+    /// Designer, so <c>OnKeyDown</c> leaves the field's keys (Backspace, arrows, Ctrl+Z…) to the field.</summary>
+    [JSInvokable]
+    public void OnTextFieldFocusChanged(bool inTextField) => _focusInTextField = inTextField;
+
     /// <summary>Called from <c>omniDesigner</c> when a pointer gesture (move/resize) commits.</summary>
     [JSInvokable]
     public Task OnGestureCommit(GesturePayload payload)
@@ -1726,6 +1745,9 @@ public partial class ReportDesigner
 
     private readonly Reporting.Designer.Blazor.Services.DesignerFocusScope _focusScope = new();
     private bool _focusRootPending;
+
+    // Set by designer.js (focusin), not by the render: the key event carries no target, so the JS side reports it.
+    private bool _focusInTextField;
 
     private bool _shortcutsOpen;
 

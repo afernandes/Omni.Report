@@ -108,6 +108,7 @@ Os problemas que restam são de cinco tipos:
 |---|---|---|---|---|---|
 | 16 | Paleta de comandos com 13 de ~40 comandos e campo de busca sem foco — **✔ FEITO (#284)** | UX | P | 🧪 | novo |
 | 17 | Menus incompletos e enganosos ("Inserir" com 6 de ~19 tipos; "Validar" = preview; "Atalhos" = paleta) — **✔ FEITO (#284)** | UX | P | 🧪 | novo |
+| 17a | Tecla digitada num campo aciona atalho do canvas — Backspace na grade apaga o elemento — **✔ FEITO (#287)** | UX/Dados | P | 🧪 | item 17 |
 | 18 | Tema escuro escurece o papel — o texto preto do relatório some — **✔ FEITO (#285)** | UX/Fidelidade | P | 🧪 | novo |
 | 19 | Designer não cria fontes JSON, XML, REST nem FileSystem (paridade dos 3 modos) | Paridade | M | 🧪 | novo |
 | 20 | Sem layout responsivo: abaixo de ~1.280 px o painel de propriedades sai da tela | UX | M | 🧪 | novo |
@@ -681,6 +682,21 @@ for roteado.
 
 ---
 
+### 17a. Tecla digitada num campo aciona atalho do canvas 🧪 — ✔ FEITO
+
+**O problema.** Achado ao revisar o foco da paleta (#284): com um elemento selecionado, **Backspace digitado num
+campo da grade de propriedades apagava o elemento**. O keydown do campo sobe até a raiz `.report-designer`, cujo
+`@onkeydown` trata Delete/Backspace, setas, Esc e Ctrl+Z/A sem enxergar o alvo do evento. Valia também para a
+edição inline de texto no canvas. Confirmado no navegador real: 18 → 17 elementos com um Backspace no campo.
+
+**FEITO (#287).** O `designer.js`, que já distinguia campos editáveis, avisa o .NET quando o foco entra ou sai de um
+campo de texto (só nas transições; checkbox e botão não contam). O `OnKeyDown` separa os atalhos globais (F5, F8,
+Ctrl+S/K/P/O, Ctrl+/, Ctrl+Shift+L), que valem de qualquer lugar, dos de edição, que ficam com o campo. De quebra,
+Ctrl+S num campo deixou de abrir o "Salvar página" do navegador. Verificado por `TextFieldKeysTests` (5, com
+sabotagem) e no navegador pelo caminho real do `designer.js`.
+
+---
+
 ### 18. Tema escuro escurece o papel 🧪 — ✔ FEITO
 
 Com o tema escuro, a área da página fica escura, mas os elementos mantêm a cor do relatório (preto por padrão).
@@ -1116,6 +1132,7 @@ movimento de arquivos, e 31. O restante do item 26 (`designer.js`, `ElementViewM
 | Advisories do `System.Security.Cryptography.Pkcs` | Pin na 10.0.13 | #271 |
 | Item 6 — elemento-fantasma selecionado após desfazer | Seleção podada a cada mudança do histórico | #277 |
 | Item 18 — tema escuro escurecia o papel | Token `--paper`; folha com tokens claros | #285 |
+| Item 17a — Backspace num campo apagava o elemento selecionado | Atalhos de edição ficam com o campo de texto | #287 |
 | Item 12 — Designer sem `ILogger` | Eventos `[LoggerMessage]` sem conteúdo do relatório | #283 |
 | Itens 16 e 17 — paleta e menus incompletos, atalhos anunciados sem tratador | Registro único de comandos; Validar e Atalhos reais | #284 |
 | Item 7 — exportação no Designer sem registro, sem erro visível e com cliques perdidos | Menu do registro, alerta de falha, estado ocupado | #280 |
