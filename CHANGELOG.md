@@ -17,7 +17,7 @@ API de baixo nível e Designer), com serialização e testes junto. As entradas 
 - **`IReportExporter`, `ExportWarning`, `ExportWarningHandler` e `ReportExporterExtensions` saíram do pacote
   `Reporting.Output.Pdf` para o novo pacote `Reporting.Output`, namespace `Reporting.Output`.** O contrato morava no
   pacote PDF, que depende do SkiaSharp: exportar CSV, JSON, XML, Markdown ou Excel arrastava os binários nativos do
-  Skia. Migração: troque `using Reporting.Output.Pdf;` por `using Reporting.Output;` onde só o contrato é usado
+  Skia. SVG, PNG e PDF continuam com o Skia, e HTML (via SVG) e DOCX (via Image) também. Migração: troque `using Reporting.Output.Pdf;` por `using Reporting.Output;` onde só o contrato é usado
   (`SkiaPdfExporter` e `PdfExportOptions` continuam em `Reporting.Output.Pdf`); quem referencia o pacote PDF recebe
   `Reporting.Output` transitivamente.
 ### Pós-auditoria e roadmap (2026-09 a 2026-10)
@@ -27,8 +27,9 @@ API de baixo nível e Designer), com serialização e testes junto. As entradas 
   páginas, cache limitado de caminhos de propriedade e telemetria `Activity`/`Meter` por fase (#270).
 - **Saída correta:** a borda (`Style.Border`) passa a ser desenhada em qualquer elemento e em cada fatia de um Tablix
   que pagina; `CornerRadius` chega a retângulos sem filhos em PDF, SVG, PNG, GDI e ESC/POS (#275). `RowSpan` e
-  linhas-modelo extras do Tablix, que o renderizador não desenha, passam a gerar o diagnóstico `ORL025` em vez de
-  sumir (#274, #279).
+  linhas-modelo extras da tabela plana, que o renderizador não desenha, passam a gerar o diagnóstico `ORL025` em vez
+  de sumir (#274, #279). O aviso não recupera o conteúdo, e a matriz ainda descarta células de corpo além da
+  primeira sem avisar (ROADMAP, item 2a).
 - **RDL:** o export preserva drill-down — `ToggleItem`, estado inicial e visibilidade condicional — e resolve
   referências por bookmark para o nome exportado (#276).
 - **Designer:** desfazer/refazer não deixa elemento fora do documento selecionado (#277); o menu de exportação

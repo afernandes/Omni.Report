@@ -2,7 +2,10 @@
 
 > **Evidências locais.** Os caminhos `artifacts/...` citados neste documento ficam na máquina onde a rodada foi
 > executada: a pasta está no `.gitignore` e não acompanha o repositório. As evidências versionadas estão em
-> `docs/evidencias/`; para reproduzir as demais, use os comandos da seção de reprodução.
+> `docs/evidencias/`. Da seção de reprodução, só o build, os testes (com cobertura) e o build Android rodam a partir
+> de um clone; as métricas (`Metrics`, `js-metrics`), o `Harness` (repros, memória, benchmark, retenção, impressão)
+> e os scripts auxiliares vivem em `artifacts/auditoria-2026-09-05/` e **não** acompanham o repositório — esses
+> ensaios não são repetíveis só com os comandos listados.
 
 > **Evolução posterior — 09/09/2026.** As seis recomendações após o PR #260 receberam implementação: preview por demanda, limites de execução, semânticas de grupo de F24, documento preparado/emissão de páginas de F25, cache limitado, isolamento do designer, organização de F28 e telemetria. Resultados atuais, contratos e verificações ainda abertas estão em [Evolução pós-auditoria](evolucao-pos-auditoria-2026-09-09.md). O diagnóstico ORL024 foi removido para as semânticas agora implementadas; a materialização das fontes permanece. Esta rodada foi incorporada à main pelo PR #270. As atualizações anteriores e o corpo abaixo preservam o histórico.
 

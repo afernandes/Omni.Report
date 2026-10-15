@@ -81,6 +81,7 @@ Os problemas que restam são de cinco tipos:
 |---|---|---|---|---|---|
 | 1 | PDF embute as fontes **inteiras** — sem subsetting real (1 página = 1,1 MB) — **✔ FEITO (#278)** | Fidelidade/Perf | M | 🧪 | R2 #23 reaberto |
 | 2 | `RowSpan` aceito, persistido e **ignorado** pelo renderer do Tablix — **✔ FEITO (#274)** | Fidelidade | M | ✅ | R2 #36 |
+| 2a | Matriz: células de corpo além da primeira ignoradas **sem** o aviso `ORL025` | Fidelidade | P | ✅ | item 2 |
 | 3 | `Style.Border` não desenhada em Label/TextBox/Image; grade do Tablix com cor fixa — **✔ FEITO (#275)** (grade: ver 3a) | Fidelidade | M | ✅ | R2 #21a |
 | 3a | Grade do Tablix com cor e espessura fixas, sem relação com o estilo | Fidelidade | M | ✅ | item 3 |
 | 4 | `CornerRadius` descartado em retângulo sem filhos — **✔ FEITO (#275)** | Fidelidade | P | ✅ | R2 #21b |
@@ -272,6 +273,20 @@ também nunca eram desenhadas.
 (`ReportPaginator.Diagnostics.cs`). O Designer já exibe os diagnósticos no preview. Verificado por
 `TablixRowDiagnosticsTests` (4 casos, incluindo o negativo — tabela válida não gera ruído) e por sabotagem: sem a
 inspeção, os 3 casos positivos falham. Quando o item 49 entrar, o `RowSpan` ganha onde atuar e o diagnóstico sai.
+
+---
+
+### 2a. Matriz: células de corpo além da primeira ignoradas sem aviso ✅
+
+**O problema.** O `ORL025` do item 2 cobre a tabela plana, não a matriz. O `TablixRenderer` da matriz lê o canto
+e **só a primeira** `TextBoxElement` de corpo (`RowIndex >= 1 && ColumnIndex >= 1`, `body ??= tb`); uma segunda
+medida, ou qualquer outra célula de corpo, é descartada — e `InspectLimitations` pula a matriz (`!isMatrix`), então
+um resultado sem diagnósticos não garante que nada sumiu. Apontado na revisão do #281.
+
+**Ação.** Emitir `ORL025` (`Tablix[nome].MatrixBody`) quando a matriz tiver mais de uma célula de corpo com
+conteúdo, com teste positivo e negativo nos três modos. Várias medidas por interseção são o item 49.
+
+**Pronto quando:** uma matriz com duas células de corpo gera o diagnóstico; a matriz de uma célula não gera ruído.
 
 ---
 
@@ -489,8 +504,10 @@ um exporter como os outros. Opcional: `[TypeForwardedTo]` por uma versão para s
 **Pronto quando:** `dotnet list package --include-transitive` do `Output.Csv` não mostra SkiaSharp.
 
 **FEITO (#282).** Novo pacote `Reporting.Output` (namespace `Reporting.Output`), dependendo só de Core e Layout, com
-`IReportExporter`, `ExportWarning`, `ExportWarningHandler` e as extensões. Os nove exportadores sem Skia passaram a
-referenciar só o contrato, e o critério foi conferido: o `Output.Csv` não traz mais SkiaSharp. Não usei
+`IReportExporter`, `ExportWarning`, `ExportWarningHandler` e as extensões. Todos os exportadores passaram a
+referenciar o contrato em vez do pacote PDF, mas só **CSV, JSON, XML, Markdown e Excel** ficaram sem Skia — o
+critério foi conferido no `Output.Csv`. SVG, Image e PDF desenham com o Skia e continuam dependendo dele; **HTML o
+herda pelo SVG e DOCX pelo Image**, então esses cinco formatos ainda exigem os binários nativos no deploy. Não usei
 `[TypeForwardedTo]`: o encaminhamento só preserva o tipo se o namespace continuar `Reporting.Output.Pdf`, o que
 deixaria o contrato com o nome errado para sempre — pré-1.0, a quebra explícita custa menos. Ela está nas supressões
 do Package Validation (todas decorrentes da mudança do tipo) e no CHANGELOG, com a migração. O pacote nasceu com a

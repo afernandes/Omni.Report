@@ -30,9 +30,11 @@ XLSX/CSV preservam valores escalares e identificadores. XLSX não deduz fórmula
 `EmitFormulas` exige opt-in e metadados explícitos. Decimais além da precisão numérica do Excel são
 exportados como texto. A inferência de JSON/XML usa `decimal` para valores fracionários.
 
-Conteúdo que o modelo aceita mas o renderizador ainda não desenha é reportado em `RenderedReport.Diagnostics`
-(exibido pelo designer no preview) em vez de sumir da saída — hoje, `ORL025` para `RowSpan` e linhas-modelo extras
-do Tablix. O host deve avaliar os diagnósticos antes de aceitar a saída.
+Parte do conteúdo que o modelo aceita mas o renderizador ainda não desenha é reportada em
+`RenderedReport.Diagnostics` (exibido pelo designer no preview) — hoje, `ORL025` para `RowSpan > 1` e para células
+além da linha 1 numa tabela plana. O diagnóstico avisa; não desenha o que falta. A cobertura não é total: a matriz
+ainda descarta células de corpo além da primeira sem aviso (ROADMAP, item 2a), então ausência de diagnósticos não
+garante ausência de perda. O host deve avaliar os diagnósticos antes de aceitar a saída.
 
 ## Galeria
 
