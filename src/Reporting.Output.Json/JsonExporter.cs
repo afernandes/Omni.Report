@@ -146,6 +146,10 @@ public sealed class JsonExporter : IReportExporter
                 {
                     writer.WriteString("fillColor", FormatColor(r.Fill.Color));
                 }
+                if (r.CornerRadius > Unit.Zero)
+                {
+                    WriteUnit(writer, "cornerRadius", r.CornerRadius);
+                }
                 writer.WriteEndObject();
                 break;
             case DrawEllipsePrimitive e:

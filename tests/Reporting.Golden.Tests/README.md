@@ -46,10 +46,9 @@ Ids de elemento são reescritos para ordinais (`e1`, `e2`, …) porque `ReportEl
 `Guid.NewGuid()` — o ordinal preserva o que importa (que a primitiva *tem* origem, e que duas
 primitivas compartilham a mesma) sem mudar a cada execução.
 
-## Lacunas conhecidas
+## Lacunas fechadas
 
-[`RenderGapCharacterizationTests.cs`](RenderGapCharacterizationTests.cs) fixa dois defeitos que esta
-suíte expôs na primeira execução — `Style.Border` em elemento de texto e `CornerRadius` em retângulo
-sem filhos, ambos descartados antes de virar primitiva. Os goldens registram a saída degradada como
-a verdade de hoje; quando o defeito for corrigido, o teste de caracterização falha alto, é apagado, e
-os goldens afetados são reaceitos.
+A primeira execução desta suíte expôs dois defeitos — `Style.Border` em elemento de texto e `CornerRadius` em
+retângulo sem filhos, ambos descartados antes de virar primitiva. Ficaram fixados como caracterização até a
+correção (roadmap, itens 3 e 4); hoje [`ElementBorderAndRadiusTests.cs`](ElementBorderAndRadiusTests.cs) trava o
+comportamento correto, e os goldens `Estilos` e `Formas` registram a borda e o raio.

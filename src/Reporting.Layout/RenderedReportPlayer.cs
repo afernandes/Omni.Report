@@ -90,6 +90,11 @@ public static class RenderedReportPlayer
                 case DrawLinePrimitive l:
                     context.DrawLine(l.From, l.To, l.Pen);
                     break;
+                case DrawRectanglePrimitive { CornerRadius.Mils: > 0 } r:
+                    // IRenderingContext has no rounded-rectangle call; a path keeps every backend (GDI, ESC/POS
+                    // raster, host implementations) honouring the radius without widening the public contract.
+                    context.DrawPath(builder => BuildRoundedRectangle(builder, r.Bounds, r.CornerRadius), r.Pen, r.Fill);
+                    break;
                 case DrawRectanglePrimitive r:
                     context.DrawRectangle(r.Bounds, r.Pen, r.Fill);
                     break;
@@ -128,5 +133,31 @@ public static class RenderedReportPlayer
                 context.PopClip();
             }
         }
+    }
+
+    // Control-point distance that makes a cubic Bezier approximate a quarter circle (4/3·(√2−1)).
+    private const double QuarterCircleKappa = 0.5522847498;
+
+    /// <summary>Traces a rectangle with quarter-circle corners clockwise from the top edge, as ONE connected
+    /// contour. The radius is capped at half the shorter side, matching the Skia exporters.</summary>
+    /// <remarks>Corners are cubic curves, not <see cref="IPathBuilder.Arc"/>: the backends implement Arc as an
+    /// independent inscribed arc (Skia starts a new contour; GDI does not move its current point), so mixing it with
+    /// LineTo fragments the fill and draws stray segments.</remarks>
+    private static void BuildRoundedRectangle(IPathBuilder builder, Rectangle bounds, Unit radius)
+    {
+        var shorter = bounds.Width < bounds.Height ? bounds.Width : bounds.Height;
+        var r = radius * 2 > shorter ? shorter / 2 : radius;
+        var k = r * QuarterCircleKappa;
+        Unit left = bounds.X, top = bounds.Y, right = bounds.X + bounds.Width, bottom = bounds.Y + bounds.Height;
+        builder.MoveTo(new Point(left + r, top))
+            .LineTo(new Point(right - r, top))
+            .CubicTo(new Point(right - r + k, top), new Point(right, top + r - k), new Point(right, top + r))
+            .LineTo(new Point(right, bottom - r))
+            .CubicTo(new Point(right, bottom - r + k), new Point(right - r + k, bottom), new Point(right - r, bottom))
+            .LineTo(new Point(left + r, bottom))
+            .CubicTo(new Point(left + r - k, bottom), new Point(left, bottom - r + k), new Point(left, bottom - r))
+            .LineTo(new Point(left, top + r))
+            .CubicTo(new Point(left, top + r - k), new Point(left + r - k, top), new Point(left + r, top))
+            .Close();
     }
 }

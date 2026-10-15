@@ -236,21 +236,37 @@ public static partial class SkiaPrimitiveRenderer
     public static void DrawRectangle(SKCanvas canvas, Rectangle bounds, PenStyle? pen, BrushStyle? fill, float dpi)
         => DrawRectangle(canvas, bounds, pen, fill, dpi, null);
 
-    internal static void DrawRectangle(SKCanvas canvas, Rectangle bounds, PenStyle? pen, BrushStyle? fill, float dpi, Action<SKRect>? track)
+    /// <summary>Draws a rectangle whose corners are rounded by <paramref name="cornerRadius"/>; zero draws square
+    /// corners, exactly like the overload without a radius. The radius is capped at half the shorter side so a
+    /// large value degrades to a pill shape instead of an inverted path.</summary>
+    public static void DrawRectangle(SKCanvas canvas, Rectangle bounds, Unit cornerRadius, PenStyle? pen, BrushStyle? fill, float dpi)
+        => DrawRectangle(canvas, bounds, pen, fill, dpi, null, cornerRadius);
+
+    internal static void DrawRectangle(SKCanvas canvas, Rectangle bounds, PenStyle? pen, BrushStyle? fill, float dpi,
+        Action<SKRect>? track, Unit cornerRadius = default)
     {
         ArgumentNullException.ThrowIfNull(canvas);
         var rect = bounds.ToSKRect(dpi);
+        float radius = cornerRadius > Unit.Zero
+            ? Math.Min((float)cornerRadius.ToPixels(dpi), Math.Min(rect.Width, rect.Height) / 2f)
+            : 0f;
         if (fill is not null && fill.IsVisible)
         {
             using var paint = CreateFillPaint(fill, rect);
             TrackBounds(track, rect, paint, includeTransparent: fill is { HasGradient: true });
-            canvas.DrawRect(rect, paint);
+            DrawRect(canvas, rect, radius, paint);
         }
         if (pen is not null && pen.IsVisible)
         {
             using var paint = CreateStrokePaint(pen, dpi);
             TrackBounds(track, rect, paint);
-            canvas.DrawRect(rect, paint);
+            DrawRect(canvas, rect, radius, paint);
+        }
+
+        static void DrawRect(SKCanvas canvas, SKRect rect, float radius, SKPaint paint)
+        {
+            if (radius > 0f) canvas.DrawRoundRect(rect, radius, radius, paint);
+            else canvas.DrawRect(rect, paint);
         }
     }
 

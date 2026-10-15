@@ -162,7 +162,7 @@ public sealed class SvgExporter : IReportExporter
                 SkiaPrimitiveRenderer.DrawLine(canvas, l.From, l.To, l.Pen, SvgDpi);
                 break;
             case DrawRectanglePrimitive r:
-                SkiaPrimitiveRenderer.DrawRectangle(canvas, r.Bounds, r.Pen, r.Fill, SvgDpi);
+                SkiaPrimitiveRenderer.DrawRectangle(canvas, r.Bounds, r.CornerRadius, r.Pen, r.Fill, SvgDpi);
                 break;
             case DrawEllipsePrimitive e:
                 SkiaPrimitiveRenderer.DrawEllipse(canvas, e.Bounds, e.Pen, e.Fill, SvgDpi);
