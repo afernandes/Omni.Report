@@ -1,6 +1,6 @@
 using Reporting.Layout;
 
-namespace Reporting.Output.Pdf;
+namespace Reporting.Output;
 
 /// <summary>
 /// A side-effect-free exporter that converts a paginated <see cref="RenderedReport"/> into

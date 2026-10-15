@@ -208,6 +208,9 @@ Recursos:
 
 ### Exportadores — `IReportExporter` (registry plugável)
 
+O contrato `IReportExporter` está no pacote `Reporting.Output` (namespace `Reporting.Output`); cada formato é um
+pacote próprio que depende dele.
+
 | Formato | Classe | Notas |
 |---|---|---|
 | **PDF** | `SkiaPdfExporter` | vetorial, texto selecionável, bookmarks, metadados, papel térmico contínuo |

@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Reporting.Output</RootNamespace>
+    <AssemblyName>Reporting.Output</AssemblyName>
+    <Description>OmniReport — export contracts (IReportExporter, ExportWarning) shared by every exporter. No rendering dependency: a CSV or JSON exporter built on it does not pull SkiaSharp.</Description>
+
+    <!-- Sem baseline de compatibilidade: o pacote nasceu depois da 0.1.1, ao separar o contrato de exportação do
+         pacote PDF (roadmap, item 9). O baseline entra quando a 0.2.0 for publicada. -->
+    <PackageValidationBaselineVersion></PackageValidationBaselineVersion>
+
+    <!-- Contrato que todo exportador e todo host implementam: a documentação pública é obrigatória (mesma trava do
+         Core e do Layout — sem <summary>, o build falha). -->
+    <NoWarn>$(NoWarn.Replace(';CS1591','').Replace('CS1591',''))</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Reporting.Core\Reporting.Core.csproj" />
+    <ProjectReference Include="..\Reporting.Layout\Reporting.Layout.csproj" />
+  </ItemGroup>
+
+</Project>

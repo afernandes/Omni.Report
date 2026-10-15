@@ -1,4 +1,4 @@
-using Reporting.Output.Pdf;
+using Reporting.Output;
 
 namespace Reporting.Designer.Blazor.Services;
 

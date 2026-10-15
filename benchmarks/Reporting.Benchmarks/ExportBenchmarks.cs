@@ -2,6 +2,7 @@ using BenchmarkDotNet.Attributes;
 using Reporting.CodeFirst;
 using Reporting.Layout;
 using Reporting.Output.Excel;
+using Reporting.Output;
 using Reporting.Output.Pdf;
 
 namespace Reporting.Benchmarks;
