@@ -113,7 +113,7 @@ Os problemas que restam são de cinco tipos:
 | 19 | Designer não cria fontes JSON, XML, REST nem FileSystem (paridade dos 3 modos) | Paridade | M | 🧪 | novo |
 | 20 | Sem layout responsivo: abaixo de ~1.280 px o painel de propriedades sai da tela | UX | M | 🧪 | novo |
 | 21 | Acessibilidade: botões sem nome, toggles sem `aria-pressed`, modais sem `aria-modal`, 304 estilos inline | A11y | M | ✅ | novo |
-| 22 | Defeitos visuais pequenos (placeholder `&#10;`, aba "Untitled.repx", rótulo "DATE") | UX | P | 🧪 | novo |
+| 22 | Defeitos visuais pequenos (placeholder `&#10;`, aba "Untitled.repx", rótulo "DATE") — **✔ FEITO (#293)** | UX | P | 🧪 | novo |
 | 23 | Preview rasterizado a 96 DPI — borrado em tela HiDPI e com zoom | UX | P | 🧪 | novo |
 | 24 | Editor de rich text (`TextRuns`) — ausente no Designer e no CodeFirst | Feature | M | ✅ | R2 #32 |
 | 25 | Botão "Testar" do editor de expressões avalia com dados fictícios | UX | M | 🔍 | auditoria |
@@ -770,13 +770,17 @@ navegação só por teclado e contraste (WCAG 2.2 AA) — não verificados nesta
 
 ---
 
-### 22. Defeitos visuais pequenos 🧪
+### 22. Defeitos visuais pequenos 🧪 — ✔ FEITO
 
 - Placeholder dos "Valores permitidos" exibe `1|Ativo&#10;0|Inativo` literal — entidade codificada duas vezes
   (`Components/ParametersList.razor:57`).
 - A aba do documento continua "Untitled.repx" após carregar "Vendas por Cliente" (`ViewModels/DesignerState.cs:17`).
 - Subtítulo "DATE" (inglês) sob os rótulos de parâmetro em português.
 - O campo "Valores permitidos" aparece também para parâmetros do tipo Date, onde não faz sentido.
+
+**FEITO (#293).** Placeholder com quebra de linha real (constante C#); a aba toma o nome do relatório carregado, ou
+do arquivo aberto do disco; os tipos aparecem em pt-BR no prompt e no seletor (`DesignerFieldTypeLabel`); o bloco de
+valores permitidos some para Data. `SmallVisualDefectsTests` (6), todos falhando sem a correção.
 
 ---
 
@@ -1164,6 +1168,7 @@ movimento de arquivos, e 31. O restante do item 26 (`designer.js`, `ElementViewM
 | Item 9 — contrato de exportação no pacote PDF | Pacote `Reporting.Output`; CSV/JSON/XML/Markdown/Excel sem SkiaSharp | #282 |
 | Item 13 — Monaco do CDN, sem offline nem CSP estrita | Monaco empacotado; fallback para texto simples | #286 |
 | Item 2a — matriz descartava medidas extras sem aviso | `ORL025` `MatrixCells` + aviso no import RDL | #288 |
+| Item 22 — defeitos visuais pequenos | Placeholder, nome da aba, tipos em pt-BR, Data sem valores permitidos | #293 |
 
 **Lições que valem para os próximos itens:**
 
