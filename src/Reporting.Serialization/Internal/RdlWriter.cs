@@ -34,6 +34,34 @@ internal static partial class RdlWriter
     // importer strips it so synthetic names never leak into the model. Reserved — authors should not use it.
     internal const string SyntheticNamePrefix = "omni_auto_";
 
+    // RDL <Visibility>: Hidden (OmniReport stores Visible, the inverse) and the drill-down ToggleItem — the exact
+    // inverse of RdlImporter.ApplyCommon/ReadToggle. Under a ToggleItem, RDL's Hidden means "starts collapsed"
+    // (InitiallyHidden), so it carries only that; a permanent Visible=false on a toggled element has no RDL slot and
+    // travels as the omni:Visible custom property (WriteCustomProperties).
+    private static XElement? WriteVisibility(ReportElement el)
+    {
+        bool toggled = !string.IsNullOrEmpty(el.ToggleItemId);
+        string? hidden = toggled ? (el.InitiallyHidden ? "true" : null)
+            : !el.Visible ? "true"
+            : !string.IsNullOrEmpty(el.VisibleExpression)
+                ? "=Not(" + RdlExpressionReverse.ToRdl(el.VisibleExpression)[1..] + ")" // drop the leading '='
+                : null;
+        if (hidden is null && !toggled)
+        {
+            return null;
+        }
+        var visibility = new XElement(Rdl + "Visibility");
+        if (hidden is not null)
+        {
+            visibility.Add(new XElement(Rdl + "Hidden", hidden));
+        }
+        if (!string.IsNullOrEmpty(el.ToggleItemId))
+        {
+            visibility.Add(new XElement(Rdl + "ToggleItem", el.ToggleItemId));
+        }
+        return visibility;
+    }
+
     public static XDocument Write(ReportDefinition def, List<string> warnings)
     {
         ArgumentNullException.ThrowIfNull(def);
@@ -784,15 +812,9 @@ internal static partial class RdlWriter
                  new XElement(Rdl + "Left", Size(el.Bounds.X)),
                  new XElement(Rdl + "Height", Size(el.Bounds.Height)),
                  new XElement(Rdl + "Width", Size(el.Bounds.Width)));
-        if (!el.Visible)
+        if (WriteVisibility(el) is { } visibility)
         {
-            item.Add(new XElement(Rdl + "Visibility", new XElement(Rdl + "Hidden", "true")));
-        }
-        else if (!string.IsNullOrEmpty(el.VisibleExpression))
-        {
-            // OmniReport stores Visible; RDL stores Hidden (the inverse).
-            var visExpr = RdlExpressionReverse.ToRdl(el.VisibleExpression)[1..]; // drop the leading '='
-            item.Add(new XElement(Rdl + "Visibility", new XElement(Rdl + "Hidden", "=Not(" + visExpr + ")")));
+            item.Add(visibility);
         }
         if (!string.IsNullOrEmpty(el.Bookmark))
         {
@@ -817,6 +839,10 @@ internal static partial class RdlWriter
     private static void WriteCustomProperties(XElement item, ReportElement el)
     {
         var props = new List<(string Name, string Value)>();
+        if (!el.Visible && !string.IsNullOrEmpty(el.ToggleItemId))
+        {
+            props.Add(("omni:Visible", "false")); // see WriteVisibility: Hidden is taken by the initial toggle state
+        }
         switch (el)
         {
             case SubreportElement sub:
