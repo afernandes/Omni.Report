@@ -107,7 +107,7 @@ Os problemas que restam são de cinco tipos:
 |---|---|---|---|---|---|
 | 16 | Paleta de comandos com 13 de ~40 comandos e campo de busca sem foco | UX | P | 🧪 | novo |
 | 17 | Menus incompletos e enganosos ("Inserir" com 6 de ~19 tipos; "Validar" = preview; "Atalhos" = paleta) | UX | P | 🧪 | novo |
-| 18 | Tema escuro escurece o papel — o texto preto do relatório some | UX/Fidelidade | P | 🧪 | novo |
+| 18 | Tema escuro escurece o papel — o texto preto do relatório some — **✔ FEITO (#285)** | UX/Fidelidade | P | 🧪 | novo |
 | 19 | Designer não cria fontes JSON, XML, REST nem FileSystem (paridade dos 3 modos) | Paridade | M | 🧪 | novo |
 | 20 | Sem layout responsivo: abaixo de ~1.280 px o painel de propriedades sai da tela | UX | M | 🧪 | novo |
 | 21 | Acessibilidade: botões sem nome, toggles sem `aria-pressed`, modais sem `aria-modal`, 304 estilos inline | A11y | M | ✅ | novo |
@@ -597,7 +597,7 @@ e listar erros com localização, sem executar); diálogo de atalhos de verdade.
 
 ---
 
-### 18. Tema escuro escurece o papel 🧪
+### 18. Tema escuro escurece o papel 🧪 — ✔ FEITO
 
 Com o tema escuro, a área da página fica escura, mas os elementos mantêm a cor do relatório (preto por padrão).
 Os cabeçalhos "Produto", "Qtde" e "Preço Unitário" do sample 01 ficam quase invisíveis. Além de ilegível, deixa
@@ -605,6 +605,10 @@ de ser WYSIWYG: o papel impresso é branco.
 
 **Ação.** O tema escuro deve escurecer o *chrome* do Designer, não o papel — a página continua com o fundo
 definido no relatório (branco por padrão), como fazem SSRS Report Builder, Crystal e o Word.
+
+**FEITO (#285).** Token `--paper`, branco nos dois temas, para o fundo da folha; dentro dela, no tema escuro, os tokens
+claros de texto, borda, grade e vínculo de dados são restaurados, e o chrome continua escuro. Verificado no navegador
+pelas cores computadas: papel `rgb(255, 255, 255)` e rótulo em preto. Só CSS — não há teste automatizado de cor.
 
 ---
 
@@ -1009,6 +1013,7 @@ movimento de arquivos, e 31. O restante do item 26 (`designer.js`, `ElementViewM
 | Item 5 — export RDL sem `ToggleItem`/`InitiallyHidden` | `<Visibility>` completa + `omni:Visible`; fora da lista de perdas | #276 |
 | Advisories do `System.Security.Cryptography.Pkcs` | Pin na 10.0.13 | #271 |
 | Item 6 — elemento-fantasma selecionado após desfazer | Seleção podada a cada mudança do histórico | #277 |
+| Item 18 — tema escuro escurecia o papel | Token `--paper`; folha com tokens claros | #285 |
 | Item 12 — Designer sem `ILogger` | Eventos `[LoggerMessage]` sem conteúdo do relatório | #283 |
 | Item 7 — exportação no Designer sem registro, sem erro visível e com cliques perdidos | Menu do registro, alerta de falha, estado ocupado | #280 |
 | Item 9 — contrato de exportação no pacote PDF | Pacote `Reporting.Output`; exportadores sem SkiaSharp | #282 |
