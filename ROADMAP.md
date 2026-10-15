@@ -31,7 +31,7 @@ produto em vez de ler o código:
 
 **Item concluído:** a linha na lista priorizada ganha **✔ FEITO (#PR)**, o detalhamento ganha uma seção
 **FEITO.** com o que foi entregue e como foi verificado, e a entrega entra no *Histórico de concluídos*. A
-numeração não muda — itens novos entram no fim do nível correspondente com sufixo (ex.: 7a).
+numeração não muda — um item derivado de outro entra logo após ele, com sufixo (ex.: 3a).
 
 > **O padrão de defeito continua o mesmo das revisões anteriores:** *o que a documentação, o comentário ou o
 > teste afirma diverge do que o runtime faz*. Nesta revisão ele apareceu de novo em seis lugares — inclusive
@@ -81,8 +81,9 @@ Os problemas que restam são de cinco tipos:
 |---|---|---|---|---|---|
 | 1 | PDF embute as fontes **inteiras** — sem subsetting real (1 página = 1,1 MB) | Fidelidade/Perf | M | 🧪 | R2 #23 reaberto |
 | 2 | `RowSpan` aceito, persistido e **ignorado** pelo renderer do Tablix — **✔ FEITO (#274)** | Fidelidade | M | ✅ | R2 #36 |
-| 3 | `Style.Border` não desenhada em Label/TextBox/Image; grade do Tablix com cor fixa | Fidelidade | M | ✅ | R2 #21a |
-| 4 | `CornerRadius` descartado em retângulo sem filhos | Fidelidade | P | ✅ | R2 #21b |
+| 3 | `Style.Border` não desenhada em Label/TextBox/Image; grade do Tablix com cor fixa — **✔ FEITO (#275)** (grade: ver 3a) | Fidelidade | M | ✅ | R2 #21a |
+| 3a | Grade do Tablix com cor e espessura fixas, sem relação com o estilo | Fidelidade | M | ✅ | item 3 |
+| 4 | `CornerRadius` descartado em retângulo sem filhos — **✔ FEITO (#275)** | Fidelidade | P | ✅ | R2 #21b |
 | 5 | Export RDL perde `ToggleItem` e `InitiallyHidden` (perda conhecida, registrada na rede de paridade) — **✔ FEITO (#276)** | Perda de dados | P | ✅ | R2 #12 |
 | 6 | Designer: desfazer uma inserção deixa o elemento removido **selecionado e editável** — **✔ FEITO (#277)** | Bug | P | 🧪 | novo |
 | 7 | Exportação no Designer: menu fixo divergente do registro, falha silenciosa, cliques perdidos | Bug | P | 🧪 | novo |
@@ -238,7 +239,7 @@ inspeção, os 3 casos positivos falham. Quando o item 49 entrar, o `RowSpan` ga
 
 ---
 
-### 3. `Style.Border` não desenhada em Label/TextBox/Image ✅
+### 3. `Style.Border` não desenhada em Label/TextBox/Image ✅ — ✔ FEITO
 
 **O problema.** `ResolveBorderPen` (`src/Reporting.Layout/Internal/BandRenderer.cs:726`) só é chamado para
 `RectangleElement` (linha 326) e `EllipseElement` (linha 358). A passagem genérica de elemento emite o fundo, mas
@@ -257,9 +258,33 @@ e tornar a grade do Tablix dirigida por estilo.
 **Pronto quando:** o golden `Estilos` mostra a primitiva de borda e a caracterização correspondente falha (e é
 apagada).
 
+**FEITO (#275).** Todo elemento sem contorno próprio (tudo menos Rectangle, Ellipse e Line) emite a borda **sobre o
+conteúdo**, no tamanho final — o do TextBox depois de crescer/encolher e o do Tablix depois de crescer, inclusive em
+cada fatia ou ladrilho de colunas quando ele pagina. Quatro lados
+iguais viram um retângulo com traço; lados diferentes, uma linha por lado visível com estilo, espessura e cor
+próprios. Duas correções vieram junto, da mesma raiz: o Rectangle usava **só o lado de cima** (uma borda só
+inferior sumia) e a borda vinha do estilo cru, ignorando estilo nomeado e formatação condicional — agora vem do
+estilo efetivo. O golden `Estilos` passou a registrar a primitiva de borda (diff lido antes de aceitar), e o teste
+de caracterização virou `ElementBorderAndRadiusTests`, que trava o comportamento correto. Sabotagem: sem a emissão
+genérica, 3 testes falham.
+
+A metade "grade do Tablix dirigida por estilo" **não** entrou: a grade é desenhada pelo renderer, não pelas
+células, e torná-la configurável muda o modelo (propriedade nova nos serializadores, no CodeFirst e no Designer).
+Virou o item 3a.
+
 ---
 
-### 4. `CornerRadius` descartado em retângulo sem filhos ✅
+### 3a. Grade do Tablix com cor e espessura fixas ✅
+
+`TablixRenderer.cs:24` desenha a grade em `#CBD5E1` a 0,5 pt em toda tabela, sem relação com o estilo. Um relatório
+que precisa de grade mais forte, mais clara ou de nenhuma grade não tem como pedir. **Ação:** propriedade de grade
+no `TablixElement` (cor, espessura, ou "nenhuma"), nos três modos de autoria, com o valor atual como padrão para
+não mudar relatórios existentes. Com o item 3 entregue, uma alternativa é deixar a grade de lado e usar a borda de
+cada célula, como o SSRS faz.
+
+---
+
+### 4. `CornerRadius` descartado em retângulo sem filhos ✅ — ✔ FEITO
 
 **O problema.** `DrawRectanglePrimitive` não tem campo de raio. O valor sobrevive só como `ClipCornerRadius`
 (`src/Reporting.Layout/Primitives/LayoutPrimitive.cs:37-39`), aplicado aos **filhos** do retângulo. Um retângulo
@@ -269,6 +294,16 @@ usado como forma arredondada não tem filhos: o SVG exportado é um `<rect>` sem
 **Ação.** Campo de raio em `DrawRectanglePrimitive`, honrado em Skia, GDI, PDF, SVG e no overlay HTML.
 
 **Pronto quando:** o golden `Formas` mostra `rx` e a caracterização falha.
+
+**FEITO (#275).** `DrawRectanglePrimitive.CornerRadius` (padrão zero) é preenchido pelo Rectangle — inclusive no
+fundo de `BackColor`, que antes ficava quadrado atrás de um retângulo arredondado. Os exportadores Skia (PDF, SVG,
+PNG/TIFF) desenham `roundRect`, com o raio limitado a metade do menor lado; o player genérico (GDI, ESC/POS e
+hosts) traça o mesmo contorno via `DrawPath`, **sem ampliar `IRenderingContext`** — uma interface pública que
+hosts implementam. Os cantos são curvas cúbicas: o `Arc` dos backends é um arco inscrito independente (o Skia abre
+um contorno novo; o GDI não move o ponto corrente), e misturá-lo com `LineTo` fragmentava o preenchimento e traçava
+segmentos internos — apontado na revisão e travado por testes de pixel no GDI e no Skia. JSON e XML exportam `cornerRadius`. O golden `Formas` mudou de `<rect>` para um `path`
+arredondado (o backend SVG do Skia emite `roundRect` assim, não como `rx`). Verificado também em pixel no GDI: com
+raio, o canto fica fora da forma. Sabotagem: sem o caminho arredondado do player, o teste do GDI falha.
 
 ---
 
@@ -945,6 +980,7 @@ movimento de arquivos, e 31. O restante do item 26 (`designer.js`, `ElementViewM
 | R2 #30a / #30b — SkiaSharp 4 e NCalc 7 | Migrações com teste da garantia semântica antes | #253, #254, #269 |
 | Item 2 — `RowSpan` e linhas-modelo extras descartados sem aviso | Diagnóstico `ORL025` (o span depende do item 49) | #274 |
 | F01–F27 da auditoria técnica | Ver `docs/correcoes-f01-f27-2026-09-08.md` | #260 |
+| Itens 3 e 4 — borda em qualquer elemento e raio de retângulo sem filhos | Borda sobre o conteúdo no tamanho final; `CornerRadius` na primitiva | #275 |
 | Seis recomendações pós-auditoria + F28 | Preview sob demanda, limites, F24/F25, cache limitado, isolamento do designer, telemetria, um tipo por arquivo | #270 |
 | Item 5 — export RDL sem `ToggleItem`/`InitiallyHidden` | `<Visibility>` completa + `omni:Visible`; fora da lista de perdas | #276 |
 | Advisories do `System.Security.Cryptography.Pkcs` | Pin na 10.0.13 | #271 |
