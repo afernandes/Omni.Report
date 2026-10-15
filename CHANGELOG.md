@@ -36,7 +36,10 @@ API de baixo nível e Designer), com serialização e testes junto. As entradas 
   referências por bookmark para o nome exportado (#276).
 - **Designer:** desfazer/refazer não deixa elemento fora do documento selecionado (#277); o menu de exportação
   lista o que o host registrou, falhas de preview e exportação aparecem num alerta, e a exportação recusa cliques
-  enquanto roda (#280).
+  enquanto roda (#280); falhas vão ao `ILogger` do host como eventos estruturados, sem conteúdo do relatório (#283);
+  menus, paleta e diálogo de atalhos saem de um registro único de comandos, e paleta e diálogos guardam as próprias
+  teclas e devolvem o foco (#284); o tema escuro não escurece mais o papel (#285); o Monaco vem no pacote — editores
+  funcionam offline e sob CSP `'self'`, com fallback para texto simples (#286).
 - **Dependências:** SkiaSharp 4 (#253, #269), NCalc 7 (#254), varredura de NuGets e actions (#249, #264, #268,
   #272) e pins de segurança para SSH.NET (#247) e `System.Security.Cryptography.Pkcs` (#271).
 - **Qualidade e processo:** CI Linux cobrindo todos os projetos cross-platform, Dependabot, CodeQL e auditoria de

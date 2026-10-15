@@ -105,4 +105,33 @@ public static class ServiceCollectionExtensions
             sp.GetRequiredService<BrowserPrintService>()));
         return services;
     }
+
+    /// <summary>
+    /// Configures where the expression and SQL editors load Monaco from. Not needed for the default: the Designer
+    /// ships its own copy of Monaco and uses it when this is never called.
+    /// </summary>
+    /// <remarks>
+    /// <para>Serving a different Monaco build from the host:</para>
+    /// <code>
+    /// builder.Services.AddOmniReportMonaco(o => o.BaseUrl = "/lib/monaco/vs");
+    /// </code>
+    /// </remarks>
+    /// <exception cref="ArgumentException"><see cref="MonacoOptions.BaseUrl"/> was set to an empty string — leave it
+    /// <see langword="null"/> to use the packaged copy.</exception>
+    public static IServiceCollection AddOmniReportMonaco(this IServiceCollection services, Action<MonacoOptions> configure)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(configure);
+        var options = new MonacoOptions();
+        configure(options);
+        if (options.BaseUrl is { } baseUrl && string.IsNullOrWhiteSpace(baseUrl))
+        {
+            throw new ArgumentException(
+                "MonacoOptions.BaseUrl está vazio. Informe a URL da pasta min/vs do Monaco ou deixe null para usar a " +
+                "cópia que acompanha o Designer.", nameof(configure));
+        }
+        services.RemoveAll<MonacoOptions>();
+        services.AddSingleton(options);
+        return services;
+    }
 }

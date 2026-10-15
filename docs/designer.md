@@ -64,6 +64,42 @@ Página `/designer` — o componente recebe um `DesignerState` em `InitialState`
 Já vem habilitado no sample `Reporting.Samples.MauiHybrid` — UI desktop no Windows,
 viewer touch no Android.
 
+## Editor de expressões: Monaco, offline e CSP
+
+Os editores de expressão e de SQL usam o [Monaco](https://microsoft.github.io/monaco-editor/) (o editor do VS
+Code), carregado sob demanda na primeira vez que um deles abre. **O Monaco vem dentro do pacote do Designer**
+(`_content/Reporting.Designer.Blazor/lib/monaco`, versão em `lib/monaco/VERSION`): nenhum CDN é consultado, o
+editor funciona offline e numa rede corporativa fechada, e o código que roda no navegador é o publicado no pacote.
+Só o necessário é empacotado (~4,2 MB): núcleo do editor, worker, fonte de ícones e a linguagem SQL.
+
+**Se o Monaco não carregar** (script bloqueado, URL configurada inacessível), o editor não fica vazio: depois de
+15 s, ou na hora se o carregamento falhar, ele vira um campo de texto simples, com um aviso, e a expressão continua
+editável e aplicável. Perde-se o realce de sintaxe e o autocompletar; inserir um campo pela lista lateral acrescenta
+o texto ao final.
+
+**Outra versão do Monaco**, servida pelo host (opcional):
+
+```csharp
+builder.Services.AddOmniReportMonaco(o => o.BaseUrl = "/lib/monaco/vs");
+```
+
+A URL aponta para a pasta `min/vs` do pacote `monaco-editor`. Uma URL em outra origem (um CDN) funciona, mas
+exige `worker-src data:` na CSP e devolve a dependência de rede.
+
+**Content-Security-Policy** com a cópia empacotada:
+
+| Diretiva | Valor | Por quê |
+|---|---|---|
+| `script-src` | `'self'` | `loader.js` e os módulos AMD do Monaco |
+| `worker-src` | `'self'` | o worker do editor (`base/worker/workerMain.js`) |
+| `style-src` | `'self' 'unsafe-inline'` | o Monaco injeta estilos em tempo de execução |
+| `font-src` | `'self'` | a fonte de ícones do editor |
+
+**Atualizar a cópia empacotada** (manutenção do repositório): `./tools/update-monaco.ps1 -Version x.y.z` baixa o
+pacote com `npm pack`, copia só a lista de arquivos do script e grava a versão. Depois, abra os dois editores no
+sample e confira o console do navegador: se uma versão nova precisar de outro arquivo, o módulo que faltou aparece
+ali e entra na lista do script.
+
 ## Estrutura
 
 O designer segue o esqueleto especificado no design package (`Docs/COMPONENTS.md`):
