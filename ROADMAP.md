@@ -85,7 +85,7 @@ Os problemas que restam são de cinco tipos:
 | 4 | `CornerRadius` descartado em retângulo sem filhos | Fidelidade | P | ✅ | R2 #21b |
 | 5 | Export RDL perde `ToggleItem` e `InitiallyHidden` (perda conhecida, registrada na rede de paridade) | Perda de dados | P | ✅ | R2 #12 |
 | 6 | Designer: desfazer uma inserção deixa o elemento removido **selecionado e editável** — **✔ FEITO (#277)** | Bug | P | 🧪 | novo |
-| 7 | Exportação no Designer: menu fixo divergente do registro, falha silenciosa, cliques perdidos | Bug | P | 🧪 | novo |
+| 7 | Exportação no Designer: menu fixo divergente do registro, falha silenciosa, cliques perdidos — **✔ FEITO (#280)** | Bug | P | 🧪 | novo |
 | 8 | Documentação afirma o que não é mais verdade (README, badges, evidências não versionadas) | Doc | P | ✅ | novo |
 
 ### P1 — Arquitetura e decisões antes do 1.0
@@ -317,7 +317,7 @@ limpar a seleção. `SelectionHistoryTests` cobre os quatro casos; sem a assinat
 
 ---
 
-### 7. Exportação no Designer: menu fixo, falha silenciosa, cliques perdidos 🧪
+### 7. Exportação no Designer: menu fixo, falha silenciosa, cliques perdidos 🧪 — ✔ FEITO
 
 **O problema — três defeitos no mesmo fluxo:**
 
@@ -337,6 +337,15 @@ botões e indicar progresso enquanto uma exportação está em curso.
 
 **Pronto quando:** menu, paleta e preview listam exatamente os mesmos formatos; uma falha aparece para o usuário;
 cliques durante uma exportação são enfileirados ou bloqueados de forma visível.
+
+**FEITO (#280).** O menu Arquivo é gerado do `IExporterRegistry`, a mesma lista da barra do preview e da paleta. Uma
+falha — do exportador, de formato não registrado ou do próprio preview, que também só ia para `Console.Error` —
+aparece num alerta com o motivo (`role="alert"`, cores por token). A exportação passou a `ExportAsync` e, enquanto
+roda, exportar e imprimir ficam desabilitados com `aria-busy`: um clique durante o processo é recusado à vista, não
+perdido. Achado de passagem: exportar pelo menu quando o preview não gerava documento era um no-op silencioso — agora
+o alerta do preview explica. Verificado com bUnit (`ExportFlowTests`, os 3 falham sem a correção) e no navegador: menu
+com os 9 formatos + RDL; durante o PDF, 7/7 botões desabilitados; depois, download feito e botões reabilitados. O log
+estruturado continua pendente no item 12.
 
 ---
 
@@ -935,6 +944,7 @@ movimento de arquivos, e 31. O restante do item 26 (`designer.js`, `ElementViewM
 | Seis recomendações pós-auditoria + F28 | Preview sob demanda, limites, F24/F25, cache limitado, isolamento do designer, telemetria, um tipo por arquivo | #270 |
 | Advisories do `System.Security.Cryptography.Pkcs` | Pin na 10.0.13 | #271 |
 | Item 6 — elemento-fantasma selecionado após desfazer | Seleção podada a cada mudança do histórico | #277 |
+| Item 7 — exportação no Designer sem registro, sem erro visível e com cliques perdidos | Menu do registro, alerta de falha, estado ocupado | #280 |
 
 **Lições que valem para os próximos itens:**
 
