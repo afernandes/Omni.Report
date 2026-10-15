@@ -890,7 +890,7 @@
   overflow: visible;
 }
 .page {
-  background: var(--bg-surface);
+  background: var(--paper);
   width: var(--page-w);
   position: relative;
   box-shadow: var(--page-shadow);
@@ -898,7 +898,25 @@
   /* Let the band-strip's negative-left positioning overflow the paper. */
   overflow: visible;
 }
-[data-theme="dark"] .page { background: #1F1F1F; }
+/* The dark theme darkens the chrome, never the sheet: the page is what gets printed (WYSIWYG), and report elements
+   carry their own colours — black text on a darkened sheet was unreadable. Inside the sheet the light-theme tokens
+   that elements and the grid use are restored, so placeholders, dividers and the dot grid read on white paper. */
+[data-theme="dark"] .page {
+  color-scheme: light;
+  --grid-dot:         #D8D4C7;
+}
+[data-theme="dark"] .page .band-content {
+  --text-primary:     #1A1A1A;
+  --text-secondary:   #5A5750;
+  --text-tertiary:    #8E8A7E;
+  --border:           #E5E2D9;
+  --border-soft:      #EFEDE5;
+  --border-strong:    #C7C2B3;
+  --border-divider:   #DBD7CB;
+  --bg-surface:       #FFFFFF;
+  --data-bound:       #0F766E;
+  --data-bound-soft:  #D6F0EC;
+}
 
 /* Band */
 .band {
