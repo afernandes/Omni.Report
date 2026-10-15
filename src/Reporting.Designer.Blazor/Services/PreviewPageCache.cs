@@ -72,8 +72,7 @@ public sealed class PreviewPageCache : IReadOnlyList<byte[]>
                 // Evict before allocating the next raster, limiting concurrent cache retention.
                 if (_images.Count == 3) _images.Remove(_order.Dequeue());
                 var page = _getPage(index);
-                var scale = Math.Min(Scale, FittingScale(page));
-                using var renderer = new SkiaRenderingContext((float)(96 * scale));
+                using var renderer = new SkiaRenderingContext(FittingDpi(page, Scale));
                 RenderedReportPlayer.PlayPage(page, renderer);
                 image = renderer.GetPagePng(0);
                 _images.Add(index, image);
@@ -83,8 +82,10 @@ public sealed class PreviewPageCache : IReadOnlyList<byte[]>
         }
     }
 
-    // The largest scale whose raster stays within the pixel budget; a page that does not fit even at 96 DPI fails.
-    private static double FittingScale(RenderedPage page)
+    // The DPI for the requested scale, lowered until the raster stays within the pixel budget; a page that does not
+    // fit even at 96 DPI fails. The check uses the bitmap's own arithmetic — float DPI, each side rounded up — because
+    // the square-root estimate alone lands a few thousand pixels over on rectangular pages.
+    private static float FittingDpi(RenderedPage page, double scale)
     {
         long height = page.PageSetup.PageHeight.Mils;
         if (page.PageSetup.IsContinuous)
@@ -97,7 +98,15 @@ public sealed class PreviewPageCache : IReadOnlyList<byte[]>
         var heightPixels = Math.Ceiling(height * 96.0 / 1000);
         if (widthPixels <= 0 || heightPixels <= 0 || widthPixels * heightPixels > MaxRasterPixels)
             throw new InvalidOperationException($"A página excede o limite de {MaxRasterPixels} pixels do preview.");
-        return Math.Sqrt(MaxRasterPixels / (widthPixels * heightPixels));
+        scale = Math.Min(scale, Math.Sqrt(MaxRasterPixels / (widthPixels * heightPixels)));
+        while (true)
+        {
+            var dpi = (float)(96 * scale);
+            var pixels = Math.Ceiling(page.PageSetup.PageWidth.Mils * (double)dpi / 1000)
+                * Math.Ceiling(height * (double)dpi / 1000);
+            if (pixels <= MaxRasterPixels || scale <= 1) return dpi;
+            scale = Math.Max(1, scale * 0.999);
+        }
     }
 
     /// <summary>Enumerates PNGs on demand. Consumers retaining results own those references.</summary>

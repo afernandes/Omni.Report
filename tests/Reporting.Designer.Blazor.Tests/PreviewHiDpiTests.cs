@@ -30,7 +30,7 @@ public sealed class PreviewHiDpiTests : BunitContext
 
         cache.SetScale(2).Should().BeTrue();
 
-        WidthOf(cache[0]).Should().BeCloseTo(normal * 2, 2);
+        WidthOf(cache[0]).Should().BeInRange(normal * 2 - 2, normal * 2 + 2);
     }
 
     [Fact]
@@ -53,6 +53,21 @@ public sealed class PreviewHiDpiTests : BunitContext
         var huge = new PageSetup(new PaperSize("Grande", 900.Mm(), 900.Mm()));
         var cache = new PreviewPageCache(new RenderedReport("Grande", new EquatableArray<RenderedPage>(
             [new RenderedPage(1, huge, [])])));
+        cache.SetScale(4);
+
+        var png = cache[0];
+
+        ((long)WidthOf(png) * HeightOf(png)).Should().BeLessThanOrEqualTo(16_000_000);
+    }
+
+    [Theory]
+    [InlineData(254, 508)]   // 10 × 20 in: at 4× the square-root estimate gives 2829 × 5657 = 16,003,653 px
+    [InlineData(216, 356)]   // Legal
+    public void Cache_PaginaRetangularEmEscalaAlta_FicaDentroDoOrcamento(int widthMm, int heightMm)
+    {
+        var setup = new PageSetup(new PaperSize("Retangular", widthMm.Mm(), heightMm.Mm()));
+        var cache = new PreviewPageCache(new RenderedReport("R", new EquatableArray<RenderedPage>(
+            [new RenderedPage(1, setup, [])])));
         cache.SetScale(4);
 
         var png = cache[0];

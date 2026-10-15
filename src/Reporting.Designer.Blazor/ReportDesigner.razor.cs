@@ -1114,14 +1114,17 @@ public partial class ReportDesigner
         var previewTab = State.ActiveTab;
         var reportName = State.Report.Name;
         var generation = _previewGeneration;
-        try { _devicePixelRatio = await Js.InvokeAsync<double>("omniDesigner.devicePixelRatio"); }
-        catch (JSException) { }
-        catch (InvalidOperationException) { /* pre-render: keep the last known ratio */ }
         _previewCancellation?.Cancel();
         using var cancellation = new CancellationTokenSource();
         _previewCancellation = cancellation;
         try
         {
+            // Registered before this await so disposal or a newer preview cancels it while the lookup is pending.
+            try { _devicePixelRatio = await Js.InvokeAsync<double>("omniDesigner.devicePixelRatio", cancellation.Token); }
+            catch (JSException) { }
+            catch (InvalidOperationException) { /* pre-render: keep the last known ratio */ }
+            cancellation.Token.ThrowIfCancellationRequested();
+
             var definition = State.BuildDefinition();
             var paginator = new Reporting.Layout.ReportPaginator();
 
