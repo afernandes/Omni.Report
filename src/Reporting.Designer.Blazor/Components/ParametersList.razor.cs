@@ -26,6 +26,9 @@ public partial class ParametersList
     // A literal newline: written as "&#10;" in the markup, Razor encodes the ampersand and the box shows the entity.
     private const string AvailableValuesPlaceholder = "1|Ativo\n0|Inativo";
 
+    private static bool HasAvailableValues(DesignerParameter p)
+        => !string.IsNullOrWhiteSpace(p.AvailableValuesText) || !string.IsNullOrWhiteSpace(p.AvailableValuesDataSet);
+
     private static DesignerFieldType ParseType(string? v)
         => Enum.TryParse<DesignerFieldType>(v, out var t) ? t : DesignerFieldType.Text;
 }

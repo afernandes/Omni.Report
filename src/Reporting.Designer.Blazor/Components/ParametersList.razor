@@ -52,8 +52,9 @@
                         <input type="checkbox" checked="@p.AllowBlank"
                                @onchange="@(e => p.AllowBlank = (bool)(e.Value ?? false))" /> Vazio</label>
                 </div>
-                @* A date has no sensible list of allowed values; the prompt offers a date picker instead. *@
-                @if (p.Type != DesignerFieldType.Date)
+                @* A date has no sensible list of allowed values; the prompt offers a date picker instead. A date that
+                   already has values (switched from Text, or loaded so) keeps the block, so they can be cleared. *@
+                @if (p.Type != DesignerFieldType.Date || HasAvailableValues(p))
                 {
                 <div style="margin-top:4px;">
                     <div style="font-size:10px;color:var(--text-secondary);margin-bottom:2px;">Valores permitidos (1 por linha: <code>valor</code> ou <code>valor|rótulo</code>)</div>

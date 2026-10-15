@@ -43,6 +43,20 @@ public sealed class SmallVisualDefectsTests : BunitContext
     }
 
     [Fact]
+    public void ParametersList_TextoComValoresViraData_MantemOsValoresEditaveis()
+    {
+        var parameter = new DesignerParameter("Status", DesignerFieldType.Text) { AvailableValuesText = "1|Ativo" };
+        var list = Render<ParametersList>(p => p.Add(x => x.Parameters,
+            new ObservableCollection<DesignerParameter> { parameter }));
+
+        list.Find("select").Change(nameof(DesignerFieldType.Date));
+
+        parameter.Type.Should().Be(DesignerFieldType.Date);
+        list.Find("textarea").GetAttribute("value").Should().Be("1|Ativo",
+            "values the prompt still uses must stay visible so they can be cleared");
+    }
+
+    [Fact]
     public void ParameterPrompt_TipoDoParametro_AparecePortugues()
     {
         var prompt = Render<ParameterPromptDialog>(p => p
