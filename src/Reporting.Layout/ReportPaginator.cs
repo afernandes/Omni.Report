@@ -104,7 +104,7 @@ public sealed partial class ReportPaginator : IReportPaginator
         _evaluator.CodeFunctionResolver = request.CodeFunctionResolver;
         var measurer = request.Measurer ?? new AverageWidthTextMeasurer();
         iterationRows ??= BuildIterationRows(request, allSources);
-        var diagnostics = EquatableArray<PaginationDiagnostic>.Empty;
+        var diagnostics = InspectLimitations(request.Definition);
         bool twoPass = UsesTotalPages(request.Definition) || UsesLastPageGating(request.Definition);
         var finalSink = _pageSink;
         // The counting pass releases each completed page instead of retaining a second document.
