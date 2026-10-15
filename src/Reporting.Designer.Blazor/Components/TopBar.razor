@@ -38,7 +38,7 @@
             @* file.open is the <label> above (a real InputFile); the palette reaches it through the same id. *@
             @foreach (var command in CommandsOf("Arquivo").Skip(1).Where(c => c.Id != "file.open"))
             {
-                <MenuCommandItem Command="command" OnSelect="OnMenuCommand" />
+                <MenuCommandItem Command="command" OnSelect="OnMenuCommand" Disabled="@(IsBusy && IsOutputCommand(command))" />
             }
         </DropdownMenu>
         @foreach (var menu in Reporting.Designer.Blazor.Services.DesignerCommandCatalog.Menus.Skip(1))

@@ -81,7 +81,7 @@ Os problemas que restam são de cinco tipos:
 |---|---|---|---|---|---|
 | 1 | PDF embute as fontes **inteiras** — sem subsetting real (1 página = 1,1 MB) — **✔ FEITO (#278)** | Fidelidade/Perf | M | 🧪 | R2 #23 reaberto |
 | 2 | `RowSpan` aceito, persistido e **ignorado** pelo renderer do Tablix — **✔ FEITO (#274)** | Fidelidade | M | ✅ | R2 #36 |
-| 2a | Matriz: células de corpo além da primeira ignoradas **sem** o aviso `ORL025` | Fidelidade | P | ✅ | item 2 |
+| 2a | Matriz: células de corpo além da primeira ignoradas **sem** o aviso `ORL025` — **✔ FEITO (#288)** | Fidelidade | P | ✅ | item 2 |
 | 3 | `Style.Border` não desenhada em Label/TextBox/Image; grade do Tablix com cor fixa — **✔ FEITO (#275)** (grade: ver 3a) | Fidelidade | M | ✅ | R2 #21a |
 | 3a | Grade do Tablix com cor e espessura fixas, sem relação com o estilo | Fidelidade | M | ✅ | item 3 |
 | 4 | `CornerRadius` descartado em retângulo sem filhos — **✔ FEITO (#275)** | Fidelidade | P | ✅ | R2 #21b |
@@ -95,7 +95,7 @@ Os problemas que restam são de cinco tipos:
 | # | Item | Tipo | Esforço | Conf. | Origem |
 |---|---|---|---|---|---|
 | 9 | Abstração de exportação mora no pacote PDF → CSV/JSON/XML/Excel arrastam SkiaSharp — **✔ FEITO (#282)** | Arquitetura | M | ✅ | novo |
-| 10 | Contrato de export: `ExportAsync` real, faixa de páginas e consumo de `PreparedReport` | API | M | ✅ | R2 #14 + #39 |
+| 10 | Contrato de export: `ExportAsync` real, faixa de páginas e consumo de `PreparedReport` — parte 1 (faixa) feita (#290) | API | M | ✅ | R2 #14 + #39 |
 | 11 | Designer, Viewer e Hosting referenciam **todos** os exporters | Arquitetura | M | ✅ | novo |
 | 12 | Nenhum `ILogger` em `src/`; falhas do Designer vão para `Console.Error` — **✔ FEITO (#283)** | Observabilidade | P | ✅ | novo |
 | 13 | Monaco carregado do CDN em runtime — não funciona offline nem sob CSP — **✔ FEITO (#286)** | Segurança/DX | M | ✅ | novo |
@@ -277,7 +277,7 @@ inspeção, os 3 casos positivos falham. Quando o item 49 entrar, o `RowSpan` ga
 
 ---
 
-### 2a. Matriz: células de corpo além da primeira ignoradas sem aviso ✅
+### 2a. Matriz: células de corpo além da primeira ignoradas sem aviso ✅ — ✔ FEITO
 
 **O problema.** O `ORL025` do item 2 cobre a tabela plana, não a matriz. O `TablixRenderer` da matriz lê o canto
 e **só a primeira** `TextBoxElement` de corpo (`RowIndex >= 1 && ColumnIndex >= 1`, `body ??= tb`); uma segunda
@@ -288,6 +288,13 @@ um resultado sem diagnósticos não garante que nada sumiu. Apontado na revisão
 conteúdo, com teste positivo e negativo nos três modos. Várias medidas por interseção são o item 49.
 
 **Pronto quando:** uma matriz com duas células de corpo gera o diagnóstico; a matriz de uma célula não gera ruído.
+
+**FEITO (#288).** `InspectLimitations` conta, espelhando `RenderMatrixCore`, as células com conteúdo que a matriz
+não desenha — tudo além do canto (só como rótulo) e da primeira caixa de texto do corpo, o que inclui rótulos fixos de cabeçalho — e
+emite `ORL025` `Tablix[nome].MatrixCells` com a quantidade. O mesmo levantamento achou a perda na origem: o
+importador RDL pegava só o primeiro `Textbox` do `TablixBody` sem avisar; agora uma segunda expressão distinta vai
+para `ImportWarnings` (células que repetem a medida são totais e não avisam). Verificado por 5 testes novos, com os
+positivos falhando antes da correção, e por sabotagem.
 
 ---
 
@@ -447,6 +454,16 @@ o alerta do preview explica. Verificado com bUnit (`ExportFlowTests`, os 3 falha
 com os 9 formatos + RDL; durante o PDF, 7/7 botões desabilitados; depois, download feito e botões reabilitados. O log
 estruturado continua pendente no item 12.
 
+**Follow-up (#289) — cinco pontas apontadas na revisão do #280.** (1) Exportar pelo menu depois de um preview bem
+sucedido exportava o documento **anterior** quando a nova preparação falhava (ou o prompt de parâmetros era
+cancelado), e ainda limpava o alerta da falha: `PreviewAsync` passou a dizer se ESTE pedido preparou o relatório, e
+só então há exportação. (2) O menu do TopBar seguia habilitado durante uma exportação e um segundo pedido disparava
+outro preview: o estado ocupado é reservado **antes** da preparação, exportar/imprimir ficam desabilitados no menu
+(o RDL, que só serializa a definição, não) e F5 é ignorado enquanto exporta. (3) Um `OperationCanceledException` que o
+Designer não pediu (timeout de fonte de dados ou do exportador) sumia sem alerta; agora é falha como outra qualquer.
+(4) Trocar de aba durante a exportação nomeava os bytes de A com o nome de B; o nome vem do snapshot preparado.
+Verificado por `ExportConsistencyTests` (6) e sabotagem de cada ponto.
+
 ---
 
 ### 8. Documentação afirma o que não é mais verdade ✅
@@ -538,6 +555,13 @@ permitem escrita progressiva (PDF, SVG por página, CSV, JSON).
 
 **Pronto quando:** cancelar um export em curso libera a thread; exportar uma faixa não materializa o documento
 inteiro.
+
+**Parte 1 feita (#290) — faixa de páginas.** `PageRange` (1-based, inclusiva, `Parse("3-7")`) em `Reporting.Output` e
+duas sobrecargas de `ExportAsync`: sobre `RenderedReport` (fatia) e sobre `PreparedReport`, que lê do armazenamento
+preparado **só** as páginas pedidas — exportar 3–7 de um relatório longo não carrega o resto. Vale para todos os
+exportadores sem mudar nenhum. Faltam: `ExportAsync` com E/S assíncrona e cancelamento por página nos exportadores
+de texto/SVG/HTML/DOCX/XLSX (parte 2) e consumo progressivo de páginas, para o Designer exportar sem materializar
+o documento inteiro (parte 3).
 
 ---
 
@@ -1139,6 +1163,7 @@ movimento de arquivos, e 31. O restante do item 26 (`designer.js`, `ElementViewM
 | Item 8 — documentação desatualizada | README, badges, CHANGELOG e aviso de evidências locais | #281 |
 | Item 9 — contrato de exportação no pacote PDF | Pacote `Reporting.Output`; CSV/JSON/XML/Markdown/Excel sem SkiaSharp | #282 |
 | Item 13 — Monaco do CDN, sem offline nem CSP estrita | Monaco empacotado; fallback para texto simples | #286 |
+| Item 2a — matriz descartava medidas extras sem aviso | `ORL025` `MatrixCells` + aviso no import RDL | #288 |
 
 **Lições que valem para os próximos itens:**
 
