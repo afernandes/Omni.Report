@@ -37,7 +37,7 @@
     <PackageVersion Include="Verify.Xunit" Version="31.12.5" />
 
     <!-- Blazor component testing -->
-    <PackageVersion Include="bunit" Version="2.11.3" />
+    <PackageVersion Include="bunit" Version="2.13.3" />
 
     <!-- Benchmark harness (Reporting.Benchmarks; never packed — see Directory.Build.props) -->
     <PackageVersion Include="BenchmarkDotNet" Version="0.15.8" />
