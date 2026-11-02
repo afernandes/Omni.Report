@@ -1,6 +1,7 @@
 using AngleSharp.Dom;
 using Bunit;
 using FluentAssertions;
+using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.DependencyInjection;
 using Reporting.CodeFirst;
 using Reporting.Layout;
@@ -186,6 +187,58 @@ public class ReportViewerTests : Bunit.BunitContext
         captured.Should().NotBeNull();
         captured!.Extension.Should().Be("xlsx");
         captured.Bytes.Should().NotBeEmpty();
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Export_xlsx_keeps_the_exported_report_name_when_the_viewer_report_changes(bool clearReport)
+    {
+        var exporter = new GatedXlsxExporter();
+        Services.AddSingleton<Reporting.Output.IReportExporter>(exporter);
+        var report = BuildSampleReport() with { Name = "Relatorio A" };
+        ReportExportEventArgs? captured = null;
+        var cut = Render<ReportViewer>(p => p
+            .Add(v => v.Report, report)
+            .Add(v => v.OnExported, args => { captured = args; }));
+
+        var export = cut.Find("button[title='Exportar XLSX']").ClickAsync(new MouseEventArgs());
+        await exporter.Started.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        try
+        {
+            cut.Render(p => p.Add(v => v.Report, clearReport ? null : report with { Name = "Relatorio B" }));
+        }
+        finally
+        {
+            exporter.Release.TrySetResult();
+        }
+        await export.WaitAsync(TimeSpan.FromSeconds(10));
+
+        exporter.Report.Should().BeSameAs(report);
+        captured.Should().NotBeNull();
+        captured!.FileName.Should().Be("Relatorio A.xlsx");
+        captured.Bytes.Should().Equal([1]);
+        JSInterop.Invocations["omniViewer.download"].Should().ContainSingle()
+            .Which.Arguments[0].Should().Be("Relatorio A.xlsx");
+    }
+
+    private sealed class GatedXlsxExporter : Reporting.Output.IReportExporter
+    {
+        public TaskCompletionSource Started { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource Release { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public RenderedReport? Report { get; private set; }
+        public string Format => "xlsx";
+        public string FileExtension => ".xlsx";
+        public string ContentType => "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+        public void Export(RenderedReport report, Stream output) => throw new NotSupportedException("Use ExportAsync.");
+
+        public async Task ExportAsync(RenderedReport report, Stream output, CancellationToken cancellationToken = default)
+        {
+            Report = report;
+            Started.TrySetResult();
+            await Release.Task.WaitAsync(cancellationToken);
+            output.WriteByte(1);
+        }
     }
 
     [Fact]

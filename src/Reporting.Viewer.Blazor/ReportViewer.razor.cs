@@ -223,8 +223,9 @@ public partial class ReportViewer : ComponentBase, IDisposable
             _busy = true;
             _lastError = null;
             StateHasChanged();
-            var bytes = await producer();
+            // An async exporter can yield while the host replaces or clears the displayed report.
             var fileName = SafeFileName(Report?.Name ?? "report") + "." + extension;
+            var bytes = await producer();
             await TriggerBrowserDownloadAsync(fileName, mimeType, bytes);
             if (OnExported.HasDelegate)
             {

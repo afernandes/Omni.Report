@@ -63,6 +63,7 @@ public sealed class ReportingBuilder
         Services.AddSingleton(options ?? ExcelExportOptions.Default);
         Services.AddSingleton<ExcelExporter>(sp =>
             new ExcelExporter(sp.GetRequiredService<ExcelExportOptions>()));
+        Services.AddSingleton<IReportExporter>(sp => sp.GetRequiredService<ExcelExporter>());
         return this;
     }
 

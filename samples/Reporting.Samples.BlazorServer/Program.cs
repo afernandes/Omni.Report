@@ -29,9 +29,9 @@ builder.Services.AddOmniReportDesignerDataConnect();
 builder.Services.AddOmniReportDesignerPrinting();
 
 // Exporters (package Output.All): registers PDF, XLSX, DOCX, HTML+SVG, SVG, CSV, JSON, XML and Markdown as
-// IReportExporter instances. The Designer's menus and preview toolbar and the Viewer discover them; nothing is a
-// fixed list. To ship fewer formats, reference only the Output.* packages you use and register them with
-// `services.AddSingleton<IReportExporter, ...>()` instead.
+// IReportExporter instances. The Designer's menus and preview toolbar discover all registered formats; the Viewer's
+// XLSX button uses the registered Excel exporter. To ship fewer formats, reference only the Output.* packages you
+// use and register them with `services.AddSingleton<IReportExporter, ...>()` instead.
 builder.Services.AddOmniReportExporters();
 
 // HttpClient for the WebService data source samples. We register a singleton because

@@ -7,8 +7,8 @@ public static class OutputServiceCollectionExtensions
 {
     /// <summary>
     /// Registers the nine first-party exporters (PDF, XLSX, DOCX, HTML, SVG, CSV, JSON, XML, Markdown) as
-    /// <see cref="IReportExporter"/> singletons. The Designer's exporter registry and the Viewer discover what is
-    /// registered — there is no fixed list in either.
+    /// <see cref="IReportExporter"/> singletons. The Designer's exporter registry discovers all registered formats;
+    /// the Viewer's XLSX button uses the registered Excel exporter.
     /// </summary>
     /// <remarks>
     /// <para>For a host that needs only some formats, skip this package and register the exporters from the
