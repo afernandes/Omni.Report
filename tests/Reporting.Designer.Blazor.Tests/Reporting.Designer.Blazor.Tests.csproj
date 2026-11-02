@@ -14,6 +14,9 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Reporting.Designer.Blazor\Reporting.Designer.Blazor.csproj" />
     <ProjectReference Include="..\..\src\Reporting.Serialization\Reporting.Serialization.csproj" />
+    <!-- The Designer no longer brings these along: the tests build reports code-first and export to XML. -->
+    <ProjectReference Include="..\..\src\Reporting.CodeFirst\Reporting.CodeFirst.csproj" />
+    <ProjectReference Include="..\..\src\Reporting.Output.Xml\Reporting.Output.Xml.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,7 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Reporting.Output;
-using Reporting.Output.Pdf;
 
 namespace Reporting.Designer.Blazor.Services;
 
@@ -39,35 +38,6 @@ public static class ServiceCollectionExtensions
         // IReportExporter instances if the host wants per-circuit options, but the
         // wrapper itself doesn't need to be per-user).
         services.TryAddSingleton<IExporterRegistry, ExporterRegistry>();
-        return services;
-    }
-
-    /// <summary>
-    /// Registers the seven first-party exporters (PDF, XLSX, HTML+SVG, SVG, CSV, JSON,
-    /// Markdown) as <see cref="IReportExporter"/> singletons. The Designer's
-    /// <see cref="IExporterRegistry"/> auto-discovers them and renders one button per
-    /// format in the PreviewMode toolbar — no hard-coded list.
-    /// </summary>
-    /// <remarks>
-    /// <para>Hosts that want a subset register manually instead of calling this — every
-    /// exporter is just <c>services.AddSingleton&lt;IReportExporter, TExporter&gt;()</c>.</para>
-    ///
-    /// <para>Hosts that want custom labels / icons / sort order for a format register an
-    /// <see cref="ExporterDescriptor"/> explicitly — the registry deduplicates by
-    /// <c>Format</c> and explicit descriptors win over the auto-wrapped ones.</para>
-    /// </remarks>
-    public static IServiceCollection AddDefaultExporters(this IServiceCollection services)
-    {
-        ArgumentNullException.ThrowIfNull(services);
-        services.AddSingleton<IReportExporter>(_ => new Reporting.Output.Pdf.SkiaPdfExporter());
-        services.AddSingleton<IReportExporter>(_ => new Reporting.Output.Excel.ExcelExporter());
-        services.AddSingleton<IReportExporter>(_ => new Reporting.Output.Docx.DocxExporter());
-        services.AddSingleton<IReportExporter>(_ => new Reporting.Output.Html.SvgHtmlExporter());
-        services.AddSingleton<IReportExporter>(_ => new Reporting.Output.Svg.SvgExporter());
-        services.AddSingleton<IReportExporter>(_ => new Reporting.Output.Csv.CsvExporter());
-        services.AddSingleton<IReportExporter>(_ => new Reporting.Output.Json.JsonExporter());
-        services.AddSingleton<IReportExporter>(_ => new Reporting.Output.Xml.XmlExporter());
-        services.AddSingleton<IReportExporter>(_ => new Reporting.Output.Markdown.MarkdownExporter());
         return services;
     }
 

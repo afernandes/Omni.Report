@@ -19,8 +19,13 @@ builder.Services.AddRazorComponents().AddInteractiveServerComponents();
 builder.Services.AddOmniReportViewer();              // pipeline de preview (Skia)
 builder.Services.AddOmniReportDesignerPrinting();    // impressão: browser universal + nativo opt-in
 builder.Services.AddOmniReportDesignerDataConnect(); // editor de fonte de dados live-DB (opcional)
-builder.Services.AddDefaultExporters();              // PDF/XLSX/HTML/SVG/CSV/JSON/Markdown no preview
+builder.Services.AddOmniReportExporters();           // pacote Output.All: os 9 formatos no menu e no preview
 ```
+
+O Designer só traz o exportador PDF (a impressão gera PDF). Os demais formatos vêm do host: `AddOmniReportExporters()`
+do pacote `Output.All` registra todos; para enviar só alguns, referencie os pacotes `Output.*` desejados e registre
+cada um com `services.AddSingleton<IReportExporter, ...>()` — um host com Designer + PDF não restaura ClosedXML nem
+OpenXml.
 
 `App.razor` (ou `_Host.cshtml`) — carregue as **cinco** folhas de estilo (nesta ordem) no
 `<head>` e o módulo JS antes de `</body>` (o JS habilita drag/resize, marquee, smart-guides

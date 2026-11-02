@@ -13,6 +13,7 @@
     <ProjectReference Include="..\..\src\Reporting.CodeFirst\Reporting.CodeFirst.csproj" />
     <ProjectReference Include="..\..\src\Reporting.Viewer.Blazor\Reporting.Viewer.Blazor.csproj" />
     <ProjectReference Include="..\..\src\Reporting.Designer.Blazor\Reporting.Designer.Blazor.csproj" />
+    <ProjectReference Include="..\..\src\Reporting.Output.All\Reporting.Output.All.csproj" />
     <ProjectReference Include="..\..\src\Reporting.Designer.Blazor.DataConnect\Reporting.Designer.Blazor.DataConnect.csproj" />
   </ItemGroup>
 

@@ -1,6 +1,8 @@
 using AngleSharp.Dom;
 using Bunit;
 using FluentAssertions;
+using Microsoft.AspNetCore.Components.Web;
+using Microsoft.Extensions.DependencyInjection;
 using Reporting.CodeFirst;
 using Reporting.Layout;
 using Reporting.Samples.CodeFirst.Reports;
@@ -41,7 +43,35 @@ public class ReportViewerTests : Bunit.BunitContext
         cut.FindAll("button[title='Primeira página']").Should().NotBeEmpty();
         cut.FindAll("button[title='Próxima página']").Should().NotBeEmpty();
         cut.FindAll("button[title='Exportar PDF']").Should().NotBeEmpty();
-        cut.FindAll("button[title='Exportar XLSX']").Should().NotBeEmpty();
+        cut.FindAll("button[title='Exportar XLSX']").Should().BeEmpty(
+            "XLSX comes from the host: without a registered exporter there is no button that could not work");
+    }
+
+    [Fact]
+    public void Renders_xlsx_button_whatever_the_casing_of_the_registered_format()
+    {
+        // The Designer's registry matches formats ignoring case; the Viewer must find the same registrations.
+        Services.AddSingleton<Reporting.Output.IReportExporter>(new UpperCaseXlsxExporter());
+        var cut = Render<ReportViewer>(p => p.Add(v => v.Report, BuildSampleReport()));
+
+        cut.FindAll("button[title='Exportar XLSX']").Should().ContainSingle();
+    }
+
+    private sealed class UpperCaseXlsxExporter : Reporting.Output.IReportExporter
+    {
+        public string Format => "XLSX";
+        public string FileExtension => ".xlsx";
+        public string ContentType => "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+        public void Export(RenderedReport report, Stream output) => output.WriteByte(0);
+    }
+
+    [Fact]
+    public void Renders_xlsx_button_when_the_host_registers_the_exporter()
+    {
+        Services.AddSingleton<Reporting.Output.IReportExporter>(new Reporting.Output.Excel.ExcelExporter());
+        var cut = Render<ReportViewer>(p => p.Add(v => v.Report, BuildSampleReport()));
+
+        cut.FindAll("button[title='Exportar XLSX']").Should().ContainSingle();
     }
 
     [Fact]
@@ -144,6 +174,7 @@ public class ReportViewerTests : Bunit.BunitContext
     [Fact]
     public void Export_xlsx_emits_event_with_xlsx_bytes()
     {
+        Services.AddSingleton<Reporting.Output.IReportExporter>(new Reporting.Output.Excel.ExcelExporter());
         var report = BuildSampleReport();
         ReportExportEventArgs? captured = null;
         var cut = Render<ReportViewer>(p => p
@@ -156,6 +187,58 @@ public class ReportViewerTests : Bunit.BunitContext
         captured.Should().NotBeNull();
         captured!.Extension.Should().Be("xlsx");
         captured.Bytes.Should().NotBeEmpty();
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Export_xlsx_keeps_the_exported_report_name_when_the_viewer_report_changes(bool clearReport)
+    {
+        var exporter = new GatedXlsxExporter();
+        Services.AddSingleton<Reporting.Output.IReportExporter>(exporter);
+        var report = BuildSampleReport() with { Name = "Relatorio A" };
+        ReportExportEventArgs? captured = null;
+        var cut = Render<ReportViewer>(p => p
+            .Add(v => v.Report, report)
+            .Add(v => v.OnExported, args => { captured = args; }));
+
+        var export = cut.Find("button[title='Exportar XLSX']").ClickAsync(new MouseEventArgs());
+        await exporter.Started.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        try
+        {
+            cut.Render(p => p.Add(v => v.Report, clearReport ? null : report with { Name = "Relatorio B" }));
+        }
+        finally
+        {
+            exporter.Release.TrySetResult();
+        }
+        await export.WaitAsync(TimeSpan.FromSeconds(10));
+
+        exporter.Report.Should().BeSameAs(report);
+        captured.Should().NotBeNull();
+        captured!.FileName.Should().Be("Relatorio A.xlsx");
+        captured.Bytes.Should().Equal([1]);
+        JSInterop.Invocations["omniViewer.download"].Should().ContainSingle()
+            .Which.Arguments[0].Should().Be("Relatorio A.xlsx");
+    }
+
+    private sealed class GatedXlsxExporter : Reporting.Output.IReportExporter
+    {
+        public TaskCompletionSource Started { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource Release { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public RenderedReport? Report { get; private set; }
+        public string Format => "xlsx";
+        public string FileExtension => ".xlsx";
+        public string ContentType => "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+        public void Export(RenderedReport report, Stream output) => throw new NotSupportedException("Use ExportAsync.");
+
+        public async Task ExportAsync(RenderedReport report, Stream output, CancellationToken cancellationToken = default)
+        {
+            Report = report;
+            Started.TrySetResult();
+            await Release.Task.WaitAsync(cancellationToken);
+            output.WriteByte(1);
+        }
     }
 
     [Fact]

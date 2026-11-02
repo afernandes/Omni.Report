@@ -28,6 +28,7 @@
     <Project Path="src/Reporting.Hosting.AspNetCore/Reporting.Hosting.AspNetCore.csproj" />
     <Project Path="src/Reporting.Layout/Reporting.Layout.csproj" />
     <Project Path="src/Reporting.Maps/Reporting.Maps.csproj" />
+    <Project Path="src/Reporting.Output.All/Reporting.Output.All.csproj" />
     <Project Path="src/Reporting.Output.Csv/Reporting.Output.Csv.csproj" />
     <Project Path="src/Reporting.Output.Docx/Reporting.Output.Docx.csproj" />
     <Project Path="src/Reporting.Output.Excel/Reporting.Output.Excel.csproj" />
