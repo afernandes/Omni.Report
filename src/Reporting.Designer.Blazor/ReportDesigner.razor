@@ -121,7 +121,7 @@
                           IsExporting="@(_exportingFormat is not null)"
                           OnPrint="OnPrint"
                           PreviewZoom="_previewZoom"
-                          PreviewZoomChanged="v => _previewZoom = v" />
+                          PreviewZoomChanged="OnPreviewZoomChanged" />
 
             <RightPanel Report="State.Report"
                         Selected="State.SelectedElement"
