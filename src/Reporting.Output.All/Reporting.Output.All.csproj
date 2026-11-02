@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Reporting.Output</RootNamespace>
+    <AssemblyName>Reporting.Output.All</AssemblyName>
+    <Description>OmniReport — every first-party exporter (PDF, XLSX, DOCX, HTML, SVG, CSV, JSON, XML, Markdown) and AddOmniReportExporters(), which registers them for the Designer, the Viewer and hosts. Reference the individual Output.* packages instead to ship only the formats you use.</Description>
+
+    <!-- Sem baseline de compatibilidade: o pacote nasceu depois da 0.1.1, quando o Designer deixou de referenciar
+         todos os exportadores (roadmap, item 11). O baseline entra quando a 0.2.0 for publicada. -->
+    <PackageValidationBaselineVersion></PackageValidationBaselineVersion>
+
+    <NoWarn>$(NoWarn.Replace(';CS1591','').Replace('CS1591',''))</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Reporting.Output\Reporting.Output.csproj" />
+    <ProjectReference Include="..\Reporting.Output.Csv\Reporting.Output.Csv.csproj" />
+    <ProjectReference Include="..\Reporting.Output.Docx\Reporting.Output.Docx.csproj" />
+    <ProjectReference Include="..\Reporting.Output.Excel\Reporting.Output.Excel.csproj" />
+    <ProjectReference Include="..\Reporting.Output.Html\Reporting.Output.Html.csproj" />
+    <ProjectReference Include="..\Reporting.Output.Json\Reporting.Output.Json.csproj" />
+    <ProjectReference Include="..\Reporting.Output.Markdown\Reporting.Output.Markdown.csproj" />
+    <ProjectReference Include="..\Reporting.Output.Pdf\Reporting.Output.Pdf.csproj" />
+    <ProjectReference Include="..\Reporting.Output.Svg\Reporting.Output.Svg.csproj" />
+    <ProjectReference Include="..\Reporting.Output.Xml\Reporting.Output.Xml.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -42,6 +42,32 @@ public class ReportingBuilderTests
         returned.Should().BeSameAs(services);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Excel_exporter_is_discoverable_by_viewers_and_uses_the_configured_instance(bool customize)
+    {
+        var services = new ServiceCollection();
+        services.AddReporting(builder =>
+        {
+            if (customize)
+            {
+                builder.UseExcelOutput(new ExcelExportOptions { Title = "Custom title" });
+            }
+        });
+        using var provider = services.BuildServiceProvider();
+
+        var exporter = provider.GetServices<IReportExporter>()
+            .FirstOrDefault(e => string.Equals(e.Format, "xlsx", StringComparison.OrdinalIgnoreCase));
+
+        exporter.Should().NotBeNull("the Viewer discovers XLSX through IReportExporter registrations");
+        exporter.Should().BeSameAs(provider.GetRequiredService<ExcelExporter>());
+        if (customize)
+        {
+            provider.GetRequiredService<ExcelExportOptions>().Title.Should().Be("Custom title");
+        }
+    }
+
     [Fact]
     public void AddDataSource_inmemory_registers_with_DataSourceRegistry()
     {

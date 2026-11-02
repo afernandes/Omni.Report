@@ -47,8 +47,11 @@
                     {
                         <button class="tb-btn primary" type="button" @onclick="ExportPdfAsync"
                                 disabled="@_busy" title="Exportar PDF">PDF</button>
-                        <button class="tb-btn" type="button" @onclick="ExportXlsxAsync"
-                                disabled="@_busy" title="Exportar XLSX">XLSX</button>
+                        @if (XlsxExporter is not null)
+                        {
+                            <button class="tb-btn" type="button" @onclick="ExportXlsxAsync"
+                                    disabled="@_busy" title="Exportar XLSX">XLSX</button>
+                        }
                     }
                     @if (ResolvedOptions.ShowPrint)
                     {

@@ -21,25 +21,15 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Reporting.Core\Reporting.Core.csproj" />
-    <ProjectReference Include="..\Reporting.CodeFirst\Reporting.CodeFirst.csproj" />
     <ProjectReference Include="..\Reporting.Layout\Reporting.Layout.csproj" />
     <ProjectReference Include="..\Reporting.Output\Reporting.Output.csproj" />
     <ProjectReference Include="..\Reporting.Serialization\Reporting.Serialization.csproj" />
     <ProjectReference Include="..\Reporting.Printing\Reporting.Printing.csproj" />
     <ProjectReference Include="..\Reporting.Viewer.Blazor\Reporting.Viewer.Blazor.csproj" />
-    <!-- Direct references to every exporter the Designer's AddDefaultExporters() instantiates.
-         They're already transitive via Viewer.Blazor, but some IDE/LSP setups don't surface
-         transitive types for IntelliSense — listing them explicitly keeps the editor happy
-         and makes the dependency surface obvious to readers. -->
+    <!-- Only the PDF exporter: printing renders a PDF (browser dialog, "salvar como PDF"). Every other format comes
+         from the host through IReportExporter (Output.All's AddOmniReportExporters(), or the individual Output.*
+         packages), so a Designer with PDF export does not restore ClosedXML or OpenXml (roadmap, item 11). -->
     <ProjectReference Include="..\Reporting.Output.Pdf\Reporting.Output.Pdf.csproj" />
-    <ProjectReference Include="..\Reporting.Output.Excel\Reporting.Output.Excel.csproj" />
-    <ProjectReference Include="..\Reporting.Output.Docx\Reporting.Output.Docx.csproj" />
-    <ProjectReference Include="..\Reporting.Output.Html\Reporting.Output.Html.csproj" />
-    <ProjectReference Include="..\Reporting.Output.Svg\Reporting.Output.Svg.csproj" />
-    <ProjectReference Include="..\Reporting.Output.Csv\Reporting.Output.Csv.csproj" />
-    <ProjectReference Include="..\Reporting.Output.Json\Reporting.Output.Json.csproj" />
-    <ProjectReference Include="..\Reporting.Output.Xml\Reporting.Output.Xml.csproj" />
-    <ProjectReference Include="..\Reporting.Output.Markdown\Reporting.Output.Markdown.csproj" />
   </ItemGroup>
 
 </Project>

@@ -96,7 +96,7 @@ Os problemas que restam são de cinco tipos:
 |---|---|---|---|---|---|
 | 9 | Abstração de exportação mora no pacote PDF → CSV/JSON/XML/Excel arrastam SkiaSharp — **✔ FEITO (#282)** | Arquitetura | M | ✅ | novo |
 | 10 | Contrato de export: `ExportAsync` real, faixa de páginas e consumo de `PreparedReport` — **✔ FEITO (#290, #291)** | API | M | ✅ | R2 #14 + #39 |
-| 11 | Designer, Viewer e Hosting referenciam **todos** os exporters | Arquitetura | M | ✅ | novo |
+| 11 | Designer, Viewer e Hosting referenciam **todos** os exporters — parte 1 (Designer e Viewer) feita (#292) | Arquitetura | M | ✅ | novo |
 | 12 | Nenhum `ILogger` em `src/`; falhas do Designer vão para `Console.Error` — **✔ FEITO (#283)** | Observabilidade | P | ✅ | novo |
 | 13 | Monaco carregado do CDN em runtime — não funciona offline nem sob CSP — **✔ FEITO (#286)** | Segurança/DX | M | ✅ | novo |
 | 14 | **Decisão:** postura de segurança do Roslyn (só fonte confiável × isolamento real) | Segurança | P/G | 🔍 | R2 #11 |
@@ -113,7 +113,7 @@ Os problemas que restam são de cinco tipos:
 | 19 | Designer não cria fontes JSON, XML, REST nem FileSystem (paridade dos 3 modos) | Paridade | M | 🧪 | novo |
 | 20 | Sem layout responsivo: abaixo de ~1.280 px o painel de propriedades sai da tela | UX | M | 🧪 | novo |
 | 21 | Acessibilidade: botões sem nome, toggles sem `aria-pressed`, modais sem `aria-modal`, 304 estilos inline | A11y | M | ✅ | novo |
-| 22 | Defeitos visuais pequenos (placeholder `&#10;`, aba "Untitled.repx", rótulo "DATE") | UX | P | 🧪 | novo |
+| 22 | Defeitos visuais pequenos (placeholder `&#10;`, aba "Untitled.repx", rótulo "DATE") — **✔ FEITO (#293)** | UX | P | 🧪 | novo |
 | 23 | Preview rasterizado a 96 DPI — borrado em tela HiDPI e com zoom — **✔ FEITO (#294)** | UX | P | 🧪 | novo |
 | 24 | Editor de rich text (`TextRuns`) — ausente no Designer e no CodeFirst | Feature | M | ✅ | R2 #32 |
 | 25 | Botão "Testar" do editor de expressões avalia com dados fictícios | UX | M | 🔍 | auditoria |
@@ -587,6 +587,13 @@ Designer referencia `CodeFirst`.
 
 **Pronto quando:** um host com Designer + PDF não restaura ClosedXML nem OpenXml.
 
+**Parte 1 feita (#292) — Designer e Viewer.** Novo pacote `Reporting.Output.All` com `AddOmniReportExporters()` (os 9
+formatos); o `AddDefaultExporters()` saiu do Designer (quebra registrada no CHANGELOG e no Package Validation). O
+Designer referencia só o exportador PDF — a impressão gera PDF — e deixou de referenciar `CodeFirst`, que não usava;
+o Viewer perdeu XLSX/HTML/SVG/CSV/JSON/Markdown e mostra o botão XLSX só se o host registrar o formato. Critério
+conferido com `dotnet list package --include-transitive`: Designer e Viewer não trazem ClosedXML nem OpenXml.
+Falta a parte 2: `Hosting.AspNetCore` (`UsePdfOutput`/`UseExcelOutput`/`UseDocxOutput` amarram Docx, Excel e PDF).
+
 ---
 
 ### 12. Nenhum `ILogger` em `src/` ✅ — ✔ FEITO
@@ -776,13 +783,17 @@ navegação só por teclado e contraste (WCAG 2.2 AA) — não verificados nesta
 
 ---
 
-### 22. Defeitos visuais pequenos 🧪
+### 22. Defeitos visuais pequenos 🧪 — ✔ FEITO
 
 - Placeholder dos "Valores permitidos" exibe `1|Ativo&#10;0|Inativo` literal — entidade codificada duas vezes
   (`Components/ParametersList.razor:57`).
 - A aba do documento continua "Untitled.repx" após carregar "Vendas por Cliente" (`ViewModels/DesignerState.cs:17`).
 - Subtítulo "DATE" (inglês) sob os rótulos de parâmetro em português.
 - O campo "Valores permitidos" aparece também para parâmetros do tipo Date, onde não faz sentido.
+
+**FEITO (#293).** Placeholder com quebra de linha real (constante C#); a aba toma o nome do relatório carregado, ou
+do arquivo aberto do disco; os tipos aparecem em pt-BR no prompt e no seletor (`DesignerFieldTypeLabel`); o bloco de
+valores permitidos some para Data. `SmallVisualDefectsTests` (6), todos falhando sem a correção.
 
 ---
 
@@ -1176,6 +1187,7 @@ movimento de arquivos, e 31. O restante do item 26 (`designer.js`, `ElementViewM
 | Item 13 — Monaco do CDN, sem offline nem CSP estrita | Monaco empacotado; fallback para texto simples | #286 |
 | Item 2a — matriz descartava medidas extras sem aviso | `ORL025` `MatrixCells` + aviso no import RDL | #288 |
 | Item 10 — contrato de exportação sem faixa e sem E/S assíncrona | `PageRange`/`PreparedReport` por faixa; `AsyncExport` nos exportadores | #290, #291 |
+| Item 22 — defeitos visuais pequenos | Placeholder, nome da aba, tipos em pt-BR, Data sem valores permitidos | #293 |
 | Item 23 — preview borrado em HiDPI e com zoom | Raster em 96 × DPR × zoom, dentro do orçamento de pixels | #294 |
 
 **Lições que valem para os próximos itens:**
