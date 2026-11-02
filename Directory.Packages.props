@@ -16,7 +16,7 @@
     <PackageVersion Include="SkiaSharp.NativeAssets.Linux" Version="4.153.1" />
     <!-- O par do SkiaSharp 4.153.1: é a versão que o SkiaSharp.HarfBuzz 4.153.1 exige. O Reporting.Output.Pdf usa o
          subsetter de fontes do nativo (hb-subset); como no SkiaSharp, o nativo de Linux vem em pacote à parte. -->
-    <PackageVersion Include="HarfBuzzSharp" Version="14.2.1.301" />
+    <PackageVersion Include="HarfBuzzSharp" Version="14.2.1.400" />
     <PackageVersion Include="HarfBuzzSharp.NativeAssets.Linux" Version="14.2.1.301" />
     <PackageVersion Include="SkiaSharp.HarfBuzz" Version="4.153.1" />
 
