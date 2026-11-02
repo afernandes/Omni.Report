@@ -46,8 +46,10 @@ public sealed class PreviewPageCache : IReadOnlyList<byte[]>
     /// <summary>Sets <see cref="Scale"/> (clamped to 1–4, in quarter steps so small zoom changes reuse the cache)
     /// and drops the cached images when it changes.</summary>
     /// <returns><see langword="true"/> when the scale changed and pages will be rasterized again.</returns>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="scale"/> is NaN.</exception>
     public bool SetScale(double scale)
     {
+        if (double.IsNaN(scale)) throw new ArgumentOutOfRangeException(nameof(scale));
         var snapped = Math.Clamp(Math.Ceiling(scale / ScaleStep) * ScaleStep, 1, MaxScale);
         lock (_gate)
         {

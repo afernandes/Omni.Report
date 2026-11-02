@@ -48,6 +48,19 @@ public sealed class PreviewHiDpiTests : BunitContext
     }
 
     [Fact]
+    public void Cache_EscalaNaN_RejeitaSemInvalidarOCache()
+    {
+        var cache = new PreviewPageCache(A4());
+        var image = cache[0];
+
+        var setScale = () => cache.SetScale(double.NaN);
+
+        setScale.Should().Throw<ArgumentOutOfRangeException>().WithParameterName("scale");
+        cache.Scale.Should().Be(1);
+        cache[0].Should().BeSameAs(image);
+    }
+
+    [Fact]
     public void Cache_PaginaGrandeEmEscalaAlta_ReduzAEscalaEmVezDeFalhar()
     {
         var huge = new PageSetup(new PaperSize("Grande", 900.Mm(), 900.Mm()));
@@ -80,12 +93,7 @@ public sealed class PreviewHiDpiTests : BunitContext
     {
         JSInterop.Mode = JSRuntimeMode.Loose;
         JSInterop.Setup<double>("omniDesigner.devicePixelRatio").SetResult(2);
-        var state = new DesignerState();
-        state.Parameters.Clear();
-        state.DataSources.Clear();
-        state.DataSources.Add(new DesignerDataSource("Dados", []));
-        state.PreviewDataRegistry = new DataSourceRegistry();
-        state.PreviewDataRegistry.Register(new EnumerableDataSource<string>("Dados", ["A"]));
+        var state = CreateState();
         var designer = Render<ReportDesigner>(p => p.Add(x => x.InitialState, state));
 
         await designer.InvokeAsync(() => state.CommandPaletteOpen = true);
@@ -97,6 +105,79 @@ public sealed class PreviewHiDpiTests : BunitContext
             var png = Convert.FromBase64String(src["data:image/png;base64,".Length..]);
             WidthOf(png).Should().BeGreaterThan(1500, "an A4 page is 794 px wide at 96 DPI; a 2x screen needs ~1588");
         }, TimeSpan.FromSeconds(10));
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    public async Task Preview_BotaoERoda_ReamostramSemAlterarLarguraDoPapel(double ratio)
+    {
+        JSInterop.Mode = JSRuntimeMode.Loose;
+        JSInterop.Setup<double>("omniDesigner.devicePixelRatio").SetResult(ratio);
+        var state = CreateState();
+        var designer = Render<ReportDesigner>(p => p.Add(x => x.InitialState, state));
+        await designer.InvokeAsync(() => state.CommandPaletteOpen = true);
+        await designer.Find(".cmdp-item[data-command-id='view.preview']").ClickAsync(new());
+        var widthStyle = designer.Find(".preview-page").GetAttribute("style")!.Split(';')[0];
+        var original = PreviewPng(designer);
+
+        await designer.FindAll(".preview-toolbar .zoom-btn")[1].ClickAsync(new());
+
+        WidthOf(PreviewPng(designer)).Should().BeGreaterThan(WidthOf(original));
+        designer.Find(".preview-page").GetAttribute("style").Should().StartWith(widthStyle)
+            .And.Contain("transform:scale(1.10)");
+
+        await designer.InvokeAsync(() => designer.Instance.OnZoomDelta(0.9));
+
+        var zoomed = PreviewPng(designer);
+        WidthOf(zoomed).Should().BeInRange(WidthOf(original) * 2 - 2, WidthOf(original) * 2 + 2);
+        ((long)WidthOf(zoomed) * HeightOf(zoomed)).Should().BeLessThanOrEqualTo(16_000_000);
+        designer.Find(".preview-page").GetAttribute("style").Should().StartWith(widthStyle)
+            .And.Contain("transform:scale(2.00)");
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Preview_ConsultaDeDprPendente_CancelaAoTrocarDocumentoOuDescartar(bool dispose)
+    {
+        JSInterop.Mode = JSRuntimeMode.Loose;
+        var ratio = JSInterop.Setup<double>("omniDesigner.devicePixelRatio");
+        var state = CreateState();
+        var designer = Render<ReportDesigner>(p => p.Add(x => x.InitialState, state));
+        await designer.InvokeAsync(() => state.CommandPaletteOpen = true);
+        var pending = designer.Find(".cmdp-item[data-command-id='view.preview']").ClickAsync(new());
+        designer.WaitForAssertion(() => ratio.Invocations.Should().ContainSingle());
+        var cancellation = ratio.Invocations.Single().CancellationToken.GetValueOrDefault();
+        cancellation.CanBeCanceled.Should().BeTrue();
+
+        if (dispose)
+            await designer.InvokeAsync(() => designer.Instance.DisposeAsync().AsTask());
+        else
+            await designer.InvokeAsync(() => state.OpenNewDocument("Outro"));
+
+        cancellation.IsCancellationRequested.Should().BeTrue();
+        ratio.SetResult(2); // A late JS response must not publish a preview after cancellation.
+        await pending.WaitAsync(TimeSpan.FromSeconds(5));
+        state.IsPreviewing.Should().BeFalse();
+        designer.FindAll(".preview-page img").Should().BeEmpty();
+    }
+
+    private static DesignerState CreateState()
+    {
+        var state = new DesignerState();
+        state.Parameters.Clear();
+        state.DataSources.Clear();
+        state.DataSources.Add(new DesignerDataSource("Dados", []));
+        state.PreviewDataRegistry = new DataSourceRegistry();
+        state.PreviewDataRegistry.Register(new EnumerableDataSource<string>("Dados", ["A"]));
+        return state;
+    }
+
+    private static byte[] PreviewPng(IRenderedComponent<ReportDesigner> designer)
+    {
+        var source = designer.Find(".preview-page img").GetAttribute("src")!;
+        return Convert.FromBase64String(source["data:image/png;base64,".Length..]);
     }
 
     // PNG IHDR: width and height are big-endian at bytes 16 and 20.
