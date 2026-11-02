@@ -7,7 +7,7 @@ public static partial class SkiaPrimitiveRenderer
 {
     // Keep the original simple-text glyph positioning, while carrying the UTF-8 text and
     // cluster offsets required by PDF's ToUnicode map. A glyph-only blob can lose that map.
-    private static void DrawUnicodeText(SKCanvas canvas, string text, float x, float y, SKFont font, SKPaint paint)
+    internal static void DrawUnicodeText(SKCanvas canvas, string text, float x, float y, SKFont font, SKPaint paint)
     {
         int glyphCount = 0;
         foreach (var rune in text.EnumerateRunes())

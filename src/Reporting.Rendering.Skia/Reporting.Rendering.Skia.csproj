@@ -18,6 +18,8 @@
        de conversão, que não têm como ser cobertos via API pública de pixels. -->
   <ItemGroup>
     <InternalsVisibleTo Include="Reporting.Rendering.Tests" />
+    <!-- SVG consumes resolved text runs without expanding the public renderer API. -->
+    <InternalsVisibleTo Include="Reporting.Output.Svg" />
   </ItemGroup>
 
   <ItemGroup>
