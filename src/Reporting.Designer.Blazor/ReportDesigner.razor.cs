@@ -949,7 +949,7 @@ public partial class ReportDesigner
         using var ms = new MemoryStream();
         await using var src = e.File.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024);
         await src.CopyToAsync(ms);
-        try { State.Load(ms.ToArray()); }
+        try { State.Load(ms.ToArray()); State.ActiveTab.FileName = e.File.Name; }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             _alert = new("Falha ao abrir o arquivo", $"Não foi possível abrir {e.File.Name}: {ex.Message}");
@@ -966,7 +966,7 @@ public partial class ReportDesigner
         using var ms = new MemoryStream();
         await using var src = e.File.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024);
         await src.CopyToAsync(ms);
-        try { State.LoadRdl(ms.ToArray()); }
+        try { State.LoadRdl(ms.ToArray()); State.ActiveTab.FileName = e.File.Name; }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             _alert = new("Falha ao importar o RDL", $"Não foi possível importar {e.File.Name}: {ex.Message}");
