@@ -54,12 +54,13 @@ public sealed class SvgExporter : IReportExporter
             : page.PageSetup.PageHeight.ToPoints());
 
         using var ms = new MemoryStream();
+        var textWriter = new SvgTextWriter(ms);
         var bounds = new SKRect(0, 0, widthPt, heightPt);
         using (var canvas = SKSvgCanvas.Create(bounds, ms))
         {
-            DrawPage(canvas, page, widthPt, heightPt);
+            DrawPage(canvas, page, widthPt, heightPt, textWriter);
         }
-        var raw = Encoding.UTF8.GetString(ms.ToArray());
+        var raw = textWriter.GetSvg();
         var cleaned = InjectViewBox(StripXmlProlog(raw), widthPt, heightPt);
         return new SvgPageFragment(widthPt, heightPt, cleaned);
     }
@@ -114,6 +115,7 @@ public sealed class SvgExporter : IReportExporter
         // via canvas.Translate — that way the output is a single coherent coordinate
         // system, not nested <svg> elements.
         using var ms = new MemoryStream();
+        var textWriter = new SvgTextWriter(ms);
         var docBounds = new SKRect(0, 0, maxWidth, totalHeight);
         using (var canvas = SKSvgCanvas.Create(docBounds, ms))
         {
@@ -125,20 +127,20 @@ public sealed class SvgExporter : IReportExporter
                 var (w, h) = dims[i];
                 canvas.Save();
                 canvas.Translate(0, currentY);
-                DrawPage(canvas, page, w, h);
+                DrawPage(canvas, page, w, h, textWriter);
                 canvas.Restore();
                 currentY += h + _options.PageGap;
             }
         }
 
-        var raw = Encoding.UTF8.GetString(ms.ToArray());
+        var raw = textWriter.GetSvg();
         var withViewBox = InjectViewBox(StripXmlProlog(raw), maxWidth, totalHeight);
         // Standalone .svg gets the XML prolog back; embedded HTML usage strips it again.
         var bytes = Encoding.UTF8.GetBytes("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + withViewBox);
         output.Write(bytes, 0, bytes.Length);
     }
 
-    private void DrawPage(SKCanvas canvas, RenderedPage page, float widthPt, float heightPt)
+    private void DrawPage(SKCanvas canvas, RenderedPage page, float widthPt, float heightPt, SvgTextWriter textWriter)
     {
         if (_options.IncludeBackground)
         {
@@ -148,7 +150,7 @@ public sealed class SvgExporter : IReportExporter
         }
         foreach (var primitive in page.Primitives)
         {
-            Replay(canvas, primitive);
+            Replay(canvas, primitive, textWriter);
         }
     }
 
@@ -162,13 +164,13 @@ public sealed class SvgExporter : IReportExporter
         return SKColors.White;
     }
 
-    private static void Replay(SKCanvas canvas, LayoutPrimitive primitive)
+    private static void Replay(SKCanvas canvas, LayoutPrimitive primitive, SvgTextWriter textWriter)
     {
         var clip = SkiaPrimitiveRenderer.BeginClip(canvas, primitive.ClipBounds, primitive.ClipCornerRadius, SvgDpi);
         switch (primitive)
         {
             case DrawTextPrimitive t:
-                SkiaPrimitiveRenderer.DrawText(canvas, t.Text, t.Bounds, t.Style, SvgDpi);
+                SkiaPrimitiveRenderer.DrawTextRuns(canvas, t.Text, t.Bounds, t.Style, SvgDpi, textWriter.DrawRun);
                 break;
             case DrawLinePrimitive l:
                 SkiaPrimitiveRenderer.DrawLine(canvas, l.From, l.To, l.Pen, SvgDpi);

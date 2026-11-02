@@ -28,6 +28,12 @@ public static partial class SkiaPrimitiveRenderer
     internal static void DrawText(SKCanvas canvas, string text, Rectangle bounds, TextStyle style, float dpi, Action<SKRect>? track)
         => DrawText(canvas, text, bounds, style, dpi, track, null);
 
+    // SVG needs the original text after wrapping, fallback-font resolution and alignment.
+    // Its native backend otherwise reconstructs Unicode from glyph ids, a lossy mapping.
+    internal static void DrawTextRuns(SKCanvas canvas, string text, Rectangle bounds, TextStyle style, float dpi,
+        Action<SKCanvas, string, float, float, SKFont, SKPaint> drawRun)
+        => DrawText(canvas, text, bounds, style, dpi, null, null, drawRun);
+
     /// <summary>Reports, for each character <see cref="DrawText(SKCanvas, string, Rectangle, TextStyle, float)"/>
     /// would draw from <paramref name="text"/>, the typeface it would draw that character with — the font's own
     /// typeface, or the fallback found for a character it lacks.</summary>
@@ -66,7 +72,8 @@ public static partial class SkiaPrimitiveRenderer
     }
 
     private static void DrawText(SKCanvas canvas, string text, Rectangle bounds, TextStyle style, float dpi,
-        Action<SKRect>? track, Func<SKTypeface, SKTypeface>? substituteTypeface)
+        Action<SKRect>? track, Func<SKTypeface, SKTypeface>? substituteTypeface,
+        Action<SKCanvas, string, float, float, SKFont, SKPaint>? drawRun = null)
     {
         ArgumentNullException.ThrowIfNull(canvas);
         ArgumentNullException.ThrowIfNull(style);
@@ -74,6 +81,7 @@ public static partial class SkiaPrimitiveRenderer
         {
             return;
         }
+        drawRun ??= DrawUnicodeText;
         using var font = CreateFont(style.Font, dpi, substituteTypeface);
         using var paint = new SKPaint
         {
@@ -132,7 +140,7 @@ public static partial class SkiaPrimitiveRenderer
                         ink.Offset(cursor, baselineY);
                         if (!ink.IsEmpty) TrackBounds(track, ink, paint);
                     }
-                    DrawUnicodeText(canvas, run.Text, cursor, baselineY, run.Font, paint);
+                    drawRun(canvas, run.Text, cursor, baselineY, run.Font, paint);
                     if (decoPaint is not null)
                     {
                         DrawTextDecorations(canvas, decoPaint, run.Font, cursor, baselineY, runWidth, style.Font.Style, track);
