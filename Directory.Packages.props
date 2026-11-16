@@ -37,7 +37,7 @@
     <PackageVersion Include="Verify.Xunit" Version="31.12.5" />
 
     <!-- Blazor component testing -->
-    <PackageVersion Include="bunit" Version="2.13.3" />
+    <PackageVersion Include="bunit" Version="2.15.2" />
 
     <!-- Benchmark harness (Reporting.Benchmarks; never packed — see Directory.Build.props) -->
     <PackageVersion Include="BenchmarkDotNet" Version="0.15.8" />
@@ -49,7 +49,7 @@
     <PackageVersion Include="xunit.extensibility.core" Version="2.9.3" />
     <PackageVersion Include="xunit.extensibility.execution" Version="2.9.3" />
     <PackageVersion Include="FluentAssertions" Version="6.12.2" />
-    <PackageVersion Include="coverlet.collector" Version="10.1.0" />
+    <PackageVersion Include="coverlet.collector" Version="10.1.1" />
     <PackageVersion Include="coverlet.msbuild" Version="10.0.1" />
 
     <!-- Testcontainers: bancos reais em Docker para os testes de integração dos conectores SQL.
