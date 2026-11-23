@@ -7,7 +7,7 @@
 
   <ItemGroup>
     <!-- Expressions -->
-    <PackageVersion Include="NCalcSync" Version="7.1.0" />
+    <PackageVersion Include="NCalcSync" Version="7.4.0" />
     <!-- Opt-in Roslyn code evaluation (Reporting.Expressions.Roslyn only) -->
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="5.6.0" />
 
@@ -16,8 +16,8 @@
     <PackageVersion Include="SkiaSharp.NativeAssets.Linux" Version="4.154.0" />
     <!-- O par do SkiaSharp 4.153.1: é a versão que o SkiaSharp.HarfBuzz 4.153.1 exige. O Reporting.Output.Pdf usa o
          subsetter de fontes do nativo (hb-subset); como no SkiaSharp, o nativo de Linux vem em pacote à parte. -->
-    <PackageVersion Include="HarfBuzzSharp" Version="14.2.1.400" />
-    <PackageVersion Include="HarfBuzzSharp.NativeAssets.Linux" Version="14.2.1.301" />
+    <PackageVersion Include="HarfBuzzSharp" Version="14.4.0.200" />
+    <PackageVersion Include="HarfBuzzSharp.NativeAssets.Linux" Version="14.4.0.200" />
     <PackageVersion Include="SkiaSharp.HarfBuzz" Version="4.153.1" />
 
     <!-- Excel output -->
@@ -55,15 +55,15 @@
     <!-- Testcontainers: bancos reais em Docker para os testes de integração dos conectores SQL.
          Só Reporting.DataSources.Integration.Tests referencia. Os testes se auto-pulam quando não há
          daemon Docker, então a suíte normal não passa a exigir Docker de ninguém. -->
-    <PackageVersion Include="Testcontainers.MsSql" Version="4.16.0" />
-    <PackageVersion Include="Testcontainers.PostgreSql" Version="4.16.0" />
-    <PackageVersion Include="Testcontainers.MySql" Version="4.16.0" />
+    <PackageVersion Include="Testcontainers.MsSql" Version="4.17.0" />
+    <PackageVersion Include="Testcontainers.PostgreSql" Version="4.17.0" />
+    <PackageVersion Include="Testcontainers.MySql" Version="4.17.0" />
     <!-- Transitivo do Testcontainers, pinado acima da versão vulnerável: SSH.NET <= 2025.1.0 tem
          GHSA-q939-rpr3-3284 (severidade ALTA — o ScpClient permite escrita de arquivo arbitrária via nome
          controlado pelo servidor), corrigido na 2026.0.0. O Testcontainers só usa SSH.NET no cenário de
          daemon Docker remoto por SSH, que não é o nosso, mas o pacote entra no grafo de qualquer forma e o
          gate de auditoria falha em High. Mesmo tratamento dado ao SQLitePCLRaw (GHSA-2m69-gcr7-jv3q). -->
-    <PackageVersion Include="SSH.NET" Version="2026.0.0" />
+    <PackageVersion Include="SSH.NET" Version="2026.0.1" />
 
     <!-- Windows GDI (System.Drawing.Common no longer included by default in net*-windows TFMs) -->
     <PackageVersion Include="System.Drawing.Common" Version="10.0.11" />
@@ -86,7 +86,7 @@
          in the 3.x stack (native moved to SourceGear.sqlite3 3.50.x), so we pin bundle+core to 3.x. -->
     <PackageVersion Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.3" />
     <PackageVersion Include="SQLitePCLRaw.core" Version="3.0.3" />
-    <PackageVersion Include="Npgsql" Version="10.0.3" />
+    <PackageVersion Include="Npgsql" Version="11.0.0" />
     <PackageVersion Include="Microsoft.Data.SqlClient" Version="7.0.2" />
     <!-- Transitivo do Microsoft.Data.SqlClient (que traz a 9.0.13), pinado na versão corrigida:
          System.Security.Cryptography.Pkcs <= 10.0.12 / <= 9.0.20 tem GHSA-846f-f764-76mx (ALTA) e
@@ -94,7 +94,7 @@
          gate de auditoria transforma o advisory em erro de build em todo projeto que referencia o
          conector SQL Server. -->
     <PackageVersion Include="System.Security.Cryptography.Pkcs" Version="10.0.13" />
-    <PackageVersion Include="MySqlConnector" Version="2.6.2" />
+    <PackageVersion Include="MySqlConnector" Version="3.0.0" />
   </ItemGroup>
 
 </Project>
